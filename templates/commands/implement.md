@@ -120,6 +120,51 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Integration work**: Database connections, middleware, logging, external services
    - **Polish and validation**: Unit tests, performance optimization, documentation
 
+   **Traceability Annotations (AUTO-GENERATED)**:
+
+   When creating or modifying code for a task, automatically add `@speckit` annotations to enable bidirectional traceability between specifications and code:
+
+   a) **For tasks with [FR:FR-xxx] marker**:
+      - Add `# @speckit:FR:FR-xxx` comment ABOVE the primary function/class/component
+      - If multiple FRs: `# @speckit:FR:FR-001,FR-002`
+      - Include brief description: `# @speckit:FR:FR-001 - User authentication handler`
+
+   b) **For tasks with [TEST:AS-xxx] marker**:
+      - Add `# @speckit:AS:AS-xxx` comment ABOVE the test function
+      - Reference scenario: `# @speckit:AS:AS-1A - Given valid credentials, When login, Then success`
+
+   c) **For tasks with edge case handling [EC:EC-xxx] marker**:
+      - Add `# @speckit:EC:EC-xxx` comment at edge case handling location
+
+   d) **For tasks with [VR:VR-xxx] or [IR:IR-xxx] markers** (UI features):
+      - Add `# @speckit:VR:VR-xxx` or `# @speckit:IR:IR-xxx` above UI component
+
+   **Annotation Placement Guidelines**:
+   - Place immediately ABOVE function/method/class definition (not inside)
+   - For multi-file implementations: annotate the primary entry point
+   - For React/Vue components: annotate the component definition
+   - For tests: annotate each test function separately
+   - Use language-appropriate comment syntax: `#` (Python, Ruby), `//` (JS, Go, Rust, C), `--` (SQL, Lua)
+
+   **Examples by Language**:
+   ```python
+   # @speckit:FR:FR-001,FR-002 - User authentication handler
+   def authenticate_user(email: str, password: str) -> User:
+       pass
+
+   # @speckit:AS:AS-1A - Given valid credentials, When login, Then success
+   def test_login_success():
+       pass
+   ```
+   ```typescript
+   // @speckit:FR:FR-003 - Payment processing service
+   export class PaymentService {
+   ```
+   ```go
+   // @speckit:EC:EC-001 - Handle empty password edge case
+   func validatePassword(password string) error {
+   ```
+
 8. Progress tracking and error handling:
    - Report progress after each completed task
    - Halt execution if any non-parallel task fails
@@ -134,5 +179,30 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Validate that tests pass and coverage meets requirements
    - Confirm the implementation follows the technical plan
    - Report final status with summary of completed work
+
+10. **Traceability Verification** (after each phase completion):
+
+    After completing implementation tasks in a phase, verify @speckit annotations are present:
+
+    a) **Scan newly created/modified files** for @speckit annotations
+    b) **Compare against tasks** completed in this phase that have [FR:], [TEST:], [EC:], [VR:], [IR:] markers
+    c) **Report any missing annotations**:
+       ```
+       ⚠️ Traceability Warning:
+       - T012 [FR:FR-001] completed but src/models/user.py missing @speckit annotation
+       - T020 [TEST:AS-1A] completed but tests/test_auth.py missing @speckit annotation
+
+       Suggested fixes:
+       - Add "# @speckit:FR:FR-001 - User data model" above User class
+       - Add "# @speckit:AS:AS-1A - Valid login flow" above test_login_success()
+       ```
+    d) **Self-correct** by adding missing annotations before proceeding to next phase
+
+    **Validation Regex** (for scanning code):
+    ```
+    @speckit:(FR|AS|EC|VR|IR):([A-Z]+-\d+[A-Za-z]?)(,([A-Z]+-\d+[A-Za-z]?))*
+    ```
+
+    **When to skip**: Setup and Foundation phases typically don't have FR/AS markers, so traceability verification focuses on User Story phases.
 
 Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit.tasks` first to regenerate the task list.

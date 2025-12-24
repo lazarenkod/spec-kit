@@ -356,6 +356,77 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
    - Suggested review checklist
 ```
 
+#### N. Code Traceability Validation
+
+**Purpose**: Validate bidirectional links between spec requirements and code annotations.
+
+**Annotation Pattern**: `@speckit:(FR|AS|EC|VR|IR):([A-Z]+-\d+[A-Za-z]?)(,([A-Z]+-\d+[A-Za-z]?))*`
+
+**Scan directories**: `src/`, `backend/`, `frontend/`, `lib/`, `app/`, `tests/`, `test/`
+**Scan extensions**: `.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.rb`, `.cpp`, `.c`, `.h`
+**Exclusions**: `node_modules/`, `venv/`, `.git/`, `dist/`, `build/`, `__pycache__/`
+
+```
+1. Build Annotation Inventory:
+   FOR EACH source file in scan directories:
+     Extract @speckit:<TYPE>:<ID> patterns
+     Store: {file, line_number, type, ids[], description}
+
+2. Forward Traceability (Spec → Code):
+   FOR EACH FR-xxx in spec.md Functional Requirements:
+     Search for @speckit:FR:FR-xxx in code inventory
+     IF not found:
+       → MEDIUM: "FR-xxx has no code annotation"
+       → Suggest: "Add @speckit:FR:FR-xxx to implementation file"
+
+3. Backward Traceability (Code → Spec):
+   FOR EACH @speckit:FR:FR-xxx annotation in code:
+     Verify FR-xxx exists in spec.md
+     IF not found:
+       → HIGH: "Code references non-existent FR-xxx in {file}:{line}"
+       → Suggest: "Remove orphan annotation or add FR-xxx to spec"
+
+4. Task-to-Code Consistency:
+   FOR EACH task in tasks.md with [FR:FR-xxx] marker:
+     Extract expected file path from task description
+     Check if file contains @speckit:FR:FR-xxx
+     IF file exists but missing annotation:
+       → LOW: "Task T012 claims FR-001 in {file} but no @speckit annotation found"
+
+5. Test Coverage Validation:
+   FOR EACH AS-xxx in spec.md Acceptance Scenarios:
+     Search for @speckit:AS:AS-xxx in test files
+     IF not found:
+       → MEDIUM: "AS-xxx has no test annotation"
+       → Suggest: "Add @speckit:AS:AS-xxx to test function"
+
+6. Edge Case Coverage:
+   FOR EACH EC-xxx in spec.md Edge Cases:
+     Search for @speckit:EC:EC-xxx in code
+     IF not found:
+       → LOW: "EC-xxx has no code annotation"
+```
+
+#### O. Annotation Freshness Check
+
+**Purpose**: Detect stale annotations when spec has been modified.
+
+```
+1. Get spec modification date from git or file timestamp
+
+2. FOR EACH @speckit annotation in code:
+   a) Verify referenced requirement still exists in spec.md
+   b) IF requirement was removed from spec:
+      → MEDIUM: "Orphan annotation in {file}:{line} - FR-xxx no longer in spec"
+   c) IF spec file modified more recently than code file:
+      → LOW: "Annotation in {file}:{line} may be stale - spec.md was modified"
+
+3. Orphan Detection Summary:
+   Count annotations referencing non-existent requirements
+   IF orphan_count > 0:
+     → Report total orphan annotations requiring cleanup
+```
+
 ### 5. Severity Assignment
 
 Use this heuristic to prioritize findings:
@@ -378,6 +449,7 @@ Use this heuristic to prioritize findings:
   - **System spec not found** (Updates lists non-existent spec)
   - **Breaking change without migration path** (incomplete documentation)
   - **Broken system spec dependency** (missing referenced spec)
+  - **Code references non-existent requirement** (orphan @speckit annotation)
 
 - **MEDIUM**:
   - Terminology drift
@@ -390,6 +462,9 @@ Use this heuristic to prioritize findings:
   - **Missing System Spec Impact section** (required for merge)
   - **Breaking change for unlisted spec** (inconsistent documentation)
   - **Contradictory No Impact** (checkbox conflicts with tables)
+  - **FR with no code annotation** (forward traceability gap)
+  - **AS with no test annotation** (test coverage gap)
+  - **Orphan annotation** (spec requirement removed)
 
 - **LOW**:
   - Style/wording improvements
@@ -405,6 +480,9 @@ Use this heuristic to prioritize findings:
   - **Stale system spec** (not updated in 6+ months)
   - **Inconsistent version format** (version hygiene)
   - **Dependents table out of sync** (cross-reference accuracy)
+  - **Task claims file but no annotation** (documentation hygiene)
+  - **EC with no annotation** (edge case not marked)
+  - **Potentially stale annotation** (spec modified since annotation)
 
 ### 6. Produce Compact Analysis Report
 
@@ -418,7 +496,7 @@ Output a Markdown report (no file writes) with the following structure:
 | G1 | Dependency | CRITICAL | tasks.md | Circular: T005 → T012 → T005 | Break cycle at T012 → T005 |
 | H1 | Traceability | HIGH | spec.md, tasks.md | FR-003 has no tasks | Add [FR:FR-003] to relevant task |
 
-(Add one row per finding; generate stable IDs prefixed by category initial: A=Dup, B=Ambig, C=Underspec, D=Constitution, E=Coverage, F=Inconsist, G=Depend, H=Trace, I=Concept, J=RTM, K=SysImpact, L=SysInteg, M=Impact)
+(Add one row per finding; generate stable IDs prefixed by category initial: A=Dup, B=Ambig, C=Underspec, D=Constitution, E=Coverage, F=Inconsist, G=Depend, H=Trace, I=Concept, J=RTM, K=SysImpact, L=SysInteg, M=Impact, N=CodeTrace, O=Freshness)
 
 **Dependency Graph Status:**
 
@@ -462,6 +540,23 @@ Stale Specs: N (>6 months without update)
 |--------|-------------|--------|--------|
 | CREATE | `system/auth/sso.md` | ✅ | - |
 | UPDATE | `system/auth/login.md` | ✅ | - |
+
+**Code Traceability Status:** (if code exists)
+
+```
+Annotations Scanned: N across M files
+Forward Coverage (Spec→Code): X% (N/M FRs annotated)
+Backward Validation: ✅ VALID | ⚠️ N orphan annotations
+Test Annotations: N covering X% (N/M) AS scenarios
+Edge Case Annotations: N covering X% (N/M) EC scenarios
+```
+
+| Requirement | Type | Task | File | Line | Status |
+|-------------|------|------|------|------|--------|
+| FR-001 | FR | T012 | src/models/user.py | 15 | ✅ OK |
+| FR-002 | FR | T014 | - | - | ❌ GAP |
+| AS-1A | AS | T020 | tests/test_auth.py | 42 | ✅ OK |
+| EC-001 | EC | T025 | - | - | ⚠️ MISSING |
 
 **Requirements Coverage:**
 

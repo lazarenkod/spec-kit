@@ -437,3 +437,48 @@ graph TD
 - Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
 - Run `/speckit.analyze` to validate dependency graph (no cycles) and coverage gaps
 - For UI features: Ensure design tokens are established before component work begins
+
+---
+
+## Code Traceability Convention
+
+When implementing tasks, the AI agent will automatically add traceability annotations to source code. These annotations enable bidirectional linking between specifications and implementation.
+
+**Format**: `@speckit:<TYPE>:<ID>[,<ID>...][ - description]`
+
+**Types**:
+- `FR` - Functional Requirement (from spec.md)
+- `AS` - Acceptance Scenario (from spec.md)
+- `EC` - Edge Case (from spec.md)
+- `VR` - Visual Requirement (from design.md, for UI features)
+- `IR` - Interaction Requirement (from design.md, for UI features)
+
+**Examples**:
+```python
+# @speckit:FR:FR-001,FR-002 - User authentication handler
+def authenticate_user(email: str, password: str) -> User:
+    pass
+
+# @speckit:AS:AS-1A - Given valid credentials, When login, Then success
+def test_login_success():
+    pass
+
+# @speckit:EC:EC-001 - Handle empty password edge case
+if not password:
+    raise ValidationError("Password required")
+```
+
+```typescript
+// @speckit:FR:FR-003 - Payment processing service
+export class PaymentService {
+```
+
+```go
+// @speckit:EC:EC-002 - Handle network timeout
+func handleTimeout(ctx context.Context) error {
+```
+
+**Validation**: Run `/speckit.analyze` to verify code traceability coverage and detect:
+- Forward gaps: Requirements without code annotations
+- Backward gaps: Orphan annotations referencing non-existent requirements
+- Stale annotations: Annotations that may need updating after spec changes

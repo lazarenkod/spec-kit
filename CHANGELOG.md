@@ -7,6 +7,38 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.29] - 2025-12-23
+
+### Added
+
+- **Bidirectional Spec ↔ Code Traceability** (AWS Kiro-inspired)
+  - `@speckit:<TYPE>:<ID>` annotation convention for source code
+  - Types: FR (Functional Requirement), AS (Acceptance Scenario), EC (Edge Case), VR/IR (Visual/Interaction)
+  - Universal format works across Python, TypeScript, Go, Rust, Java, Kotlin, C/C++, etc.
+
+- **Auto-generation in `/speckit.implement`**:
+  - Agent automatically adds `@speckit` annotations when implementing tasks with [FR:], [TEST:], [EC:], [VR:], [IR:] markers
+  - Annotation placement guidelines for functions, classes, components, and tests
+  - Traceability verification step after each phase (Step 10)
+  - Self-correction for missing annotations before proceeding to next phase
+
+- **Code Traceability Validation in `/speckit.analyze`**:
+  - Section N: Forward traceability (Spec → Code) - validates FRs have code annotations
+  - Section N: Backward traceability (Code → Spec) - detects orphan annotations
+  - Section N: Task-to-code consistency - verifies tasks match annotations
+  - Section N: Test coverage validation - validates AS scenarios have test annotations
+  - Section O: Annotation freshness detection - identifies stale/orphan annotations
+  - Traceability Matrix in analysis report with coverage percentages
+
+### Changed
+
+- Enhanced `/speckit.implement` with annotation placement guidelines and language-specific examples
+- Enhanced `/speckit.analyze` with code scanning capabilities for `src/`, `tests/`, and related directories
+- Updated `tasks-template.md` with Code Traceability Convention reference section
+- Updated severity assignments to include code traceability issues (HIGH: orphan annotations, MEDIUM: coverage gaps)
+
+---
+
 ## [0.0.28] - 2025-12-23
 
 ### Added
