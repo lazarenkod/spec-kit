@@ -1,6 +1,6 @@
 ---
 description: Execute the implementation planning workflow using the plan template to generate design artifacts.
-handoffs: 
+handoffs:
   - label: Create Tasks
     agent: speckit.tasks
     prompt: Break the plan into tasks
@@ -8,6 +8,17 @@ handoffs:
   - label: Create Checklist
     agent: speckit.checklist
     prompt: Create a checklist for the following domain...
+claude_code:
+  reasoning_mode: extended
+  thinking_budget: 8000
+  plan_mode_trigger: true
+  subagents:
+    - role: architecture-specialist
+      trigger: "when evaluating technology choices or designing system structure"
+      prompt: "Analyze architecture options for {REQUIREMENT}: trade-offs, patterns, recommendations"
+    - role: design-researcher
+      trigger: "when planning UI features requiring design system decisions"
+      prompt: "Research design system approaches for {UI_FEATURE}"
 scripts:
   sh: scripts/bash/setup-plan.sh --json
   ps: scripts/powershell/setup-plan.ps1 -Json

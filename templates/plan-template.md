@@ -17,15 +17,31 @@
   the iteration process.
 -->
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]
+**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]
+**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
+**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]
 **Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
+**Project Type**: [single/web/mobile - determines source structure]
+**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]
+**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]
 **Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+
+### Design System *(for UI features)*
+
+<!--
+  Include this section if the feature has significant user interface.
+  Skip for API-only, CLI, or backend features.
+  Reference design.md for detailed visual specifications.
+-->
+
+**Component Library**: [Radix UI, Headless UI, shadcn/ui, custom, or N/A]
+**Styling Approach**: [Tailwind CSS, CSS Modules, styled-components, or NEEDS CLARIFICATION]
+**Design Tokens**: [CSS variables, JSON tokens, theme file location]
+**Icon System**: [Lucide, Heroicons, Phosphor, custom SVG, or NEEDS CLARIFICATION]
+**Animation Library**: [Framer Motion, CSS transitions, GSAP, or none]
+**Accessibility Target**: [WCAG 2.1 A, AA, or AAA]
+**Design Reference**: [design.md location, Figma link, or "To be created"]
 
 ## Constitution Check
 
@@ -43,6 +59,7 @@ specs/[###-feature]/
 ├── research.md          # Phase 0 output (/speckit.plan command)
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
 ├── quickstart.md        # Phase 1 output (/speckit.plan command)
+├── design.md            # UI specs (/speckit.design command - for UI features)
 ├── contracts/           # Phase 1 output (/speckit.plan command)
 └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
@@ -79,6 +96,9 @@ backend/
 frontend/
 ├── src/
 │   ├── components/
+│   │   └── ui/           # Design system primitives (Button, Input, etc.)
+│   ├── styles/
+│   │   └── tokens.css    # Design tokens (colors, spacing, typography)
 │   ├── pages/
 │   └── services/
 └── tests/

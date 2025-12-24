@@ -7,6 +7,137 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.26] - 2025-12-23
+
+### Added
+
+- **New `/speckit.design` command**: Create visual specifications for UI-heavy features
+  - Visual Language: Design tokens (colors, typography, spacing, shadows, icons)
+  - Component Specifications: States, variants, accessibility, responsive behavior
+  - Screen Flows: User interface sequences with Mermaid diagrams
+  - Interaction Specifications: Animations, transitions, gestures with timing values
+  - Accessibility Checklist: WCAG 2.1 validation (A/AA/AAA levels)
+  - Design Tokens Export: Ready-to-use CSS variables
+
+- **New `design-template.md`**: Complete template for design specifications
+  - Semantic color tokens with light/dark mode and contrast ratios
+  - Typography scale with rem/px values and line heights
+  - 4px-based spacing system (--space-1 through --space-16)
+  - Component anatomy diagrams and state definitions
+  - Screen layout wireframes with component mapping
+  - Responsive breakpoint definitions (mobile/tablet/desktop/wide)
+
+- **Visual & Interaction Requirements in `spec-template.md`**:
+  - VR-xxx markers for Visual Requirements (e.g., "Primary buttons MUST have 44x44px touch target")
+  - IR-xxx markers for Interaction Requirements (e.g., "Loading indicator MUST appear within 100ms")
+  - Design Constraints section for UI features
+  - UI Acceptance Scenarios table (AS-UI-xxx)
+
+- **Design System section in `plan-template.md`**:
+  - Component Library selection (Radix UI, Headless UI, shadcn/ui)
+  - Styling Approach (Tailwind CSS, CSS Modules, styled-components)
+  - Icon System configuration
+  - Animation Library choice
+  - Accessibility Target level
+
+- **Phase 2b: Design Foundation in `tasks-template.md`**:
+  - Design Token Tasks: CSS variables setup
+  - Component Foundation Tasks: Button, Input, layout primitives
+  - Accessibility Foundation Tasks: Focus management, skip links
+  - Animation Foundation Tasks: Transition presets, reduced-motion support
+  - VR/IR requirement markers for UI task traceability
+
+- **Claude Code integration via frontmatter**:
+  - `claude_code.reasoning_mode`: extended/standard/none
+  - `claude_code.thinking_budget`: Token allocation for reasoning
+  - `claude_code.plan_mode_trigger`: Signal for plan mode activation
+  - `claude_code.subagents`: Specialized agent delegation
+    - market-researcher: Competitor and trend analysis
+    - design-researcher: UI/UX patterns research
+    - code-explorer: Codebase validation
+    - architecture-specialist: Technology evaluation
+
+### Changed
+
+- `/speckit.concept` now includes Claude Code frontmatter with extended thinking and subagents
+- `/speckit.analyze` now includes Claude Code frontmatter with extended thinking (12k budget)
+- `/speckit.plan` now includes Claude Code frontmatter with architecture-specialist subagent
+- `/speckit.design` workflow integrates with existing spec → plan → tasks pipeline
+
+---
+
+## [0.0.25] - 2025-12-23
+
+### Added
+
+- **Discovery Mode for `/speckit.concept`**: Active brainstorming and research capabilities
+  - Mode Detection: Automatically detects vague input and offers discovery workflow
+  - Phase 0a: Problem Discovery with 5 targeted brainstorming questions
+  - Phase 0b: Market Research using web search (competitors, trends, user pain points)
+  - Phase 0c: Solution Ideation with "What If" scenarios and Impact/Effort rating
+  - Transition synthesis: Summarizes findings before structured capture
+  - New "Discovery & Research" section in concept-template.md
+
+### Changed
+
+- `/speckit.concept` now supports two modes:
+  - **Discovery Mode**: For vague or exploratory input (runs brainstorm + research phases)
+  - **Capture Mode**: For users with clear vision (existing workflow, unchanged)
+- Updated Validation Gates with Discovery Mode checklist
+- Renumbered outline steps to accommodate new discovery phases
+
+---
+
+## [0.0.24] - 2025-12-23
+
+### Added
+
+- **New `/speckit.concept` command**: Capture complete project vision before detailed specifications
+  - Feature Hierarchy with hierarchical IDs: EPIC-NNN → Feature (Fxx) → Story (Sxx)
+  - User Journeys with cross-feature mapping
+  - Cross-Feature Dependencies matrix
+  - Ideas Backlog to prevent concept loss
+  - Traceability Skeleton for spec tracking
+
+- **Enhanced traceability system** with new ID formats:
+  - Acceptance Scenario IDs: `AS-[story][letter]` (e.g., AS-1A, AS-1B, AS-2A)
+  - Functional Requirement IDs: `FR-NNN` (e.g., FR-001, FR-002)
+  - Edge Case IDs: `EC-NNN` (e.g., EC-001, EC-002)
+  - Sub-priorities: P1a, P1b, P1c (MVP critical path) instead of simple P1, P2, P3
+
+- **Task dependency and traceability markers**:
+  - `[DEP:T001,T002]` - Explicit task dependencies with cycle detection
+  - `[FR:FR-001]` - Links tasks to Functional Requirements
+  - `[TEST:AS-1A]` - Links test tasks to Acceptance Scenarios
+  - Mermaid-based Dependency Graph visualization
+  - Requirements Traceability Matrix (RTM)
+  - Coverage Summary with gap identification
+
+- **Enhanced `/speckit.analyze` command**:
+  - Dependency Graph Validation (cycle detection, orphan references, phase order)
+  - Traceability Validation (FR → Tasks, AS → Tests chains)
+  - Concept Coverage validation (if concept.md exists)
+  - RTM accuracy validation
+  - New severity categories for traceability issues
+  - Detailed metrics and coverage percentages
+
+### Changed
+
+- `/speckit.specify` now supports Concept Integration:
+  - Reads `specs/concept.md` if present
+  - Maps Concept IDs to specifications
+  - Generates tabular Acceptance Scenarios with IDs
+  - Supports both standalone and concept-derived workflows
+
+- `/speckit.tasks` now generates:
+  - Dependency markers based on file/component relationships
+  - FR/AS links for full traceability
+  - Mermaid dependency graph
+  - RTM and Coverage Summary sections
+  - Validation for circular dependencies
+
+- Updated README with new workflow steps and command descriptions
+
 ## [0.0.23] - 2025-12-23
 
 ### Fixed

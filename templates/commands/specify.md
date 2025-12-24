@@ -1,6 +1,6 @@
 ---
-description: Create or update the feature specification from a natural language feature description.
-handoffs: 
+description: Create or update the feature specification from a natural language feature description. Supports both standalone features and concept-derived specifications with full traceability.
+handoffs:
   - label: Build Technical Plan
     agent: speckit.plan
     prompt: Create a plan for the spec. I am building with...
@@ -8,6 +8,9 @@ handoffs:
     agent: speckit.clarify
     prompt: Clarify specification requirements
     send: true
+  - label: Run Traceability Analysis
+    agent: speckit.analyze
+    prompt: Validate spec completeness and traceability
 scripts:
   sh: scripts/bash/create-new-feature.sh --json "{ARGS}"
   ps: scripts/powershell/create-new-feature.ps1 -Json "{ARGS}"
@@ -20,6 +23,37 @@ $ARGUMENTS
 ```
 
 You **MUST** consider the user input before proceeding (if not empty).
+
+## Concept Integration
+
+**Check for existing concept document**:
+
+1. Look for `specs/concept.md` in the repository root
+2. If concept.md exists:
+   - Parse the Feature Hierarchy section to find matching Concept IDs
+   - The user input may reference Concept IDs directly (e.g., "EPIC-001.F01.S01")
+   - Or the user may describe a feature that matches stories in the concept
+   - Extract: Vision context, related User Journeys, Dependencies
+   - Set `CONCEPT_REFERENCE` to the matched Concept ID(s)
+   - Use the concept's priority levels (P1a, P1b) for User Story prioritization
+
+3. If concept.md does NOT exist:
+   - Proceed with standalone specification
+   - Set `CONCEPT_REFERENCE` to "N/A"
+   - Use simple priorities (P1, P2, P3) or sub-priorities as needed
+
+**Concept ID Matching Logic**:
+
+```
+IF user input contains pattern "EPIC-\d+\.F\d+\.S\d+":
+  CONCEPT_IDS = extract all matching IDs
+  Validate each ID exists in concept.md
+ELSE:
+  Search concept.md Feature Hierarchy for:
+    - Story descriptions that match user input keywords
+    - Feature names that match user input
+  CONCEPT_IDS = matched story IDs (or "N/A" if no match)
+```
 
 ## Outline
 
@@ -77,9 +111,15 @@ Given that feature description, do this:
 
     1. Parse user description from Input
        If empty: ERROR "No feature description provided"
+
     2. Extract key concepts from description
        Identify: actors, actions, data, constraints
-    3. For unclear aspects:
+
+    3. Check Concept Integration (see section above)
+       - If concept.md exists: extract CONCEPT_REFERENCE and related context
+       - Use concept priorities (P1a, P1b) and dependencies
+
+    4. For unclear aspects:
        - Make informed guesses based on context and industry standards
        - Only mark with [NEEDS CLARIFICATION: specific question] if:
          - The choice significantly impacts feature scope or user experience
@@ -87,17 +127,51 @@ Given that feature description, do this:
          - No reasonable default exists
        - **LIMIT: Maximum 3 [NEEDS CLARIFICATION] markers total**
        - Prioritize clarifications by impact: scope > security/privacy > user experience > technical details
-    4. Fill User Scenarios & Testing section
-       If no clear user flow: ERROR "Cannot determine user scenarios"
-    5. Generate Functional Requirements
-       Each requirement must be testable
-       Use reasonable defaults for unspecified details (document assumptions in Assumptions section)
-    6. Define Success Criteria
+
+    5. Fill User Scenarios & Testing section with **sub-priorities**:
+       - If no clear user flow: ERROR "Cannot determine user scenarios"
+       - Assign priorities using sub-levels: P1a, P1b, P1c (MVP critical path), P2a, P2b (post-MVP)
+       - Add **Concept Reference** per User Story linking to CONCEPT_IDS
+       - Add **Independent Test** description for each story
+
+    6. Generate **Acceptance Scenarios with IDs** in tabular format:
+
+       **ID Format**: `AS-[story number][scenario letter]`
+       - Story 1 scenarios: AS-1A, AS-1B, AS-1C
+       - Story 2 scenarios: AS-2A, AS-2B
+       - Edge cases: EC-001, EC-002
+
+       **Table Structure**:
+       ```markdown
+       | ID | Given | When | Then |
+       |----|-------|------|------|
+       | AS-1A | [initial state] | [action] | [expected outcome] |
+       ```
+
+       **IMPORTANT**: These IDs will be referenced in tasks.md for traceability:
+       - Test tasks will use [TEST:AS-1A] markers
+       - This enables end-to-end traceability: Concept → Spec → Tasks → Tests
+
+    7. Generate Functional Requirements with IDs (FR-001, FR-002)
+       - Each requirement must be testable
+       - Link each FR to relevant Acceptance Scenarios: `*Acceptance Scenarios*: AS-1A, AS-1B`
+       - Use reasonable defaults for unspecified details (document assumptions)
+
+    8. Define Success Criteria (SC-001, SC-002)
        Create measurable, technology-agnostic outcomes
-       Include both quantitative metrics (time, performance, volume) and qualitative measures (user satisfaction, task completion)
+       Include both quantitative metrics (time, performance, volume) and qualitative measures
        Each criterion must be verifiable without implementation details
-    7. Identify Key Entities (if data involved)
-    8. Return: SUCCESS (spec ready for planning)
+
+    9. Identify Key Entities (if data involved)
+
+    10. Generate Traceability Summary table:
+        ```markdown
+        | Requirement | Acceptance Scenarios | Edge Cases | Status |
+        |-------------|---------------------|------------|--------|
+        | FR-001 | AS-1A, AS-1B | EC-001 | Defined |
+        ```
+
+    11. Return: SUCCESS (spec ready for planning)
 
 5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
 
@@ -193,9 +267,51 @@ Given that feature description, do this:
 
    d. **Update Checklist**: After each validation iteration, update the checklist file with current pass/fail status
 
-7. Report completion with branch name, spec file path, checklist results, and readiness for the next phase (`/speckit.clarify` or `/speckit.plan`).
+7. Report completion with:
+   - Branch name and spec file path
+   - Checklist results
+   - **Traceability summary**:
+     - Concept Reference: [CONCEPT_IDS or "Standalone spec"]
+     - Acceptance Scenarios created: N (AS-1A to AS-Nx)
+     - Functional Requirements: N (FR-001 to FR-00N)
+     - Edge Cases: N (EC-001 to EC-00N)
+   - Readiness for the next phase (`/speckit.clarify` or `/speckit.plan`)
 
 **NOTE:** The script creates and checks out the new branch and initializes the spec file before writing.
+
+## Concept-to-Spec Workflow
+
+When `specs/concept.md` exists, follow this enhanced workflow:
+
+```
+1. User runs: /speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02
+
+2. Agent reads concept.md and extracts:
+   - Stories: EPIC-001.F01.S01, EPIC-001.F01.S02
+   - Parent Feature: EPIC-001.F01 (description, priority, dependencies)
+   - Parent Epic: EPIC-001 (goal, context)
+   - Related User Journeys (J001, J002 that reference these features)
+   - Dependencies from Cross-Feature Dependencies matrix
+
+3. Agent creates spec.md with:
+   - **Source Concept**: specs/concept.md
+   - **Concept IDs Covered**: EPIC-001.F01.S01, EPIC-001.F01.S02
+   - User Stories populated from concept story descriptions
+   - Priorities inherited from concept (P1a, P1b)
+   - Acceptance Scenarios generated with IDs (AS-1A, AS-1B)
+
+4. Agent updates concept.md Traceability Skeleton:
+   | Concept ID | Spec Created | Spec Requirements | Status |
+   |------------|--------------|-------------------|--------|
+   | EPIC-001.F01.S01 | [x] | FR-001, FR-002 | Specified |
+   | EPIC-001.F01.S02 | [x] | FR-003 | Specified |
+```
+
+**Benefits**:
+- No idea loss: all concept stories are tracked
+- Priorities flow from concept to spec
+- Dependencies are visible across specs
+- Full traceability from Vision → Spec → Tasks → Tests
 
 ## General Guidelines
 

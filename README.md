@@ -100,15 +100,29 @@ Use the **`/speckit.constitution`** command to create your project's governing p
 /speckit.constitution Create principles focused on code quality, testing standards, user experience consistency, and performance requirements
 ```
 
-### 3. Create the spec
+### 3. (Optional) Capture the full concept first
 
-Use the **`/speckit.specify`** command to describe what you want to build. Focus on the **what** and **why**, not the tech stack.
+For large projects with many features (50+ requirements), use **`/speckit.concept`** first to capture the complete vision before breaking it into detailed specs. This prevents ideas from getting lost during specification.
 
 ```bash
-/speckit.specify Build an application that can help me organize my photos in separate photo albums. Albums are grouped by date and can be re-organized by dragging and dropping on the main page. Albums are never in other nested albums. Within each album, photos are previewed in a tile-like interface.
+/speckit.concept Build a comprehensive photo management platform with albums, tags, sharing, search, and AI-powered organization...
 ```
 
-### 4. Create a technical implementation plan
+This creates a `concept.md` with feature hierarchy (Epics → Features → Stories), user journeys, and dependencies.
+
+### 4. Create the spec
+
+Use the **`/speckit.specify`** command to describe what you want to build. Focus on the **what** and **why**, not the tech stack. For concept-driven projects, reference the concept IDs.
+
+```bash
+# Standalone spec (small projects)
+/speckit.specify Build an application that can help me organize my photos in separate photo albums. Albums are grouped by date and can be re-organized by dragging and dropping on the main page. Albums are never in other nested albums. Within each album, photos are previewed in a tile-like interface.
+
+# Or reference concept IDs (large projects)
+/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02
+```
+
+### 5. Create a technical implementation plan
 
 Use the **`/speckit.plan`** command to provide your tech stack and architecture choices.
 
@@ -116,15 +130,23 @@ Use the **`/speckit.plan`** command to provide your tech stack and architecture 
 /speckit.plan The application uses Vite with minimal number of libraries. Use vanilla HTML, CSS, and JavaScript as much as possible. Images are not uploaded anywhere and metadata is stored in a local SQLite database.
 ```
 
-### 5. Break down into tasks
+### 6. Break down into tasks
 
-Use **`/speckit.tasks`** to create an actionable task list from your implementation plan.
+Use **`/speckit.tasks`** to create an actionable task list from your implementation plan. Tasks include dependency markers (`[DEP:]`), requirement links (`[FR:]`), and test links (`[TEST:]`) for full traceability.
 
 ```bash
 /speckit.tasks
 ```
 
-### 6. Execute implementation
+### 7. (Optional) Analyze for consistency
+
+Use **`/speckit.analyze`** to validate cross-artifact consistency, dependency graph (no cycles), and traceability coverage before implementation.
+
+```bash
+/speckit.analyze
+```
+
+### 8. Execute implementation
 
 Use **`/speckit.implement`** to execute all tasks and build your feature according to the plan.
 
@@ -253,9 +275,10 @@ Essential commands for the Spec-Driven Development workflow:
 | Command                 | Description                                                              |
 | ----------------------- | ------------------------------------------------------------------------ |
 | `/speckit.constitution` | Create or update project governing principles and development guidelines |
-| `/speckit.specify`      | Define what you want to build (requirements and user stories)            |
+| `/speckit.concept`      | Capture full project vision and feature hierarchy before detailed specs (recommended for large projects with 50+ requirements) |
+| `/speckit.specify`      | Define what you want to build (requirements and user stories with IDs)   |
 | `/speckit.plan`         | Create technical implementation plans with your chosen tech stack        |
-| `/speckit.tasks`        | Generate actionable task lists for implementation                        |
+| `/speckit.tasks`        | Generate actionable task lists with dependency tracking and traceability |
 | `/speckit.implement`    | Execute all tasks to build the feature according to the plan             |
 
 #### Optional Commands
@@ -265,7 +288,7 @@ Additional commands for enhanced quality and validation:
 | Command              | Description                                                                                                                          |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `/speckit.clarify`   | Clarify underspecified areas (recommended before `/speckit.plan`; formerly `/quizme`)                                                |
-| `/speckit.analyze`   | Cross-artifact consistency & coverage analysis (run after `/speckit.tasks`, before `/speckit.implement`)                             |
+| `/speckit.analyze`   | Cross-artifact consistency, dependency graph validation, and traceability analysis (run after `/speckit.tasks`, before `/speckit.implement`) |
 | `/speckit.checklist` | Generate custom quality checklists that validate requirements completeness, clarity, and consistency (like "unit tests for English") |
 
 ### Environment Variables
