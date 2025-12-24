@@ -41,7 +41,7 @@ This command transforms **point-in-time requirements** (feature specs) into **li
 
 ## Two-Folder Architecture
 
-```
+```text
 specs/
 ├── features/           # Historical feature specs (frozen after merge)
 │   ├── 001-login/
@@ -146,7 +146,7 @@ For each system spec in **creates[]**:
 
 1. Read existing system spec
 2. **Extract Relationship from Feature Lineage**:
-   ```
+   ```text
    IF feature spec has "Feature Lineage" section:
      Parse the Relationship column from Feature Lineage table
      RELATIONSHIP = value from table (EXTENDS | REFINES | FIXES | DEPRECATES)
@@ -188,7 +188,7 @@ If `_index.md` doesn't exist, create it with registry structure.
 
 Update the feature registry to mark this feature as merged:
 
-```
+```text
 MANIFEST_FILE = specs/features/.manifest.md
 FEATURE_ID = extract from FEATURE_BRANCH (first 3 digits)
 
@@ -202,7 +202,7 @@ IF exists(MANIFEST_FILE):
 
 If the feature has a Feature Lineage section (extends another feature):
 
-```
+```text
 IF feature spec has "Feature Lineage" section:
   PARENT_FEATURE = extract from Feature Lineage table
   PARENT_ID = extract feature ID from parent reference

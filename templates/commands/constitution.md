@@ -7,6 +7,9 @@ handoffs:
   - label: Analyze Compliance
     agent: speckit.analyze
     prompt: Check artifacts for constitution compliance
+scripts:
+  sh: echo "Constitution management - no prerequisites required"
+  ps: Write-Host "Constitution management - no prerequisites required"
 ---
 
 ## User Input
@@ -21,7 +24,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 The constitution uses a 3-layer inheritance model:
 
-```
+```text
 Layer 0: /memory/constitution.base.md ─── Enterprise defaults (READ-ONLY)
     ↓ inherits
 Layer 1: /memory/constitution.domain.md ─ Domain-specific (fintech, healthcare, etc.)
@@ -61,7 +64,7 @@ Parse user input for operation:
 
 Load available constitution layers:
 
-```
+```text
 1. Read /memory/constitution.base.md (always exists)
 2. Check if /memory/constitution.domain.md exists
    - If yes, read and identify domain
@@ -96,7 +99,7 @@ If editing project layer:
 
 If generating merged view:
 
-```
+```text
 FOR EACH principle in base:
   IF domain overrides it:
     Use domain version

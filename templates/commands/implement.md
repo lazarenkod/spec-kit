@@ -1,5 +1,9 @@
 ---
 description: Execute the implementation plan by processing and executing all tasks defined in tasks.md
+persona: developer-agent
+handoff:
+  requires: handoffs/tasks-to-implement.md
+  template: templates/handoff-template.md
 handoffs:
   - label: QA Verification
     agent: speckit.analyze
@@ -88,7 +92,7 @@ You **MUST** consider the user input before proceeding (if not empty).
      - Incomplete items: Lines matching `- [ ]`
    - Create a status table:
 
-     ```text
+     ```markdown
      | Checklist | Total | Completed | Incomplete | Status |
      |-----------|-------|-----------|------------|--------|
      | ux.md     | 12    | 12        | 0          | ✓ PASS |
@@ -212,7 +216,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Kubernetes/k8s**: `*.secret.yaml`, `secrets/`, `.kube/`, `kubeconfig*`, `*.key`, `*.crt`
 
 5. **Update Feature Manifest** (mark as IMPLEMENTING):
-   ```
+   ```text
    MANIFEST_FILE = specs/features/.manifest.md
    FEATURE_ID = extract from current branch/feature (first 3 digits)
 
@@ -322,7 +326,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    ```
 
    **DoD Checklist** (display after each story completion):
-   ```
+   ```text
    📋 Definition of Done - User Story 1:
    ✓ All implementation tasks [X]
    ✓ All test tasks [X] (T010, T011)
@@ -345,7 +349,7 @@ You **MUST** consider the user input before proceeding (if not empty).
     a) **Scan newly created/modified files** for @speckit annotations
     b) **Compare against tasks** completed in this phase that have [FR:], [TEST:], [EC:], [VR:], [IR:] markers
     c) **Report any missing annotations**:
-       ```
+       ```text
        ⚠️ Traceability Warning:
        - T012 [FR:FR-001] completed but src/models/user.py missing @speckit annotation
        - T020 [TEST:AS-1A] completed but tests/test_auth.py missing @speckit annotation
@@ -357,7 +361,7 @@ You **MUST** consider the user input before proceeding (if not empty).
     d) **Self-correct** by adding missing annotations before proceeding to next phase
 
     **Validation Regex** (for scanning code):
-    ```
+    ```text
     @speckit:(FR|AS|EC|VR|IR):([A-Z]+-\d+[A-Za-z]?)(,([A-Z]+-\d+[A-Za-z]?))*
     ```
 
@@ -368,7 +372,7 @@ You **MUST** consider the user input before proceeding (if not empty).
     After completing test tasks for a user story, validate tests are functional:
 
     a) **Run tests for story**:
-       ```text
+       ```bash
        # Detect test framework from plan.md or package.json/pyproject.toml
        IF pytest: pytest -k "AS_1A or AS_1B" --tb=short
        IF jest: npm test -- --testPathPattern="AS.1A|AS.1B"
@@ -396,7 +400,7 @@ You **MUST** consider the user input before proceeding (if not empty).
        ```
 
     **Output Format**:
-    ```
+    ```text
     🧪 Test Checkpoint - User Story 1:
     Running: pytest -k "AS_1A or AS_1B"
     ✓ test_login_success (AS-1A) - PASSED
@@ -443,7 +447,7 @@ When all P1 tasks are marked `[X]`, implementation **auto-transitions to QA veri
 
 ### QA Loop
 
-```
+```text
 /speckit.implement
         │
         ▼ (auto: P1 tasks complete)

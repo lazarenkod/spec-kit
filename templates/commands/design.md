@@ -67,7 +67,7 @@ This command creates **visual and interaction specifications** for UI-heavy feat
 
 2. **Design Discovery** (analyze context):
 
-   ```
+   ```text
    FROM spec.md extract:
    - User personas and their device preferences
    - Functional requirements with UI implications
@@ -85,7 +85,7 @@ This command creates **visual and interaction specifications** for UI-heavy feat
 
    ### Color Palette
 
-   ```
+   ```text
    Define semantic color tokens:
    - Primary: brand color for CTAs, links
    - Secondary: supporting actions
@@ -101,7 +101,7 @@ This command creates **visual and interaction specifications** for UI-heavy feat
 
    ### Typography Scale
 
-   ```
+   ```text
    Define type scale:
    - Display: hero text, marketing
    - Headings: h1-h6 hierarchy
@@ -119,7 +119,7 @@ This command creates **visual and interaction specifications** for UI-heavy feat
 
    ### Spacing System
 
-   ```
+   ```text
    Define spacing scale (4px base recommended):
    - xs: 4px   (0.25rem)
    - sm: 8px   (0.5rem)
@@ -137,7 +137,7 @@ This command creates **visual and interaction specifications** for UI-heavy feat
 
    ### Icon System
 
-   ```
+   ```text
    Define icon approach:
    - Library: Lucide / Heroicons / Phosphor / custom
    - Sizes: sm (16px), md (20px), lg (24px), xl (32px)
@@ -147,7 +147,7 @@ This command creates **visual and interaction specifications** for UI-heavy feat
 
 4. **Component Inventory**:
 
-   ```
+   ```text
    FROM spec.md requirements, identify needed components:
 
    FOR EACH component:
@@ -176,7 +176,7 @@ This command creates **visual and interaction specifications** for UI-heavy feat
 
 5. **Screen Flow Mapping**:
 
-   ```
+   ```text
    FOR EACH user journey in spec.md:
    1. Map journey steps to screens
    2. For each screen:
@@ -193,7 +193,7 @@ This command creates **visual and interaction specifications** for UI-heavy feat
 
 6. **Interaction Specifications**:
 
-   ```
+   ```text
    FOR EACH interactive element:
    1. Trigger: click, hover, focus, swipe, long-press
    2. Action: what happens visually
@@ -211,7 +211,7 @@ This command creates **visual and interaction specifications** for UI-heavy feat
 
 7. **Accessibility Audit**:
 
-   ```
+   ```text
    Validate against WCAG 2.1 level [A/AA/AAA]:
 
    Perceivable:
@@ -241,7 +241,7 @@ This command creates **visual and interaction specifications** for UI-heavy feat
 
 8. **Responsive Strategy**:
 
-   ```
+   ```text
    Define breakpoints:
    - mobile: 0-639px (touch-first)
    - tablet: 640-1023px (touch + hover)
@@ -369,7 +369,7 @@ After completion:
 
 **Resulting design.md excerpt**:
 
-```markdown
+````markdown
 # Design Specification: User Onboarding
 
 ## Visual Language
@@ -429,4 +429,4 @@ graph LR
 | Step transition | Card | Slide left + fade | 300ms |
 | Upload complete | Avatar | Scale bounce | 200ms |
 | Validation error | Input | Shake + red border | 300ms |
-```
+````

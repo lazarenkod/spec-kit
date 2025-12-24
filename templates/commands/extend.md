@@ -60,7 +60,7 @@ Create a new feature that extends an already-merged feature, establishing explic
 
 ### 1. Parse Arguments
 
-```
+```text
 INPUT = "$ARGUMENTS"
 
 Parse patterns:
@@ -73,7 +73,7 @@ DEFAULT: RELATIONSHIP = EXTENDS (unless specified)
 
 ### 2. Validate Parent Feature
 
-```
+```bash
 Run: scripts/bash/create-new-feature.sh --json --extends "{PARENT}" "{DESCRIPTION}"
 
 Parse output:
@@ -93,7 +93,7 @@ IF error (parent not found):
 
 After feature creation, load context from parent:
 
-```
+```text
 PARENT_SPEC = specs/features/{EXTENDS}/spec.md
 PARENT_PLAN = specs/features/{EXTENDS}/plan.md (if exists)
 PARENT_MERGED = specs/features/{EXTENDS}/.merged
@@ -140,7 +140,7 @@ Additionally help the user by:
 
 Based on description keywords, suggest the appropriate relationship:
 
-```
+```text
 IF DESCRIPTION contains "add", "new", "implement", "support" → EXTENDS
 IF DESCRIPTION contains "improve", "enhance", "optimize", "refactor" → REFINES
 IF DESCRIPTION contains "fix", "bug", "issue", "correct", "patch" → FIXES

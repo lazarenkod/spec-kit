@@ -10,7 +10,7 @@
 
 This is **Layer 0** of the layered constitution system:
 
-```
+```text
 Layer 0: constitution.base.md (this file) - Enterprise defaults, READ-ONLY
     ↓ extends
 Layer 1: constitution.domain.md - Domain-specific (fintech, healthcare, etc.)
@@ -30,7 +30,7 @@ Layer 2: constitution.md - Project-specific overrides
 
 Each principle follows this structure:
 
-```
+```markdown
 ### [ID]: [Name]
 
 **Level**: MUST | SHOULD

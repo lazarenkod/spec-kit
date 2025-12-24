@@ -1,5 +1,6 @@
 ---
 description: Perform a non-destructive cross-artifact consistency, traceability, dependency, and system spec analysis across concept.md, spec.md, plan.md, tasks.md, and system specs. In QA mode (post-implementation), validates build, tests, coverage, and security.
+persona: qa-agent
 handoffs:
   - label: Fix Spec Issues
     agent: speckit.specify
@@ -216,7 +217,7 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 
 **Parse [DEP:] markers and validate the dependency DAG:**
 
-```
+```text
 1. Build directed graph:
    FOR EACH task with [DEP:Txxx,Tyyy]:
      Add edges: Txxx → task, Tyyy → task
@@ -240,7 +241,7 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 
 **Validate FR → Task → Test chains:**
 
-```
+```text
 1. FR Coverage Check:
    FOR EACH FR-xxx in spec.md:
      Find tasks with [FR:FR-xxx] marker
@@ -269,7 +270,7 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 
 **Validate concept → spec traceability:**
 
-```
+```text
 1. Story Coverage:
    FOR EACH story ID in concept.md Feature Hierarchy (EPIC-xxx.Fxx.Sxx):
      Check Traceability Skeleton for "Spec Created: [x]"
@@ -298,7 +299,7 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 
 **Validate the RTM in tasks.md matches reality:**
 
-```
+```text
 1. RTM Completeness:
    Compare RTM table with actual [FR:] markers in tasks
    IF mismatch:
@@ -319,7 +320,7 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 
 **Validate System Spec Impact section in feature specs:**
 
-```
+```text
 1. Section Existence:
    IF feature spec lacks "System Spec Impact" section:
      Report as MEDIUM: "Missing System Spec Impact section (required for /speckit.merge)"
@@ -356,7 +357,7 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 
 **Validate living system specs for integrity:**
 
-```
+```text
 1. Dependency Graph:
    FOR EACH system spec in specs/system/:
      Parse "Dependencies" table
@@ -395,7 +396,7 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 
 **Validate Feature Lineage for extension features:**
 
-```
+```text
 1. Parent Existence:
    FOR EACH feature with "Feature Lineage" section:
      Parse parent feature reference from table
@@ -456,7 +457,7 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 
 **Lineage Tree Visualization (with --lineage flag):**
 
-```
+```text
 IF --lineage flag provided:
   Build and display feature evolution tree:
 
@@ -481,7 +482,7 @@ IF --lineage flag provided:
 
 **When analyzing impact of a specific system spec change:**
 
-```
+```text
 1. Parse target spec path from arguments
 2. Build reverse dependency graph (who depends on this spec)
 3. For each dependent:
@@ -504,7 +505,7 @@ IF --lineage flag provided:
 **Scan extensions**: `.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.rb`, `.cpp`, `.c`, `.h`
 **Exclusions**: `node_modules/`, `venv/`, `.git/`, `dist/`, `build/`, `__pycache__/`
 
-```
+```text
 1. Build Annotation Inventory:
    FOR EACH source file in scan directories:
      Extract @speckit:<TYPE>:<ID> patterns
@@ -549,7 +550,7 @@ IF --lineage flag provided:
 
 **Purpose**: Detect stale annotations when spec has been modified.
 
-```
+```text
 1. Get spec modification date from git or file timestamp
 
 2. FOR EACH @speckit annotation in code:
@@ -569,7 +570,7 @@ IF --lineage flag provided:
 
 **Purpose**: Validate brownfield change specifications for completeness and consistency.
 
-```
+```text
 1. Change Specification Section Presence:
    IF spec contains brownfield keywords but no "Change Specification" section:
      → MEDIUM: "Brownfield indicators detected but no Change Specification section"
@@ -632,7 +633,7 @@ IF --lineage flag provided:
 
 **Purpose**: Validate migration-specific requirements for completeness.
 
-```
+```text
 1. Migration Plan Presence:
    IF Change Type = Migration AND no Migration Plan section:
      → CRITICAL: "Migration change type requires Migration Plan section"
@@ -701,7 +702,7 @@ The following categories (R-U) are executed when `/speckit.analyze` runs after `
 
 **Purpose**: Verify implementation builds and passes static analysis.
 
-```
+```text
 1. Build System Detection:
    Detect build system from project files:
    - package.json → npm/yarn/pnpm build
@@ -754,7 +755,7 @@ The following categories (R-U) are executed when `/speckit.analyze` runs after `
 
 **Purpose**: Verify tests exist and pass.
 
-```
+```text
 1. Test Discovery:
    Scan for test files in standard locations:
    - tests/, test/, __tests__/, spec/
@@ -826,7 +827,7 @@ The following categories (R-U) are executed when `/speckit.analyze` runs after `
 
 **Purpose**: Verify performance against spec NFRs.
 
-```
+```text
 1. NFR Extraction:
    Parse Non-Functional Requirements from spec.md:
    - Response time thresholds (e.g., "< 200ms p99")
@@ -873,7 +874,7 @@ The following categories (R-U) are executed when `/speckit.analyze` runs after `
 
 **Purpose**: Basic security checks for common vulnerabilities.
 
-```
+```text
 1. Dependency Audit:
    Detect package manager:
    - package-lock.json, yarn.lock, pnpm-lock.yaml → npm audit / yarn audit
@@ -951,7 +952,7 @@ The following categories (R-U) are executed when `/speckit.analyze` runs after `
 
 **Purpose**: Verify all API references are valid and documented to prevent AI hallucinations.
 
-```
+```text
 1. Dependency Registry Completeness:
    IF plan.md exists:
      FOR EACH entry in Dependency Registry:
@@ -1021,7 +1022,7 @@ The following categories (R-U) are executed when `/speckit.analyze` runs after `
 
 **Purpose**: Enforce bidirectional traceability between specs and tests, ensuring every testable scenario has coverage.
 
-```
+```text
 1. Acceptance Scenario Test Coverage:
    FOR EACH AS-xxx in spec.md Acceptance Scenarios table:
      Extract "Requires Test" column value
@@ -1266,7 +1267,7 @@ Output a Markdown report (no file writes) with the following structure:
 
 **Dependency Graph Status:**
 
-```
+```text
 Status: ✅ VALID | ⚠️ WARNINGS | ❌ INVALID
 Cycles: [count] | Orphan Refs: [count] | Cross-Story Deps: [count]
 ```
@@ -1289,7 +1290,7 @@ Cycles: [count] | Orphan Refs: [count] | Cross-Story Deps: [count]
 
 **System Spec Status:** (if specs/system/ exists)
 
-```
+```text
 System Specs: N total | N active | N deprecated
 Dependency Graph: ✅ VALID | ⚠️ WARNINGS | ❌ INVALID
 Stale Specs: N (>6 months without update)
@@ -1309,7 +1310,7 @@ Stale Specs: N (>6 months without update)
 
 **Code Traceability Status:** (if code exists)
 
-```
+```text
 Annotations Scanned: N across M files
 Forward Coverage (Spec→Code): X% (N/M FRs annotated)
 Backward Validation: ✅ VALID | ⚠️ N orphan annotations
@@ -1326,7 +1327,7 @@ Edge Case Annotations: N covering X% (N/M) EC scenarios
 
 **Brownfield Status:** *(if Change Specification section exists)*
 
-```
+```text
 Mode: BROWNFIELD | Change Type: [Enhancement|Refactor|Migration|...]
 Baseline: [baseline.md exists | not generated]
 ```
@@ -1347,7 +1348,7 @@ Baseline: [baseline.md exists | not generated]
 
 **Migration Status:** *(if Change Type = Migration)*
 
-```
+```text
 Strategy: [Big Bang|Parallel Run|Strangler Fig|Feature Flag]
 Phases: N total | N with tasks | N with rollback
 Dual-Mode Period: [specified/not specified]
@@ -1360,7 +1361,7 @@ Dual-Mode Period: [specified/not specified]
 
 **QA Verification Report:** *(if QA mode - post-implementation)*
 
-```
+```text
 Mode: QA VERIFICATION | Implementation: X% complete
 Triggered: [auto from /speckit.implement | manual request]
 ```
@@ -1393,7 +1394,7 @@ Triggered: [auto from /speckit.implement | manual request]
 
 **QA Verdict:**
 
-```
+```text
 🟢 PASS - All checks passed, ready for merge
 🟡 CONCERNS - Non-blocking issues found (N MEDIUM, M LOW)
 🔴 FAIL - Blocking issues found (N CRITICAL, M HIGH)
@@ -1469,7 +1470,7 @@ When this command completes successfully, the following automation rules apply:
 | QA Verification | After `/speckit.implement`, tasks.md has [X] completed | A-Q + R-U | Verify build, tests, coverage, security |
 
 **Mode Detection:**
-```
+```text
 IF tasks.md exists AND has completed tasks [X]:
   IF triggered from /speckit.implement handoff:
     MODE = QA_VERIFICATION
@@ -1508,7 +1509,7 @@ ELSE:
 
 ### QA Loop
 
-```
+```text
 /speckit.implement → /speckit.analyze (QA mode) → PASS → Done/Merge
                                        ↓
                                      FAIL

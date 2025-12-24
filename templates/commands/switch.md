@@ -26,14 +26,8 @@ handoffs:
     condition:
       - "status = TASKED or IMPLEMENTING"
 scripts:
-  sh: |
-    # Inline script - updates .speckit/active
-    mkdir -p .speckit
-    echo "{FEATURE_ID}" > .speckit/active
-  ps: |
-    # Inline PowerShell - updates .speckit/active
-    New-Item -ItemType Directory -Force -Path .speckit | Out-Null
-    Set-Content -Path ".speckit/active" -Value "{FEATURE_ID}"
+  sh: mkdir -p .speckit && echo "{FEATURE_ID}" > .speckit/active
+  ps: $null = New-Item -ItemType Directory -Force -Path .speckit; Set-Content -Path ".speckit/active" -Value "{FEATURE_ID}"
 ---
 
 ## User Input
@@ -50,14 +44,14 @@ This command switches the active feature context, allowing you to resume work on
 
 The user can specify the feature in multiple ways:
 
-```
+```bash
 /speckit.switch 001              # By ID only
 /speckit.switch user-auth        # By name only
 /speckit.switch 001-user-auth    # Full feature name
 ```
 
 **Parse Logic**:
-```
+```text
 INPUT = $ARGUMENTS.trim()
 
 IF INPUT matches /^\d{3}$/:
@@ -80,7 +74,7 @@ ELSE:
 ### Execution Flow
 
 1. **Validate Input**:
-   ```
+   ```text
    IF INPUT is empty:
      OUTPUT: "Usage: /speckit.switch <feature-id or name>"
      OUTPUT: "Example: /speckit.switch 001 or /speckit.switch user-auth"
@@ -90,7 +84,7 @@ ELSE:
    ```
 
 2. **Read Manifest**:
-   ```
+   ```text
    MANIFEST_FILE = specs/features/.manifest.md
 
    IF NOT exists(MANIFEST_FILE):
@@ -101,7 +95,7 @@ ELSE:
    ```
 
 3. **Find Target Feature**:
-   ```
+   ```text
    MATCH case LOOKUP_MODE:
      "id":
        feature = find in manifest where ID = FEATURE_ID
@@ -124,7 +118,7 @@ ELSE:
    ```
 
 4. **Validate Feature Directory Exists**:
-   ```
+   ```text
    FEATURE_DIR = specs/features/{feature.ID}-{feature.Name}/
 
    IF NOT exists(FEATURE_DIR):
@@ -138,7 +132,7 @@ ELSE:
    ```
 
 5. **Update Active Feature State**:
-   ```
+   ```text
    ACTIVE_FILE = .speckit/active
    FEATURE_FULL = "{feature.ID}-{feature.Name}"
 
@@ -147,7 +141,7 @@ ELSE:
    ```
 
 6. **Git Branch Switch** (if git repo):
-   ```
+   ```text
    IF is_git_repo():
      BRANCH_NAME = "{feature.ID}-{feature.Name}"
 
@@ -171,7 +165,7 @@ ELSE:
    ```
 
 7. **Determine Feature Status and Files**:
-   ```
+   ```text
    FEATURE_DIR = specs/features/{feature.ID}-{feature.Name}/
 
    files = {
@@ -216,7 +210,7 @@ ELSE:
    ```
 
 9. **Suggest Next Action**:
-   ```
+   ```text
    MATCH actual_status:
      "CREATED":
        OUTPUT: "📝 Continue specification: This feature needs a spec.md"
@@ -309,7 +303,7 @@ If `--json` in $ARGUMENTS:
 If `--repair` in $ARGUMENTS:
 
 Regenerate manifest from directory structure:
-```
+```text
 1. Scan specs/features/ for all directories matching NNN-*
 2. For each directory:
    - Determine status from file existence

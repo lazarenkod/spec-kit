@@ -9,6 +9,9 @@ handoffs:
     agent: speckit.specify
     prompt: Create a new feature specification
     auto: false
+scripts:
+  sh: echo "Feature list - no prerequisites required"
+  ps: Write-Host "Feature list - no prerequisites required"
 ---
 
 ## User Input
@@ -24,7 +27,7 @@ This command displays all features registered in the project manifest, their cur
 ### Execution Flow
 
 1. **Locate Manifest File**:
-   ```
+   ```text
    MANIFEST_FILE = specs/features/.manifest.md
 
    IF NOT exists(MANIFEST_FILE):
@@ -33,7 +36,7 @@ This command displays all features registered in the project manifest, their cur
    ```
 
 2. **Read Active Feature**:
-   ```
+   ```text
    ACTIVE_FILE = .speckit/active
 
    IF exists(ACTIVE_FILE):
@@ -43,7 +46,7 @@ This command displays all features registered in the project manifest, their cur
    ```
 
 3. **Parse Manifest**:
-   ```
+   ```text
    Parse markdown table from MANIFEST_FILE
    Extract columns: ID, Name, Status, Created, Last Updated
    ```
@@ -51,7 +54,7 @@ This command displays all features registered in the project manifest, their cur
 4. **Display Feature Registry**:
 
    **Output Format (Normal Mode)**:
-   ```markdown
+   ````markdown
    ## Feature Registry
 
    | | ID | Name | Status | Last Updated |
@@ -64,7 +67,7 @@ This command displays all features registered in the project manifest, their cur
 
    ### Status Legend
 
-   ```
+   ```text
    CREATED → IN_PROGRESS → SPEC_COMPLETE → PLANNED → TASKED → IMPLEMENTING → MERGED
    ```
 
@@ -76,7 +79,7 @@ This command displays all features registered in the project manifest, their cur
    - `IMPLEMENTING` — implementation started
    - `MERGED` — merged to system specs
    - `ABANDONED` — explicitly abandoned
-   ```
+   ````
 
 5. **Verbose Mode** (if `--verbose` or `-v` in $ARGUMENTS):
 
@@ -111,7 +114,7 @@ This command displays all features registered in the project manifest, their cur
 
 If manifest status is outdated, verify by checking actual files:
 
-```
+```text
 FOR each feature in manifest:
   feature_dir = specs/features/{ID}-{Name}/
 
@@ -149,12 +152,12 @@ After displaying the registry, suggest relevant actions:
 ### Edge Cases
 
 1. **Empty Manifest** (header only, no rows):
-   ```
+   ```text
    No features registered yet. Run /speckit.specify to create your first feature.
    ```
 
 2. **Corrupted Manifest** (parse error):
-   ```
+   ```text
    Warning: Could not parse manifest file. It may be corrupted.
    Attempting to reconstruct from specs/features/ directory...
 
@@ -164,7 +167,7 @@ After displaying the registry, suggest relevant actions:
    ```
 
 3. **Active Feature Not in Manifest**:
-   ```
+   ```text
    Warning: Active feature "{ACTIVE_FEATURE}" not found in manifest.
    This may indicate the manifest is out of sync.
 
@@ -261,7 +264,7 @@ When `--tree` is in $ARGUMENTS, output a hierarchical view organized by system s
 
 **Tree Building Logic:**
 
-```
+```text
 1. Parse all features from manifest
 2. For each feature with Feature Lineage section:
    - Extract parent feature reference
@@ -285,12 +288,12 @@ When `--tree` is in $ARGUMENTS, output a hierarchical view organized by system s
 
 When `--evolution 015` is provided, show the complete evolution history:
 
-```markdown
+````markdown
 ## Feature Evolution: 015-rate-limiting
 
 ### Lineage Chain (ancestors → feature → descendants)
 
-```
+```text
 001-login (MERGED 2024-01-15)
     │
     └── EXTENDS ──→ 015-rate-limiting (MERGED 2024-03-01) ← YOU ARE HERE
@@ -340,11 +343,11 @@ When `--evolution 015` is provided, show the complete evolution history:
 - View full system spec: `/speckit.view system/auth/login.md`
 - Analyze impact: `/speckit.analyze --impact system/auth/login.md`
 - Create extension: `/speckit.extend 015-rate-limiting "Add custom rate limits"`
-```
+````
 
 **Evolution Query Logic:**
 
-```
+```text
 1. Find target feature by ID or name
 2. Trace ancestors:
    - Parse Feature Lineage section

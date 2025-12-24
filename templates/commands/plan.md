@@ -1,5 +1,10 @@
 ---
 description: Execute the implementation planning workflow using the plan template to generate design artifacts.
+persona: architect-agent
+handoff:
+  requires: handoffs/specify-to-plan.md
+  generates: handoffs/plan-to-tasks.md
+  template: templates/handoff-template.md
 handoffs:
   - label: Create Tasks
     agent: speckit.tasks
@@ -70,7 +75,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Re-evaluate Constitution Check post-design
 
 4. **Update Feature Manifest**: After plan artifacts are generated:
-   ```
+   ```text
    MANIFEST_FILE = specs/features/.manifest.md
    FEATURE_ID = extract from BRANCH (first 3 digits)
 

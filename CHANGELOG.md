@@ -7,6 +7,58 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.33] - 2025-12-24
+
+### Added
+
+- **Multi-Agent Orchestration Architecture** (BMAD-Method inspired)
+  - Multi-agent orchestrator pattern: specialized agents per workflow phase
+  - Phase-specific agent personas for specialized context retention
+  - Handoff documents for explicit context transfer between phases
+  - Solves "single-agent bottleneck" problem where one agent loses context between phases
+
+- **New Agent Personas** (`templates/personas/`):
+  - `product-agent.md`: Requirements engineering, user value focus
+  - `architect-agent.md`: Technical design, trade-off analysis
+  - `decomposer-agent.md`: Task breakdown, dependency management
+  - `developer-agent.md`: Implementation, testing, security
+  - `qa-agent.md`: Validation, compliance, quality gates
+
+- **Handoff Template** (`templates/handoff-template.md`):
+  - Key Decisions Made table with rationale and alternatives
+  - Constraints for Next Phase section
+  - Risks Identified table with severity and mitigation
+  - Open Questions checklist
+  - Context for Next Agent section
+
+- **Orchestration Scripts**:
+  - `scripts/bash/orchestrate-handoff.sh`: Generate, load, validate handoffs
+  - `scripts/powershell/orchestrate-handoff.ps1`: PowerShell variant
+
+### Changed
+
+- **All main workflow commands enhanced with persona and handoff support**:
+  - `specify.md`: Product Agent persona, generates specify-to-plan handoff
+  - `plan.md`: Architect Agent persona, loads specify handoff, generates plan-to-tasks handoff
+  - `tasks.md`: Decomposer Agent persona, loads plan handoff, generates tasks-to-implement handoff
+  - `implement.md`: Developer Agent persona, loads tasks handoff
+  - `analyze.md`: QA Agent persona integration
+
+- **New frontmatter fields in command templates**:
+  - `persona:` — Links command to agent persona for specialized context
+  - `handoff.generates:` — Specifies handoff document this phase creates
+  - `handoff.requires:` — Specifies handoff document this phase needs
+  - `handoff.template:` — Reference to handoff template
+
+### Fixed
+
+- **Markdown linter compliance**: Fixed 371 linter errors
+  - Added language specifiers to all fenced code blocks (MD040)
+  - Configured markdownlint rules for template-heavy project
+  - Disabled overly strict formatting rules (MD001, MD007, MD026, MD029, MD046, MD053)
+
+---
+
 ## [0.0.32] - 2025-12-24
 
 ### Added
