@@ -7,6 +7,51 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.28] - 2025-12-23
+
+### Added
+
+- **Living Specs: Two-Folder Architecture** for maintaining current system documentation alongside historical feature specs
+  - `specs/features/` — Historical feature specs (frozen after merge)
+  - `specs/system/` — Living system specs (evolves with codebase)
+  - Feature specs capture point-in-time requirements; system specs reflect current behavior
+
+- **New `/speckit.merge` command**: Finalize features and update system specs after PR merge
+  - Creates new system specs defined in "System Spec Impact → Creates"
+  - Updates existing system specs defined in "System Spec Impact → Updates"
+  - Archives feature spec by adding `.merged` JSON marker
+  - Validates cross-references and dependency integrity
+  - Generates detailed merge report
+  - Supports `--maintain` mode for documentation corrections without new features
+  - Supports `--impact` mode for pre-change impact analysis
+
+- **New `system-spec-template.md`**: Template for living system specifications
+  - Sections: Overview, Current Behavior, API Contract, Business Rules
+  - Dependencies and Dependents tables for impact tracking
+  - Spec History with append-only versioning linked to features
+  - Test Coverage matrix for validation
+
+- **System Spec Impact section in `spec-template.md`** (mandatory for merge)
+  - Creates table: New system specs this feature introduces
+  - Updates table: Existing system specs this feature modifies
+  - Breaking Changes table: Migration paths for breaking behavior
+  - No Impact checkboxes: For internal refactoring or test-only changes
+
+### Changed
+
+- **`/speckit.analyze` enhanced with system spec validation**:
+  - Category K: System Spec Impact validation (incomplete sections, orphaned updates)
+  - Category L: System Spec Integrity (missing history, broken dependencies)
+  - Category M: Impact Analysis (unreviewed dependents, breaking changes)
+  - New System Spec Status section in report output
+
+- **`create-new-feature` scripts updated for two-folder architecture**:
+  - Feature directories now created in `specs/features/` instead of `specs/`
+  - Both bash and PowerShell scripts automatically create `specs/system/` directory
+  - Branch numbering now checks `specs/features/` for existing specs
+
+---
+
 ## [0.0.27] - 2025-12-23
 
 ### Fixed

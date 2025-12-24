@@ -1,5 +1,5 @@
 ---
-description: Perform a non-destructive cross-artifact consistency, traceability, and dependency analysis across concept.md, spec.md, plan.md, and tasks.md.
+description: Perform a non-destructive cross-artifact consistency, traceability, dependency, and system spec analysis across concept.md, spec.md, plan.md, tasks.md, and system specs.
 handoffs:
   - label: Fix Spec Issues
     agent: speckit.specify
@@ -43,6 +43,8 @@ Identify inconsistencies, duplications, ambiguities, underspecified items, **dep
 3. **Dependency graph validity** (no cycles, valid references)
 4. **Requirements traceability** (FR → Tasks, AS → Tests)
 5. **Coverage completeness** (all requirements have implementation tasks)
+6. **System spec impact** (System Spec Impact section ↔ specs/system/)
+7. **System spec integrity** (dependency graph, deprecation, drift detection)
 
 This command MUST run only after `/speckit.tasks` has successfully produced a complete `tasks.md`.
 
@@ -261,6 +263,99 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
      Report as LOW: "Undocumented gap: EC-003 has no handling"
 ```
 
+#### K. System Spec Impact Validation
+
+**Validate System Spec Impact section in feature specs:**
+
+```
+1. Section Existence:
+   IF feature spec lacks "System Spec Impact" section:
+     Report as MEDIUM: "Missing System Spec Impact section (required for /speckit.merge)"
+
+2. Creates Validation:
+   FOR EACH entry in "Creates" table:
+     IF path format invalid (not system/domain/name.md):
+       Report as LOW: "Invalid system spec path format: {path}"
+     IF system spec already exists at path:
+       Report as HIGH: "System spec already exists: {path} - should be in Updates"
+
+3. Updates Validation:
+   FOR EACH entry in "Updates" table:
+     IF system spec doesn't exist at path:
+       Report as HIGH: "System spec not found: {path} - should be in Creates"
+     IF no changes described:
+       Report as LOW: "Empty changes description for {path}"
+
+4. Breaking Changes Validation:
+   FOR EACH entry in "Breaking Changes" table:
+     IF no migration path provided:
+       Report as HIGH: "Breaking change without migration path: {path}"
+     IF system spec not in Updates:
+       Report as MEDIUM: "Breaking change for spec not listed in Updates"
+
+5. No Impact Check:
+   IF "No Impact" checkboxes are checked AND Creates/Updates have entries:
+     Report as MEDIUM: "Contradictory: No Impact checked but specs listed"
+   IF neither checkboxes checked NOR tables populated:
+     Report as MEDIUM: "System Spec Impact section incomplete"
+```
+
+#### L. System Spec Integrity Validation (if specs/system/ exists)
+
+**Validate living system specs for integrity:**
+
+```
+1. Dependency Graph:
+   FOR EACH system spec in specs/system/:
+     Parse "Dependencies" table
+     Build directed graph
+     IF dependency references non-existent spec:
+       Report as HIGH: "Broken dependency: {spec} → {missing_spec}"
+     IF circular dependency detected:
+       Report as CRITICAL: "Circular system spec dependency: {cycle}"
+
+2. Orphan Detection:
+   FOR EACH system spec:
+     IF not referenced in any feature's "System Spec Impact":
+       IF Spec History has only MAINTENANCE entries:
+         Report as LOW: "Orphan system spec: {path} (no features reference it)"
+
+3. Stale Detection:
+   FOR EACH system spec:
+     Parse "Last Updated" date
+     IF last updated > 180 days ago:
+       Report as LOW: "Potentially stale system spec: {path} (not updated in 6+ months)"
+
+4. Version Consistency:
+   FOR EACH system spec:
+     Parse latest version from Spec History
+     IF version format inconsistent (mix of 1.0, v1.0, 1.0.0):
+       Report as LOW: "Inconsistent version format in {path}"
+
+5. Dependents Accuracy:
+   FOR EACH system spec with Dependents table:
+     Verify each listed dependent actually has this spec in Dependencies
+     IF mismatch:
+       Report as LOW: "Dependents table out of sync in {path}"
+```
+
+#### M. Impact Analysis (if --impact flag provided)
+
+**When analyzing impact of a specific system spec change:**
+
+```
+1. Parse target spec path from arguments
+2. Build reverse dependency graph (who depends on this spec)
+3. For each dependent:
+   - List potential impact
+   - Flag active features that reference this spec
+4. Output Impact Report:
+   - Direct dependents
+   - Transitive dependents (2nd degree)
+   - Active features affected
+   - Suggested review checklist
+```
+
 ### 5. Severity Assignment
 
 Use this heuristic to prioritize findings:
@@ -271,6 +366,7 @@ Use this heuristic to prioritize findings:
   - Requirement with zero coverage that blocks baseline functionality
   - **Circular dependency in task graph** (blocks execution)
   - **Invalid dependency reference** (task references non-existent task)
+  - **Circular system spec dependency** (blocks merge)
 
 - **HIGH**:
   - Duplicate or conflicting requirement
@@ -278,6 +374,10 @@ Use this heuristic to prioritize findings:
   - Untestable acceptance criterion
   - **FR with no implementation tasks** (requirement gap)
   - **Task references non-existent FR** (broken traceability)
+  - **System spec already exists** (Creates lists existing spec)
+  - **System spec not found** (Updates lists non-existent spec)
+  - **Breaking change without migration path** (incomplete documentation)
+  - **Broken system spec dependency** (missing referenced spec)
 
 - **MEDIUM**:
   - Terminology drift
@@ -287,6 +387,9 @@ Use this heuristic to prioritize findings:
   - **Concept story without specification** (idea loss)
   - **Cross-story dependency** (may affect parallelization)
   - **Journey references unspecified feature** (incomplete planning)
+  - **Missing System Spec Impact section** (required for merge)
+  - **Breaking change for unlisted spec** (inconsistent documentation)
+  - **Contradictory No Impact** (checkbox conflicts with tables)
 
 - **LOW**:
   - Style/wording improvements
@@ -296,6 +399,12 @@ Use this heuristic to prioritize findings:
   - **RTM accuracy mismatch** (documentation drift)
   - **Coverage summary outdated** (stale metrics)
   - **Undocumented gaps** (incomplete gap tracking)
+  - **Invalid system spec path format** (naming convention)
+  - **Empty changes description** (incomplete documentation)
+  - **Orphan system spec** (no features reference it)
+  - **Stale system spec** (not updated in 6+ months)
+  - **Inconsistent version format** (version hygiene)
+  - **Dependents table out of sync** (cross-reference accuracy)
 
 ### 6. Produce Compact Analysis Report
 
@@ -309,7 +418,7 @@ Output a Markdown report (no file writes) with the following structure:
 | G1 | Dependency | CRITICAL | tasks.md | Circular: T005 → T012 → T005 | Break cycle at T012 → T005 |
 | H1 | Traceability | HIGH | spec.md, tasks.md | FR-003 has no tasks | Add [FR:FR-003] to relevant task |
 
-(Add one row per finding; generate stable IDs prefixed by category initial: A=Dup, B=Ambig, C=Underspec, D=Constitution, E=Coverage, F=Inconsist, G=Depend, H=Trace, I=Concept, J=RTM)
+(Add one row per finding; generate stable IDs prefixed by category initial: A=Dup, B=Ambig, C=Underspec, D=Constitution, E=Coverage, F=Inconsist, G=Depend, H=Trace, I=Concept, J=RTM, K=SysImpact, L=SysInteg, M=Impact)
 
 **Dependency Graph Status:**
 
@@ -333,6 +442,26 @@ Cycles: [count] | Orphan Refs: [count] | Cross-Story Deps: [count]
 | Stories (EPIC-x.Fx.Sx) | N | M | X% |
 | Journeys (J00x) | N | M | X% |
 | Ideas Backlog | N | N validated | - |
+
+**System Spec Status:** (if specs/system/ exists)
+
+```
+System Specs: N total | N active | N deprecated
+Dependency Graph: ✅ VALID | ⚠️ WARNINGS | ❌ INVALID
+Stale Specs: N (>6 months without update)
+```
+
+| System Spec | Status | Version | Last Feature | Issues |
+|-------------|--------|---------|--------------|--------|
+| `system/auth/login.md` | ACTIVE | 1.1 | 009-2fa | - |
+| `system/auth/2fa.md` | ACTIVE | 1.0 | 009-2fa | - |
+
+**System Spec Impact Analysis:** (current feature)
+
+| Action | System Spec | Valid? | Issues |
+|--------|-------------|--------|--------|
+| CREATE | `system/auth/sso.md` | ✅ | - |
+| UPDATE | `system/auth/login.md` | ✅ | - |
 
 **Requirements Coverage:**
 

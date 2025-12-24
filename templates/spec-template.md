@@ -238,3 +238,52 @@
 | VR-002 | AS-UI-002 | design.md | Defined |
 | IR-001 | AS-UI-001 | design.md | Defined |
 | IR-002 | AS-UI-003 | design.md | Defined |
+
+---
+
+## System Spec Impact *(mandatory for merge)*
+
+<!--
+  IMPORTANT: This section defines how this feature affects system specifications.
+  It is used by /speckit.merge to update living documentation after PR merge.
+
+  System specs live in specs/system/ and represent CURRENT system behavior.
+  Feature specs (this file) represent HISTORICAL requirements.
+-->
+
+### Creates
+
+<!-- New system specs this feature introduces (will be created by /speckit.merge) -->
+
+| System Spec | Domain | Description |
+|-------------|--------|-------------|
+| `system/[domain]/[name].md` | [domain] | [What this new system spec documents] |
+
+### Updates
+
+<!-- Existing system specs this feature modifies (will be updated by /speckit.merge) -->
+
+| System Spec | Changes | Breaking? |
+|-------------|---------|-----------|
+| `system/[domain]/[name].md` | [What behavior changes] | No |
+
+### Breaking Changes
+
+<!--
+  Any changes that break existing behavior or API contracts.
+  Requires migration plan and version bump.
+-->
+
+| System Spec | Breaking Change | Migration Path |
+|-------------|-----------------|----------------|
+| `system/[domain]/[name].md` | [What breaks] | [How clients should adapt] |
+
+### No Impact
+
+<!--
+  Check this if the feature doesn't affect any system specs.
+  This is rare - most features should create or update at least one system spec.
+-->
+
+- [ ] This feature is internal refactoring with no external behavior change
+- [ ] This feature only adds tests/documentation without behavior change

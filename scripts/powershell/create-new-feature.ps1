@@ -202,8 +202,12 @@ try {
 
 Set-Location $repoRoot
 
+# Two-folder architecture: features/ for historical specs, system/ for living specs
 $specsDir = Join-Path $repoRoot 'specs'
-New-Item -ItemType Directory -Path $specsDir -Force | Out-Null
+$featuresDir = Join-Path $specsDir 'features'
+$systemDir = Join-Path $specsDir 'system'
+New-Item -ItemType Directory -Path $featuresDir -Force | Out-Null
+New-Item -ItemType Directory -Path $systemDir -Force | Out-Null
 
 # Function to generate branch name with stop word filtering and length filtering
 function Get-BranchName {
@@ -259,14 +263,14 @@ if ($ShortName) {
     $branchSuffix = Get-BranchName -Description $featureDesc
 }
 
-# Determine branch number
+# Determine branch number (check features/ subfolder for existing specs)
 if ($Number -eq 0) {
     if ($hasGit) {
         # Check existing branches on remotes
-        $Number = Get-NextBranchNumber -SpecsDir $specsDir
+        $Number = Get-NextBranchNumber -SpecsDir $featuresDir
     } else {
         # Fall back to local directory check
-        $Number = (Get-HighestNumberFromSpecs -SpecsDir $specsDir) + 1
+        $Number = (Get-HighestNumberFromSpecs -SpecsDir $featuresDir) + 1
     }
 }
 
@@ -304,7 +308,8 @@ if ($hasGit) {
     Write-Warning "[specify] Warning: Git repository not detected; skipped branch creation for $branchName"
 }
 
-$featureDir = Join-Path $specsDir $branchName
+# Feature specs go in specs/features/ (two-folder architecture)
+$featureDir = Join-Path $featuresDir $branchName
 New-Item -ItemType Directory -Path $featureDir -Force | Out-Null
 
 $template = Join-Path $repoRoot '.specify/templates/spec-template.md'

@@ -228,8 +228,12 @@ fi
 
 cd "$REPO_ROOT"
 
+# Two-folder architecture: features/ for historical specs, system/ for living specs
 SPECS_DIR="$REPO_ROOT/specs"
-mkdir -p "$SPECS_DIR"
+FEATURES_DIR="$SPECS_DIR/features"
+SYSTEM_DIR="$SPECS_DIR/system"
+mkdir -p "$FEATURES_DIR"
+mkdir -p "$SYSTEM_DIR"
 
 # Function to generate branch name with stop word filtering and length filtering
 generate_branch_name() {
@@ -288,14 +292,14 @@ else
     BRANCH_SUFFIX=$(generate_branch_name "$FEATURE_DESCRIPTION")
 fi
 
-# Determine branch number
+# Determine branch number (check features/ subfolder for existing specs)
 if [ -z "$BRANCH_NUMBER" ]; then
     if [ "$HAS_GIT" = true ]; then
         # Check existing branches on remotes
-        BRANCH_NUMBER=$(check_existing_branches "$SPECS_DIR")
+        BRANCH_NUMBER=$(check_existing_branches "$FEATURES_DIR")
     else
         # Fall back to local directory check
-        HIGHEST=$(get_highest_from_specs "$SPECS_DIR")
+        HIGHEST=$(get_highest_from_specs "$FEATURES_DIR")
         BRANCH_NUMBER=$((HIGHEST + 1))
     fi
 fi
@@ -331,7 +335,8 @@ else
     >&2 echo "[specify] Warning: Git repository not detected; skipped branch creation for $BRANCH_NAME"
 fi
 
-FEATURE_DIR="$SPECS_DIR/$BRANCH_NAME"
+# Feature specs go in specs/features/ (two-folder architecture)
+FEATURE_DIR="$FEATURES_DIR/$BRANCH_NAME"
 mkdir -p "$FEATURE_DIR"
 
 TEMPLATE="$REPO_ROOT/.specify/templates/spec-template.md"
