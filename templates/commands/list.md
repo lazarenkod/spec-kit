@@ -215,3 +215,206 @@ If `--json` in $ARGUMENTS:
 | `--verbose`, `-v` | Include file details per feature |
 | `--json` | Output in JSON format |
 | `--status <status>` | Filter by status (e.g., `--status IN_PROGRESS`) |
+| `--tree` | Show feature evolution tree (parent-child relationships) |
+| `--evolution <id>` | Show full lineage for a specific feature |
+
+---
+
+## Feature Evolution Tree (--tree)
+
+**Display parent-child relationships between features based on Feature Lineage:**
+
+When `--tree` is in $ARGUMENTS, output a hierarchical view organized by system specs:
+
+```markdown
+## Feature Evolution Tree
+
+### By System Spec
+
+**auth/login.md**
+└── 001-login (MERGED) ─────────────── CREATES
+    ├── 015-rate-limiting (MERGED) ─── EXTENDS
+    │   └── 025-rate-v2 (MERGED) ───── REFINES
+    ├── 018-login-bugfix (MERGED) ──── FIXES
+    └── 023-2fa (IMPLEMENTING) ─────── EXTENDS
+
+**payments/checkout.md**
+└── 005-checkout (MERGED) ──────────── CREATES
+    └── 030-payment-methods (TASKED) ─ EXTENDS
+
+**notifications/push.md**
+└── 010-push-notif (MERGED) ────────── CREATES
+    └── 032-push-v2 (IN_PROGRESS) ──── DEPRECATES
+
+### Orphan Features (no system spec impact)
+- 002-dashboard (SPEC_COMPLETE) — No system spec impact defined
+- 008-analytics (CREATED) — Spec incomplete
+
+### Statistics
+| Metric | Count |
+|--------|-------|
+| Root Features (CREATES) | 3 |
+| Extension Features | 6 |
+| Max Depth | 3 (025-rate-v2) |
+| Orphan Features | 2 |
+```
+
+**Tree Building Logic:**
+
+```
+1. Parse all features from manifest
+2. For each feature with Feature Lineage section:
+   - Extract parent feature reference
+   - Add to parent's children list
+   - Record relationship type
+3. Organize by system spec:
+   - Group features by "System Specs Affected"
+   - Build tree within each group
+4. Identify orphans:
+   - Features without Feature Lineage AND
+   - No children extending them AND
+   - No system spec impact
+5. Render as ASCII tree with relationship types
+```
+
+---
+
+## Feature Evolution History (--evolution <id>)
+
+**Display the full lineage of a specific feature:**
+
+When `--evolution 015` is provided, show the complete evolution history:
+
+```markdown
+## Feature Evolution: 015-rate-limiting
+
+### Lineage Chain (ancestors → feature → descendants)
+
+```
+001-login (MERGED 2024-01-15)
+    │
+    └── EXTENDS ──→ 015-rate-limiting (MERGED 2024-03-01) ← YOU ARE HERE
+                        │
+                        └── REFINES ──→ 025-rate-v2 (MERGED 2024-05-10)
+```
+
+### Ancestor Context
+
+**001-login** (Root feature)
+- Status: MERGED
+- Merged: 2024-01-15
+- System Specs Created: auth/login.md
+- Key Decisions:
+  - Session-based authentication
+  - JWT for API access
+  - Rate limiting deferred to future feature
+
+### Current Feature
+
+**015-rate-limiting**
+- Status: MERGED
+- Extends: 001-login (EXTENDS)
+- Merged: 2024-03-01
+- Changes to System Spec:
+  - Added rate limiting middleware
+  - 100 req/min per user
+  - Exponential backoff on exceed
+
+### Descendants
+
+| Feature | Relationship | Status | Changes |
+|---------|--------------|--------|---------|
+| 025-rate-v2 | REFINES | MERGED | Increased limit to 200/min, added burst |
+
+### System Spec Timeline
+
+**auth/login.md** version history from this lineage:
+
+| Version | Feature | Relationship | Date | Changes |
+|---------|---------|--------------|------|---------|
+| 1.0 | 001-login | CREATES | 2024-01-15 | Initial creation |
+| 1.1 | 015-rate-limiting | EXTENDS | 2024-03-01 | Added rate limiting |
+| 1.2 | 025-rate-v2 | REFINES | 2024-05-10 | Refined rate limits |
+
+### Related Commands
+- View full system spec: `/speckit.view system/auth/login.md`
+- Analyze impact: `/speckit.analyze --impact system/auth/login.md`
+- Create extension: `/speckit.extend 015-rate-limiting "Add custom rate limits"`
+```
+
+**Evolution Query Logic:**
+
+```
+1. Find target feature by ID or name
+2. Trace ancestors:
+   - Parse Feature Lineage section
+   - Recursively follow parent references
+   - Build ancestor chain to root
+3. Find descendants:
+   - Scan all features' Feature Lineage
+   - Find features that extend target
+   - Recursively find their descendants
+4. Extract context from each feature:
+   - Key decisions from spec.md
+   - Changes from .merged file
+   - Version history from system specs
+5. Build timeline visualization
+```
+
+---
+
+## JSON Output for Tree/Evolution
+
+If `--json --tree` provided:
+
+```json
+{
+  "tree": {
+    "system/auth/login.md": {
+      "root": "001-login",
+      "children": [
+        {
+          "id": "015",
+          "name": "rate-limiting",
+          "relationship": "EXTENDS",
+          "status": "MERGED",
+          "children": [
+            {
+              "id": "025",
+              "name": "rate-v2",
+              "relationship": "REFINES",
+              "status": "MERGED",
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "orphans": ["002-dashboard", "008-analytics"],
+  "statistics": {
+    "root_features": 3,
+    "extension_features": 6,
+    "max_depth": 3
+  }
+}
+```
+
+If `--json --evolution 015` provided:
+
+```json
+{
+  "feature": "015-rate-limiting",
+  "ancestors": [
+    {"id": "001", "name": "login", "relationship": "root"}
+  ],
+  "descendants": [
+    {"id": "025", "name": "rate-v2", "relationship": "REFINES"}
+  ],
+  "system_specs": ["system/auth/login.md"],
+  "version_history": [
+    {"version": "1.0", "feature": "001-login", "relationship": "CREATES"},
+    {"version": "1.1", "feature": "015-rate-limiting", "relationship": "EXTENDS"},
+    {"version": "1.2", "feature": "025-rate-v2", "relationship": "REFINES"}
+  ]
+}

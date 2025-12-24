@@ -5,6 +5,7 @@ set -e
 JSON_MODE=false
 SHORT_NAME=""
 BRANCH_NUMBER=""
+EXTENDS_FEATURE=""
 ARGS=()
 i=1
 while [ $i -le $# ]; do
@@ -40,18 +41,33 @@ while [ $i -le $# ]; do
             fi
             BRANCH_NUMBER="$next_arg"
             ;;
-        --help|-h) 
-            echo "Usage: $0 [--json] [--short-name <name>] [--number N] <feature_description>"
+        --extends)
+            if [ $((i + 1)) -gt $# ]; then
+                echo 'Error: --extends requires a feature ID or branch name' >&2
+                exit 1
+            fi
+            i=$((i + 1))
+            next_arg="${!i}"
+            if [[ "$next_arg" == --* ]]; then
+                echo 'Error: --extends requires a feature ID or branch name' >&2
+                exit 1
+            fi
+            EXTENDS_FEATURE="$next_arg"
+            ;;
+        --help|-h)
+            echo "Usage: $0 [--json] [--short-name <name>] [--number N] [--extends <feature>] <feature_description>"
             echo ""
             echo "Options:"
-            echo "  --json              Output in JSON format"
-            echo "  --short-name <name> Provide a custom short name (2-4 words) for the branch"
-            echo "  --number N          Specify branch number manually (overrides auto-detection)"
-            echo "  --help, -h          Show this help message"
+            echo "  --json               Output in JSON format"
+            echo "  --short-name <name>  Provide a custom short name (2-4 words) for the branch"
+            echo "  --number N           Specify branch number manually (overrides auto-detection)"
+            echo "  --extends <feature>  Extend a merged feature (ID like '001' or full name '001-login')"
+            echo "  --help, -h           Show this help message"
             echo ""
             echo "Examples:"
             echo "  $0 'Add user authentication system' --short-name 'user-auth'"
             echo "  $0 'Implement OAuth2 integration for API' --number 5"
+            echo "  $0 'Add rate limiting to login' --extends 001"
             exit 0
             ;;
         *) 
@@ -242,6 +258,104 @@ set_active_feature() {
     echo "$feature_full_name" > "$active_file"
 }
 
+# Find parent feature directory by ID or full name
+# Returns: full feature directory name (e.g., "001-login") or empty if not found
+find_parent_feature() {
+    local parent_ref="$1"
+    local features_dir="$2"
+
+    # Normalize: if just a number like "001" or "1", pad it
+    if [[ "$parent_ref" =~ ^[0-9]+$ ]]; then
+        local padded=$(printf "%03d" "$((10#$parent_ref))")
+        # Search for directories starting with this number
+        for dir in "$features_dir"/*; do
+            [ -d "$dir" ] || continue
+            local dirname=$(basename "$dir")
+            if [[ "$dirname" =~ ^${padded}- ]] || [[ "$dirname" =~ ^${parent_ref}- ]]; then
+                echo "$dirname"
+                return 0
+            fi
+        done
+    else
+        # Full name provided - check if directory exists
+        if [ -d "$features_dir/$parent_ref" ]; then
+            echo "$parent_ref"
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+# Check if parent feature is merged (has .merged marker)
+is_feature_merged() {
+    local feature_name="$1"
+    local features_dir="$2"
+
+    if [ -f "$features_dir/$feature_name/.merged" ]; then
+        return 0
+    fi
+    return 1
+}
+
+# Get system specs affected by parent feature from .merged file
+get_parent_system_specs() {
+    local feature_name="$1"
+    local features_dir="$2"
+    local merged_file="$features_dir/$feature_name/.merged"
+
+    if [ -f "$merged_file" ]; then
+        # Extract system_specs_created and system_specs_updated from JSON
+        local created=$(grep -o '"system_specs_created":\s*\[[^]]*\]' "$merged_file" 2>/dev/null | sed 's/"system_specs_created":\s*\[//;s/\]//;s/"//g;s/,/ /g' || echo "")
+        local updated=$(grep -o '"system_specs_updated":\s*\[[^]]*\]' "$merged_file" 2>/dev/null | sed 's/"system_specs_updated":\s*\[//;s/\]//;s/"//g;s/,/ /g' || echo "")
+        echo "$created $updated" | tr ' ' '\n' | sort -u | grep -v '^$' | tr '\n' ',' | sed 's/,$//'
+    fi
+}
+
+# Update manifest to add "Extended By" link to parent feature
+update_parent_extended_by() {
+    local parent_name="$1"
+    local child_num="$2"
+    local manifest_file="$3"
+
+    if [[ ! -f "$manifest_file" ]]; then
+        return 0
+    fi
+
+    # Extract parent ID (first 3 digits)
+    local parent_id=$(echo "$parent_name" | grep -o '^[0-9]\+')
+    parent_id=$(printf "%03d" "$((10#$parent_id))")
+
+    # This is a simple implementation - in production, use proper CSV/markdown parsing
+    # For now, we'll note this in the manifest as a comment or separate tracking
+    # Full implementation would update the "Extended By" column
+    :
+}
+
+# Update manifest with extends relationship
+update_manifest_with_extends() {
+    local feature_id="$1"
+    local feature_name="$2"
+    local extends_id="$3"
+    local manifest_file="$4"
+    local today=$(date +%Y-%m-%d)
+
+    # Create manifest if it doesn't exist (with new schema)
+    if [[ ! -f "$manifest_file" ]]; then
+        mkdir -p "$(dirname "$manifest_file")"
+        cat > "$manifest_file" << 'EOF'
+# Feature Manifest
+
+| ID | Name | Status | Extends | Created | Last Updated |
+|----|------|--------|---------|---------|--------------|
+EOF
+    fi
+
+    # Append new feature entry with extends info
+    local extends_col="${extends_id:-"-"}"
+    echo "| $feature_id | $feature_name | CREATED | $extends_col | $today | $today |" >> "$manifest_file"
+}
+
 # Resolve repository root. Prefer git information when available, but fall back
 # to searching for repository markers so the workflow still functions in repositories that
 # were initialised with --no-git.
@@ -267,6 +381,36 @@ FEATURES_DIR="$SPECS_DIR/features"
 SYSTEM_DIR="$SPECS_DIR/system"
 mkdir -p "$FEATURES_DIR"
 mkdir -p "$SYSTEM_DIR"
+
+# Validate --extends parameter if provided
+PARENT_FEATURE_NAME=""
+PARENT_FEATURE_ID=""
+PARENT_SYSTEM_SPECS=""
+
+if [ -n "$EXTENDS_FEATURE" ]; then
+    # Find the parent feature
+    PARENT_FEATURE_NAME=$(find_parent_feature "$EXTENDS_FEATURE" "$FEATURES_DIR")
+    if [ -z "$PARENT_FEATURE_NAME" ]; then
+        echo "Error: Parent feature '$EXTENDS_FEATURE' not found in $FEATURES_DIR" >&2
+        echo "Available features:" >&2
+        ls -1 "$FEATURES_DIR" 2>/dev/null | head -10 >&2
+        exit 1
+    fi
+
+    # Extract parent feature ID (first 3 digits)
+    PARENT_FEATURE_ID=$(echo "$PARENT_FEATURE_NAME" | grep -o '^[0-9]\+')
+    PARENT_FEATURE_ID=$(printf "%03d" "$((10#$PARENT_FEATURE_ID))")
+
+    # Check if parent is merged (warning if not, but allow to proceed)
+    if ! is_feature_merged "$PARENT_FEATURE_NAME" "$FEATURES_DIR"; then
+        >&2 echo "[specify] Warning: Parent feature '$PARENT_FEATURE_NAME' is not yet merged."
+        >&2 echo "[specify] Extension relationships are typically used for merged features."
+        >&2 echo "[specify] Proceeding anyway..."
+    fi
+
+    # Get system specs affected by parent
+    PARENT_SYSTEM_SPECS=$(get_parent_system_specs "$PARENT_FEATURE_NAME" "$FEATURES_DIR")
+fi
 
 # Function to generate branch name with stop word filtering and length filtering
 generate_branch_name() {
@@ -376,9 +520,61 @@ TEMPLATE="$REPO_ROOT/.specify/templates/spec-template.md"
 SPEC_FILE="$FEATURE_DIR/spec.md"
 if [ -f "$TEMPLATE" ]; then cp "$TEMPLATE" "$SPEC_FILE"; else touch "$SPEC_FILE"; fi
 
-# Update feature manifest
+# If extending a feature, pre-populate the Feature Lineage section
+if [ -n "$PARENT_FEATURE_NAME" ]; then
+    # Determine system specs string for the table
+    SYSTEM_SPECS_COL="${PARENT_SYSTEM_SPECS:-"[check parent .merged file]"}"
+
+    # Create the Feature Lineage content to insert
+    LINEAGE_CONTENT="## Feature Lineage *(for modifications of merged features)*
+
+**Extends Feature(s)**:
+
+| Parent Feature | Relationship | System Specs Affected |
+|----------------|--------------|----------------------|
+| [$PARENT_FEATURE_NAME](../$PARENT_FEATURE_NAME/spec.md) | EXTENDS | $SYSTEM_SPECS_COL |
+
+**Relationship Types**:
+- \`EXTENDS\`: Adds new capability to parent feature's functionality
+- \`REFINES\`: Improves or modifies parent feature's behavior
+- \`FIXES\`: Corrects issues or bugs in parent feature
+- \`DEPRECATES\`: Replaces functionality from parent feature
+
+**Context from Parent**:
+
+<!-- Review the parent spec and summarize:
+- Key design decisions that must be respected
+- Constraints that carry over
+- Integration points with parent's implementation
+-->
+
+[TODO: Review $PARENT_FEATURE_NAME/spec.md and summarize inherited context]
+
+---"
+
+    # Try to insert after ## Context section, or append if section not found
+    if grep -q "^## Feature Lineage" "$SPEC_FILE"; then
+        # Section exists (from template), replace it
+        # Use awk to replace the section
+        awk -v content="$LINEAGE_CONTENT" '
+            /^## Feature Lineage/ {
+                print content
+                in_lineage = 1
+                next
+            }
+            in_lineage && /^## / { in_lineage = 0 }
+            !in_lineage { print }
+        ' "$SPEC_FILE" > "$SPEC_FILE.tmp" && mv "$SPEC_FILE.tmp" "$SPEC_FILE"
+    fi
+fi
+
+# Update feature manifest with extends relationship
 MANIFEST_FILE="$FEATURES_DIR/.manifest.md"
-update_manifest "$FEATURE_NUM" "$BRANCH_SUFFIX" "$MANIFEST_FILE"
+if [ -n "$PARENT_FEATURE_ID" ]; then
+    update_manifest_with_extends "$FEATURE_NUM" "$BRANCH_SUFFIX" "$PARENT_FEATURE_ID" "$MANIFEST_FILE"
+else
+    update_manifest "$FEATURE_NUM" "$BRANCH_SUFFIX" "$MANIFEST_FILE"
+fi
 
 # Set active feature in persistent state
 set_active_feature "$BRANCH_NAME" "$REPO_ROOT"
@@ -387,10 +583,19 @@ set_active_feature "$BRANCH_NAME" "$REPO_ROOT"
 export SPECIFY_FEATURE="$BRANCH_NAME"
 
 if $JSON_MODE; then
-    printf '{"BRANCH_NAME":"%s","SPEC_FILE":"%s","FEATURE_NUM":"%s"}\n' "$BRANCH_NAME" "$SPEC_FILE" "$FEATURE_NUM"
+    if [ -n "$PARENT_FEATURE_NAME" ]; then
+        printf '{"BRANCH_NAME":"%s","SPEC_FILE":"%s","FEATURE_NUM":"%s","EXTENDS":"%s","EXTENDS_ID":"%s"}\n' \
+            "$BRANCH_NAME" "$SPEC_FILE" "$FEATURE_NUM" "$PARENT_FEATURE_NAME" "$PARENT_FEATURE_ID"
+    else
+        printf '{"BRANCH_NAME":"%s","SPEC_FILE":"%s","FEATURE_NUM":"%s"}\n' "$BRANCH_NAME" "$SPEC_FILE" "$FEATURE_NUM"
+    fi
 else
     echo "BRANCH_NAME: $BRANCH_NAME"
     echo "SPEC_FILE: $SPEC_FILE"
     echo "FEATURE_NUM: $FEATURE_NUM"
+    if [ -n "$PARENT_FEATURE_NAME" ]; then
+        echo "EXTENDS: $PARENT_FEATURE_NAME"
+        echo "EXTENDS_ID: $PARENT_FEATURE_ID"
+    fi
     echo "SPECIFY_FEATURE environment variable set to: $BRANCH_NAME"
 fi

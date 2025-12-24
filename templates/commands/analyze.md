@@ -391,6 +391,92 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
        Report as LOW: "Dependents table out of sync in {path}"
 ```
 
+#### L2. Feature Lineage Validation (if Feature Lineage section exists)
+
+**Validate Feature Lineage for extension features:**
+
+```
+1. Parent Existence:
+   FOR EACH feature with "Feature Lineage" section:
+     Parse parent feature reference from table
+     PARENT_PATH = specs/features/{parent_name}/spec.md
+
+     IF not exists(PARENT_PATH):
+       Report as CRITICAL: "Feature Lineage references non-existent parent: {parent_name}"
+
+2. Parent Status:
+   FOR EACH parent reference:
+     Check if parent feature is MERGED (has .merged marker)
+
+     IF parent is not MERGED:
+       Report as HIGH: "Feature Lineage extends non-merged feature: {parent_name}"
+       Suggest: "Consider waiting for parent to merge or use standalone feature"
+
+3. System Spec Consistency:
+   FOR EACH parent reference:
+     Parse "System Specs Affected" from Lineage table
+     Parse parent's .merged file for system_specs_created/updated
+
+     IF Lineage refs don't match parent's actual system specs:
+       Report as MEDIUM: "System Specs Affected inconsistent with parent's .merged"
+       List: Expected: {parent_specs}, Found: {lineage_specs}
+
+4. Relationship Validity:
+   FOR EACH Feature Lineage entry:
+     Parse Relationship column
+
+     IF Relationship NOT IN [EXTENDS, REFINES, FIXES, DEPRECATES]:
+       Report as LOW: "Invalid relationship type: {relationship}"
+
+5. Circular Extension Detection:
+   Build extension graph from all Feature Lineage sections:
+     FOR EACH feature with lineage:
+       Add edge: parent → child
+
+   Run cycle detection:
+     IF cycle detected:
+       Report as CRITICAL: "Circular feature extension: {cycle_path}"
+       Example: "001-login → 015-rate-limiting → 025-auth-v2 → 001-login"
+
+6. Extension Chain Depth:
+   FOR EACH feature with lineage:
+     Count extension chain depth (follow parent links)
+
+     IF depth > 3:
+       Report as LOW: "Deep extension chain ({depth} levels): Consider refactoring"
+
+7. Manifest Consistency:
+   IF manifest has "Extends" column:
+     FOR EACH feature with Feature Lineage:
+       Verify manifest Extends column matches spec's lineage
+
+       IF mismatch:
+         Report as MEDIUM: "Manifest Extends column inconsistent with spec's Feature Lineage"
+```
+
+**Lineage Tree Visualization (with --lineage flag):**
+
+```
+IF --lineage flag provided:
+  Build and display feature evolution tree:
+
+  auth/login.md
+  └── 001-login (MERGED) ─────────────── CREATES
+      ├── 015-rate-limiting (MERGED) ─── EXTENDS
+      │   └── 025-rate-limiting-v2 ───── REFINES
+      ├── 018-login-bugfix (MERGED) ──── FIXES
+      └── 023-2fa (IMPLEMENTING) ─────── EXTENDS
+
+  Output tree as Mermaid diagram if requested:
+
+  graph TD
+    001[001-login] -->|CREATES| login.md
+    015[015-rate-limiting] -->|EXTENDS| 001
+    025[025-rate-limiting-v2] -->|REFINES| 015
+    018[018-login-bugfix] -->|FIXES| 001
+    023[023-2fa] -->|EXTENDS| 001
+```
+
 #### M. Impact Analysis (if --impact flag provided)
 
 **When analyzing impact of a specific system spec change:**

@@ -164,6 +164,71 @@ ELSE:
 
 ---
 
+## Extension Detection
+
+**Detect if user intent suggests extending an existing feature**:
+
+```
+MERGED_FEATURES = get features from manifest where Status = MERGED
+
+IF MERGED_FEATURES.count > 0:
+  Analyze user input for extension patterns:
+
+  PATTERN_KEYWORDS = ["add to", "extend", "enhance", "improve", "update", "modify",
+                      "fix in", "change", "refactor", "upgrade", "add feature to"]
+
+  FEATURE_REFERENCES = look for:
+    - Direct feature IDs: "001", "feature 001", "#001"
+    - Feature names: "login", "auth", "payment"
+    - System spec references: "login system", "auth module"
+
+  IF user input matches PATTERN_KEYWORDS AND references existing feature:
+    EXTENSION_CANDIDATE = find matching merged feature
+
+    Display suggestion:
+
+    💡 **Extension Opportunity Detected**
+
+    Your description suggests modifying the **{EXTENSION_CANDIDATE}** feature
+    which was merged on {MERGE_DATE}.
+
+    **Recommendation**: Use `/speckit.extend` instead to:
+    - ✅ Preserve Feature Lineage (traceability)
+    - ✅ Auto-load parent context
+    - ✅ Track System Spec evolution correctly
+
+    **Example**:
+    ```
+    /speckit.extend {EXTENSION_CANDIDATE_ID} "{USER_DESCRIPTION}"
+    ```
+
+    **Options**:
+    1. **Use /speckit.extend** (Recommended) - Creates extension with lineage
+    2. **Create standalone feature** - Proceed without lineage (loses traceability)
+
+    ASK user: "Would you like to use /speckit.extend instead? (yes/no)"
+
+    IF user says yes:
+      Redirect to: /speckit.extend {EXTENSION_CANDIDATE_ID} "{USER_DESCRIPTION}"
+      EXIT
+    ELSE:
+      CONTINUE to branch creation
+      Note: Feature will not have Feature Lineage section populated
+```
+
+**Relationship Type Detection**:
+
+```
+Based on description keywords, suggest relationship if extending:
+
+"add", "new", "implement", "support", "enable" → EXTENDS
+"improve", "enhance", "optimize", "refactor", "clean" → REFINES
+"fix", "bug", "issue", "correct", "patch", "resolve" → FIXES
+"replace", "remove", "deprecate", "migrate", "sunset" → DEPRECATES
+```
+
+---
+
 ## Outline
 
 The text the user typed after `/speckit.specify` in the triggering message **is** the feature description. Assume you always have it available in this conversation even if `{ARGS}` appears literally below. Do not ask the user to repeat it unless they provided an empty command.

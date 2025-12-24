@@ -131,12 +131,13 @@ For each system spec in **creates[]**:
    - `[Component Name]` → Extract from path (e.g., `auth/2fa.md` → "2FA")
    - `[Domain]` → Extract from path (e.g., `auth`)
    - `[DATE]` → Current date
-3. Populate **Spec History**:
+3. Populate **Spec History** with Relationship:
    ```markdown
-   | Version | Feature | Date | Author | Changes |
-   |---------|---------|------|--------|---------|
-   | 1.0 | [FEATURE_BRANCH] | [DATE] | [@author] | Initial creation |
+   | Version | Feature | Relationship | Date | Author | Changes |
+   |---------|---------|--------------|------|--------|---------|
+   | 1.0 | [FEATURE_BRANCH] | CREATES | [DATE] | [@author] | Initial creation |
    ```
+   Note: Relationship is always CREATES for new system specs.
 4. Populate **Current Behavior** from feature spec's User Stories
 5. Populate **Business Rules** from feature spec's Functional Requirements
 6. Populate **Dependencies** from feature spec's context
@@ -144,14 +145,27 @@ For each system spec in **creates[]**:
 #### For Updates:
 
 1. Read existing system spec
-2. Append to **Spec History**:
-   ```markdown
-   | [VERSION+0.1] | [FEATURE_BRANCH] | [DATE] | [@author] | [CHANGES_SUMMARY] |
+2. **Extract Relationship from Feature Lineage**:
    ```
-3. Update **Current Behavior** section with new/modified scenarios
-4. Update **Business Rules** if changed
-5. Update **Dependents** list if this spec gained new dependents
-6. If **Breaking?** is "Yes":
+   IF feature spec has "Feature Lineage" section:
+     Parse the Relationship column from Feature Lineage table
+     RELATIONSHIP = value from table (EXTENDS | REFINES | FIXES | DEPRECATES)
+   ELSE:
+     RELATIONSHIP = EXTENDS (default for updates without lineage)
+   ```
+3. Append to **Spec History** with Relationship:
+   ```markdown
+   | [VERSION] | [FEATURE_BRANCH] | [RELATIONSHIP] | [DATE] | [@author] | [CHANGES_SUMMARY] |
+   ```
+   Version increment based on Relationship:
+   - EXTENDS: Minor bump (1.0 → 1.1)
+   - REFINES: Patch bump (1.0 → 1.0.1)
+   - FIXES: Patch bump (1.0 → 1.0.2)
+   - DEPRECATES: Major bump (1.0 → 2.0)
+4. Update **Current Behavior** section with new/modified scenarios
+5. Update **Business Rules** if changed
+6. Update **Dependents** list if this spec gained new dependents
+7. If **Breaking?** is "Yes" or Relationship is DEPRECATES:
    - Increment major version
    - Add deprecation notice if applicable
 
@@ -184,7 +198,23 @@ IF exists(MANIFEST_FILE):
   Update "Last Updated" column: today's date
 ```
 
-### 7. Mark Feature as Merged
+### 7. Update Parent Feature (if extending)
+
+If the feature has a Feature Lineage section (extends another feature):
+
+```
+IF feature spec has "Feature Lineage" section:
+  PARENT_FEATURE = extract from Feature Lineage table
+  PARENT_ID = extract feature ID from parent reference
+
+  Update parent's "Extended By" tracking:
+  - Option A: Update manifest Extended By column
+  - Option B: Append to parent's .merged file
+
+  Log: "Updated parent feature {PARENT_ID} to reference extension {FEATURE_ID}"
+```
+
+### 8. Mark Feature as Merged
 
 Create `.merged` marker in feature directory:
 
@@ -194,11 +224,15 @@ Create `.merged` marker in feature directory:
   "merged_by": "@author",
   "system_specs_created": ["system/auth/2fa.md"],
   "system_specs_updated": ["system/auth/login.md"],
-  "breaking_changes": false
+  "breaking_changes": false,
+  "extends_feature": "001-login",
+  "relationship": "EXTENDS"
 }
 ```
 
-### 8. Generate Merge Report
+Note: `extends_feature` and `relationship` fields are only present if this feature extends another.
+
+### 9. Generate Merge Report
 
 Output summary:
 
@@ -207,15 +241,20 @@ Output summary:
 
 **Status**: ✅ Merged successfully
 
+### Feature Lineage
+<!-- Only shown if feature extends another -->
+**Extends**: [PARENT_FEATURE] (via [RELATIONSHIP] relationship)
+**Parent updated**: Extended By now includes [FEATURE_ID]
+
 ### System Specs Created
-| Path | Version | Status |
-|------|---------|--------|
-| `system/auth/2fa.md` | 1.0 | Created |
+| Path | Version | Relationship | Status |
+|------|---------|--------------|--------|
+| `system/auth/2fa.md` | 1.0 | CREATES | Created |
 
 ### System Specs Updated
-| Path | Old Version | New Version | Changes |
-|------|-------------|-------------|---------|
-| `system/auth/login.md` | 1.0 | 1.1 | Added 2FA verification step |
+| Path | Old Version | New Version | Relationship | Changes |
+|------|-------------|-------------|--------------|---------|
+| `system/auth/login.md` | 1.0 | 1.1 | EXTENDS | Added 2FA verification step |
 
 ### Breaking Changes
 None
@@ -223,9 +262,11 @@ None
 ### Feature Archived
 - Feature spec marked as merged
 - Historical requirements preserved at `specs/features/[branch]/`
+- Feature Lineage traceability established
 
 ### Next Steps
 - Run `/speckit.analyze --system` to validate system spec integrity
+- Run `/speckit.list --tree` to view feature evolution
 - Update dependent features if breaking changes were introduced
 ```
 

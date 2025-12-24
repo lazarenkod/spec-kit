@@ -148,11 +148,19 @@
 <!--
   Version history linking to feature specs that created/modified this system spec.
   Updated by /speckit.merge after each feature merge.
+
+  Relationship column indicates how the feature relates to this system spec:
+  - CREATES: Feature created this system spec from scratch
+  - EXTENDS: Feature added new capability to existing spec
+  - REFINES: Feature improved/modified existing behavior
+  - FIXES: Feature corrected issues in this spec
+  - DEPRECATES: Feature marked functionality for removal
+  - MAINTENANCE: Manual update without feature (docs, clarifications)
 -->
 
-| Version | Feature | Date | Author | Changes |
-|---------|---------|------|--------|---------|
-| 1.0 | [NNN-feature-name] | [DATE] | [@author] | Initial creation |
+| Version | Feature | Relationship | Date | Author | Changes |
+|---------|---------|--------------|------|--------|---------|
+| 1.0 | [NNN-feature-name] | CREATES | [DATE] | [@author] | Initial creation |
 
 ---
 

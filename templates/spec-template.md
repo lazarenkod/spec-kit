@@ -15,6 +15,46 @@
 **Source Concept**: [Link to specs/concept.md or "N/A" if created without concept]
 **Concept IDs Covered**: [EPIC-001.F01.S01, EPIC-001.F01.S02, ... or "N/A"]
 
+## Feature Lineage *(for modifications of merged features)*
+
+<!--
+  INCLUDE THIS SECTION ONLY when this feature extends/modifies an already-merged feature.
+  Leave empty or delete for completely new features (greenfield).
+
+  This section establishes traceability between features:
+  - Parent features that this feature extends
+  - Relationship type (how this feature relates to parent)
+  - System specs affected by both parent and this feature
+
+  Use /speckit.extend to auto-populate this section.
+-->
+
+**Extends Feature(s)**:
+
+| Parent Feature | Relationship | System Specs Affected |
+|----------------|--------------|----------------------|
+| <!-- e.g., [001-login](../001-login/spec.md) --> | <!-- EXTENDS/REFINES/FIXES/DEPRECATES --> | <!-- e.g., system/auth/login.md --> |
+
+**Relationship Types**:
+- `EXTENDS`: Adds new capability to parent feature's functionality
+- `REFINES`: Improves or modifies parent feature's behavior
+- `FIXES`: Corrects issues or bugs in parent feature
+- `DEPRECATES`: Replaces functionality from parent feature
+
+**Context from Parent**:
+
+<!--
+  If extending a merged feature, summarize relevant context:
+  - Key design decisions from parent that must be respected
+  - Constraints that carry over to this feature
+  - Integration points with parent's implementation
+  - Business rules inherited from parent
+-->
+
+[Summarize inherited context here, or "N/A" for new features]
+
+---
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
