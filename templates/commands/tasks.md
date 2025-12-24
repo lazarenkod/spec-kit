@@ -1,5 +1,10 @@
 ---
 description: Generate an actionable, dependency-ordered tasks.md with full traceability to spec requirements and acceptance scenarios.
+persona: decomposer-agent
+handoff:
+  requires: handoffs/plan-to-tasks.md
+  generates: handoffs/tasks-to-implement.md
+  template: templates/handoff-template.md
 handoffs:
   - label: Analyze For Consistency
     agent: speckit.analyze
@@ -62,7 +67,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 3. **Parse Traceability IDs from spec.md**:
 
-   ```
+   ```text
    Extract from spec.md:
 
    a. Concept Reference (if present):
@@ -101,7 +106,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 5. **Generate Dependency Graph**:
 
-   ```
+   ```text
    FOR EACH task with [DEP:Txxx] marker:
      Add edge: Txxx --> current_task
 
@@ -120,7 +125,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 6. **Generate Requirements Traceability Matrix (RTM)**:
 
-   ```
+   ```text
    FOR EACH FR in FR_LIST:
      Find all tasks with [FR:FR-xxx] marker
      Find test tasks that cover this FR's acceptance scenarios
@@ -152,7 +157,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 8. **Validate Traceability**:
 
-   ```
+   ```text
    Check for gaps:
    - [ ] Every FR has at least one implementation task
    - [ ] Every AS has at least one test task (if tests requested)
@@ -165,7 +170,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    ```
 
 9. **Update Feature Manifest**: After tasks.md is generated:
-   ```
+   ```text
    MANIFEST_FILE = specs/features/.manifest.md
    FEATURE_ID = extract from current branch/feature (first 3 digits)
 
@@ -277,7 +282,7 @@ Every task MUST strictly follow this format:
 
 **Automatic [DEP:] generation based on file/component relationships**:
 
-```
+```text
 Rule 1: Project Structure Dependencies
   - T002 (initialize project) depends on T001 (project structure)
   - All other tasks depend on T002
@@ -305,7 +310,7 @@ Rule 6: Foundation to Story Dependencies
 
 **Circular Dependency Detection**:
 
-```
+```text
 Build directed graph from [DEP:] markers
 Run topological sort
 If cycle detected:
@@ -318,7 +323,7 @@ If cycle detected:
 
 **Linking tasks to requirements**:
 
-```
+```text
 FOR EACH implementation task:
   1. Identify which FR(s) this task fulfills:
      - Model tasks → FR about data entities
@@ -337,7 +342,7 @@ FOR EACH test task:
 
 Before completing tasks.md generation, validate:
 
-```
+```text
 1. FR Coverage:
    FOR EACH FR in spec.md:
      - At least one task has [FR:FR-xxx] marker

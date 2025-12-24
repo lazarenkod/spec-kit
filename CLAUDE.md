@@ -52,7 +52,7 @@ uv run specify --help
 
 ### Directory Structure
 
-```
+```text
 spec-kit/
 ├── src/specify_cli/__init__.py  # Main CLI implementation (single-file CLI)
 ├── templates/                    # Templates copied to initialized projects

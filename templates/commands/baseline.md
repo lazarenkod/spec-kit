@@ -97,7 +97,7 @@ Set OUTPUT_PATH = FEATURE_DIR/baseline.md
 
 Extract scope from user input:
 
-```
+```text
 SCOPE_PATTERNS = []
 SCOPE_MODULES = []
 SCOPE_KEYWORDS = []
@@ -119,7 +119,7 @@ IF all scope lists are empty:
 
 **Scan codebase for affected components:**
 
-```
+```text
 1. File Discovery:
    FOR EACH pattern in SCOPE_PATTERNS:
      Find matching files using glob
@@ -143,7 +143,7 @@ IF all scope lists are empty:
 
 **Document current behaviors with CB-xxx IDs:**
 
-```
+```text
 BEHAVIORS = []
 CB_COUNTER = 1
 
@@ -175,7 +175,7 @@ FOR EACH component in discovered_components:
 
 **Build dependency graph for scoped components:**
 
-```
+```text
 DEPENDENCIES = {}
 
 FOR EACH component in discovered_components:
@@ -200,7 +200,7 @@ FOR EACH dep_entry in DEPENDENCIES:
 
 **For HTTP APIs, CLI interfaces, or SDK functions:**
 
-```
+```text
 IF component.type == "API_ENDPOINT":
   contract = {
     method: HTTP_METHOD,
@@ -224,7 +224,7 @@ IF component.type == "CLI_COMMAND":
 
 **Capture baseline metrics if available:**
 
-```
+```text
 METRICS = []
 
 FOR EACH component with measurable performance:
@@ -244,7 +244,7 @@ FOR EACH component with measurable performance:
 
 Write `FEATURE_DIR/baseline.md` with the following structure:
 
-```markdown
+````markdown
 # Baseline: [SCOPE DESCRIPTION]
 
 **Generated**: [DATE]
@@ -373,13 +373,13 @@ This baseline should be referenced in `/speckit.specify` when creating the Chang
 4. Identify PB-xxx from critical CB-xxx that must remain unchanged
 
 **Next Step**: Run `/speckit.specify [feature description]` with brownfield mode
-```
+````
 
 ### 9. Report Generation
 
 Output summary to user:
 
-```
+```text
 ## Baseline Capture Complete
 
 **Output**: FEATURE_DIR/baseline.md

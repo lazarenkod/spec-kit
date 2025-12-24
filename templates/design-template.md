@@ -149,7 +149,7 @@
 | Destructive MD | 40px height | Filled error color | Delete actions |
 
 **Anatomy**:
-```
+```text
 ┌─────────────────────────────────┐
 │ [icon?] [label] [icon?]         │
 │         [loading spinner?]      │
@@ -218,7 +218,7 @@ graph LR
 - [Direct URL: /path]
 
 **Layout**:
-```
+```text
 ┌─────────────────────────────────────────┐
 │ Header (NavBar, Breadcrumb)             │
 ├──────────────┬──────────────────────────┤

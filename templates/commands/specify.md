@@ -1,5 +1,9 @@
 ---
 description: Create or update the feature specification from a natural language feature description. Supports both standalone features and concept-derived specifications with full traceability.
+persona: product-agent
+handoff:
+  generates: handoffs/specify-to-plan.md
+  template: templates/handoff-template.md
 handoffs:
   - label: Build Technical Plan
     agent: speckit.plan
@@ -42,7 +46,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 **Automatically detect if this is a brownfield project**:
 
-```
+```text
 1. Check codebase indicators:
    - git log --oneline | wc -l > 50 commits → BROWNFIELD_SIGNAL
    - src/ OR backend/ OR frontend/ directory exists with .py/.ts/.js/.go files → BROWNFIELD_SIGNAL
@@ -74,7 +78,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Initial Change Delta (infer ADD/MODIFY/REMOVE from user intent)
 
 2. If baseline.md does NOT exist, suggest:
-   ```
+   ```text
    💡 Brownfield project detected. Consider running `/speckit.baseline` first
    to capture current system state for better change traceability.
 
@@ -111,7 +115,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 **Concept ID Matching Logic**:
 
-```
+```text
 IF user input contains pattern "EPIC-\d+\.F\d+\.S\d+":
   CONCEPT_IDS = extract all matching IDs
   Validate each ID exists in concept.md
@@ -126,7 +130,7 @@ ELSE:
 
 Before creating a new feature, check for incomplete work in the feature manifest:
 
-```
+```text
 MANIFEST_FILE = specs/features/.manifest.md
 
 IF exists(MANIFEST_FILE):
@@ -168,7 +172,7 @@ ELSE:
 
 **Detect if user intent suggests extending an existing feature**:
 
-```
+```text
 MERGED_FEATURES = get features from manifest where Status = MERGED
 
 IF MERGED_FEATURES.count > 0:
@@ -218,7 +222,7 @@ IF MERGED_FEATURES.count > 0:
 
 **Relationship Type Detection**:
 
-```
+```text
 Based on description keywords, suggest relationship if extending:
 
 "add", "new", "implement", "support", "enable" → EXTENDS
@@ -358,7 +362,7 @@ Given that feature description, do this:
            - Preserved Behaviors (PB-xxx) from "keep existing" / "maintain compatibility" phrases
 
         c) Generate Change Type from keywords:
-           ```
+           ```text
            IF "migrate" OR "move from" OR "upgrade" → Migration
            ELIF "refactor" OR "restructure" → Refactor
            ELIF "fix" OR "bug" OR "issue" → Bugfix
@@ -500,7 +504,7 @@ Given that feature description, do this:
 
 When `specs/concept.md` exists, follow this enhanced workflow:
 
-```
+```text
 1. User runs: /speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02
 
 2. Agent reads concept.md and extracts:

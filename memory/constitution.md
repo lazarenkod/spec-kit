@@ -10,7 +10,7 @@
 
 This is **Layer 2** (project-specific) of the constitution:
 
-```
+```text
 Layer 0: constitution.base.md ──────── 20 enterprise principles (READ-ONLY)
     ↓ inherits
 Layer 1: constitution.domain.md ────── Domain-specific (fintech, healthcare, etc.)

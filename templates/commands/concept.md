@@ -72,7 +72,7 @@ This command captures the **complete vision and scope** of a service/product BEF
    - Clear differentiation articulated
    - Technical requirements specified
 
-   ```
+   ```text
    IF Discovery Mode triggered:
      → Execute Phase 0a, 0b, 0c (steps 3-4)
    ELSE IF Capture Mode triggered:
@@ -202,7 +202,7 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    Analyze the user description to identify capabilities and organize them:
 
-   ```
+   ```text
    FOR EACH capability mentioned:
      1. Classify as Epic (large area) or Feature (specific functionality)
      2. If capability is too large for single Feature:
@@ -229,7 +229,7 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    Identify end-to-end flows that cross features:
 
-   ```
+   ```text
    FOR EACH user persona:
      1. Identify primary goal they want to achieve
      2. Map the steps to achieve that goal
@@ -242,7 +242,7 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    Build dependency matrix:
 
-   ```
+   ```text
    FOR EACH Feature:
      1. Identify: What must be built BEFORE this feature?
      2. Identify: What does this feature BLOCK?
@@ -255,7 +255,7 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **CRITICAL**: No idea should be lost. For each idea that doesn't fit current scope:
 
-   ```
+   ```markdown
    - [ ] [Idea] - Status: not started
    - [?] [Idea] - Status: needs validation (unclear value/feasibility)
    - [>] [Idea] - Status: deferred to future phase
@@ -362,7 +362,7 @@ After completion:
 
 **Resulting Hierarchy**:
 
-```
+```text
 EPIC-001: User Management (P1)
   F01: Registration (P1a)
     S01: User registers with email
