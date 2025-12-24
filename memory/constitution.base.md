@@ -756,6 +756,73 @@ Admin processes SHOULD:
 
 ---
 
+## TST: Test-Spec Traceability
+
+<!--
+  Principles ensuring bidirectional traceability between specifications and tests.
+  These principles are enforced by Pass W in /speckit.analyze.
+-->
+
+### TST-001: Acceptance Scenario Test Coverage
+
+**Level**: MUST
+**Applies to**: All Acceptance Scenarios with "Requires Test = YES"
+
+Every Acceptance Scenario (AS-xxx) marked "Requires Test = YES" in spec.md MUST have a corresponding test task with `[TEST:AS-xxx]` marker in tasks.md.
+
+**Validation**: Pass W in /speckit.analyze checks for [TEST:] tasks
+**Violations**: HIGH - Untested behavior may not match specification
+
+---
+
+### TST-002: Test-Spec Bidirectional Linking
+
+**Level**: MUST
+**Applies to**: All test code
+
+Test code MUST include `@speckit:AS:AS-xxx` annotations linking back to the Acceptance Scenario being tested. Test tasks MUST use `[TEST:AS-xxx]` markers.
+
+**Validation**: Check for @speckit annotations in test files, validate [TEST:] markers reference existing AS-IDs
+**Violations**: HIGH - Orphan tests or broken traceability
+
+---
+
+### TST-003: Critical Edge Case Coverage
+
+**Level**: SHOULD
+**Applies to**: Edge Cases marked CRITICAL or security-related
+
+Edge Cases (EC-xxx) marked CRITICAL or containing security keywords (auth, inject, XSS, SQL, CSRF) SHOULD have corresponding test tasks with `[TEST:EC-xxx]` markers.
+
+**Validation**: Pass W checks EC-xxx with CRITICAL flag have tests
+**Violations**: HIGH - Security-critical behavior untested
+
+---
+
+### TST-004: Explicit Test Skip Justification
+
+**Level**: SHOULD
+**Applies to**: Scenarios intentionally not tested
+
+When a scenario is intentionally not tested, `[NO-TEST:AS-xxx]` marker SHOULD be used with meaningful justification (minimum 10 characters). Silent omission of tests is discouraged.
+
+**Validation**: Pass W validates [NO-TEST:] markers have justification
+**Violations**: MEDIUM - Missing justification for skipped tests
+
+---
+
+### TST-005: Test Traceability Matrix Maintenance
+
+**Level**: SHOULD
+**Applies to**: tasks.md Test Traceability Matrix (TTM)
+
+The TTM in tasks.md SHOULD be maintained with accurate test file paths and status. Coverage metrics SHOULD be updated after each implementation phase.
+
+**Validation**: TTM completeness check in Pass W
+**Violations**: LOW - Stale traceability documentation
+
+---
+
 ## PRF: Performance
 
 ### PRF-001: Response Time SLA

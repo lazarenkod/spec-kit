@@ -931,6 +931,121 @@ The following categories (R-U) are executed when `/speckit.analyze` runs after `
 
 ---
 
+#### W. Test Specification Coverage
+
+**Purpose**: Enforce bidirectional traceability between specs and tests, ensuring every testable scenario has coverage.
+
+```
+1. Acceptance Scenario Test Coverage:
+   FOR EACH AS-xxx in spec.md Acceptance Scenarios table:
+     Extract "Requires Test" column value
+     IF "Requires Test" = YES:
+       Search tasks.md for [TEST:AS-xxx] marker
+       IF not found:
+         Search tasks.md TTM for AS-xxx row
+         IF TTM row has "⏭️" status (skipped):
+           Search for [NO-TEST:AS-xxx] justification
+           IF justification empty or missing:
+             → MEDIUM: "AS-xxx skipped without justification in TTM"
+           ELSE:
+             → INFO: "AS-xxx intentionally skipped: {justification}"
+         ELSE:
+           → HIGH: "AS-xxx requires test but no [TEST:AS-xxx] task found"
+       IF found:
+         → OK: "AS-xxx covered by test task"
+     IF "Requires Test" = NO:
+       IF [TEST:AS-xxx] exists:
+         → INFO: "AS-xxx has test despite 'Requires Test = NO' (extra coverage)"
+
+2. Test Task Validity:
+   FOR EACH [TEST:xxx] marker in tasks.md:
+     Extract spec ID (AS-xxx or EC-xxx)
+     IF spec ID format invalid:
+       → MEDIUM: "Invalid test marker format: [TEST:{marker}]"
+     Search spec.md for matching AS-xxx or EC-xxx
+     IF not found:
+       → HIGH: "Test task references non-existent spec ID: {spec_id}"
+     IF found:
+       → OK: "Test task valid: covers {spec_id}"
+
+3. Explicit Skip Validation:
+   FOR EACH [NO-TEST:xxx] marker in tasks.md:
+     Extract spec ID and justification
+     IF justification missing or less than 10 characters:
+       → MEDIUM: "[NO-TEST:{spec_id}] requires meaningful justification"
+     IF justification present:
+       Search TTM for matching row with "⏭️" status
+       IF not found:
+         → LOW: "[NO-TEST:{spec_id}] not reflected in TTM"
+       → INFO: "Intentionally skipped: {spec_id} - {justification}"
+
+4. Critical Edge Case Coverage:
+   FOR EACH EC-xxx in spec.md Edge Cases table:
+     IF Priority = "CRITICAL" OR Security-related (keywords: auth, inject, XSS, SQL, CSRF):
+       Search tasks.md for [TEST:EC-xxx] marker
+       IF not found:
+         → HIGH: "Critical edge case EC-xxx has no test task"
+       IF found:
+         → OK: "Critical edge case EC-xxx covered"
+     ELSE:
+       IF [TEST:EC-xxx] not found:
+         → LOW: "Non-critical edge case EC-xxx has no test"
+
+5. TTM Completeness:
+   IF TTM section exists in tasks.md:
+     Count total AS-xxx with "Requires Test = YES" in spec.md
+     Count AS-xxx rows in TTM
+     IF counts differ:
+       → MEDIUM: "TTM incomplete: {ttm_count}/{spec_count} testable AS documented"
+
+     FOR EACH row in TTM:
+       IF Status = "❌" AND Impl Task has completed status:
+         → HIGH: "Implementation complete but test not written: {spec_id}"
+       IF Test File column is "tests/..." (placeholder):
+         IF Status = "✅":
+           → MEDIUM: "Test marked passing but file path is placeholder: {spec_id}"
+
+     Calculate coverage metrics:
+       AS_YES_count = AS with Requires Test = YES
+       AS_covered = AS_YES with Status ∈ {✅, 🔄}
+       Coverage = AS_covered / AS_YES_count * 100
+       IF Coverage < 100%:
+         → MEDIUM: "Test coverage: {coverage}% ({AS_covered}/{AS_YES_count} AS)"
+
+6. Test-Implementation Pairing:
+   FOR EACH story in tasks.md User Stories:
+     Collect test tasks [TEST:] in story
+     Collect implementation tasks in story
+     IF implementation tasks exist AND test tasks empty:
+       IF any related AS has "Requires Test = YES":
+         → HIGH: "Story {story_id} has implementation but no test tasks for required AS"
+
+7. Annotation Reminder (advisory):
+   FOR EACH test file in TTM with non-placeholder path:
+     IF file exists on disk:
+       Search file for @speckit:AS: or @speckit:EC: annotations
+       IF not found:
+         → LOW: "Test file {file} missing @speckit annotations for traceability"
+```
+
+**Severity Summary for Pass W:**
+| Condition | Severity |
+|-----------|----------|
+| AS requires test but no [TEST:] task | HIGH |
+| Test references non-existent spec ID | HIGH |
+| Critical EC without test | HIGH |
+| Implementation complete but test missing | HIGH |
+| Story has impl but no tests for required AS | HIGH |
+| [NO-TEST:] without justification | MEDIUM |
+| TTM incomplete | MEDIUM |
+| Invalid test marker format | MEDIUM |
+| Test marked passing but placeholder path | MEDIUM |
+| Non-critical EC without test | LOW |
+| [NO-TEST:] not in TTM | LOW |
+| Missing @speckit annotations | LOW |
+
+---
+
 ### 5. Severity Assignment
 
 Use this heuristic to prioritize findings:
@@ -977,6 +1092,11 @@ Use this heuristic to prioritize findings:
   - **Coverage below threshold** (QA: insufficient test coverage)
   - **High vulnerabilities** (QA: security audit found high CVEs)
   - **Potential vulnerability pattern** (QA: SQL injection, XSS, etc.)
+  - **AS requires test but no [TEST:] task** (Test-Spec: AS with "Requires Test = YES" has no coverage)
+  - **Test references non-existent spec ID** (Test-Spec: orphan test task)
+  - **Critical EC without test task** (Test-Spec: security-critical edge case uncovered)
+  - **Implementation complete but test not written** (Test-Spec: TTM shows impl done, test missing)
+  - **Story has impl but no tests for required AS** (Test-Spec: user story test gap)
 
 - **MEDIUM**:
   - Terminology drift
@@ -986,7 +1106,10 @@ Use this heuristic to prioritize findings:
   - **Task uses external API without [DEP:] marker** (API: traceability gap)
   - **Version mismatch between task and registry** (API: inconsistency)
   - **External API missing version specification** (API: breaking change risk)
-  - **AS with no test task** (test gap, if tests requested)
+  - **[NO-TEST:] without justification** (Test-Spec: explicit skip requires reason)
+  - **TTM incomplete** (Test-Spec: testable AS not in matrix)
+  - **Invalid test marker format** (Test-Spec: malformed [TEST:] marker)
+  - **Test marked passing but placeholder path** (Test-Spec: TTM shows ✅ but no actual file)
   - **Concept story without specification** (idea loss)
   - **Cross-story dependency** (may affect parallelization)
   - **Journey references unspecified feature** (incomplete planning)
@@ -1019,6 +1142,9 @@ Use this heuristic to prioritize findings:
   - **Invalid APIDOC URL format** (API: broken reference)
   - **External API missing rate limit documentation** (API: operational risk)
   - **Task missing FR link** (traceability hygiene)
+  - **Non-critical EC without test** (Test-Spec: optional test coverage)
+  - **[NO-TEST:] not in TTM** (Test-Spec: documentation consistency)
+  - **Missing @speckit annotations in test file** (Test-Spec: traceability hygiene)
   - **Spec missing concept reference** (traceability hygiene)
   - **RTM accuracy mismatch** (documentation drift)
   - **Coverage summary outdated** (stale metrics)

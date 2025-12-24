@@ -52,12 +52,17 @@
   IMPORTANT: Each scenario has a unique ID (AS-NNN) for traceability.
   These IDs will be referenced in tasks.md to ensure test coverage.
   Format: AS-[story number][scenario letter], e.g., AS-1A, AS-1B, AS-2A
+
+  "Requires Test" column:
+  - YES = Automated test REQUIRED in tasks.md (enforced by Pass W in /speckit.analyze)
+  - NO = No automated test needed (e.g., UI-only, manual validation)
+  If YES but no test is feasible, use [NO-TEST:AS-xxx] with justification in tasks.md.
 -->
 
-| ID | Given | When | Then |
-|----|-------|------|------|
-| AS-1A | [initial state] | [action] | [expected outcome] |
-| AS-1B | [initial state] | [action] | [expected outcome] |
+| ID | Given | When | Then | Requires Test |
+|----|-------|------|------|---------------|
+| AS-1A | [initial state] | [action] | [expected outcome] | YES |
+| AS-1B | [initial state] | [action] | [expected outcome] | YES |
 
 ---
 
@@ -73,9 +78,9 @@
 
 **Acceptance Scenarios**:
 
-| ID | Given | When | Then |
-|----|-------|------|------|
-| AS-2A | [initial state] | [action] | [expected outcome] |
+| ID | Given | When | Then | Requires Test |
+|----|-------|------|------|---------------|
+| AS-2A | [initial state] | [action] | [expected outcome] | YES |
 
 ---
 
@@ -91,9 +96,9 @@
 
 **Acceptance Scenarios**:
 
-| ID | Given | When | Then |
-|----|-------|------|------|
-| AS-3A | [initial state] | [action] | [expected outcome] |
+| ID | Given | When | Then | Requires Test |
+|----|-------|------|------|---------------|
+| AS-3A | [initial state] | [action] | [expected outcome] | NO |
 
 ---
 
@@ -106,12 +111,17 @@
   Fill them out with the right edge cases.
 
   Edge cases should also have IDs for traceability (EC-NNN format).
+
+  "Critical" column:
+  - CRITICAL = Security-related or data-integrity edge case (test REQUIRED, enforced by Pass W)
+  - Empty = Non-critical edge case (test recommended but not enforced)
+  Security keywords that trigger CRITICAL: auth, inject, XSS, SQL, CSRF, token, session, permission
 -->
 
-| ID | Condition | Expected Behavior |
-|----|-----------|-------------------|
-| EC-001 | [boundary condition] | [expected behavior] |
-| EC-002 | [error scenario] | [expected behavior] |
+| ID | Condition | Expected Behavior | Critical |
+|----|-----------|-------------------|----------|
+| EC-001 | [boundary condition] | [expected behavior] | |
+| EC-002 | [security: auth bypass attempt] | [expected behavior] | CRITICAL |
 
 ## Requirements *(mandatory)*
 
@@ -188,13 +198,14 @@
 <!--
   Additional acceptance scenarios specific to visual and interaction behavior.
   These complement the main Acceptance Scenarios in User Stories.
+  UI scenarios typically have "Requires Test = NO" unless E2E testing is available.
 -->
 
-| ID | Given | When | Then |
-|----|-------|------|------|
-| AS-UI-001 | User is on mobile device | User taps submit button | Button shows loading spinner within 100ms |
-| AS-UI-002 | User is filling form | User leaves required field empty | Field shows red border and error message |
-| AS-UI-003 | Modal is open | User presses Escape | Modal closes with fade animation |
+| ID | Given | When | Then | Requires Test |
+|----|-------|------|------|---------------|
+| AS-UI-001 | User is on mobile device | User taps submit button | Button shows loading spinner within 100ms | NO |
+| AS-UI-002 | User is filling form | User leaves required field empty | Field shows red border and error message | NO |
+| AS-UI-003 | Modal is open | User presses Escape | Modal closes with fade animation | NO |
 
 ### Key Entities *(include if feature involves data)*
 
@@ -286,6 +297,53 @@
 | VR-002 | AS-UI-002 | design.md | Defined |
 | IR-001 | AS-UI-001 | design.md | Defined |
 | IR-002 | AS-UI-003 | design.md | Defined |
+
+---
+
+## Test Strategy
+
+<!--
+  Documents the overall testing approach for this feature.
+  Validated by Pass W in /speckit.analyze.
+-->
+
+### Coverage Summary
+
+| Category | Total | Requires Test | Coverage Target |
+|----------|-------|---------------|-----------------|
+| Acceptance Scenarios (AS) | 4 | 3 | 100% of YES |
+| UI Acceptance Scenarios (AS-UI) | 3 | 0 | N/A (manual) |
+| Edge Cases (EC) | 2 | 1 (CRITICAL) | 100% of CRITICAL |
+
+### Test Types Required
+
+- [ ] **Unit Tests**: For FR with pure logic (validation, calculations)
+- [ ] **Integration Tests**: For FR with external dependencies (API, DB)
+- [ ] **E2E Tests**: For critical user journeys (AS with Requires Test = YES)
+
+### Untestable Scenarios
+
+<!--
+  List scenarios marked "Requires Test = NO" with justification.
+  Use this to communicate to /speckit.tasks what [NO-TEST:] markers are valid.
+-->
+
+| Scenario | Justification |
+|----------|---------------|
+| AS-3A | [e.g., "UI-only behavior, validated by visual review"] |
+| AS-UI-* | UI scenarios validated through design review and manual QA |
+
+### Test Infrastructure Requirements
+
+<!--
+  Document any prerequisites for test execution.
+  This informs /speckit.plan Phase 0.5 verification.
+-->
+
+- **Test Framework**: [e.g., Jest, pytest, vitest]
+- **Mock Requirements**: [e.g., "Mock external payment API"]
+- **Fixtures Required**: [e.g., "User fixtures with various roles"]
+- **Environment Variables**: [e.g., "TEST_API_KEY required"]
 
 ---
 

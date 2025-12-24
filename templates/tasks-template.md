@@ -8,7 +8,7 @@ description: "Task list template for feature implementation"
 **Input**: Design documents from `/specs/[###-feature-name]/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
+**Tests**: Tests are REQUIRED for all Acceptance Scenarios (AS-xxx) marked "Requires Test = YES" in spec.md. Use `[TEST:AS-xxx]` markers for test tasks. Use `[NO-TEST:AS-xxx]` with justification if intentionally skipping a test.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
@@ -488,6 +488,48 @@ graph TD
 
 ---
 
+## Test Traceability Matrix (TTM)
+
+<!--
+  Bidirectional traceability between specs and tests.
+  - Links each testable spec ID (AS/EC) to its test task and implementation
+  - Enables Pass W validation in /speckit.analyze
+  - Updated during implementation as tests are written
+
+  Columns:
+  - Spec ID: AS-xxx or EC-xxx from spec.md
+  - Type: AS (Acceptance Scenario) or EC (Edge Case)
+  - Requires Test: YES/NO from spec.md (AS only) or CRITICAL flag (EC)
+  - Test Task: Task ID with [TEST:xxx] marker
+  - Impl Task: Related implementation task
+  - Test File: Path to test file once written
+  - Status: ❌ No test | ⏭️ Skipped [NO-TEST:] | 🔄 In progress | ✅ Passing
+-->
+
+| Spec ID | Type | Requires Test | Test Task | Impl Task | Test File | Status |
+|---------|------|---------------|-----------|-----------|-----------|--------|
+| AS-1A | AS | YES | T010 | T003-T005 | tests/... | ❌ |
+| AS-1B | AS | YES | T011 | T006-T009 | tests/... | ❌ |
+| AS-2A | AS | YES | T018, T019 | T012-T017 | tests/... | ❌ |
+| AS-3A | AS | NO | - | T020-T023 | - | ⏭️ |
+| EC-001 | EC | CRITICAL | T030 | T003 | tests/... | ❌ |
+| EC-002 | EC | - | - | T012 | - | ⏭️ |
+
+### TTM Coverage Metrics
+
+| Category | Total | Tested | Skipped | Coverage |
+|----------|-------|--------|---------|----------|
+| AS (Requires Test = YES) | 3 | 0 | 0 | 0% |
+| AS (Requires Test = NO) | 1 | 0 | 1 | N/A |
+| EC (CRITICAL) | 1 | 0 | 0 | 0% |
+| EC (Non-critical) | 1 | 0 | 1 | N/A |
+
+**Skipped Tests** *(require [NO-TEST:] justification)*:
+- `[NO-TEST:AS-3A]`: [Justification - e.g., "UI-only scenario, covered by E2E"]
+- `[NO-TEST:EC-002]`: [Justification - e.g., "Handled by framework validation"]
+
+---
+
 ## Coverage Summary
 
 <!--
@@ -515,7 +557,9 @@ graph TD
 - **[FR:FR-001]** = links to Functional Requirement for traceability
 - **[VR:VR-001]** = links to Visual Requirement for UI traceability (from design.md)
 - **[IR:IR-001]** = links to Interaction Requirement for animation/behavior traceability
-- **[TEST:AS-1A]** = test task covers specific Acceptance Scenario
+- **[TEST:AS-1A]** = test task covers specific Acceptance Scenario (REQUIRED for AS with "Requires Test = YES")
+- **[TEST:EC-001]** = test task covers specific Edge Case (REQUIRED for EC marked CRITICAL)
+- **[NO-TEST:AS-1A]** = explicit skip with justification (use when intentionally not testing)
 - **[CHG:CHG-001]** = *(brownfield)* links to Change Request for change traceability
 - **[MIG:MIG-001]** = *(brownfield)* migration phase implementation task
 - **[REG:PB-001]** = *(brownfield)* regression test for Preserved Behavior

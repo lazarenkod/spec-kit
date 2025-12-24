@@ -284,14 +284,49 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Suggest next steps if implementation cannot proceed
    - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.
 
-9. Completion validation:
+9. **Definition of Done (DoD)** — Per User Story:
+
+   Before marking a user story as complete, verify ALL of the following:
+
+   **Test Coverage**:
+   - [ ] All `[TEST:AS-xxx]` tasks for this story are marked `[X]`
+   - [ ] All tests pass locally (run test command for story)
+   - [ ] No `[TEST:AS-xxx]` tasks skipped without `[NO-TEST:]` justification
+
+   **Traceability**:
+   - [ ] `@speckit:AS:AS-xxx` annotations present in test code
+   - [ ] `@speckit:FR:FR-xxx` annotations present in implementation code
+   - [ ] TTM in tasks.md updated with test file paths
+
+   **Validation Gate**:
+   ```text
+   IF story has AS with "Requires Test = YES" in spec.md:
+     IF [TEST:AS-xxx] task not marked [X]:
+       → BLOCK story completion
+       → Message: "Story cannot proceed: test for AS-xxx not complete"
+     IF tests fail:
+       → BLOCK story completion
+       → Message: "Story cannot proceed: tests failing"
+   ```
+
+   **DoD Checklist** (display after each story completion):
+   ```
+   📋 Definition of Done - User Story 1:
+   ✓ All implementation tasks [X]
+   ✓ All test tasks [X] (T010, T011)
+   ✓ Tests pass locally
+   ✓ @speckit annotations added
+   → Story COMPLETE ✅
+   ```
+
+10. Completion validation:
    - Verify all required tasks are completed
    - Check that implemented features match the original specification
    - Validate that tests pass and coverage meets requirements
    - Confirm the implementation follows the technical plan
    - Report final status with summary of completed work
 
-10. **Traceability Verification** (after each phase completion):
+11. **Traceability Verification** (after each phase completion):
 
     After completing implementation tasks in a phase, verify @speckit annotations are present:
 
@@ -315,6 +350,51 @@ You **MUST** consider the user input before proceeding (if not empty).
     ```
 
     **When to skip**: Setup and Foundation phases typically don't have FR/AS markers, so traceability verification focuses on User Story phases.
+
+12. **Test Validation Checkpoint** (per story, after all test tasks):
+
+    After completing test tasks for a user story, validate tests are functional:
+
+    a) **Run tests for story**:
+       ```text
+       # Detect test framework from plan.md or package.json/pyproject.toml
+       IF pytest: pytest -k "AS_1A or AS_1B" --tb=short
+       IF jest: npm test -- --testPathPattern="AS.1A|AS.1B"
+       IF vitest: vitest run --reporter=verbose --grep="AS.1A|AS.1B"
+       ```
+
+    b) **Validation logic**:
+       ```text
+       IF any test fails:
+         → DO NOT proceed to next story
+         → Display failing test details
+         → Mark test task as [!] (needs attention) in tasks.md
+         → Message: "Fix failing tests before proceeding"
+
+       IF all tests pass:
+         → Update TTM status to "✅ Passing"
+         → Update test file path in TTM if placeholder
+         → Proceed to next story
+       ```
+
+    c) **TTM Update** (automatic):
+       ```text
+       After test validation, update tasks.md TTM:
+       | AS-1A | AS | YES | T010 | T003-T005 | tests/auth/test_login.py | ✅ |
+       ```
+
+    **Output Format**:
+    ```
+    🧪 Test Checkpoint - User Story 1:
+    Running: pytest -k "AS_1A or AS_1B"
+    ✓ test_login_success (AS-1A) - PASSED
+    ✓ test_login_failure (AS-1B) - PASSED
+    → All 2 tests passing ✅
+
+    TTM Updated:
+    - AS-1A: ❌ → ✅ (tests/auth/test_login.py)
+    - AS-1B: ❌ → ✅ (tests/auth/test_login.py)
+    ```
 
 Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit.tasks` first to regenerate the task list.
 

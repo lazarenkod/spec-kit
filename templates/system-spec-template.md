@@ -156,16 +156,56 @@
 
 ---
 
-## Test Coverage
+## Test Coverage *(mandatory)*
 
 <!--
-  Links to test files that validate this system spec.
-  Auto-populated during implementation or manually maintained.
+  MANDATORY: Every system spec MUST have test coverage.
+  Links Acceptance Scenario IDs (AS-xxx) from feature specs to test files.
+  Validated by Pass W in /speckit.analyze.
+
+  Status values:
+  - ❌ Pending: Test not yet written
+  - ⏭️ Skipped: Intentionally not tested (requires justification)
+  - 🔄 In progress: Test being written
+  - ✅ Passing: Test exists and passes
+  - ❌ Failing: Test exists but fails
 -->
 
-| Scenario | Test File | Status |
-|----------|-----------|--------|
-| [Scenario from Current Behavior] | `tests/[path]/[file].test.ts` | [Pending/Passing/Failing] |
+### Scenario Coverage
+
+| Scenario | AS-ID | Test File | Test Function | Status |
+|----------|-------|-----------|---------------|--------|
+| [Happy path: user login] | AS-1A | `tests/auth/login.test.ts` | `testLoginSuccess` | ❌ Pending |
+| [Error: invalid credentials] | AS-1B | `tests/auth/login.test.ts` | `testLoginFailure` | ❌ Pending |
+| [Edge case: rate limiting] | EC-001 | `tests/auth/ratelimit.test.ts` | `testRateLimitExceeded` | ❌ Pending |
+
+### Coverage Metrics
+
+<!--
+  Auto-populated by /speckit.merge or manually updated.
+  System spec is considered "covered" when Required Coverage >= 80%.
+-->
+
+| Metric | Count | Covered | Skipped | Coverage |
+|--------|-------|---------|---------|----------|
+| Scenarios (AS) | X | 0 | 0 | 0% |
+| Edge Cases (EC) | X | 0 | 0 | 0% |
+| **Total** | X | 0 | 0 | 0% |
+
+**Required Coverage**: [e.g., 80% | 100% for security-critical]
+**Last Verified**: [DATE]
+**Verification Method**: [automated CI | manual | /speckit.analyze]
+
+### Skipped Tests
+
+<!--
+  Justification for any scenario not covered by automated tests.
+  Corresponds to [NO-TEST:] markers in tasks.md.
+-->
+
+| Scenario | Reason | Alternative Validation |
+|----------|--------|------------------------|
+| [example] | [e.g., "UI-only, no backend logic"] | Manual QA checklist |
 
 ---
 
