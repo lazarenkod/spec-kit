@@ -170,7 +170,21 @@ If `specs/system/_index.md` exists, add entries for new system specs:
 
 If `_index.md` doesn't exist, create it with registry structure.
 
-### 6. Mark Feature as Merged
+### 6. Update Feature Manifest
+
+Update the feature registry to mark this feature as merged:
+
+```
+MANIFEST_FILE = specs/features/.manifest.md
+FEATURE_ID = extract from FEATURE_BRANCH (first 3 digits)
+
+IF exists(MANIFEST_FILE):
+  Find row where ID = FEATURE_ID
+  Update Status column: IMPLEMENTING → MERGED
+  Update "Last Updated" column: today's date
+```
+
+### 7. Mark Feature as Merged
 
 Create `.merged` marker in feature directory:
 
@@ -184,7 +198,7 @@ Create `.merged` marker in feature directory:
 }
 ```
 
-### 7. Generate Merge Report
+### 8. Generate Merge Report
 
 Output summary:
 

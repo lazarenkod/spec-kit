@@ -122,6 +122,48 @@ ELSE:
   CONCEPT_IDS = matched story IDs (or "N/A" if no match)
 ```
 
+## Incomplete Feature Check
+
+Before creating a new feature, check for incomplete work in the feature manifest:
+
+```
+MANIFEST_FILE = specs/features/.manifest.md
+
+IF exists(MANIFEST_FILE):
+  Parse manifest table
+  Find features with status NOT IN [MERGED, ABANDONED]
+
+  IF incomplete_features.count > 0:
+    Display warning:
+
+    ⚠️ **Incomplete Features Detected**
+
+    | ID | Name | Status | Last Updated |
+    |----|------|--------|--------------|
+    | [list each incomplete feature] |
+
+    **Options**:
+    1. **Resume existing**: Run `/speckit.switch <ID>` to continue working on an existing feature
+    2. **Start new anyway**: Confirm to proceed with creating a new feature
+    3. **Abandon old**: Mark incomplete features as ABANDONED first
+
+    **Note**: Proceeding will create a new feature. Incomplete feature(s) above
+    will remain accessible via `/speckit.switch`.
+
+    ASK user: "Do you want to proceed with creating a new feature? (yes/no)"
+
+    IF user confirms:
+      CONTINUE to branch creation
+    ELSE:
+      EXIT with suggestion to use /speckit.switch
+
+ELSE:
+  # No manifest exists - this is the first feature
+  CONTINUE to branch creation
+```
+
+---
+
 ## Outline
 
 The text the user typed after `/speckit.specify` in the triggering message **is** the feature description. Assume you always have it available in this conversation even if `{ARGS}` appears literally below. Do not ask the user to repeat it unless they provided an empty command.

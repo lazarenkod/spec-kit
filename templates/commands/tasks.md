@@ -164,7 +164,18 @@ You **MUST** consider the user input before proceeding (if not empty).
      - Warn user but continue generation
    ```
 
-9. **Report**: Output path to generated tasks.md and summary:
+9. **Update Feature Manifest**: After tasks.md is generated:
+   ```
+   MANIFEST_FILE = specs/features/.manifest.md
+   FEATURE_ID = extract from current branch/feature (first 3 digits)
+
+   IF exists(MANIFEST_FILE):
+     Find row where ID = FEATURE_ID
+     Update Status column: PLANNED → TASKED
+     Update "Last Updated" column: today's date
+   ```
+
+10. **Report**: Output path to generated tasks.md and summary:
    - Total task count
    - Task count per user story
    - Parallel opportunities identified

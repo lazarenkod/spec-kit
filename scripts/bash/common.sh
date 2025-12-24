@@ -13,22 +13,43 @@ get_repo_root() {
 }
 
 # Get current branch, with fallback for non-git repositories
+# Detection priority:
+#   1. SPECIFY_FEATURE env var (explicit override)
+#   2. .speckit/active file (persistent local state)
+#   3. Git branch name (if git repo)
+#   4. Highest numbered directory in specs/features/ (fallback)
 get_current_branch() {
-    # First check if SPECIFY_FEATURE environment variable is set
+    # 1. First check if SPECIFY_FEATURE environment variable is set
     if [[ -n "${SPECIFY_FEATURE:-}" ]]; then
         echo "$SPECIFY_FEATURE"
         return
     fi
 
-    # Then check git if available
+    # 2. Check for persistent local state in .speckit/active
+    local repo_root=$(get_repo_root)
+    local active_file="$repo_root/.speckit/active"
+    if [[ -f "$active_file" ]]; then
+        local active_feature
+        active_feature=$(cat "$active_file" 2>/dev/null | tr -d '[:space:]')
+        if [[ -n "$active_feature" ]]; then
+            echo "$active_feature"
+            return
+        fi
+    fi
+
+    # 3. Then check git if available
     if git rev-parse --abbrev-ref HEAD >/dev/null 2>&1; then
         git rev-parse --abbrev-ref HEAD
         return
     fi
 
-    # For non-git repos, try to find the latest feature directory
-    local repo_root=$(get_repo_root)
-    local specs_dir="$repo_root/specs"
+    # 4. For non-git repos, try to find the latest feature directory
+    local specs_dir="$repo_root/specs/features"
+
+    # Fallback to old location if features/ doesn't exist
+    if [[ ! -d "$specs_dir" ]]; then
+        specs_dir="$repo_root/specs"
+    fi
 
     if [[ -d "$specs_dir" ]]; then
         local latest_feature=""
@@ -85,42 +106,58 @@ get_feature_dir() { echo "$1/specs/$2"; }
 
 # Find feature directory by numeric prefix instead of exact branch match
 # This allows multiple branches to work on the same spec (e.g., 004-fix-bug, 004-add-feature)
+# Searches in specs/features/ first (two-folder architecture), then falls back to specs/
 find_feature_dir_by_prefix() {
     local repo_root="$1"
     local branch_name="$2"
+    local features_dir="$repo_root/specs/features"
     local specs_dir="$repo_root/specs"
 
     # Extract numeric prefix from branch (e.g., "004" from "004-whatever")
     if [[ ! "$branch_name" =~ ^([0-9]{3})- ]]; then
         # If branch doesn't have numeric prefix, fall back to exact match
-        echo "$specs_dir/$branch_name"
+        # Try features/ first, then specs/
+        if [[ -d "$features_dir/$branch_name" ]]; then
+            echo "$features_dir/$branch_name"
+        else
+            echo "$specs_dir/$branch_name"
+        fi
         return
     fi
 
     local prefix="${BASH_REMATCH[1]}"
 
-    # Search for directories in specs/ that start with this prefix
+    # Search for directories in specs/features/ first (two-folder architecture)
     local matches=()
-    if [[ -d "$specs_dir" ]]; then
+    if [[ -d "$features_dir" ]]; then
+        for dir in "$features_dir"/"$prefix"-*; do
+            if [[ -d "$dir" ]]; then
+                matches+=("$features_dir/$(basename "$dir")")
+            fi
+        done
+    fi
+
+    # If not found in features/, search in specs/ (legacy location)
+    if [[ ${#matches[@]} -eq 0 && -d "$specs_dir" ]]; then
         for dir in "$specs_dir"/"$prefix"-*; do
             if [[ -d "$dir" ]]; then
-                matches+=("$(basename "$dir")")
+                matches+=("$specs_dir/$(basename "$dir")")
             fi
         done
     fi
 
     # Handle results
     if [[ ${#matches[@]} -eq 0 ]]; then
-        # No match found - return the branch name path (will fail later with clear error)
-        echo "$specs_dir/$branch_name"
+        # No match found - return the features/ path (will fail later with clear error)
+        echo "$features_dir/$branch_name"
     elif [[ ${#matches[@]} -eq 1 ]]; then
         # Exactly one match - perfect!
-        echo "$specs_dir/${matches[0]}"
+        echo "${matches[0]}"
     else
         # Multiple matches - this shouldn't happen with proper naming convention
         echo "ERROR: Multiple spec directories found with prefix '$prefix': ${matches[*]}" >&2
         echo "Please ensure only one spec directory exists per numeric prefix." >&2
-        echo "$specs_dir/$branch_name"  # Return something to avoid breaking the script
+        echo "$features_dir/$branch_name"  # Return something to avoid breaking the script
     fi
 }
 

@@ -69,7 +69,18 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Phase 1: Update agent context by running the agent script
    - Re-evaluate Constitution Check post-design
 
-4. **Stop and report**: Command ends after Phase 2 planning. Report branch, IMPL_PLAN path, and generated artifacts.
+4. **Update Feature Manifest**: After plan artifacts are generated:
+   ```
+   MANIFEST_FILE = specs/features/.manifest.md
+   FEATURE_ID = extract from BRANCH (first 3 digits)
+
+   IF exists(MANIFEST_FILE):
+     Find row where ID = FEATURE_ID
+     Update Status column: SPEC_COMPLETE → PLANNED
+     Update "Last Updated" column: today's date
+   ```
+
+5. **Stop and report**: Command ends after Phase 2 planning. Report branch, IMPL_PLAN path, and generated artifacts.
 
 ## Phases
 

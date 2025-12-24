@@ -209,6 +209,39 @@ clean_branch_name() {
     echo "$name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//' | sed 's/-$//'
 }
 
+# Update the feature manifest with a new feature entry
+update_manifest() {
+    local feature_id="$1"
+    local feature_name="$2"
+    local manifest_file="$3"
+    local today=$(date +%Y-%m-%d)
+
+    # Create manifest if it doesn't exist
+    if [[ ! -f "$manifest_file" ]]; then
+        mkdir -p "$(dirname "$manifest_file")"
+        cat > "$manifest_file" << 'EOF'
+# Feature Manifest
+
+| ID | Name | Status | Created | Last Updated |
+|----|------|--------|---------|--------------|
+EOF
+    fi
+
+    # Append new feature entry
+    echo "| $feature_id | $feature_name | CREATED | $today | $today |" >> "$manifest_file"
+}
+
+# Set the active feature in .speckit/active
+set_active_feature() {
+    local feature_full_name="$1"
+    local repo_root="$2"
+    local active_dir="$repo_root/.speckit"
+    local active_file="$active_dir/active"
+
+    mkdir -p "$active_dir"
+    echo "$feature_full_name" > "$active_file"
+}
+
 # Resolve repository root. Prefer git information when available, but fall back
 # to searching for repository markers so the workflow still functions in repositories that
 # were initialised with --no-git.
@@ -342,6 +375,13 @@ mkdir -p "$FEATURE_DIR"
 TEMPLATE="$REPO_ROOT/.specify/templates/spec-template.md"
 SPEC_FILE="$FEATURE_DIR/spec.md"
 if [ -f "$TEMPLATE" ]; then cp "$TEMPLATE" "$SPEC_FILE"; else touch "$SPEC_FILE"; fi
+
+# Update feature manifest
+MANIFEST_FILE="$FEATURES_DIR/.manifest.md"
+update_manifest "$FEATURE_NUM" "$BRANCH_SUFFIX" "$MANIFEST_FILE"
+
+# Set active feature in persistent state
+set_active_feature "$BRANCH_NAME" "$REPO_ROOT"
 
 # Set the SPECIFY_FEATURE environment variable for the current session
 export SPECIFY_FEATURE="$BRANCH_NAME"
