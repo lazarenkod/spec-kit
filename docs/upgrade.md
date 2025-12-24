@@ -53,16 +53,17 @@ Running `specify init --here --force` will update:
 - ✅ **Slash command files** (`.claude/commands/`, `.github/prompts/`, etc.)
 - ✅ **Script files** (`.specify/scripts/`)
 - ✅ **Template files** (`.specify/templates/`)
-- ✅ **Shared memory files** (`.specify/memory/`) - **⚠️ See warnings below**
+- ✅ **Shared memory files** (`.specify/memory/`) - except `constitution.md` (see below)
 
 ### What stays safe?
 
-These files are **never touched** by the upgrade—the template packages don't even contain them:
+These files are **never touched** by the upgrade:
 
 - ✅ **Your specifications** (`specs/001-my-feature/spec.md`, etc.) - **CONFIRMED SAFE**
 - ✅ **Your implementation plans** (`specs/001-my-feature/plan.md`, `tasks.md`, etc.) - **CONFIRMED SAFE**
 - ✅ **Your source code** - **CONFIRMED SAFE**
 - ✅ **Your git history** - **CONFIRMED SAFE**
+- ✅ **Your constitution** (`.specify/memory/constitution.md`) - **PRESERVED AUTOMATICALLY**
 
 The `specs/` directory is completely excluded from template packages and will never be modified during upgrades.
 
@@ -100,31 +101,7 @@ With `--force`, it skips the confirmation and proceeds immediately.
 
 ## ⚠️ Important Warnings
 
-### 1. Constitution file will be overwritten
-
-**Known issue:** `specify init --here --force` currently overwrites `.specify/memory/constitution.md` with the default template, erasing any customizations you made.
-
-**Workaround:**
-
-```bash
-# 1. Back up your constitution before upgrading
-cp .specify/memory/constitution.md .specify/memory/constitution-backup.md
-
-# 2. Run the upgrade
-specify init --here --force --ai copilot
-
-# 3. Restore your customized constitution
-mv .specify/memory/constitution-backup.md .specify/memory/constitution.md
-```
-
-Or use git to restore it:
-
-```bash
-# After upgrade, restore from git history
-git restore .specify/memory/constitution.md
-```
-
-### 2. Custom template modifications
+### 1. Custom template modifications
 
 If you customized any templates in `.specify/templates/`, the upgrade will overwrite them. Back them up first:
 
@@ -135,7 +112,7 @@ cp -r .specify/templates .specify/templates-backup
 # After upgrade, merge your changes back manually
 ```
 
-### 3. Duplicate slash commands (IDE-based agents)
+### 2. Duplicate slash commands (IDE-based agents)
 
 Some IDE-based agents (like Kilo Code, Windsurf) may show **duplicate slash commands** after upgrading—both old and new versions appear.
 
@@ -169,16 +146,14 @@ uv tool install specify-cli --force --from git+https://github.com/github/spec-ki
 
 # Update project files to get new commands
 specify init --here --force --ai copilot
-
-# Restore your constitution if customized
-git restore .specify/memory/constitution.md
 ```
 
-### Scenario 2: "I customized templates and constitution"
+Your `constitution.md` will be preserved automatically.
+
+### Scenario 2: "I customized templates"
 
 ```bash
-# 1. Back up customizations
-cp .specify/memory/constitution.md /tmp/constitution-backup.md
+# 1. Back up custom templates
 cp -r .specify/templates /tmp/templates-backup
 
 # 2. Upgrade CLI
@@ -187,10 +162,11 @@ uv tool install specify-cli --force --from git+https://github.com/github/spec-ki
 # 3. Update project
 specify init --here --force --ai copilot
 
-# 4. Restore customizations
-mv /tmp/constitution-backup.md .specify/memory/constitution.md
-# Manually merge template changes if needed
+# 4. Restore custom templates if needed
+# Manually merge template changes back
 ```
+
+Note: Your `constitution.md` is preserved automatically during upgrades.
 
 ### Scenario 3: "I see duplicate slash commands in my IDE"
 
@@ -214,17 +190,11 @@ rm speckit.old-command-name.md
 If you initialized your project with `--no-git`, you can still upgrade:
 
 ```bash
-# Manually back up files you customized
-cp .specify/memory/constitution.md /tmp/constitution-backup.md
-
 # Run upgrade
 specify init --here --force --ai copilot --no-git
-
-# Restore customizations
-mv /tmp/constitution-backup.md .specify/memory/constitution.md
 ```
 
-The `--no-git` flag skips git initialization but doesn't affect file updates.
+Your `constitution.md` will be preserved automatically. The `--no-git` flag skips git initialization but doesn't affect file updates.
 
 ---
 
@@ -299,17 +269,14 @@ This tells Spec Kit which feature directory to use when creating specs, plans, a
 
 ### "I lost my constitution customizations"
 
-**Fix:** Restore from git or backup:
+**Note:** Starting from version 0.0.23, `constitution.md` is preserved automatically during upgrades.
+
+If you upgraded from an older version and lost your customizations:
 
 ```bash
-# If you committed before upgrading
+# Restore from git history
 git restore .specify/memory/constitution.md
-
-# If you backed up manually
-cp /tmp/constitution-backup.md .specify/memory/constitution.md
 ```
-
-**Prevention:** Always commit or back up `constitution.md` before upgrading.
 
 ### "Warning: Current directory is not empty"
 
@@ -336,7 +303,7 @@ Only Spec Kit infrastructure files:
 - Agent command files (`.claude/commands/`, `.github/prompts/`, etc.)
 - Scripts in `.specify/scripts/`
 - Templates in `.specify/templates/`
-- Memory files in `.specify/memory/` (including constitution)
+- Memory files in `.specify/memory/` (except `constitution.md`, which is preserved)
 
 **What stays untouched:**
 
@@ -360,8 +327,6 @@ Only Spec Kit infrastructure files:
 - ✅ **Expected** when upgrading an existing Spec Kit project
 - ✅ **Expected** when adding Spec Kit to an existing codebase
 - ⚠️ **Unexpected** if you thought you were creating a new project in an empty directory
-
-**Prevention tip:** Before upgrading, commit or back up your `.specify/memory/constitution.md` if you customized it.
 
 ### "CLI upgrade doesn't seem to work"
 
