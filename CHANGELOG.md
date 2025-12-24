@@ -7,6 +7,87 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.30] - 2025-12-23
+
+### Added
+
+- **Brownfield Support: Change-Based Architecture** (OpenSpec-inspired)
+  - Full support for specifying changes to existing codebases
+  - Current State → Delta → Desired State pattern for brownfield projects
+
+- **New `/speckit.baseline` command**: Capture current system state for brownfield specs
+  - Analyzes code structure, behaviors, and dependencies within defined scope
+  - Generates `baseline.md` with CB-xxx (Current Behavior) IDs
+  - Documents API contracts, performance baselines, and dependency graphs
+  - Identifies potential limitations that may drive changes
+  - Produces machine-readable baseline for `/speckit.specify` integration
+
+- **New ID types for brownfield traceability**:
+  - `CB-xxx` — Current Behavior (documented in baseline.md)
+  - `CL-xxx` — Current Limitation (drives change requests)
+  - `CHG-xxx` — Change Request with Delta Types (ADD/MODIFY/REPLACE/REMOVE/DEPRECATE)
+  - `PB-xxx` — Preserved Behavior (must remain unchanged, requires regression tests)
+  - `MIG-xxx` — Migration Phase (for Migration change type)
+
+- **New task markers for brownfield projects** (in tasks-template.md):
+  - `[CHG:CHG-xxx]` — Links task to change request
+  - `[MIG:MIG-xxx]` — Migration phase implementation
+  - `[REG:PB-xxx]` — Regression test for preserved behavior
+  - `[ROLLBACK:MIG-xxx]` — Rollback procedure for migration phase
+
+- **Change Specification section in spec-template.md** (brownfield only):
+  - Change Type classification (Enhancement, Refactor, Migration, Bugfix, Performance, Security)
+  - Current State Analysis table with CB-xxx references
+  - Current Limitations table (CL-xxx)
+  - Change Delta table with explicit delta types
+  - Delta-to-Requirement mapping (CHG → FR traceability)
+  - Preserved Behaviors table with regression test requirements
+  - Migration Plan section (for Migration change type)
+  - Rollback Criteria with thresholds and actions
+  - Change Traceability Summary (CB → CL → CHG → FR → Task → Test)
+
+- **Migration Foundation Phase (Phase 2c)** in tasks-template.md:
+  - Regression test tasks for preserved behaviors
+  - Migration infrastructure tasks (feature flags, dual-mode operation)
+  - Rollback procedure tasks
+  - Change baseline documentation tasks
+  - Blocks change implementation until regression protection is in place
+
+### Changed
+
+- **`/speckit.specify` enhanced with brownfield detection**:
+  - Auto-detects brownfield projects (git history, directory structure, keywords)
+  - Prompts for brownfield mode when signals detected
+  - Integrates with baseline.md when available
+  - Generates Change Specification section for brownfield projects
+  - Reports brownfield status in completion summary
+
+- **`/speckit.analyze` enhanced with brownfield validation**:
+  - Category P: Brownfield Consistency Validation
+    - Current state completeness (CB-xxx validation)
+    - Limitation-to-change linkage (CL → CHG)
+    - Delta-to-requirement mapping (CHG → FR)
+    - Preserved behavior coverage (PB-xxx with [REG:] tasks)
+  - Category Q: Migration Validation (for Migration change type)
+    - Migration plan presence and completeness
+    - Phase coverage with implementation and rollback tasks
+    - Dual-mode period and deprecation timeline validation
+    - Rollback criteria completeness
+  - New severity levels for brownfield issues (CRITICAL, HIGH, MEDIUM, LOW)
+  - Brownfield Status section in analysis report
+  - Change Traceability Chain visualization
+  - Migration Status summary with phase coverage
+
+- **Updated `tasks-template.md`**:
+  - Phase Dependencies include Migration Foundation (Phase 2c)
+  - Change Traceability Matrix section for brownfield projects
+  - Migration Phase Coverage table
+  - Preserved Behavior Coverage table
+  - Code Traceability Convention includes CHG and PB types
+  - Notes section includes brownfield markers and best practices
+
+---
+
 ## [0.0.29] - 2025-12-23
 
 ### Added

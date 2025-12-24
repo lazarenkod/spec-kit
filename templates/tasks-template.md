@@ -21,6 +21,10 @@ description: "Task list template for feature implementation"
 - **[VR:VR-001]**: Links to Visual Requirements from spec.md (for UI features)
 - **[IR:IR-001]**: Links to Interaction Requirements from spec.md (for UI features)
 - **[TEST:AS-1A]**: Test task links to Acceptance Scenario ID
+- **[CHG:CHG-001]**: *(brownfield)* Links to Change Request from Change Specification
+- **[MIG:MIG-001]**: *(brownfield)* Migration phase implementation task
+- **[REG:PB-001]**: *(brownfield)* Regression test for Preserved Behavior
+- **[ROLLBACK:MIG-001]**: *(brownfield)* Rollback procedure for migration phase
 - Include exact file paths in descriptions
 
 ### Marker Examples
@@ -34,6 +38,22 @@ description: "Task list template for feature implementation"
 
 # Parallel task with no dependencies
 - [ ] T012 [P] [US1] [FR:FR-001] Create User model in src/models/user.py
+```
+
+### Brownfield Marker Examples *(for projects with Change Specification)*
+
+```markdown
+# Change implementation task (MODIFY delta type)
+- [ ] T040 [US1] [CHG:CHG-001] [FR:FR-001] Refactor AuthService to support OAuth2 in src/services/auth.py
+
+# Migration phase implementation
+- [ ] T050 [MIG:MIG-001] Enable dual-auth mode via feature flag in src/config/features.py
+
+# Rollback procedure for migration phase
+- [ ] T051 [ROLLBACK:MIG-001] Create rollback script to disable OAuth2 and restore session auth
+
+# Regression test for preserved behavior
+- [ ] T060 [REG:PB-001] Add regression test for existing logout flow in tests/regression/test_logout.py
 ```
 
 ## Path Conventions
@@ -133,6 +153,48 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] T0XX [DEP:T0XX] Configure reduced-motion media query support
 
 **Checkpoint**: Design foundation ready - UI feature work can begin with consistent tokens and primitives
+
+---
+
+## Phase 2c: Migration Foundation *(brownfield only)* 🔄
+
+<!--
+  Include this phase ONLY for brownfield projects with Change Specification section.
+  Skip for greenfield projects.
+  Depends on Phase 2 completion.
+  Reference: Change Specification and Migration Plan from spec.md
+-->
+
+**Purpose**: Establish migration infrastructure, regression protection, and rollback capabilities
+
+**⚠️ CRITICAL FOR MIGRATIONS**: No change implementation can begin until:
+1. Baseline behaviors are documented and tested
+2. Feature flags (if applicable) are configured
+3. Rollback procedures are defined and tested
+
+**Change Type**: [Enhancement | Refactor | Migration | Bugfix | Performance | Security]
+
+**Migration Strategy**: [Big Bang | Parallel Run | Strangler Fig | Feature Flag] *(if Migration type)*
+
+### Regression Test Tasks (Preserved Behaviors)
+
+> **NOTE**: These tests MUST pass BEFORE and AFTER changes to ensure preserved behaviors remain intact
+
+- [ ] T0XX [REG:PB-001] Regression test for [preserved behavior 1] in tests/regression/test_[name].py
+- [ ] T0XX [REG:PB-002] Regression test for [preserved behavior 2] in tests/regression/test_[name].py
+
+### Migration Infrastructure Tasks *(if Change Type = Migration)*
+
+- [ ] T0XX [MIG:MIG-001] Create feature flag for [migration phase 1] in src/config/features.py
+- [ ] T0XX [MIG:MIG-001] Enable dual-mode operation for [component] in src/[path]
+- [ ] T0XX [ROLLBACK:MIG-001] Create rollback procedure for migration phase 1
+
+### Change Baseline Tasks
+
+- [ ] T0XX [CHG:CHG-001] Document current behavior of [component] for CB-001
+- [ ] T0XX [P] Capture performance baseline metrics for rollback criteria validation
+
+**Checkpoint**: Migration foundation ready - change implementation can begin with rollback protection
 
 ---
 
@@ -241,7 +303,10 @@ Examples of foundational tasks (adjust based on your project):
 - **Setup (Phase 1)**: No dependencies - can start immediately
 - **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
 - **Design Foundation (Phase 2b)**: *For UI features* - Depends on Phase 2, BLOCKS UI component work
-- **User Stories (Phase 3+)**: All depend on Foundational phase completion (and Design Foundation for UI features)
+- **Migration Foundation (Phase 2c)**: *For brownfield projects* - Depends on Phase 2, BLOCKS change implementation
+  - Regression tests for preserved behaviors must pass before changes
+  - Feature flags and rollback procedures must be in place
+- **User Stories (Phase 3+)**: All depend on Foundational phase completion (and Design Foundation for UI features, Migration Foundation for brownfield)
   - User stories can then proceed in parallel (if staffed)
   - Or sequentially in priority order (P1 → P2 → P3)
 - **Polish (Final Phase)**: Depends on all desired user stories being complete
@@ -430,6 +495,10 @@ graph TD
 - **[VR:VR-001]** = links to Visual Requirement for UI traceability (from design.md)
 - **[IR:IR-001]** = links to Interaction Requirement for animation/behavior traceability
 - **[TEST:AS-1A]** = test task covers specific Acceptance Scenario
+- **[CHG:CHG-001]** = *(brownfield)* links to Change Request for change traceability
+- **[MIG:MIG-001]** = *(brownfield)* migration phase implementation task
+- **[REG:PB-001]** = *(brownfield)* regression test for Preserved Behavior
+- **[ROLLBACK:MIG-001]** = *(brownfield)* rollback procedure for migration phase
 - Each user story should be independently completable and testable
 - Verify tests fail before implementing
 - Commit after each task or logical group
@@ -437,6 +506,40 @@ graph TD
 - Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
 - Run `/speckit.analyze` to validate dependency graph (no cycles) and coverage gaps
 - For UI features: Ensure design tokens are established before component work begins
+- For brownfield: Ensure regression tests pass before AND after changes
+- For migrations: Ensure rollback procedures are tested before production deployment
+
+---
+
+## Change Traceability Matrix *(brownfield only)*
+
+<!--
+  This matrix links for brownfield projects:
+  - Change Requests (CHG) from Change Specification
+  - Preserved Behaviors (PB) requiring regression tests
+  - Migration Phases (MIG) with implementation and rollback tasks
+
+  Status: ❌ Not started | 🔄 In progress | ✅ Complete
+-->
+
+| Change ID | Delta Type | Limitation | Impl Tasks | Regression Tasks | Status |
+|-----------|------------|------------|------------|------------------|--------|
+| CHG-001 | MODIFY | CL-001 | T040 | T060 | ❌ |
+| CHG-002 | ADD | CL-002 | T041, T042 | - | ❌ |
+
+### Migration Phase Coverage *(if Change Type = Migration)*
+
+| MIG ID | Phase | Implementation Tasks | Rollback Tasks | Status |
+|--------|-------|---------------------|----------------|--------|
+| MIG-001 | [Phase 1 name] | T050 | T051 | ❌ |
+| MIG-002 | [Phase 2 name] | T052 | T053 | ❌ |
+
+### Preserved Behavior Coverage
+
+| PB ID | Behavior | Regression Task | Status |
+|-------|----------|-----------------|--------|
+| PB-001 | [Behavior that must remain] | T060 | ❌ |
+| PB-002 | [Behavior that must remain] | T061 | ❌ |
 
 ---
 
@@ -452,6 +555,8 @@ When implementing tasks, the AI agent will automatically add traceability annota
 - `EC` - Edge Case (from spec.md)
 - `VR` - Visual Requirement (from design.md, for UI features)
 - `IR` - Interaction Requirement (from design.md, for UI features)
+- `CHG` - *(brownfield)* Change Request (from Change Specification)
+- `PB` - *(brownfield)* Preserved Behavior regression point
 
 **Examples**:
 ```python
@@ -478,7 +583,21 @@ export class PaymentService {
 func handleTimeout(ctx context.Context) error {
 ```
 
+**Brownfield Examples** *(for projects with Change Specification)*:
+```python
+# @speckit:CHG:CHG-001 - Refactored to support OAuth2 (MODIFY from session auth)
+def authenticate_user(provider: str, token: str) -> User:
+    pass
+
+# @speckit:PB:PB-001 - Preserved logout behavior (must remain unchanged)
+def logout_user(session_id: str) -> None:
+    # This behavior is protected by regression test T060
+    pass
+```
+
 **Validation**: Run `/speckit.analyze` to verify code traceability coverage and detect:
 - Forward gaps: Requirements without code annotations
 - Backward gaps: Orphan annotations referencing non-existent requirements
 - Stale annotations: Annotations that may need updating after spec changes
+- *(brownfield)* Change gaps: CHG-xxx without implementation annotations
+- *(brownfield)* Regression gaps: PB-xxx without [REG:] test tasks

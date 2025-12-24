@@ -427,6 +427,125 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
      → Report total orphan annotations requiring cleanup
 ```
 
+#### P. Brownfield Consistency Validation *(if Change Specification section exists)*
+
+**Purpose**: Validate brownfield change specifications for completeness and consistency.
+
+```
+1. Change Specification Section Presence:
+   IF spec contains brownfield keywords but no "Change Specification" section:
+     → MEDIUM: "Brownfield indicators detected but no Change Specification section"
+     → Suggest: "Add Change Specification section or confirm greenfield project"
+
+2. Current State Completeness:
+   FOR EACH CB-xxx in Current State Analysis:
+     IF Component column is empty:
+       → HIGH: "CB-xxx missing component identification"
+     IF Current Behavior column is empty:
+       → HIGH: "CB-xxx missing behavior description"
+     IF Code Location provided AND file doesn't exist:
+       → MEDIUM: "CB-xxx references non-existent file: {path}"
+
+3. Limitation-to-Change Linkage:
+   FOR EACH CL-xxx in Current Limitations:
+     Search Change Delta for CHG-xxx that references CL-xxx
+     IF no CHG-xxx addresses this limitation:
+       → HIGH: "CL-xxx has no change request addressing it"
+       → Suggest: "Add CHG-xxx with 'Addresses Limitation: CL-xxx'"
+
+4. Change Delta Validation:
+   FOR EACH CHG-xxx in Change Delta:
+     a) IF Delta Type is MODIFY/REPLACE:
+        IF From (CB) column is empty or "N/A":
+          → HIGH: "CHG-xxx modifies behavior but no current state (CB) reference"
+     b) IF Delta Type is ADD:
+        IF From (CB) is NOT "N/A":
+          → LOW: "CHG-xxx is ADD but references existing CB - should be MODIFY?"
+     c) IF Impact Scope is empty:
+        → MEDIUM: "CHG-xxx missing impact scope"
+
+5. Delta-to-Requirement Mapping:
+   FOR EACH CHG-xxx in Change Delta:
+     Search Delta Requirements table
+     IF CHG-xxx not in Delta Requirements:
+       → HIGH: "CHG-xxx has no functional requirements mapped"
+   FOR EACH FR-xxx in Delta Requirements:
+     Verify FR-xxx exists in Functional Requirements section
+     IF not found:
+       → HIGH: "Delta Requirements references non-existent FR-xxx"
+
+6. Preserved Behavior Coverage:
+   FOR EACH PB-xxx in Preserved Behaviors:
+     IF Current Implementation (CB) column is empty:
+       → MEDIUM: "PB-xxx missing CB reference"
+     IF Regression Test Required = Yes:
+       Search tasks.md for [REG:PB-xxx] marker
+       IF not found:
+         → HIGH: "PB-xxx requires regression test but no [REG:PB-xxx] task found"
+
+7. Baseline Reference Check:
+   IF baseline.md exists in FEATURE_DIR:
+     Compare CB-xxx count in spec vs baseline
+     IF spec CB count < baseline component count:
+       → LOW: "Baseline has more components than documented in spec"
+```
+
+#### Q. Migration Validation *(if Change Type = Migration)*
+
+**Purpose**: Validate migration-specific requirements for completeness.
+
+```
+1. Migration Plan Presence:
+   IF Change Type = Migration AND no Migration Plan section:
+     → CRITICAL: "Migration change type requires Migration Plan section"
+
+2. Migration Phase Completeness:
+   FOR EACH MIG-xxx in Migration Plan:
+     IF Description is empty:
+       → HIGH: "MIG-xxx missing description"
+     IF Duration is empty:
+       → MEDIUM: "MIG-xxx missing duration estimate"
+     IF Rollback Plan is empty:
+       → CRITICAL: "MIG-xxx missing rollback plan - migrations must be reversible"
+
+3. Dual-Mode Period Validation:
+   IF Migration Strategy is "Parallel Run" or "Feature Flag":
+     IF Dual-Mode Period not specified:
+       → MEDIUM: "Parallel run/feature flag strategy requires dual-mode period"
+
+4. Deprecation Timeline Validation:
+   FOR EACH entry in Deprecation Timeline:
+     IF Deprecation Date is in past:
+       → MEDIUM: "Deprecation date for {component} is in the past"
+     IF Removal Date <= Deprecation Date:
+       → HIGH: "Removal date must be after deprecation date for {component}"
+     IF Migration Path is empty:
+       → HIGH: "No migration path for deprecated {component}"
+
+5. Migration Task Coverage:
+   FOR EACH MIG-xxx in Migration Plan:
+     Search tasks.md for [MIG:MIG-xxx] marker
+     IF not found:
+       → HIGH: "MIG-xxx has no implementation task"
+     Search tasks.md for [ROLLBACK:MIG-xxx] marker
+     IF not found:
+       → MEDIUM: "MIG-xxx has no rollback task"
+
+6. Rollback Criteria Validation:
+   IF Rollback Criteria section is empty:
+     → HIGH: "Migration requires rollback criteria"
+   FOR EACH criteria:
+     IF Threshold is empty:
+       → MEDIUM: "Rollback criteria missing threshold"
+     IF Action is empty:
+       → MEDIUM: "Rollback criteria missing action"
+
+7. Feature Flag Recommendation:
+   IF Migration affects > 3 CHG-xxx entries:
+     IF Migration Strategy != "Feature Flag":
+       → LOW: "Consider Feature Flag strategy for large migrations"
+```
+
 ### 5. Severity Assignment
 
 Use this heuristic to prioritize findings:
@@ -438,6 +557,8 @@ Use this heuristic to prioritize findings:
   - **Circular dependency in task graph** (blocks execution)
   - **Invalid dependency reference** (task references non-existent task)
   - **Circular system spec dependency** (blocks merge)
+  - **Migration without Migration Plan** (brownfield Migration type)
+  - **Migration phase without rollback plan** (MIG-xxx missing rollback)
 
 - **HIGH**:
   - Duplicate or conflicting requirement
@@ -450,6 +571,13 @@ Use this heuristic to prioritize findings:
   - **Breaking change without migration path** (incomplete documentation)
   - **Broken system spec dependency** (missing referenced spec)
   - **Code references non-existent requirement** (orphan @speckit annotation)
+  - **CB-xxx missing behavior description** (brownfield current state incomplete)
+  - **CL-xxx has no change addressing it** (limitation without resolution)
+  - **CHG-xxx modifies without CB reference** (change without baseline)
+  - **CHG-xxx has no requirements mapped** (untracked change)
+  - **PB-xxx requires regression but no [REG:] task** (unprotected behavior)
+  - **MIG-xxx has no implementation task** (migration gap)
+  - **Removal/Deprecation date order invalid** (timeline error)
 
 - **MEDIUM**:
   - Terminology drift
@@ -465,6 +593,14 @@ Use this heuristic to prioritize findings:
   - **FR with no code annotation** (forward traceability gap)
   - **AS with no test annotation** (test coverage gap)
   - **Orphan annotation** (spec requirement removed)
+  - **Brownfield indicators without Change Specification** (mode mismatch)
+  - **CB-xxx references non-existent file** (invalid code location)
+  - **CHG-xxx missing impact scope** (incomplete change definition)
+  - **PB-xxx missing CB reference** (preserved behavior not linked)
+  - **MIG-xxx missing rollback task** (incomplete migration)
+  - **Dual-mode period not specified** (parallel run/feature flag)
+  - **Deprecation date is in the past** (outdated timeline)
+  - **Rollback criteria missing threshold/action** (incomplete safety)
 
 - **LOW**:
   - Style/wording improvements
@@ -483,6 +619,9 @@ Use this heuristic to prioritize findings:
   - **Task claims file but no annotation** (documentation hygiene)
   - **EC with no annotation** (edge case not marked)
   - **Potentially stale annotation** (spec modified since annotation)
+  - **CHG-xxx ADD but references CB** (should be MODIFY?)
+  - **Baseline has more components than spec CB count** (incomplete mapping)
+  - **Consider Feature Flag for large migrations** (>3 CHG-xxx)
 
 ### 6. Produce Compact Analysis Report
 
@@ -496,7 +635,7 @@ Output a Markdown report (no file writes) with the following structure:
 | G1 | Dependency | CRITICAL | tasks.md | Circular: T005 → T012 → T005 | Break cycle at T012 → T005 |
 | H1 | Traceability | HIGH | spec.md, tasks.md | FR-003 has no tasks | Add [FR:FR-003] to relevant task |
 
-(Add one row per finding; generate stable IDs prefixed by category initial: A=Dup, B=Ambig, C=Underspec, D=Constitution, E=Coverage, F=Inconsist, G=Depend, H=Trace, I=Concept, J=RTM, K=SysImpact, L=SysInteg, M=Impact, N=CodeTrace, O=Freshness)
+(Add one row per finding; generate stable IDs prefixed by category initial: A=Dup, B=Ambig, C=Underspec, D=Constitution, E=Coverage, F=Inconsist, G=Depend, H=Trace, I=Concept, J=RTM, K=SysImpact, L=SysInteg, M=Impact, N=CodeTrace, O=Freshness, P=Brownfield, Q=Migration)
 
 **Dependency Graph Status:**
 
@@ -557,6 +696,40 @@ Edge Case Annotations: N covering X% (N/M) EC scenarios
 | FR-002 | FR | T014 | - | - | ❌ GAP |
 | AS-1A | AS | T020 | tests/test_auth.py | 42 | ✅ OK |
 | EC-001 | EC | T025 | - | - | ⚠️ MISSING |
+
+**Brownfield Status:** *(if Change Specification section exists)*
+
+```
+Mode: BROWNFIELD | Change Type: [Enhancement|Refactor|Migration|...]
+Baseline: [baseline.md exists | not generated]
+```
+
+| Category | Total | Validated | Coverage |
+|----------|-------|-----------|----------|
+| Current Behaviors (CB) | N | M | X% |
+| Limitations (CL) | N | M addressed | X% |
+| Changes (CHG) | N | M with FR | X% |
+| Preserved Behaviors (PB) | N | M with [REG:] | X% |
+
+**Change Traceability Chain:**
+
+| Limitation | Change | Delta Type | Requirements | Tasks | Status |
+|------------|--------|------------|--------------|-------|--------|
+| CL-001 | CHG-001 | ADD | FR-001, FR-002 | T012, T014 | ✅ Complete |
+| CL-002 | CHG-002 | MODIFY | FR-003 | - | ❌ No tasks |
+
+**Migration Status:** *(if Change Type = Migration)*
+
+```
+Strategy: [Big Bang|Parallel Run|Strangler Fig|Feature Flag]
+Phases: N total | N with tasks | N with rollback
+Dual-Mode Period: [specified/not specified]
+```
+
+| Phase | MIG ID | Implementation | Rollback | Status |
+|-------|--------|----------------|----------|--------|
+| Phase 1 | MIG-001 | T040, T041 | T045 | ✅ Complete |
+| Phase 2 | MIG-002 | - | - | ❌ No tasks |
 
 **Requirements Coverage:**
 
