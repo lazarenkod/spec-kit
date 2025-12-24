@@ -35,29 +35,70 @@
   Define the interface that other components depend on.
   For REST APIs: endpoints with request/response formats.
   For internal modules: function signatures and data contracts.
+
+  IMPORTANT: Include version information for traceability and to prevent
+  AI agents from hallucinating non-existent API methods.
 -->
+
+### Contract Version
+
+**API Version**: [e.g., v1, 2024-12-18]
+**Stability**: [STABLE | BETA | DEPRECATED]
+**Sunset Date**: [date if deprecated, or N/A]
+**Migration Guide**: [URL if deprecated, or N/A]
+
+### External Dependencies
+
+<!--
+  Document external packages/services this component uses.
+  Reference plan.md Dependency Registry where applicable.
+-->
+
+| Dependency | Version | Documentation | Purpose |
+|------------|---------|---------------|---------|
+| [package/API] | [version] | [docs URL] | [why used] |
 
 ### Endpoints / Functions
 
-| Method | Path / Signature | Description |
-|--------|------------------|-------------|
-| `POST` | `/api/v1/[resource]` | [What it does] |
-| `GET`  | `/api/v1/[resource]/{id}` | [What it does] |
+| Method | Path / Signature | Description | Since Version |
+|--------|------------------|-------------|---------------|
+| `POST` | `/api/v1/[resource]` | [What it does] | v1.0 |
+| `GET`  | `/api/v1/[resource]/{id}` | [What it does] | v1.0 |
 
 ### Request/Response Formats
 
-**[Endpoint/Function Name]**:
+**[Endpoint/Function Name]** *(since v1.0)*:
 ```json
 // Request
+{
+  "field": "type",          // required | optional
+  "field2": "type"          // required | optional
+}
+
+// Response (200 OK)
 {
   "field": "type"
 }
 
-// Response
+// Error Response (4xx/5xx)
 {
-  "field": "type"
+  "error": "string",
+  "code": "ERROR_CODE",
+  "details": {}             // optional
 }
 ```
+
+### Rate Limiting
+
+| Endpoint Pattern | Limit | Window | Burst |
+|------------------|-------|--------|-------|
+| `/api/v1/*` | [n] req | [time] | [burst] |
+
+### Authentication
+
+**Method**: [Bearer Token | API Key | OAuth2 | Session | None]
+**Scopes Required**: [list of scopes, or N/A]
+**Documentation**: [auth docs URL, or internal reference]
 
 ---
 

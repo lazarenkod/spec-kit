@@ -25,6 +25,11 @@ description: "Task list template for feature implementation"
 - **[MIG:MIG-001]**: *(brownfield)* Migration phase implementation task
 - **[REG:PB-001]**: *(brownfield)* Regression test for Preserved Behavior
 - **[ROLLBACK:MIG-001]**: *(brownfield)* Rollback procedure for migration phase
+- **[DEP:PKG-001]**: Links to Package Dependency from plan.md Dependency Registry
+- **[DEP:API-001]**: Links to External API Dependency from plan.md Dependency Registry
+- **[DEP:FW-001]**: Links to Framework Dependency from plan.md Dependency Registry
+- **[APIDOC:url]**: Direct link to specific API documentation section (for complex integrations)
+- **[VERSION:X.Y.Z]**: Explicit version constraint when task requires specific version
 - Include exact file paths in descriptions
 
 ### Marker Examples
@@ -54,6 +59,22 @@ description: "Task list template for feature implementation"
 
 # Regression test for preserved behavior
 - [ ] T060 [REG:PB-001] Add regression test for existing logout flow in tests/regression/test_logout.py
+```
+
+### Dependency Marker Examples *(for tasks using external APIs/packages)*
+
+```markdown
+# Task using external API - agent must verify against docs
+- [ ] T025 [US2] [FR:FR-005] [DEP:API-001] [APIDOC:https://stripe.com/docs/api/charges/create] Implement payment charge in src/services/payment.py
+
+# Task with specific package version requirement
+- [ ] T030 [US3] [FR:FR-007] [DEP:PKG-002] [VERSION:^5.0.0] Create React Query hooks in src/hooks/useData.ts
+
+# Task using framework-specific feature
+- [ ] T035 [US4] [FR:FR-009] [DEP:FW-001] Implement Server Components in src/app/dashboard/page.tsx
+
+# Task with multiple dependencies
+- [ ] T045 [US5] [FR:FR-010] [DEP:PKG-001,API-002] Integrate S3 upload with presigned URLs in src/services/storage.py
 ```
 
 ## Path Conventions

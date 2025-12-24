@@ -64,6 +64,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Fill Constitution Check section from constitution
    - Evaluate gates (ERROR if violations unjustified)
    - Phase 0: Generate research.md (resolve all NEEDS CLARIFICATION)
+   - Phase 0.5: Verify APIs and populate Dependency Registry (use Context7)
    - Phase 1: Generate data-model.md, contracts/, quickstart.md
    - Phase 1: Update agent context by running the agent script
    - Re-evaluate Constitution Check post-design
@@ -94,6 +95,64 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Alternatives considered: [what else evaluated]
 
 **Output**: research.md with all NEEDS CLARIFICATION resolved
+
+### Phase 0.5: API Verification
+
+**Prerequisites:** `research.md` complete
+
+**Purpose**: Verify all external dependencies and APIs before design decisions.
+This phase prevents AI agents from hallucinating non-existent APIs.
+
+1. **Dependency Audit**:
+
+   ```text
+   FOR EACH dependency identified in research.md:
+     1. Verify package exists in registry (npm, PyPI, crates.io, etc.)
+     2. Check latest stable version and compatibility
+     3. Locate official documentation URL
+     4. Verify key APIs/methods exist in that version
+     5. Check for deprecation warnings
+   ```
+
+   **Tool**: Use Context7 MCP (`resolve-library-id` → `get-library-docs`) to fetch current documentation.
+
+2. **API Documentation Verification**:
+
+   ```text
+   FOR EACH external API to be used (Stripe, AWS, Firebase, etc.):
+     1. Confirm API version is current (not sunset)
+     2. Verify endpoint signatures match documentation
+     3. Document authentication requirements
+     4. Note rate limits and quotas
+     5. Check for breaking changes in recent versions
+   ```
+
+3. **Framework Version Check**:
+
+   ```text
+   FOR EACH framework dependency:
+     1. Identify features required by spec
+     2. Verify features exist in specified version
+     3. Check for deprecated patterns to avoid
+     4. Document minimum version requirements
+   ```
+
+4. **Populate Dependency Registry**:
+   - Fill `plan.md` Dependency Registry section with verified data
+   - Each entry MUST have documentation URL
+   - Each entry MUST have locked version with rationale
+   - Document key APIs/methods to be used
+
+**Validation Gate**:
+
+| Condition | Severity | Action |
+|-----------|----------|--------|
+| Dependency cannot be verified | WARNING | Report and suggest alternatives |
+| Deprecated API detected | ERROR | BLOCK until replacement identified |
+| Missing documentation URL | WARNING | Require manual verification |
+| Version conflict detected | ERROR | Resolve before proceeding |
+
+**Output**: Populated Dependency Registry in plan.md, verified API references
 
 ### Phase 1: Design & Contracts
 

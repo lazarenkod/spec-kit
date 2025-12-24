@@ -483,6 +483,107 @@ List endpoints SHOULD implement pagination. Cursor-based pagination SHOULD be us
 
 ---
 
+## DOC: API Documentation
+
+<!--
+  This domain ensures AI agents work with verified, documented APIs
+  rather than hallucinating non-existent methods or outdated signatures.
+  Critical for AI-assisted development workflows.
+-->
+
+### DOC-001: Dependency Documentation Required
+
+**Level**: MUST
+**Applies to**: All external dependencies (packages, APIs, frameworks)
+
+Every dependency in Dependency Registry MUST include:
+- Locked version (exact or pinned range)
+- Official documentation URL
+- Key APIs/methods to be used
+
+Dependencies without documentation MUST be flagged for manual verification.
+
+**Validation**: Check Dependency Registry completeness in plan.md
+**Violations**: HIGH - AI agents will hallucinate API signatures
+
+---
+
+### DOC-002: API Version Pinning
+
+**Level**: MUST
+**Applies to**: Production dependencies
+
+Production code MUST use explicit version constraints, not "latest" or unbounded ranges. Version MUST be locked in Dependency Registry with rationale for chosen version.
+
+- GOOD: `"stripe": "14.5.0"`, `"^5.0.0"` (major pinned)
+- BAD: `"stripe": "latest"`, `"*"`, `">=1.0.0"`
+
+**Validation**: Check package.json/requirements.txt for unbounded versions
+**Violations**: HIGH - Unpredictable builds, breaking changes
+
+---
+
+### DOC-003: Deprecated API Avoidance
+
+**Level**: MUST
+**Applies to**: New code using external dependencies
+
+New code MUST NOT use deprecated APIs when replacements exist. Deprecated API usage in Dependency Registry MUST include:
+- Migration path to replacement
+- Timeline for migration
+- Justification if replacement is not yet stable
+
+**Validation**: Check for deprecated API usage via Context7 or linters
+**Violations**: HIGH - Technical debt, future breakage
+
+---
+
+### DOC-004: External API Documentation
+
+**Level**: MUST
+**Applies to**: All external REST/GraphQL/gRPC API integrations
+
+External API integrations MUST document:
+- API version being used
+- Authentication method
+- Rate limits and quotas
+- Base URL (or environment variable for it)
+
+This prevents AI agents from generating calls to non-existent endpoints.
+
+**Validation**: Check External API Dependencies section in spec/plan
+**Violations**: HIGH - Integration failures, hallucinated endpoints
+
+---
+
+### DOC-005: API Reference in Tasks
+
+**Level**: SHOULD
+**Applies to**: Tasks involving external integrations
+
+Tasks that implement external API calls SHOULD include `[DEP:xxx]` markers linking to Dependency Registry. Complex integrations SHOULD include `[APIDOC:url]` with direct documentation link.
+
+**Validation**: Check for [DEP:] markers on integration tasks
+**Violations**: MEDIUM - Agents may use wrong API methods
+
+---
+
+### DOC-006: Documentation Freshness
+
+**Level**: SHOULD
+**Applies to**: Dependency Registry in active projects
+
+Dependency Registry SHOULD be reviewed quarterly for:
+- Deprecated APIs needing migration
+- Major version updates available
+- Documentation URL validity
+- New breaking changes in dependencies
+
+**Validation**: Check last review date in plan.md metadata
+**Violations**: LOW - Gradual documentation drift
+
+---
+
 ## PRF: Performance
 
 ### PRF-001: Response Time SLA
@@ -603,9 +704,10 @@ UI SHOULD meet WCAG 2.1 AA standards:
 | QUA (Quality) | 7 | 1 | 6 |
 | REL (Reliability) | 6 | 2 | 4 |
 | API (API Design) | 6 | 3 | 3 |
+| DOC (API Documentation) | 6 | 4 | 2 |
 | PRF (Performance) | 4 | 1 | 3 |
 | CMP (Compliance) | 4 | 1 | 3 |
-| **Total** | **42** | **20** | **22** |
+| **Total** | **48** | **24** | **24** |
 
 ---
 

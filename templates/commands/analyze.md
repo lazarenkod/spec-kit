@@ -861,6 +861,76 @@ The following categories (R-U) are executed when `/speckit.analyze` runs after `
 
 ---
 
+#### V. API Documentation Validation
+
+**Purpose**: Verify all API references are valid and documented to prevent AI hallucinations.
+
+```
+1. Dependency Registry Completeness:
+   IF plan.md exists:
+     FOR EACH entry in Dependency Registry:
+       IF Documentation URL is empty or invalid:
+         → HIGH: "Missing documentation URL for dependency: {dependency}"
+       IF Version is "latest" or unspecified:
+         → MEDIUM: "Unversioned dependency: {dependency} - pin to specific version"
+       IF Key APIs Used is empty:
+         → LOW: "No specific APIs documented for: {dependency}"
+
+2. Task-to-Dependency Linkage:
+   FOR EACH task in tasks.md with external integration indicators:
+     Indicators: "API", "fetch", "request", "client", "SDK", "service" in description
+     OR file paths matching: services/, api/, integrations/, clients/
+
+     IF task lacks [DEP:xxx] marker:
+       → MEDIUM: "Task {task_id} appears to use external API but has no [DEP:] marker"
+     IF [DEP:xxx] references non-existent dependency in Registry:
+       → HIGH: "Task {task_id} references undefined dependency: {dep_id}"
+
+3. API Documentation Reference Check:
+   FOR EACH [APIDOC:url] marker in tasks.md:
+     IF URL format is not valid HTTP(S):
+       → LOW: "Invalid APIDOC URL format in task {task_id}: {url}"
+     SUGGEST: "Verify URL is accessible and points to correct API version"
+
+4. Version Constraint Validation:
+   FOR EACH [VERSION:x.y.z] marker in tasks.md:
+     Look up dependency in Dependency Registry
+     IF version constraint conflicts with Registry:
+       → MEDIUM: "Version mismatch in {task_id}: task specifies {task_ver}, registry has {reg_ver}"
+
+5. Deprecated API Detection:
+   FOR EACH dependency in Dependency Registry:
+     IF spec.md "Deprecated API Warnings" section mentions this dependency:
+       Search tasks.md for deprecated method names
+       IF found:
+         → HIGH: "Task {task_id} may use deprecated API: {method}"
+         → SUGGEST: "Replace with {replacement} per {migration_docs}"
+
+6. External API Consistency:
+   FOR EACH API-xxx in Dependency Registry:
+     IF API Version not specified:
+       → MEDIUM: "External API {name} missing version specification"
+     IF Auth method not documented:
+       → HIGH: "External API {name} missing authentication documentation"
+     IF Rate Limits not documented:
+       → LOW: "External API {name} missing rate limit documentation"
+
+7. Context7 Verification (optional):
+   IF Context7 MCP available AND --verify-docs flag provided:
+     FOR EACH PKG-xxx in Dependency Registry:
+       Call resolve-library-id with package name
+       IF library not found:
+         → HIGH: "Package {name} not found in Context7 registry"
+       IF found:
+         Call get-library-docs for key APIs
+         FOR EACH API in "Key APIs Used":
+           IF API not found in docs:
+             → HIGH: "API {method} not found in {package} v{version} docs"
+             → SUGGEST: "Verify method name or check for deprecation"
+```
+
+---
+
 ### 5. Severity Assignment
 
 Use this heuristic to prioritize findings:
@@ -885,6 +955,11 @@ Use this heuristic to prioritize findings:
   - Untestable acceptance criterion
   - **FR with no implementation tasks** (requirement gap)
   - **Task references non-existent FR** (broken traceability)
+  - **Missing documentation URL for dependency** (API: unverifiable API usage)
+  - **Task references undefined dependency** (API: broken [DEP:] reference)
+  - **External API missing auth documentation** (API: security risk)
+  - **Task may use deprecated API** (API: code will fail)
+  - **API method not found in docs** (API: Context7 verification failed)
   - **System spec already exists** (Creates lists existing spec)
   - **System spec not found** (Updates lists non-existent spec)
   - **Breaking change without migration path** (incomplete documentation)
@@ -907,6 +982,10 @@ Use this heuristic to prioritize findings:
   - Terminology drift
   - Missing non-functional task coverage
   - Underspecified edge case
+  - **Unversioned dependency** (API: reproducibility risk)
+  - **Task uses external API without [DEP:] marker** (API: traceability gap)
+  - **Version mismatch between task and registry** (API: inconsistency)
+  - **External API missing version specification** (API: breaking change risk)
   - **AS with no test task** (test gap, if tests requested)
   - **Concept story without specification** (idea loss)
   - **Cross-story dependency** (may affect parallelization)
@@ -936,6 +1015,9 @@ Use this heuristic to prioritize findings:
 - **LOW**:
   - Style/wording improvements
   - Minor redundancy not affecting execution order
+  - **No specific APIs documented for dependency** (API: documentation hygiene)
+  - **Invalid APIDOC URL format** (API: broken reference)
+  - **External API missing rate limit documentation** (API: operational risk)
   - **Task missing FR link** (traceability hygiene)
   - **Spec missing concept reference** (traceability hygiene)
   - **RTM accuracy mismatch** (documentation drift)

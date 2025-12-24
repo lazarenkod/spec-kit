@@ -43,6 +43,51 @@
 **Accessibility Target**: [WCAG 2.1 A, AA, or AAA]
 **Design Reference**: [design.md location, Figma link, or "To be created"]
 
+### Dependency Registry
+
+<!--
+  CRITICAL: This section is the single source of truth for all dependencies.
+  AI agents MUST verify method signatures and API calls against these docs.
+
+  Populated by Phase 0.5 (API Verification) of /speckit.plan command.
+  Use Context7 MCP tool to fetch and verify documentation.
+
+  Reference format in tasks: [DEP:PKG-001], [DEP:API-001], [DEP:FW-001]
+-->
+
+#### Package Dependencies (PKG-xxx)
+
+| ID | Package | Locked Version | Documentation URL | Key APIs Used |
+|----|---------|----------------|-------------------|---------------|
+| PKG-001 | [name] | [exact version] | [docs URL] | [method1(), method2()] |
+
+**Version Lock Rationale**: [why specific versions are locked]
+
+#### External API Dependencies (API-xxx)
+
+| ID | Provider | API Version | Base URL | Docs | Rate Limits | Auth |
+|----|----------|-------------|----------|------|-------------|------|
+| API-001 | [e.g., Stripe] | [e.g., 2024-12-18] | [base URL] | [docs] | [limits] | [method] |
+
+#### Framework Dependencies (FW-xxx)
+
+| ID | Framework | Version | Docs | Breaking Changes Since |
+|----|-----------|---------|------|------------------------|
+| FW-001 | [name] | [version] | [docs URL] | [list major breaking changes] |
+
+### API Method Reference
+
+<!--
+  Document specific methods/endpoints that will be used in implementation.
+  This prevents AI agents from hallucinating non-existent APIs.
+  Use Context7 to fetch current method signatures.
+-->
+
+| Dependency | Method/Endpoint | Signature/Parameters | Docs Section |
+|------------|-----------------|---------------------|--------------|
+| PKG-001 | [method()] | [params and return type] | [docs anchor] |
+| API-001 | POST /endpoint | [request/response schema] | [docs anchor] |
+
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*

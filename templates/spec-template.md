@@ -201,6 +201,54 @@
 - **[Entity 1]**: [What it represents, key attributes without implementation]
 - **[Entity 2]**: [What it represents, relationships to other entities]
 
+## Technical Dependencies *(for features with external integrations)*
+
+<!--
+  IMPORTANT: Document all external dependencies that AI agents must reference.
+  This prevents hallucination of non-existent APIs and ensures version compatibility.
+
+  Types:
+  - NPM/PyPI packages with specific versions
+  - External REST APIs (Stripe, AWS, Firebase, etc.)
+  - Frameworks with version-specific features
+
+  For each dependency, provide:
+  - Version constraints
+  - Official documentation URL
+  - Key methods/endpoints to be used
+
+  Skip this section if feature has no external integrations.
+-->
+
+### Package Dependencies
+
+| ID | Package | Version | Documentation URL | Purpose |
+|----|---------|---------|-------------------|---------|
+| PKG-001 | [package-name] | ^X.Y.Z | [official docs URL] | [why needed] |
+
+### External API Dependencies
+
+| ID | API | Version | Base URL | Documentation | Auth Method |
+|----|-----|---------|----------|---------------|-------------|
+| API-001 | [API name] | v1 | [base endpoint] | [docs URL] | [OAuth2/API Key/etc.] |
+
+### Framework Requirements
+
+| ID | Framework | Version | Documentation | Critical Features Used |
+|----|-----------|---------|---------------|------------------------|
+| FW-001 | [framework] | ^X.Y.Z | [docs URL] | [feature1, feature2] |
+
+### Deprecated API Warnings
+
+<!--
+  List any APIs/methods that are deprecated but might be suggested by AI agents
+  based on older training data. This prevents hallucination of outdated patterns.
+-->
+
+| Deprecated | Replacement | Since Version | Migration Docs |
+|------------|-------------|---------------|----------------|
+| [old method/API] | [new method/API] | [version] | [migration URL] |
+
 ## Success Criteria *(mandatory)*
 
 <!--

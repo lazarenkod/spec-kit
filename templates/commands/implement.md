@@ -114,10 +114,58 @@ You **MUST** consider the user input before proceeding (if not empty).
 3. Load and analyze the implementation context:
    - **REQUIRED**: Read tasks.md for the complete task list and execution plan
    - **REQUIRED**: Read plan.md for tech stack, architecture, and file structure
+   - **IF EXISTS**: Read plan.md Dependency Registry for API documentation references
    - **IF EXISTS**: Read data-model.md for entities and relationships
    - **IF EXISTS**: Read contracts/ for API specifications and test requirements
    - **IF EXISTS**: Read research.md for technical decisions and constraints
    - **IF EXISTS**: Read quickstart.md for integration scenarios
+
+3.5. **API Documentation Verification** (before implementation):
+
+   **Purpose**: Verify API documentation references before coding to prevent hallucinations.
+
+   **For each task with [DEP:xxx] or [APIDOC:url] marker:**
+
+   a) **Retrieve documentation context**:
+      - IF [APIDOC:url] present: Use WebFetch to retrieve documentation section
+      - IF [DEP:xxx] present: Look up Dependency Registry in plan.md for docs URL
+      - IF Context7 MCP available: Use `resolve-library-id` → `get-library-docs`
+
+   b) **Pre-flight verification**:
+      ```text
+      FOR EACH method/endpoint referenced in task:
+        1. Search documentation for method signature
+        2. Verify parameters match expected usage
+        3. Check for deprecation notices
+        4. Note any version-specific behavior
+      ```
+
+   c) **Pre-flight check output**:
+      ```text
+      Task T025 [DEP:API-001] API Verification:
+      ✓ Stripe charges.create() - Verified in API v2024-12-18
+      ✓ Parameters: amount, currency, source - All valid
+      ⚠ Note: 'source' deprecated in favor of 'payment_method' (2024+)
+
+      Task T030 [DEP:PKG-002] API Verification:
+      ✓ react-query useQuery() - Verified in v5.x docs
+      ✓ Options: queryKey, queryFn - Valid
+      ```
+
+   d) **Block on verification failure**:
+      ```text
+      IF API/method not found in documentation:
+        → STOP implementation for this task
+        → Report: "⛔ API verification failed: {method} not found in {docs_url}"
+        → SUGGEST: "Check dependency version in Dependency Registry"
+        → SUGGEST: "Use Context7 to fetch current documentation"
+        → ASK user: "Proceed anyway (risky) or fix Dependency Registry first?"
+      ```
+
+   e) **Skip conditions**:
+      - Tasks without [DEP:] or [APIDOC:] markers
+      - Internal project dependencies (no external docs)
+      - Setup/configuration tasks
 
 4. **Project Setup Verification**:
    - **REQUIRED**: Create/verify ignore files based on actual project setup:
