@@ -1,5 +1,40 @@
 ---
 description: Execute the implementation plan by processing and executing all tasks defined in tasks.md
+handoffs:
+  - label: Re-run Analysis
+    agent: speckit.analyze
+    prompt: Run analysis to verify implementation quality and traceability
+    auto: false
+    condition:
+      - "Implementation phase completed"
+      - "User wants to verify traceability coverage"
+  - label: Update Tasks
+    agent: speckit.tasks
+    prompt: Regenerate or update tasks based on implementation learnings
+    auto: false
+    condition:
+      - "Implementation revealed missing tasks"
+      - "Scope changed during implementation"
+  - label: Update Spec
+    agent: speckit.specify
+    prompt: Update specification to reflect implementation decisions
+    auto: false
+    condition:
+      - "Implementation required spec deviations"
+      - "New requirements discovered during implementation"
+pre_gates:
+  - name: "Tasks Exist Gate"
+    check: "tasks.md exists in FEATURE_DIR"
+    block_if: "tasks.md missing"
+    message: "Run /speckit.tasks first to generate task breakdown"
+  - name: "Required Artifacts Gate"
+    check: "plan.md exists in FEATURE_DIR"
+    block_if: "plan.md missing"
+    message: "Run /speckit.plan first to generate implementation plan"
+  - name: "No Critical Issues Gate"
+    check: "If analyze was run, CRITICAL == 0"
+    block_if: "CRITICAL issues exist from prior analysis"
+    message: "Resolve CRITICAL issues before starting implementation"
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
@@ -206,3 +241,44 @@ You **MUST** consider the user input before proceeding (if not empty).
     **When to skip**: Setup and Foundation phases typically don't have FR/AS markers, so traceability verification focuses on User Story phases.
 
 Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit.tasks` first to regenerate the task list.
+
+## Automation Behavior
+
+This command has **pre-implementation gates** that must pass before execution begins:
+
+### Pre-Implementation Gates
+
+| Gate | Check | Block Condition | Message |
+|------|-------|-----------------|---------|
+| Tasks Exist Gate | tasks.md exists in FEATURE_DIR | tasks.md missing | "Run /speckit.tasks first to generate task breakdown" |
+| Required Artifacts Gate | plan.md exists in FEATURE_DIR | plan.md missing | "Run /speckit.plan first to generate implementation plan" |
+| No Critical Issues Gate | If analyze was run, CRITICAL == 0 | CRITICAL issues exist from prior analysis | "Resolve CRITICAL issues before starting implementation" |
+
+### Gate Behavior
+
+**Before execution begins:**
+- All pre_gates are evaluated
+- If any gate fails, display blocking message and suggest corrective action
+- Wait for user to resolve and re-invoke `/speckit.implement`
+
+**During execution:**
+- Checklist validation (step 2) acts as runtime gate
+- If checklists incomplete, prompt user for confirmation before proceeding
+
+### Post-Implementation Handoffs
+
+Implementation does not auto-transition to other phases (it's the terminal phase), but offers manual handoffs for:
+
+| Condition | Suggested Handoff | Purpose |
+|-----------|-------------------|---------|
+| Implementation complete, want to verify | `/speckit.analyze` | Verify traceability coverage and quality |
+| Found missing tasks during implementation | `/speckit.tasks` | Update task breakdown |
+| Discovered spec gaps | `/speckit.specify` | Update specification |
+
+### Manual Overrides
+
+Users can always choose to:
+- Skip checklist validation (with explicit confirmation)
+- Pause implementation and update artifacts
+- Re-run specific phases if issues discovered
+- Run `/speckit.analyze` post-implementation for verification

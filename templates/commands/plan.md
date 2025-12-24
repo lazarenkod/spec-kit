@@ -4,10 +4,28 @@ handoffs:
   - label: Create Tasks
     agent: speckit.tasks
     prompt: Break the plan into tasks
-    send: true
+    auto: true
+    condition:
+      - "plan.md completed with all phases"
+      - "research.md exists (Phase 0 complete)"
+      - "All [NEEDS CLARIFICATION] resolved"
+    gates:
+      - name: "Plan Completeness Gate"
+        check: "Technical Context filled, Architecture defined, Phases outlined"
+        block_if: "Empty sections or TODO markers remain"
+        message: "Complete all plan sections before generating tasks"
+    post_actions:
+      - "log: Plan complete, transitioning to task generation"
   - label: Create Checklist
     agent: speckit.checklist
     prompt: Create a checklist for the following domain...
+    auto: false
+  - label: Refine Specification
+    agent: speckit.specify
+    prompt: Update specification based on planning insights
+    auto: false
+    condition:
+      - "Planning revealed spec gaps or ambiguities"
 claude_code:
   reasoning_mode: extended
   thinking_budget: 8000
@@ -104,3 +122,38 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 - Use absolute paths
 - ERROR on gate failures or unresolved clarifications
+
+## Automation Behavior
+
+When this command completes successfully, the following automation rules apply:
+
+### Auto-Transitions
+
+| Condition | Next Phase | Gate |
+|-----------|------------|------|
+| plan.md complete, research.md exists, no TODO markers | `/speckit.tasks` | Plan Completeness Gate |
+
+### Quality Gates
+
+| Gate | Check | Block Condition | Message |
+|------|-------|-----------------|---------|
+| Plan Completeness Gate | All sections filled, architecture defined | Empty sections or TODO markers | "Complete all plan sections before generating tasks" |
+
+### Gate Behavior
+
+**If all conditions pass and no gates block:**
+- Automatically proceed to `/speckit.tasks` with the implementation plan
+- Log transition for audit trail
+
+**If gates block:**
+- Display blocking message to user
+- List incomplete sections or unresolved items
+- Wait for user to complete planning
+- Offer handoff to `/speckit.specify` if spec updates needed
+
+### Manual Overrides
+
+Users can always choose to:
+- Run `/speckit.checklist` to create domain-specific checklists first
+- Skip automation by selecting a different handoff option
+- Return to `/speckit.specify` to refine requirements

@@ -4,9 +4,42 @@ handoffs:
   - label: Generate Spec
     agent: speckit.specify
     prompt: Generate feature specification using captured baseline
+    auto: true
+    condition:
+      - "baseline.md generated successfully"
+      - "At least one CB-xxx component documented"
+    gates:
+      - name: "Baseline Completeness Gate"
+        check: "Current Behaviors section has valid CB-xxx entries"
+        block_if: "No CB-xxx entries found"
+        message: "Baseline must document at least one current behavior before proceeding to specification"
+      - name: "Code Location Validity Gate"
+        check: "All CB-xxx code locations reference existing files"
+        block_if: "Any CB-xxx references non-existent file"
+        message: "Verify code location references before proceeding"
+    post_actions:
+      - "log: Baseline captured, transitioning to specification"
   - label: Skip to Plan
     agent: speckit.plan
     prompt: Generate implementation plan for brownfield changes
+    auto: false
+    condition:
+      - "User wants to skip specification and plan directly"
+      - "Changes are well-understood without formal spec"
+    gates:
+      - name: "Baseline Exists Gate"
+        check: "baseline.md exists in FEATURE_DIR"
+        block_if: "baseline.md missing"
+        message: "Baseline must be captured before planning brownfield changes"
+pre_gates:
+  - name: "Feature Directory Gate"
+    check: "FEATURE_DIR exists"
+    block_if: "FEATURE_DIR missing"
+    message: "Create feature directory first with /speckit.specify --init"
+  - name: "Scope Definition Gate"
+    check: "User provided scope (file paths, modules, or keywords)"
+    block_if: "No scope defined"
+    message: "Specify scope for baseline capture (file paths, modules, or keywords)"
 claude_code:
   reasoning_mode: extended
   thinking_budget: 10000
@@ -398,6 +431,56 @@ Output summary to user:
 - **Note modification risk** for each component
 - **Identify natural seams** for introducing changes
 - **Highlight tightly-coupled components** that may require coordinated changes
+
+## Automation Behavior
+
+This command has both **pre-gates** (before execution) and **transition gates** (before handoffs):
+
+### Pre-Execution Gates
+
+| Gate | Check | Block Condition | Message |
+|------|-------|-----------------|---------|
+| Feature Directory Gate | FEATURE_DIR exists | FEATURE_DIR missing | "Create feature directory first with /speckit.specify --init" |
+| Scope Definition Gate | User provided scope | No scope defined | "Specify scope for baseline capture (file paths, modules, or keywords)" |
+
+### Auto-Transitions
+
+| Condition | Next Phase | Gate |
+|-----------|------------|------|
+| baseline.md generated, CB-xxx entries valid | `/speckit.specify` | Baseline Completeness Gate, Code Location Validity Gate |
+
+### Quality Gates
+
+| Gate | Check | Block Condition | Message |
+|------|-------|-----------------|---------|
+| Baseline Completeness Gate | Current Behaviors section has valid CB-xxx entries | No CB-xxx entries found | "Baseline must document at least one current behavior before proceeding to specification" |
+| Code Location Validity Gate | All CB-xxx code locations reference existing files | Any CB-xxx references non-existent file | "Verify code location references before proceeding" |
+| Baseline Exists Gate | baseline.md exists in FEATURE_DIR | baseline.md missing | "Baseline must be captured before planning brownfield changes" |
+
+### Gate Behavior
+
+**Before execution begins:**
+- Pre-gates are validated
+- If FEATURE_DIR missing, suggest `/speckit.specify --init`
+- If no scope provided, prompt user for file paths/modules/keywords
+
+**After baseline generation:**
+- Validate CB-xxx entries exist and are well-formed
+- Verify code location references point to existing files
+- If all gates pass, automatically transition to `/speckit.specify` with brownfield mode
+
+**If gates block:**
+- Display blocking message with specific issues
+- List CB-xxx entries with invalid file references
+- Wait for user to correct and re-run `/speckit.baseline`
+
+### Manual Overrides
+
+Users can always choose to:
+- Skip to `/speckit.plan` if specification already exists
+- Re-run `/speckit.baseline` with different scope
+- Manually edit baseline.md before proceeding
+- Use brownfield mode in `/speckit.specify` without baseline (not recommended)
 
 ## Context
 

@@ -4,13 +4,27 @@ handoffs:
   - label: Build Technical Plan
     agent: speckit.plan
     prompt: Create a plan for the spec. I am building with...
+    auto: true
+    condition:
+      - "spec.md created and valid"
+      - "No unresolved [NEEDS CLARIFICATION] markers"
+    gates:
+      - name: "Spec Quality Gate"
+        check: "All checklist items in checklists/requirements.md pass"
+        block_if: "Incomplete checklist items > 0"
+        message: "Resolve incomplete checklist items before proceeding to planning"
+    post_actions:
+      - "log: Specification complete, transitioning to planning phase"
   - label: Clarify Spec Requirements
     agent: speckit.clarify
     prompt: Clarify specification requirements
-    send: true
+    auto: false
+    condition:
+      - "[NEEDS CLARIFICATION] markers exist in spec.md"
   - label: Run Traceability Analysis
     agent: speckit.analyze
     prompt: Validate spec completeness and traceability
+    auto: false
 scripts:
   sh: scripts/bash/create-new-feature.sh --json "{ARGS}"
   ps: scripts/powershell/create-new-feature.ps1 -Json "{ARGS}"
@@ -471,3 +485,38 @@ Success criteria must be:
 - "Database can handle 1000 TPS" (implementation detail, use user-facing metric)
 - "React components render efficiently" (framework-specific)
 - "Redis cache hit rate above 80%" (technology-specific)
+
+## Automation Behavior
+
+When this command completes successfully, the following automation rules apply:
+
+### Auto-Transitions
+
+| Condition | Next Phase | Gate |
+|-----------|------------|------|
+| spec.md valid, no [NEEDS CLARIFICATION] | `/speckit.plan` | Spec Quality Gate |
+
+### Quality Gates
+
+| Gate | Check | Block Condition | Message |
+|------|-------|-----------------|---------|
+| Spec Quality Gate | All checklists/requirements.md items pass | Incomplete items > 0 | "Resolve incomplete checklist items before proceeding" |
+
+### Gate Behavior
+
+**If all conditions pass and no gates block:**
+- Automatically proceed to `/speckit.plan` with the created specification
+- Log transition for audit trail
+
+**If gates block:**
+- Display blocking message to user
+- List incomplete checklist items
+- Wait for user to resolve issues
+- Offer handoff options for manual intervention
+
+### Manual Overrides
+
+Users can always choose to:
+- Skip automation by selecting a different handoff option
+- Force proceed (with acknowledgment of incomplete items)
+- Run `/speckit.clarify` to address [NEEDS CLARIFICATION] markers first

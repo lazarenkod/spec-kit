@@ -7,6 +7,57 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.31] - 2025-12-23
+
+### Added
+
+- **Automation Hooks: Enhanced Handoffs with Quality Gates** (AWS Kiro-inspired)
+  - Declarative automation rules via enhanced handoffs in command frontmatter
+  - Quality gates that can block phase transitions until conditions are met
+  - Pre-execution gates for validating prerequisites before command runs
+  - Auto-transitions between phases when conditions pass and gates allow
+  - Post-actions for logging and audit trails
+
+- **New frontmatter fields for automation**:
+  - `auto: true|false` — Enable automatic transition to next phase
+  - `condition:` — List of conditions required for auto-transition
+  - `gates:` — Quality gates with `check`, `block_if`, and `message` fields
+  - `pre_gates:` — Pre-execution gates validated before command starts
+  - `post_actions:` — Actions to execute after successful transition
+
+- **Quality Gates per phase**:
+  - `/speckit.specify`: Spec Quality Gate (no unresolved [NEEDS CLARIFICATION])
+  - `/speckit.plan`: Plan Completeness Gate (all sections filled, architecture defined)
+  - `/speckit.tasks`: Tasks Ready Gate, Dependency Validity Gate (no circular deps)
+  - `/speckit.analyze`: No Critical Issues Gate, Dependency Graph Valid Gate
+  - `/speckit.implement`: Tasks Exist Gate, Required Artifacts Gate, No Critical Issues Gate
+  - `/speckit.baseline`: Feature Directory Gate, Scope Definition Gate, Baseline Completeness Gate
+
+### Changed
+
+- **All main workflow commands enhanced with automation behavior**:
+  - `specify.md`: Auto-transition to plan when spec valid, gate blocks if clarifications remain
+  - `plan.md`: Auto-transition to tasks when plan complete, gate blocks if empty sections
+  - `tasks.md`: Auto-transition to implement when tasks valid, gates block on circular deps
+  - `analyze.md`: Auto-transition to implement only if CRITICAL == 0
+  - `implement.md`: Pre-gates validate artifacts exist before execution starts
+  - `baseline.md`: Pre-gates and transition gates for brownfield workflow
+
+- **New "Automation Behavior" section in each command**:
+  - Documents auto-transitions, quality gates, gate behavior, and manual overrides
+  - Provides tables showing conditions, gates, and blocking behavior
+  - Explains what happens when gates block vs pass
+
+### Documentation
+
+- Each command now includes detailed Automation Behavior section explaining:
+  - Auto-Transitions table with conditions and gates
+  - Quality Gates table with check/block_if/message
+  - Gate Behavior section for pass/block scenarios
+  - Manual Overrides section for user control
+
+---
+
 ## [0.0.30] - 2025-12-23
 
 ### Added

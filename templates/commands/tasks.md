@@ -4,11 +4,40 @@ handoffs:
   - label: Analyze For Consistency
     agent: speckit.analyze
     prompt: Run a project analysis for consistency and validate traceability
-    send: true
+    auto: false
+    condition:
+      - "User prefers thorough validation before implementation"
+      - "Complex project with many cross-references"
+    gates:
+      - name: "Tasks Generated Gate"
+        check: "tasks.md created with valid structure"
+        block_if: "tasks.md missing or malformed"
+        message: "Tasks must be generated before analysis"
   - label: Implement Project
     agent: speckit.implement
     prompt: Start the implementation in phases
-    send: true
+    auto: true
+    condition:
+      - "tasks.md generated with valid task structure"
+      - "At least one P1 task defined"
+      - "No circular dependencies detected"
+    gates:
+      - name: "Tasks Ready Gate"
+        check: "All P1 tasks have file paths and dependencies defined"
+        block_if: "P1 tasks missing file paths or have invalid [DEP:] references"
+        message: "Ensure all P1 tasks are fully specified before implementation"
+      - name: "Dependency Validity Gate"
+        check: "No circular dependencies in task graph"
+        block_if: "Circular dependency detected"
+        message: "Resolve circular dependencies before proceeding"
+    post_actions:
+      - "log: Tasks generated, ready for implementation"
+  - label: Regenerate Tasks
+    agent: speckit.tasks
+    prompt: Regenerate tasks with updated plan or spec
+    auto: false
+    condition:
+      - "Plan or spec was modified after initial task generation"
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json
   ps: scripts/powershell/check-prerequisites.ps1 -Json
@@ -319,3 +348,41 @@ Before completing tasks.md generation, validate:
      - Txxx appears before current task
      - No circular dependencies
 ```
+
+## Automation Behavior
+
+When this command completes successfully, the following automation rules apply:
+
+### Auto-Transitions
+
+| Condition | Next Phase | Gate |
+|-----------|------------|------|
+| tasks.md generated, valid structure, P1 tasks defined, no circular deps | `/speckit.implement` | Tasks Ready Gate, Dependency Validity Gate |
+
+### Quality Gates
+
+| Gate | Check | Block Condition | Message |
+|------|-------|-----------------|---------|
+| Tasks Generated Gate | tasks.md created with valid structure | tasks.md missing or malformed | "Tasks must be generated before analysis" |
+| Tasks Ready Gate | All P1 tasks have file paths and dependencies defined | P1 tasks missing file paths or invalid [DEP:] references | "Ensure all P1 tasks are fully specified before implementation" |
+| Dependency Validity Gate | No circular dependencies in task graph | Circular dependency detected | "Resolve circular dependencies before proceeding" |
+
+### Gate Behavior
+
+**If all conditions pass and no gates block:**
+- Automatically proceed to `/speckit.implement` with the generated tasks
+- Log transition for audit trail
+
+**If gates block:**
+- Display blocking message to user
+- List specific issues (missing file paths, circular dependencies, etc.)
+- Wait for user to resolve issues
+- Offer handoff to `/speckit.analyze` for thorough validation
+
+### Manual Overrides
+
+Users can always choose to:
+- Run `/speckit.analyze` first to validate traceability and consistency
+- Skip automation by selecting a different handoff option
+- Return to `/speckit.plan` if tasks reveal planning gaps
+- Run `/speckit.tasks` again to regenerate with updated plan

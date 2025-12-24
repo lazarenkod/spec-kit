@@ -4,16 +4,42 @@ handoffs:
   - label: Fix Spec Issues
     agent: speckit.specify
     prompt: Update the specification to address the identified issues
+    auto: false
+    condition:
+      - "Analysis found CRITICAL or HIGH issues in spec.md"
+      - "Requirement ambiguities or duplications detected"
   - label: Update Plan
     agent: speckit.plan
     prompt: Revise the plan to address architectural issues
+    auto: false
+    condition:
+      - "Analysis found architectural inconsistencies"
+      - "Plan sections need revision based on findings"
   - label: Regenerate Tasks
     agent: speckit.tasks
     prompt: Regenerate tasks with corrected traceability
+    auto: false
+    condition:
+      - "Traceability gaps (FR without tasks) detected"
+      - "Dependency issues require task restructuring"
   - label: Proceed to Implementation
     agent: speckit.implement
     prompt: Start implementation (only if no CRITICAL issues)
-    send: true
+    auto: true
+    condition:
+      - "Analysis completed successfully"
+      - "All CRITICAL issues resolved"
+    gates:
+      - name: "No Critical Issues Gate"
+        check: "CRITICAL issue count == 0"
+        block_if: "CRITICAL > 0"
+        message: "Cannot proceed to implementation: resolve all CRITICAL issues first"
+      - name: "Dependency Graph Valid Gate"
+        check: "Dependency Graph Status == VALID or WARNINGS"
+        block_if: "Dependency Graph Status == INVALID"
+        message: "Resolve circular dependencies or invalid references before implementation"
+    post_actions:
+      - "log: Analysis passed, transitioning to implementation"
 claude_code:
   reasoning_mode: extended
   thinking_budget: 12000
@@ -788,6 +814,46 @@ Ask the user: "Would you like me to suggest concrete remediation edits for the t
 - **Prioritize constitution violations** (these are always CRITICAL)
 - **Use examples over exhaustive rules** (cite specific instances, not generic patterns)
 - **Report zero issues gracefully** (emit success report with coverage statistics)
+
+## Automation Behavior
+
+When this command completes successfully, the following automation rules apply:
+
+### Auto-Transitions
+
+| Condition | Next Phase | Gate |
+|-----------|------------|------|
+| Analysis complete, no CRITICAL issues, dependency graph valid | `/speckit.implement` | No Critical Issues Gate, Dependency Graph Valid Gate |
+
+### Quality Gates
+
+| Gate | Check | Block Condition | Message |
+|------|-------|-----------------|---------|
+| No Critical Issues Gate | CRITICAL issue count == 0 | CRITICAL > 0 | "Cannot proceed to implementation: resolve all CRITICAL issues first" |
+| Dependency Graph Valid Gate | Dependency Graph Status == VALID or WARNINGS | Status == INVALID | "Resolve circular dependencies or invalid references before implementation" |
+
+### Gate Behavior
+
+**If all conditions pass and no gates block:**
+- Automatically proceed to `/speckit.implement`
+- Log transition for audit trail
+
+**If gates block:**
+- Display blocking message to user
+- List all CRITICAL issues requiring resolution
+- Offer handoffs to fix issues:
+  - `/speckit.specify` for spec issues
+  - `/speckit.plan` for architectural issues
+  - `/speckit.tasks` for traceability issues
+- Wait for user to resolve and re-run analysis
+
+### Manual Overrides
+
+Users can always choose to:
+- Fix specific issues and re-run `/speckit.analyze`
+- Skip to specific handoff for targeted fixes
+- Proceed manually (not recommended if CRITICAL issues exist)
+- Return to earlier phases if fundamental issues found
 
 ## Context
 
