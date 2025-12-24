@@ -584,6 +584,178 @@ Dependency Registry SHOULD be reviewed quarterly for:
 
 ---
 
+## TFA: Twelve-Factor App
+
+<!--
+  Principles based on the Twelve-Factor App methodology (12factor.net)
+  for building modern, scalable, cloud-native applications.
+
+  Some factors are covered by other domains:
+  - Factor I (Codebase) → Implicit in version control
+  - Factor II (Dependencies) → SEC-004, DOC-001, DOC-002
+  - Factor XI (Logs) → OBS-001
+-->
+
+### TFA-001: Environment Configuration
+
+**Level**: MUST
+**Applies to**: All configuration that varies between environments
+**12-Factor**: Factor III - Config
+
+Configuration that differs between deployments (dev, staging, production) MUST be stored in environment variables. This includes:
+- Database URLs and credentials
+- External service endpoints
+- Feature flags and environment-specific settings
+
+Configuration MUST NOT be hardcoded or committed to version control.
+
+**Validation**: Check for config files with environment-specific values; verify .env.example exists
+**Violations**: CRITICAL - Secrets exposure, deployment inflexibility
+
+---
+
+### TFA-002: Backing Services as Resources
+
+**Level**: SHOULD
+**Applies to**: All external services (databases, queues, caches, APIs)
+**12-Factor**: Factor IV - Backing Services
+
+Backing services (databases, message queues, caches, SMTP, third-party APIs) SHOULD be treated as attached resources, swappable via configuration. Application code SHOULD NOT distinguish between local and third-party services.
+
+- Database: accessed via DATABASE_URL
+- Cache: accessed via REDIS_URL or CACHE_URL
+- Email: accessed via SMTP_URL or email service config
+
+**Validation**: Check that service connections use URL/config, not hardcoded addresses
+**Violations**: MEDIUM - Deployment inflexibility, vendor lock-in
+
+---
+
+### TFA-003: Build-Release-Run Separation
+
+**Level**: MUST
+**Applies to**: Deployment pipeline
+**12-Factor**: Factor V - Build, Release, Run
+
+Strictly separate the three stages:
+1. **Build**: Convert code to executable bundle (compile, install deps)
+2. **Release**: Combine build with config for specific environment
+3. **Run**: Execute application in the environment
+
+Releases MUST be immutable and versioned. Rollback MUST be possible by deploying previous release.
+
+**Validation**: Check CI/CD pipeline for distinct build/release/deploy stages
+**Violations**: HIGH - Unreproducible deployments, rollback failures
+
+---
+
+### TFA-004: Stateless Processes
+
+**Level**: MUST
+**Applies to**: Application processes
+**12-Factor**: Factor VI - Processes
+
+Application processes MUST be stateless and share-nothing. Any data that needs to persist MUST be stored in a stateful backing service (database, cache, object storage).
+
+- Session data → Redis/database, not local memory
+- File uploads → Object storage (S3), not local filesystem
+- Sticky sessions → AVOID; use distributed session store
+
+**Validation**: Check for in-memory state that would be lost on restart
+**Violations**: CRITICAL - Data loss on restart, scaling failures
+
+---
+
+### TFA-005: Port Binding
+
+**Level**: SHOULD
+**Applies to**: Web services
+**12-Factor**: Factor VII - Port Binding
+
+Applications SHOULD be self-contained and export HTTP (or other protocol) by binding to a port. The app SHOULD NOT depend on runtime injection of a webserver.
+
+- Export service via PORT environment variable
+- Include webserver in application (not external Apache/nginx for app logic)
+- One app can become the backing service for another
+
+**Validation**: Check that app binds to configurable PORT
+**Violations**: MEDIUM - Container/cloud deployment friction
+
+---
+
+### TFA-006: Horizontal Scalability
+
+**Level**: SHOULD
+**Applies to**: Application architecture
+**12-Factor**: Factor VIII - Concurrency
+
+Applications SHOULD scale out via the process model. Different workload types SHOULD be handled by different process types:
+- **web**: HTTP request handling
+- **worker**: Background job processing
+- **scheduler**: Cron-like tasks
+
+Each process type SHOULD be independently scalable.
+
+**Validation**: Check for process type separation; verify statelessness enables scaling
+**Violations**: MEDIUM - Scaling bottlenecks, resource waste
+
+---
+
+### TFA-007: Disposability
+
+**Level**: MUST
+**Applies to**: Application processes
+**12-Factor**: Factor IX - Disposability
+
+Processes MUST be disposable—started or stopped at a moment's notice:
+- **Fast startup**: Minimize time from launch to ready (seconds, not minutes)
+- **Graceful shutdown**: On SIGTERM, stop accepting new work, complete in-flight requests, then exit
+- **Crash resilience**: Handle unexpected death gracefully; jobs should be reentrant
+
+**Validation**: Measure startup time; test SIGTERM handling; verify job idempotency
+**Violations**: HIGH - Slow deployments, lost work, cascading failures
+
+---
+
+### TFA-008: Dev/Prod Parity
+
+**Level**: SHOULD
+**Applies to**: Development and deployment practices
+**12-Factor**: Factor X - Dev/Prod Parity
+
+Keep development, staging, and production as similar as possible:
+- **Time gap**: Deploy hours after development, not weeks
+- **Personnel gap**: Developers who write code should deploy it
+- **Tools gap**: Use same backing services in dev as prod (same database type, same queue system)
+
+Avoid "works on my machine" by using containers or similar environments.
+
+**Validation**: Compare dev/prod backing service types; check deployment frequency
+**Violations**: MEDIUM - "Works in dev, breaks in prod" bugs
+
+---
+
+### TFA-009: Admin Processes
+
+**Level**: SHOULD
+**Applies to**: One-off administrative tasks
+**12-Factor**: Factor XII - Admin Processes
+
+Run admin/management tasks as one-off processes:
+- Database migrations
+- Console/REPL sessions
+- One-time scripts (data fixes, reports)
+
+Admin processes SHOULD:
+- Run against a release (same code/config as app)
+- Ship with application code
+- Use same dependency isolation
+
+**Validation**: Check that migrations/scripts are versioned with app code
+**Violations**: LOW - Drift between app and admin tooling
+
+---
+
 ## PRF: Performance
 
 ### PRF-001: Response Time SLA
@@ -705,9 +877,10 @@ UI SHOULD meet WCAG 2.1 AA standards:
 | REL (Reliability) | 6 | 2 | 4 |
 | API (API Design) | 6 | 3 | 3 |
 | DOC (API Documentation) | 6 | 4 | 2 |
+| TFA (Twelve-Factor App) | 9 | 4 | 5 |
 | PRF (Performance) | 4 | 1 | 3 |
 | CMP (Compliance) | 4 | 1 | 3 |
-| **Total** | **48** | **24** | **24** |
+| **Total** | **57** | **28** | **29** |
 
 ---
 
