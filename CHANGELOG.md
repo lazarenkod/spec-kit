@@ -7,6 +7,58 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.32] - 2025-12-24
+
+### Added
+
+- **QA Phase in Workflow** (BMAD-Method inspired)
+  - Post-implementation QA verification via `/speckit.analyze` QA mode
+  - Automatic transition from `/speckit.implement` to QA when P1 tasks complete
+  - QA Loop for iterative fixes until all checks pass
+
+- **New QA validation categories in `/speckit.analyze`**:
+  - **Category R — Build Validation**: Build system detection, build check, lint check, type check
+  - **Category S — Test Execution Validation**: Test discovery, test runner, execution, coverage check
+  - **Category T — Performance Baseline Validation**: NFR extraction, performance regression detection
+  - **Category U — Security Validation**: Dependency audit, secret detection, OWASP quick checks
+
+- **QA Verification Report format**:
+  - Build & test status table with pass/fail indicators
+  - Coverage metrics vs. threshold comparison
+  - Security audit summary with vulnerability counts
+  - QA Verdict: PASS / CONCERNS / FAIL based on issue severity
+
+- **QA handoffs in `/speckit.implement`**:
+  - `QA Verification` (auto: true) — Triggers `/speckit.analyze` QA mode after implementation
+  - `Fix QA Issues` (auto: false) — Returns to implement to address failures
+  - QA Loop visualization in Automation Behavior section
+
+### Changed
+
+- **`/speckit.analyze` now supports two modes**:
+  - Pre-Implementation mode (default): Categories A-Q for spec artifact validation
+  - QA mode (post-implementation): Categories A-Q + R-U for full verification
+  - Mode detection based on tasks.md completion status
+
+- **`/speckit.implement` auto-transitions to QA**:
+  - No longer terminal phase — flows to QA verification
+  - Implementation Complete Gate validates P1 tasks before QA
+  - Build Artifacts Gate ensures implementation exists
+
+- **Updated severity assignments**:
+  - CRITICAL: Build failed, Tests failed, Critical vulnerabilities, Secrets in code
+  - HIGH: Lint errors, Type errors, Coverage below threshold, High vulnerabilities
+  - MEDIUM: No test files, Lint warnings, Performance regression, Resource limits
+  - LOW: Build warnings, No baseline measurement
+
+### Documentation
+
+- New "Analysis Modes" section in `/speckit.analyze`
+- New "QA Loop" section in `/speckit.implement` with ASCII flow diagram
+- QA Handoffs table showing auto vs. manual transitions
+
+---
+
 ## [0.0.31] - 2025-12-23
 
 ### Added

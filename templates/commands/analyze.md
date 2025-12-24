@@ -1,5 +1,5 @@
 ---
-description: Perform a non-destructive cross-artifact consistency, traceability, dependency, and system spec analysis across concept.md, spec.md, plan.md, tasks.md, and system specs.
+description: Perform a non-destructive cross-artifact consistency, traceability, dependency, and system spec analysis across concept.md, spec.md, plan.md, tasks.md, and system specs. In QA mode (post-implementation), validates build, tests, coverage, and security.
 handoffs:
   - label: Fix Spec Issues
     agent: speckit.specify
@@ -27,7 +27,7 @@ handoffs:
     prompt: Start implementation (only if no CRITICAL issues)
     auto: true
     condition:
-      - "Analysis completed successfully"
+      - "Analysis completed successfully (pre-implementation mode)"
       - "All CRITICAL issues resolved"
     gates:
       - name: "No Critical Issues Gate"
@@ -40,6 +40,32 @@ handoffs:
         message: "Resolve circular dependencies or invalid references before implementation"
     post_actions:
       - "log: Analysis passed, transitioning to implementation"
+  - label: Fix QA Issues
+    agent: speckit.implement
+    prompt: Address issues identified in QA verification report
+    auto: false
+    condition:
+      - "QA mode analysis found CRITICAL or HIGH issues"
+      - "Tests failed or build broken"
+    gates:
+      - name: "QA Issues Exist Gate"
+        check: "QA Verdict == FAIL"
+        block_if: "QA Verdict == PASS"
+        message: "No QA issues to fix - all checks passed"
+  - label: QA Complete
+    agent: none
+    prompt: QA verification passed - implementation ready for merge
+    auto: true
+    condition:
+      - "QA mode analysis completed"
+      - "QA Verdict == PASS or CONCERNS"
+    gates:
+      - name: "QA Pass Gate"
+        check: "No CRITICAL or HIGH issues in QA categories (R-U)"
+        block_if: "CRITICAL > 0 OR HIGH > 0 in R-U categories"
+        message: "QA failed - fix blocking issues before proceeding"
+    post_actions:
+      - "log: QA verification passed, ready for merge"
 claude_code:
   reasoning_mode: extended
   thinking_budget: 12000
@@ -572,6 +598,269 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
        → LOW: "Consider Feature Flag strategy for large migrations"
 ```
 
+---
+
+## QA Mode Categories (Post-Implementation)
+
+The following categories (R-U) are executed when `/speckit.analyze` runs after `/speckit.implement` to perform **Quality Assurance validation**. These categories verify that the implementation meets specifications and quality standards.
+
+**QA Mode Activation**: QA categories are triggered when:
+- `tasks.md` contains completed tasks `[X]`
+- User explicitly requests QA validation
+- Auto-triggered via handoff from `/speckit.implement`
+
+---
+
+#### R. Build Validation
+
+**Purpose**: Verify implementation builds and passes static analysis.
+
+```
+1. Build System Detection:
+   Detect build system from project files:
+   - package.json → npm/yarn/pnpm build
+   - Cargo.toml → cargo build
+   - pyproject.toml → python build
+   - go.mod → go build
+   - Makefile → make
+   - build.gradle → gradle build
+   - pom.xml → mvn compile
+
+2. Build Check:
+   IF project has build system:
+     Attempt build command
+     IF build fails:
+       → CRITICAL: "Build failed: {error_summary}"
+       → Include first 10 error lines
+     IF build succeeds with warnings > 10:
+       → LOW: "Build warnings: {count}"
+
+3. Lint Check:
+   Detect linter configuration:
+   - .eslintrc*, eslint.config.* → eslint
+   - .pylintrc, pyproject.toml [tool.pylint] → pylint
+   - .flake8, setup.cfg [flake8] → flake8
+   - .rubocop.yml → rubocop
+   - .golangci.yml → golangci-lint
+   - rustfmt.toml, .rustfmt.toml → cargo fmt --check
+   - Cargo.toml → cargo clippy
+
+   IF linter configured:
+     Run linter
+     IF errors > 0:
+       → HIGH: "Lint errors: {count}"
+     IF warnings > threshold (default 20):
+       → MEDIUM: "Lint warnings: {count} (threshold: {threshold})"
+
+4. Type Check:
+   Detect type system:
+   - tsconfig.json → tsc --noEmit
+   - pyproject.toml [tool.mypy] → mypy
+   - py.typed marker → mypy
+
+   IF type checker configured:
+     Run type checker
+     IF errors > 0:
+       → HIGH: "Type errors: {count}"
+```
+
+#### S. Test Execution Validation
+
+**Purpose**: Verify tests exist and pass.
+
+```
+1. Test Discovery:
+   Scan for test files in standard locations:
+   - tests/, test/, __tests__/, spec/
+   - *_test.*, test_*.*, *.test.*, *.spec.*
+
+   Count test files and estimate test functions:
+   - Python: def test_*, class Test*
+   - JavaScript/TypeScript: describe(, it(, test(
+   - Go: func Test*
+   - Rust: #[test], #[cfg(test)]
+   - Ruby: describe, it, context
+
+   IF test_file_count == 0:
+     → MEDIUM: "No test files found in standard locations"
+     → Suggest: "Add tests in tests/ directory"
+
+2. Test Runner Detection:
+   Detect test runner from project configuration:
+   - package.json scripts.test → npm test
+   - pytest.ini, pyproject.toml [tool.pytest] → pytest
+   - Cargo.toml → cargo test
+   - go.mod → go test ./...
+   - Gemfile (rspec) → rspec
+   - jest.config.* → jest
+
+3. Test Execution:
+   IF test runner configured:
+     Run test suite with timeout (5 min default)
+     Parse test results:
+     - passed: count
+     - failed: count
+     - skipped: count
+     - total: count
+
+     IF failures > 0:
+       → CRITICAL: "Tests failed: {failed}/{total}"
+       → List first 5 failed test names
+     IF all pass:
+       → Report: "Tests passed: {passed}/{total}"
+     IF skipped > total * 0.2:
+       → MEDIUM: "High skip rate: {skipped}/{total} tests skipped"
+
+4. Coverage Check:
+   Detect coverage configuration:
+   - .coveragerc, pyproject.toml [tool.coverage] → coverage
+   - package.json (nyc, c8, jest --coverage) → coverage
+   - Cargo.toml → cargo tarpaulin or llvm-cov
+
+   IF coverage tool configured:
+     Get coverage percentage from report
+     Extract threshold from spec.md NFRs or constitution
+     Default threshold: 70%
+
+     IF coverage < threshold:
+       → HIGH: "Coverage {actual}% below required {threshold}%"
+     IF coverage >= threshold:
+       → Report: "Coverage: {actual}% (threshold: {threshold}%)"
+
+5. Test-to-Scenario Mapping:
+   FOR EACH AS-xxx in spec.md:
+     Search for @speckit:AS:AS-xxx in test files
+     IF test with annotation found:
+       Verify test is in passed list
+       IF test failed:
+         → CRITICAL: "Acceptance scenario AS-xxx test failed"
+```
+
+#### T. Performance Baseline Validation
+
+**Purpose**: Verify performance against spec NFRs.
+
+```
+1. NFR Extraction:
+   Parse Non-Functional Requirements from spec.md:
+   - Response time thresholds (e.g., "< 200ms p99")
+   - Throughput requirements (e.g., "> 1000 req/s")
+   - Memory limits (e.g., "< 512MB")
+   - Startup time (e.g., "< 5s cold start")
+
+   Store as NFR_THRESHOLDS = {metric: value}
+
+2. Performance Test Detection:
+   Look for performance test configurations:
+   - k6.js, k6.config.js → k6
+   - locustfile.py → locust
+   - artillery.yml → artillery
+   - benchmark tests in test suite
+   - package.json scripts (bench, perf)
+
+3. Baseline Check:
+   IF quickstart.md exists AND has performance scenarios:
+     Extract documented performance baselines
+     Compare against NFR thresholds
+
+     FOR EACH nfr in NFR_THRESHOLDS:
+       IF baseline exists for metric:
+         IF baseline violates threshold:
+           → HIGH: "Performance NFR violated: {metric} = {actual} (required: {threshold})"
+       ELSE:
+         → LOW: "No baseline measurement for NFR: {metric}"
+
+4. Performance Regression:
+   IF previous baseline exists (baseline.md or prior run):
+     Compare current vs previous
+     IF regression > 10%:
+       → MEDIUM: "Performance regression: {metric} degraded by {percent}%"
+
+5. Resource Utilization:
+   IF spec.md specifies resource limits:
+     Check application startup resource usage if measurable
+     IF exceeds limits:
+       → MEDIUM: "Resource limit exceeded: {resource} = {actual} (limit: {threshold})"
+```
+
+#### U. Security Validation
+
+**Purpose**: Basic security checks for common vulnerabilities.
+
+```
+1. Dependency Audit:
+   Detect package manager:
+   - package-lock.json, yarn.lock, pnpm-lock.yaml → npm audit / yarn audit
+   - Pipfile.lock, requirements.txt → pip-audit, safety
+   - Cargo.lock → cargo audit
+   - go.sum → govulncheck
+   - Gemfile.lock → bundle audit
+
+   IF package manager detected:
+     Run audit command
+     Parse vulnerability report:
+     - critical: count
+     - high: count
+     - moderate: count
+     - low: count
+
+     IF critical > 0:
+       → CRITICAL: "Critical vulnerabilities: {count}"
+       → List CVE IDs for critical
+     IF high > 0:
+       → HIGH: "High vulnerabilities: {count}"
+     IF moderate > 10:
+       → MEDIUM: "Moderate vulnerabilities: {count}"
+
+2. Secret Detection:
+   Scan source files for potential secrets:
+   Patterns to detect:
+   - API keys: /[A-Za-z0-9_]{20,}/
+   - AWS keys: /AKIA[A-Z0-9]{16}/
+   - Private keys: /-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----/
+   - Passwords in code: /password\s*=\s*["'][^"']+["']/i
+   - Connection strings: /mongodb(\+srv)?:\/\/[^@]+@/
+   - JWT tokens: /eyJ[A-Za-z0-9_-]*\.eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*/
+
+   Exclusions: test files, mock data, example configs
+
+   IF potential secret found:
+     → CRITICAL: "Potential secret in code: {file}:{line}"
+     → Suggest: "Move to environment variable or secrets manager"
+
+3. Security Headers (if web app):
+   IF project is web application:
+     Check for security middleware/headers configuration:
+     - Content-Security-Policy
+     - X-Frame-Options
+     - X-Content-Type-Options
+     - Strict-Transport-Security
+
+     IF missing common security headers:
+       → MEDIUM: "Missing security headers configuration"
+
+4. Input Validation:
+   Scan for common vulnerability patterns:
+   - SQL injection: string concatenation in SQL queries
+   - XSS: innerHTML without sanitization
+   - Command injection: shell execution with user input
+
+   IF vulnerability pattern detected:
+     → HIGH: "Potential {vulnerability_type} in {file}:{line}"
+
+5. OWASP Top 10 Quick Check:
+   Scan for patterns matching OWASP Top 10:
+   - A01: Broken Access Control (missing auth checks)
+   - A02: Cryptographic Failures (weak algorithms, hardcoded keys)
+   - A03: Injection (as above)
+   - A04: Insecure Design (documented in spec analysis)
+   - A07: Auth Failures (default credentials, weak password policy)
+
+   Report as advisory findings with educational context.
+```
+
+---
+
 ### 5. Severity Assignment
 
 Use this heuristic to prioritize findings:
@@ -585,6 +874,10 @@ Use this heuristic to prioritize findings:
   - **Circular system spec dependency** (blocks merge)
   - **Migration without Migration Plan** (brownfield Migration type)
   - **Migration phase without rollback plan** (MIG-xxx missing rollback)
+  - **Build failed** (QA: project does not compile)
+  - **Tests failed** (QA: acceptance scenarios not passing)
+  - **Critical vulnerabilities** (QA: security audit found critical CVEs)
+  - **Potential secret in code** (QA: hardcoded credentials detected)
 
 - **HIGH**:
   - Duplicate or conflicting requirement
@@ -604,6 +897,11 @@ Use this heuristic to prioritize findings:
   - **PB-xxx requires regression but no [REG:] task** (unprotected behavior)
   - **MIG-xxx has no implementation task** (migration gap)
   - **Removal/Deprecation date order invalid** (timeline error)
+  - **Lint errors** (QA: code style violations blocking merge)
+  - **Type errors** (QA: type checker failures)
+  - **Coverage below threshold** (QA: insufficient test coverage)
+  - **High vulnerabilities** (QA: security audit found high CVEs)
+  - **Potential vulnerability pattern** (QA: SQL injection, XSS, etc.)
 
 - **MEDIUM**:
   - Terminology drift
@@ -627,6 +925,13 @@ Use this heuristic to prioritize findings:
   - **Dual-mode period not specified** (parallel run/feature flag)
   - **Deprecation date is in the past** (outdated timeline)
   - **Rollback criteria missing threshold/action** (incomplete safety)
+  - **No test files found** (QA: missing test infrastructure)
+  - **Lint warnings above threshold** (QA: code quality degradation)
+  - **High test skip rate** (QA: >20% tests skipped)
+  - **Performance regression** (QA: >10% degradation from baseline)
+  - **Resource limit exceeded** (QA: memory/CPU above spec limits)
+  - **Missing security headers** (QA: web app security configuration)
+  - **Moderate vulnerabilities** (QA: security audit found >10 moderate CVEs)
 
 - **LOW**:
   - Style/wording improvements
@@ -648,6 +953,8 @@ Use this heuristic to prioritize findings:
   - **CHG-xxx ADD but references CB** (should be MODIFY?)
   - **Baseline has more components than spec CB count** (incomplete mapping)
   - **Consider Feature Flag for large migrations** (>3 CHG-xxx)
+  - **Build warnings** (QA: minor compilation warnings)
+  - **No baseline measurement for NFR** (QA: performance untested)
 
 ### 6. Produce Compact Analysis Report
 
@@ -661,7 +968,7 @@ Output a Markdown report (no file writes) with the following structure:
 | G1 | Dependency | CRITICAL | tasks.md | Circular: T005 → T012 → T005 | Break cycle at T012 → T005 |
 | H1 | Traceability | HIGH | spec.md, tasks.md | FR-003 has no tasks | Add [FR:FR-003] to relevant task |
 
-(Add one row per finding; generate stable IDs prefixed by category initial: A=Dup, B=Ambig, C=Underspec, D=Constitution, E=Coverage, F=Inconsist, G=Depend, H=Trace, I=Concept, J=RTM, K=SysImpact, L=SysInteg, M=Impact, N=CodeTrace, O=Freshness, P=Brownfield, Q=Migration)
+(Add one row per finding; generate stable IDs prefixed by category initial: A=Dup, B=Ambig, C=Underspec, D=Constitution, E=Coverage, F=Inconsist, G=Depend, H=Trace, I=Concept, J=RTM, K=SysImpact, L=SysInteg, M=Impact, N=CodeTrace, O=Freshness, P=Brownfield, Q=Migration, R=Build, S=Tests, T=Perf, U=Security)
 
 **Dependency Graph Status:**
 
@@ -757,6 +1064,47 @@ Dual-Mode Period: [specified/not specified]
 | Phase 1 | MIG-001 | T040, T041 | T045 | ✅ Complete |
 | Phase 2 | MIG-002 | - | - | ❌ No tasks |
 
+**QA Verification Report:** *(if QA mode - post-implementation)*
+
+```
+Mode: QA VERIFICATION | Implementation: X% complete
+Triggered: [auto from /speckit.implement | manual request]
+```
+
+| Check | Status | Details |
+|-------|--------|---------|
+| Build | ✅/❌ | {output summary} |
+| Lint | ✅/⚠️/❌ | {errors}/{warnings} |
+| Type Check | ✅/❌ | {error count} |
+| Tests | ✅/❌ | {passed}/{total} ({failed} failed) |
+| Coverage | ✅/❌ | {actual}% (threshold: {threshold}%) |
+| Security Audit | ✅/⚠️/❌ | {critical}/{high}/{moderate} vulns |
+| Secrets Scan | ✅/❌ | {count} potential secrets |
+
+**Test Results Summary:**
+
+| Category | Passed | Failed | Skipped | Coverage |
+|----------|--------|--------|---------|----------|
+| Unit | N | N | N | X% |
+| Integration | N | N | N | X% |
+| E2E | N | N | N | - |
+
+**Security Audit Summary:**
+
+| Severity | Count | Top CVEs |
+|----------|-------|----------|
+| Critical | N | CVE-xxxx, CVE-yyyy |
+| High | N | CVE-zzzz |
+| Moderate | N | - |
+
+**QA Verdict:**
+
+```
+🟢 PASS - All checks passed, ready for merge
+🟡 CONCERNS - Non-blocking issues found (N MEDIUM, M LOW)
+🔴 FAIL - Blocking issues found (N CRITICAL, M HIGH)
+```
+
 **Requirements Coverage:**
 
 | Requirement Key | Has Task? | Task IDs | Has Test? | Test IDs | Notes |
@@ -819,11 +1167,39 @@ Ask the user: "Would you like me to suggest concrete remediation edits for the t
 
 When this command completes successfully, the following automation rules apply:
 
-### Auto-Transitions
+### Analysis Modes
+
+| Mode | Trigger | Categories | Purpose |
+|------|---------|------------|---------|
+| Pre-Implementation | Default, before `/speckit.implement` | A-Q | Validate spec artifacts, traceability, dependencies |
+| QA Verification | After `/speckit.implement`, tasks.md has [X] completed | A-Q + R-U | Verify build, tests, coverage, security |
+
+**Mode Detection:**
+```
+IF tasks.md exists AND has completed tasks [X]:
+  IF triggered from /speckit.implement handoff:
+    MODE = QA_VERIFICATION
+  ELSE IF user explicitly requests QA:
+    MODE = QA_VERIFICATION
+  ELSE:
+    MODE = PRE_IMPLEMENTATION
+ELSE:
+  MODE = PRE_IMPLEMENTATION
+```
+
+### Auto-Transitions (Pre-Implementation Mode)
 
 | Condition | Next Phase | Gate |
 |-----------|------------|------|
 | Analysis complete, no CRITICAL issues, dependency graph valid | `/speckit.implement` | No Critical Issues Gate, Dependency Graph Valid Gate |
+
+### Auto-Transitions (QA Mode)
+
+| Condition | Next Phase | Gate |
+|-----------|------------|------|
+| QA Verdict == PASS | Done (ready for merge) | QA Pass Gate |
+| QA Verdict == CONCERNS | Done with warnings | - |
+| QA Verdict == FAIL | Fix QA Issues | - |
 
 ### Quality Gates
 
@@ -831,8 +1207,26 @@ When this command completes successfully, the following automation rules apply:
 |------|-------|-----------------|---------|
 | No Critical Issues Gate | CRITICAL issue count == 0 | CRITICAL > 0 | "Cannot proceed to implementation: resolve all CRITICAL issues first" |
 | Dependency Graph Valid Gate | Dependency Graph Status == VALID or WARNINGS | Status == INVALID | "Resolve circular dependencies or invalid references before implementation" |
+| QA Pass Gate | No CRITICAL or HIGH in R-U categories | CRITICAL > 0 OR HIGH > 0 in R-U | "QA failed - fix blocking issues before proceeding" |
+| Build Pass Gate | Build succeeds (Category R) | Build fails | "Fix build errors before proceeding" |
+| Tests Pass Gate | All tests pass (Category S) | Test failures | "Fix failing tests" |
+| Security Gate | No critical vulnerabilities (Category U) | Critical vulns found | "Address security vulnerabilities" |
+
+### QA Loop
+
+```
+/speckit.implement → /speckit.analyze (QA mode) → PASS → Done/Merge
+                                       ↓
+                                     FAIL
+                                       ↓
+                            Fix Issues (/speckit.implement)
+                                       ↓
+                            /speckit.analyze (QA mode) → ...
+```
 
 ### Gate Behavior
+
+**Pre-Implementation Mode:**
 
 **If all conditions pass and no gates block:**
 - Automatically proceed to `/speckit.implement`
@@ -846,6 +1240,23 @@ When this command completes successfully, the following automation rules apply:
   - `/speckit.plan` for architectural issues
   - `/speckit.tasks` for traceability issues
 - Wait for user to resolve and re-run analysis
+
+**QA Mode:**
+
+**If QA Verdict == PASS:**
+- Log: "QA verification passed, ready for merge"
+- Implementation is complete and verified
+
+**If QA Verdict == CONCERNS:**
+- Log: "QA passed with warnings (N MEDIUM, M LOW issues)"
+- Implementation can proceed but improvements recommended
+- List non-blocking issues for future attention
+
+**If QA Verdict == FAIL:**
+- Display blocking message with specific failures
+- Offer handoff to `/speckit.implement` to fix issues
+- List all CRITICAL/HIGH issues from categories R-U
+- Wait for user to fix and re-run QA analysis
 
 ### Manual Overrides
 

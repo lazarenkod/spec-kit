@@ -1,13 +1,41 @@
 ---
 description: Execute the implementation plan by processing and executing all tasks defined in tasks.md
 handoffs:
-  - label: Re-run Analysis
+  - label: QA Verification
     agent: speckit.analyze
-    prompt: Run analysis to verify implementation quality and traceability
+    prompt: |
+      Run post-implementation QA analysis (QA mode):
+      - Verify build succeeds and tests pass
+      - Check code traceability (@speckit annotations)
+      - Validate security (dependency audit, secret detection)
+      - Generate QA Verification Report with verdict
+    auto: true
+    condition:
+      - "All P1 tasks marked [X] in tasks.md"
+      - "Implementation phase completed"
+    gates:
+      - name: "Implementation Complete Gate"
+        check: "No incomplete P1 tasks in tasks.md"
+        block_if: "P1 tasks remain [ ]"
+        message: "Complete all P1 tasks before QA verification"
+      - name: "Build Artifacts Gate"
+        check: "Implementation produced runnable code"
+        block_if: "No source files created or modified"
+        message: "No implementation detected - verify tasks were executed"
+    post_actions:
+      - "log: Implementation complete, running QA verification"
+  - label: Fix QA Issues
+    agent: speckit.implement
+    prompt: Address issues identified in QA verification report
     auto: false
     condition:
-      - "Implementation phase completed"
-      - "User wants to verify traceability coverage"
+      - "QA report shows CRITICAL or HIGH issues"
+      - "QA Verdict == FAIL"
+    gates:
+      - name: "QA Issues Exist Gate"
+        check: "QA Verdict != PASS"
+        block_if: "QA Verdict == PASS"
+        message: "No QA issues to fix - all checks passed"
   - label: Update Tasks
     agent: speckit.tasks
     prompt: Regenerate or update tasks based on implementation learnings
@@ -265,15 +293,41 @@ This command has **pre-implementation gates** that must pass before execution be
 - Checklist validation (step 2) acts as runtime gate
 - If checklists incomplete, prompt user for confirmation before proceeding
 
-### Post-Implementation Handoffs
+### Post-Implementation Flow
 
-Implementation does not auto-transition to other phases (it's the terminal phase), but offers manual handoffs for:
+When all P1 tasks are marked `[X]`, implementation **auto-transitions to QA verification**:
 
-| Condition | Suggested Handoff | Purpose |
-|-----------|-------------------|---------|
-| Implementation complete, want to verify | `/speckit.analyze` | Verify traceability coverage and quality |
-| Found missing tasks during implementation | `/speckit.tasks` | Update task breakdown |
-| Discovered spec gaps | `/speckit.specify` | Update specification |
+| Condition | Next Phase | Gate |
+|-----------|------------|------|
+| All P1 tasks completed | `/speckit.analyze` (QA mode) | Implementation Complete Gate |
+
+### QA Loop
+
+```
+/speckit.implement
+        │
+        ▼ (auto: P1 tasks complete)
+/speckit.analyze (QA mode)
+        │
+    ┌───┴───┐
+    │       │
+  PASS    FAIL
+    │       │
+    ▼       ▼
+  Done   Fix Issues
+ /merge  (implement)
+            │
+            └────────▶ /speckit.analyze (QA mode) ─▶ ...
+```
+
+### QA Handoffs
+
+| Condition | Handoff | Auto |
+|-----------|---------|------|
+| P1 tasks complete | QA Verification (`/speckit.analyze`) | ✅ Yes |
+| QA Verdict == FAIL | Fix QA Issues (`/speckit.implement`) | ❌ No |
+| Found missing tasks | Update Tasks (`/speckit.tasks`) | ❌ No |
+| Discovered spec gaps | Update Spec (`/speckit.specify`) | ❌ No |
 
 ### Manual Overrides
 
@@ -281,4 +335,5 @@ Users can always choose to:
 - Skip checklist validation (with explicit confirmation)
 - Pause implementation and update artifacts
 - Re-run specific phases if issues discovered
-- Run `/speckit.analyze` post-implementation for verification
+- Skip QA verification (not recommended)
+- Manually trigger QA at any point
