@@ -103,18 +103,19 @@ get_highest_from_specs() {
 # Function to get highest number from git branches
 get_highest_from_branches() {
     local highest=0
-    
+
     # Get all branches (local and remote)
     branches=$(git branch -a 2>/dev/null || echo "")
-    
+
     if [ -n "$branches" ]; then
         while IFS= read -r branch; do
             # Clean branch name: remove leading markers and remote prefixes
             clean_branch=$(echo "$branch" | sed 's/^[* ]*//; s|^remotes/[^/]*/||')
-            
-            # Extract feature number if branch matches pattern ###-*
-            if echo "$clean_branch" | grep -q '^[0-9]\{3\}-'; then
-                number=$(echo "$clean_branch" | grep -o '^[0-9]\{3\}' || echo "0")
+
+            # Extract feature number if branch matches pattern N+- (one or more digits followed by hyphen)
+            # This handles: 1-feature, 12-feature, 123-feature, 1234-feature, etc.
+            if echo "$clean_branch" | grep -qE '^[0-9]+-'; then
+                number=$(echo "$clean_branch" | grep -oE '^[0-9]+' || echo "0")
                 number=$((10#$number))
                 if [ "$number" -gt "$highest" ]; then
                     highest=$number
@@ -122,8 +123,54 @@ get_highest_from_branches() {
             fi
         done <<< "$branches"
     fi
-    
+
     echo "$highest"
+}
+
+# Function to check if a branch number is already taken
+is_branch_number_taken() {
+    local num="$1"
+    local padded=$(printf "%03d" "$((10#$num))")
+
+    # Check local branches
+    if git branch --list "${padded}-*" 2>/dev/null | grep -q .; then
+        return 0
+    fi
+
+    # Check remote branches
+    if git branch -r --list "*/${padded}-*" 2>/dev/null | grep -q .; then
+        return 0
+    fi
+
+    # Also check without padding (1-, 12-, etc.)
+    if git branch --list "${num}-*" 2>/dev/null | grep -q .; then
+        return 0
+    fi
+    if git branch -r --list "*/${num}-*" 2>/dev/null | grep -q .; then
+        return 0
+    fi
+
+    return 1
+}
+
+# Function to check if a spec directory number is already taken
+is_spec_number_taken() {
+    local num="$1"
+    local specs_dir="$2"
+    local padded=$(printf "%03d" "$((10#$num))")
+
+    if [ -d "$specs_dir" ]; then
+        # Check for directories starting with this number (padded or not)
+        for dir in "$specs_dir"/*; do
+            [ -d "$dir" ] || continue
+            dirname=$(basename "$dir")
+            if echo "$dirname" | grep -qE "^(0*)?${num}-"; then
+                return 0
+            fi
+        done
+    fi
+
+    return 1
 }
 
 # Function to check existing branches (local and remote) and return next available number
@@ -145,8 +192,15 @@ check_existing_branches() {
         max_num=$highest_spec
     fi
 
-    # Return next number
-    echo $((max_num + 1))
+    # Start with next number
+    local next_num=$((max_num + 1))
+
+    # Double-check: ensure this number is truly not taken (handles edge cases)
+    while is_branch_number_taken "$next_num" || is_spec_number_taken "$next_num" "$specs_dir"; do
+        next_num=$((next_num + 1))
+    done
+
+    echo "$next_num"
 }
 
 # Function to clean and format a branch name

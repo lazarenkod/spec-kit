@@ -99,6 +99,52 @@ function Get-HighestNumberFromBranches {
     return $highest
 }
 
+function Test-BranchNumberTaken {
+    param([int]$Number)
+
+    $padded = '{0:000}' -f $Number
+
+    try {
+        # Check local branches
+        $localBranches = git branch --list "${padded}-*" 2>$null
+        if ($localBranches) { return $true }
+
+        # Check remote branches
+        $remoteBranches = git branch -r --list "*/${padded}-*" 2>$null
+        if ($remoteBranches) { return $true }
+
+        # Also check without padding (1-, 12-, etc.)
+        $localBranches = git branch --list "${Number}-*" 2>$null
+        if ($localBranches) { return $true }
+
+        $remoteBranches = git branch -r --list "*/${Number}-*" 2>$null
+        if ($remoteBranches) { return $true }
+    } catch {
+        # If git fails, assume not taken
+    }
+
+    return $false
+}
+
+function Test-SpecNumberTaken {
+    param(
+        [int]$Number,
+        [string]$SpecsDir
+    )
+
+    if (-not (Test-Path $SpecsDir)) { return $false }
+
+    $dirs = Get-ChildItem -Path $SpecsDir -Directory -ErrorAction SilentlyContinue
+    foreach ($dir in $dirs) {
+        # Match directories starting with this number (with or without padding)
+        if ($dir.Name -match "^0*$Number-") {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 function Get-NextBranchNumber {
     param(
         [string]$SpecsDir
@@ -120,8 +166,15 @@ function Get-NextBranchNumber {
     # Take the maximum of both
     $maxNum = [Math]::Max($highestBranch, $highestSpec)
 
-    # Return next number
-    return $maxNum + 1
+    # Start with next number
+    $nextNum = $maxNum + 1
+
+    # Double-check: ensure this number is truly not taken (handles edge cases)
+    while ((Test-BranchNumberTaken -Number $nextNum) -or (Test-SpecNumberTaken -Number $nextNum -SpecsDir $SpecsDir)) {
+        $nextNum++
+    }
+
+    return $nextNum
 }
 
 function ConvertTo-CleanBranchName {

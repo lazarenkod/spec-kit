@@ -1,9 +1,12 @@
 ---
-description: Create or update the project constitution from interactive or provided principle inputs, ensuring all dependent templates stay in sync.
-handoffs: 
+description: Create or update the project constitution with layered architecture support (base → domain → project layers).
+handoffs:
   - label: Build Specification
     agent: speckit.specify
     prompt: Implement the feature specification based on the updated constitution. I want to build...
+  - label: Analyze Compliance
+    agent: speckit.analyze
+    prompt: Check artifacts for constitution compliance
 ---
 
 ## User Input
@@ -14,69 +17,199 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
-## Outline
+## Layered Constitution Architecture
 
-You are updating the project constitution at `/memory/constitution.md`. This file is a TEMPLATE containing placeholder tokens in square brackets (e.g. `[PROJECT_NAME]`, `[PRINCIPLE_1_NAME]`). Your job is to (a) collect/derive concrete values, (b) fill the template precisely, and (c) propagate any amendments across dependent artifacts.
+The constitution uses a 3-layer inheritance model:
 
-Follow this execution flow:
+```
+Layer 0: /memory/constitution.base.md ─── Enterprise defaults (READ-ONLY)
+    ↓ inherits
+Layer 1: /memory/constitution.domain.md ─ Domain-specific (fintech, healthcare, etc.)
+    ↓ inherits
+Layer 2: /memory/constitution.md ──────── Project overrides
+```
 
-1. Load the existing constitution template at `/memory/constitution.md`.
-   - Identify every placeholder token of the form `[ALL_CAPS_IDENTIFIER]`.
-   **IMPORTANT**: The user might require less or more principles than the ones used in the template. If a number is specified, respect that - follow the general template. You will update the doc accordingly.
+**Inheritance Rules**:
+- Higher layers INHERIT all principles from lower layers
+- Higher layers can STRENGTHEN (SHOULD → MUST) but NEVER weaken (MUST → SHOULD)
+- Higher layers can ADD new principles
+- Higher layers can REFINE parameters (e.g., coverage 80% → 90%)
 
-2. Collect/derive values for placeholders:
-   - If user input (conversation) supplies a value, use it.
-   - Otherwise infer from existing repo context (README, docs, prior constitution versions if embedded).
-   - For governance dates: `RATIFICATION_DATE` is the original adoption date (if unknown ask or mark TODO), `LAST_AMENDED_DATE` is today if changes are made, otherwise keep previous.
-   - `CONSTITUTION_VERSION` must increment according to semantic versioning rules:
-     - MAJOR: Backward incompatible governance/principle removals or redefinitions.
-     - MINOR: New principle/section added or materially expanded guidance.
-     - PATCH: Clarifications, wording, typo fixes, non-semantic refinements.
-   - If version bump type ambiguous, propose reasoning before finalizing.
+## Available Domains
 
-3. Draft the updated constitution content:
-   - Replace every placeholder with concrete text (no bracketed tokens left except intentionally retained template slots that the project has chosen not to define yet—explicitly justify any left).
-   - Preserve heading hierarchy and comments can be removed once replaced unless they still add clarifying guidance.
-   - Ensure each Principle section: succinct name line, paragraph (or bullet list) capturing non‑negotiable rules, explicit rationale if not obvious.
-   - Ensure Governance section lists amendment procedure, versioning policy, and compliance review expectations.
+| Domain | File | Use Cases |
+|--------|------|-----------|
+| fintech | `domains/fintech.md` | Payments, trading, banking, investment |
+| healthcare | `domains/healthcare.md` | EHR, patient portals, HIPAA-regulated |
+| e-commerce | `domains/e-commerce.md` | Online stores, marketplaces, checkout |
+| saas | `domains/saas.md` | Multi-tenant B2B platforms |
 
-4. Consistency propagation checklist (convert prior checklist into active validations):
-   - Read `/templates/plan-template.md` and ensure any "Constitution Check" or rules align with updated principles.
-   - Read `/templates/spec-template.md` for scope/requirements alignment—update if constitution adds/removes mandatory sections or constraints.
-   - Read `/templates/tasks-template.md` and ensure task categorization reflects new or removed principle-driven task types (e.g., observability, versioning, testing discipline).
-   - Read each command file in `/templates/commands/*.md` (including this one) to verify no outdated references (agent-specific names like CLAUDE only) remain when generic guidance is required.
-   - Read any runtime guidance docs (e.g., `README.md`, `docs/quickstart.md`, or agent-specific guidance files if present). Update references to principles changed.
+## Execution Flow
 
-5. Produce a Sync Impact Report (prepend as an HTML comment at top of the constitution file after update):
-   - Version change: old → new
-   - List of modified principles (old title → new title if renamed)
-   - Added sections
-   - Removed sections
-   - Templates requiring updates (✅ updated / ⚠ pending) with file paths
-   - Follow-up TODOs if any placeholders intentionally deferred.
+### 1. Determine Operation Mode
 
-6. Validation before final output:
-   - No remaining unexplained bracket tokens.
-   - Version line matches report.
-   - Dates ISO format YYYY-MM-DD.
-   - Principles are declarative, testable, and free of vague language ("should" → replace with MUST/SHOULD rationale where appropriate).
+Parse user input for operation:
 
-7. Write the completed constitution back to `/memory/constitution.md` (overwrite).
+| User Says | Operation |
+|-----------|-----------|
+| "set domain fintech" | Select domain layer |
+| "add principle" / "strengthen" | Modify project layer |
+| "--merge" / "show effective" | Generate merged view |
+| (no specific flag) | Interactive edit of project layer |
 
-8. Output a final summary to the user with:
-   - New version and bump rationale.
-   - Any files flagged for manual follow-up.
-   - Suggested commit message (e.g., `docs: amend constitution to vX.Y.Z (principle additions + governance update)`).
+### 2. Load Existing Layers
 
-Formatting & Style Requirements:
+Load available constitution layers:
 
-- Use Markdown headings exactly as in the template (do not demote/promote levels).
-- Wrap long rationale lines to keep readability (<100 chars ideally) but do not hard enforce with awkward breaks.
-- Keep a single blank line between sections.
-- Avoid trailing whitespace.
+```
+1. Read /memory/constitution.base.md (always exists)
+2. Check if /memory/constitution.domain.md exists
+   - If yes, read and identify domain
+   - If no, note that no domain is selected
+3. Read /memory/constitution.md (project layer)
+```
 
-If the user supplies partial updates (e.g., only one principle revision), still perform validation and version decision steps.
+### 3a. Domain Selection (if requested)
 
-If critical info missing (e.g., ratification date truly unknown), insert `TODO(<FIELD_NAME>): explanation` and include in the Sync Impact Report under deferred items.
+If user requests domain selection:
 
-Do not create a new template; always operate on the existing `/memory/constitution.md` file.
+1. Validate domain exists in `/memory/domains/[domain].md`
+2. Copy domain file to `/memory/constitution.domain.md`
+3. Update project constitution header: `Domain Layer: [domain]`
+4. Report domain principles added/strengthened
+
+### 3b. Project Layer Edit (default)
+
+If editing project layer:
+
+1. Identify placeholder tokens `[ALL_CAPS_IDENTIFIER]`
+2. Collect/derive values:
+   - From user input if supplied
+   - From repo context (README, docs, prior versions)
+   - Dates: ISO format YYYY-MM-DD
+3. Ensure overrides follow inheritance rules:
+   - Cannot weaken base/domain MUST principles
+   - Can strengthen SHOULD → MUST
+   - Can add PRJ-xxx project principles
+
+### 3c. Merge View (if --merge)
+
+If generating merged view:
+
+```
+FOR EACH principle in base:
+  IF domain overrides it:
+    Use domain version
+  IF project overrides it:
+    Use project version
+  ELSE:
+    Use base version
+
+ADD domain-specific principles
+ADD project-specific principles
+
+OUTPUT merged constitution
+```
+
+### 4. Validation
+
+Before finalizing:
+
+- [ ] No unexplained bracket tokens remain
+- [ ] No MUST → SHOULD weakening (violation = ERROR)
+- [ ] Version updated if changes made
+- [ ] Dates in ISO format
+
+**Version Semantics**:
+- MAJOR: Principle removal or incompatible redefinition
+- MINOR: New principle or significant expansion
+- PATCH: Clarifications, parameter tweaks
+
+### 5. Consistency Propagation
+
+Check dependent templates for alignment:
+
+| File | Check |
+|------|-------|
+| `/templates/plan-template.md` | Constitution Check section aligns |
+| `/templates/spec-template.md` | Requirements don't conflict with principles |
+| `/templates/tasks-template.md` | Task types reflect principle domains |
+
+### 6. Output
+
+**Sync Impact Report** (as HTML comment in constitution):
+
+```html
+<!--
+SYNC REPORT - [DATE]
+Version: [OLD] → [NEW]
+Domain: [DOMAIN or none]
+
+Modified Principles:
+- [ID]: [CHANGE]
+
+Added Principles:
+- [ID]: [NAME]
+
+Templates Checked:
+✅ plan-template.md
+✅ spec-template.md
+⚠ tasks-template.md (manual review needed)
+
+Follow-up TODOs:
+- [ITEM]
+-->
+```
+
+**User Summary**:
+- New version and bump rationale
+- Domain status (active/none)
+- Files flagged for manual follow-up
+- Suggested commit message
+
+## Examples
+
+### Example 1: Select Domain
+
+**Input**: "set domain fintech"
+
+**Actions**:
+1. Copy `/memory/domains/fintech.md` → `/memory/constitution.domain.md`
+2. Update `/memory/constitution.md` header
+3. Report: "Activated fintech domain. 6 principles strengthened, 6 domain principles added."
+
+### Example 2: Strengthen Principle
+
+**Input**: "strengthen QUA-001 to MUST with 95% coverage because we're building critical infrastructure"
+
+**Actions**:
+1. Add to Strengthened Principles table in constitution.md
+2. Validate: base QUA-001 is SHOULD (can strengthen)
+3. Version bump: MINOR (principle strength change)
+
+### Example 3: Add Project Principle
+
+**Input**: "add principle: all API responses must include request-id header for debugging"
+
+**Actions**:
+1. Create PRJ-001: Request ID Header
+2. Set level: MUST
+3. Add validation and violation severity
+4. Version bump: MINOR (new principle)
+
+### Example 4: View Effective Constitution
+
+**Input**: "--merge"
+
+**Actions**:
+1. Merge all layers
+2. Output complete effective constitution
+3. Show principle count by domain and level
+
+## Formatting Requirements
+
+- Use Markdown headings exactly as in template
+- Lines < 100 chars where practical
+- Single blank line between sections
+- No trailing whitespace
+- Principle IDs: [DOMAIN]-[NNN] (e.g., SEC-001, PRJ-002)

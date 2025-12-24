@@ -1,50 +1,133 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# [PROJECT_NAME] Constitution (Layer 2)
 
-## Core Principles
+**Base Layer**: constitution.base.md v1.1
+**Domain Layer**: [none | fintech | healthcare | e-commerce | saas]
+**Effective Date**: [DATE]
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+---
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+## How Layered Constitution Works
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+This is **Layer 2** (project-specific) of the constitution:
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+```
+Layer 0: constitution.base.md ──────── 20 enterprise principles (READ-ONLY)
+    ↓ inherits
+Layer 1: constitution.domain.md ────── Domain-specific (fintech, healthcare, etc.)
+    ↓ inherits
+Layer 2: constitution.md (this file) ─ Your project overrides
+```
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+**Rules**:
+- You INHERIT all principles from Layer 0 (and Layer 1 if domain selected)
+- You can STRENGTHEN principles (SHOULD → MUST) but NEVER weaken (MUST → SHOULD)
+- You can ADD new project-specific principles
+- You can REFINE parameters (e.g., coverage 80% → 90%)
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+---
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+## Quick Start
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+1. **Review base principles**: Read `constitution.base.md` to understand defaults
+2. **Select domain** (optional): Copy `domains/[domain].md` to `constitution.domain.md`
+3. **Add overrides below**: Strengthen or add principles as needed
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+---
+
+## Strengthened Principles
+
+<!--
+Override base/domain principles here.
+You can only strengthen (SHOULD → MUST) or tighten parameters.
+Example:
+-->
+
+| Base ID | Original Level | New Level | Rationale |
+|---------|----------------|-----------|-----------|
+| QUA-001 | SHOULD (80%) | MUST (90%) | Critical system, high coverage required |
+| OBS-003 | SHOULD | MUST | Kubernetes deployment requires health checks |
+
+---
+
+## Project-Specific Principles
+
+<!--
+Add principles unique to your project.
+Use format: PRJ-001, PRJ-002, etc.
+-->
+
+### PRJ-001: [Principle Name]
+
+**Level**: MUST | SHOULD
+**Applies to**: [scope]
+
+[Description of the principle and its rationale]
+
+**Validation**: [How to verify compliance]
+**Violations**: [Severity - CRITICAL, HIGH, MEDIUM, LOW]
+
+---
+
+### PRJ-002: [Principle Name]
+
+**Level**: MUST | SHOULD
+**Applies to**: [scope]
+
+[Description]
+
+**Validation**: [How to verify]
+**Violations**: [Severity]
+
+---
+
+## Technology Constraints
+
+<!-- Project-specific technology decisions that affect principles -->
+
+| Category | Decision | Rationale |
+|----------|----------|-----------|
+| Language | [e.g., Python 3.11+] | [why] |
+| Framework | [e.g., FastAPI] | [why] |
+| Database | [e.g., PostgreSQL 15] | [why] |
+| Cloud | [e.g., AWS] | [why] |
+
+---
+
+## Exceptions
+
+<!--
+Document any TEMPORARY exceptions to principles.
+Exceptions must have expiration dates and remediation plans.
+-->
+
+| Principle ID | Exception | Expiration | Remediation Plan |
+|--------------|-----------|------------|------------------|
+| [ID] | [What is excepted] | [Date] | [How it will be fixed] |
+
+---
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- This constitution is enforced by `/speckit.analyze` command
+- MUST violations are CRITICAL severity and block implementation
+- SHOULD violations are MEDIUM severity and require justification
+- Amendments require team review and version update
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+---
+
+## Effective Principles Summary
+
+<!--
+This section can be auto-generated by running:
+/speckit.constitution --merge
+
+It will show all active principles from all layers.
+-->
+
+Run `/speckit.constitution --merge` to generate merged view.
+
+---
+
+**Version**: 1.0.0
+**Created**: [DATE]
+**Last Amended**: [DATE]

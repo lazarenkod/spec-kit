@@ -7,6 +7,55 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.27] - 2025-12-23
+
+### Fixed
+
+- **Feature branch numbering collision bug**: Fixed bash script regex that only matched exactly 3-digit prefixes (`001-`, `012-`), missing branches like `1-feature`, `12-feature`, or `1234-feature`
+  - Changed `^[0-9]\{3\}-` to `^[0-9]+-` (one or more digits)
+  - Added double-check collision detection: `is_branch_number_taken()` and `is_spec_number_taken()` functions
+  - If a number is already taken (edge case), script now increments until finding a free number
+  - Applied same fixes to both `create-new-feature.sh` and `create-new-feature.ps1`
+
+### Added
+
+- **Layered Constitution Architecture**: 3-layer inheritance system for enterprise principles
+  - **Layer 0** (`constitution.base.md`): 42 enterprise principles across 8 domains (READ-ONLY)
+  - **Layer 1** (`constitution.domain.md`): Domain-specific extensions (fintech, healthcare, e-commerce, saas)
+  - **Layer 2** (`constitution.md`): Project-specific overrides and additions
+  - Inheritance rules: Higher layers can STRENGTHEN (SHOULD→MUST) but NEVER weaken (MUST→SHOULD)
+
+- **Enterprise Base Principles** (`memory/constitution.base.md`) - 42 principles across 8 domains:
+  - SEC (Security): 8 principles - secrets management, input validation, output encoding, dependency security, authentication, least privilege, RBAC authorization, SQL injection prevention
+  - OBS (Observability): 4 principles - structured logging, error tracking, health endpoints, performance metrics
+  - ERR (Error Exposure): 3 principles - no stack traces in production, generic user-facing errors, correlation ID in all errors
+  - QUA (Quality): 7 principles - unit test coverage, integration testing, code review, documentation, tech debt tracking, code style enforcement, API integration tests
+  - REL (Reliability): 6 principles - error handling, graceful degradation, idempotency, transaction boundaries, retry policies, optimistic locking
+  - API (API Design): 6 principles - versioning, backwards compatibility, rate limiting, error responses, OpenAPI specification, pagination
+  - PRF (Performance): 4 principles - response time SLA, resource limits, query optimization, caching strategy
+  - CMP (Compliance): 4 principles - audit logging, data retention, privacy by design, accessibility
+
+- **Domain Extension Templates** (`memory/domains/`):
+  - `fintech.md`: FIN-001 to FIN-006 (Transaction Atomicity, Audit Immutability, Dual Control, Regulatory Reporting, Reconciliation, Money Precision)
+  - `healthcare.md`: HIP-001 to HIP-006 (PHI Encryption, Access Logging, Minimum Necessary, Patient Rights, Breach Notification, BAA Tracking)
+  - `e-commerce.md`: ECM-001 to ECM-007 (PCI Compliance, Inventory Consistency, Cart Persistence, Order Immutability, Price Consistency, Fraud Prevention, SEO Friendliness)
+  - `saas.md`: SAS-001 to SAS-008 (Tenant Isolation, Usage Metering, Provisioning, Configuration, Data Residency, Offboarding, Service Level Tiers, Noisy Neighbor Prevention)
+
+### Changed
+
+- `/speckit.constitution` command now supports layered operations:
+  - `set domain [name]`: Activate domain-specific principles
+  - `add principle`: Add project-specific principles (PRJ-xxx)
+  - `strengthen [ID]`: Strengthen base/domain principles (SHOULD→MUST)
+  - `--merge`: Generate effective constitution view with all layers merged
+- `memory/constitution.md` is now a project layer template with:
+  - Strengthened Principles table for overriding base/domain principles
+  - Project-Specific Principles section (PRJ-xxx format)
+  - Technology Constraints table
+  - Exceptions table with expiration dates and remediation plans
+
+---
+
 ## [0.0.26] - 2025-12-23
 
 ### Added
