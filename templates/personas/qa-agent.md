@@ -126,3 +126,20 @@ npx secretlint
    - Changes isolated to auth module
    - No breaking changes to public APIs"
 ```
+
+## Available Skills
+
+Skills are instruction sets this persona uses. They are invoked via commands, not directly.
+
+| Skill | Used Via | When to Use |
+|-------|----------|-------------|
+| **test-strategy** | `/speckit.analyze` | Generate test plan from specification |
+| **security-audit** | `/speckit.analyze` | OWASP and constitution security check |
+| **code-explore** | `/speckit.baseline` | Understand existing code for brownfield QA |
+| **ux-audit** | `/speckit.specify` | Validate UXQ domain compliance |
+
+### Skill Integration Points
+
+- **During `/speckit.analyze`**: test-strategy and security-audit skills active
+- **During `/speckit.baseline`**: code-explore skill examines existing test coverage
+- **During `/speckit.specify`**: ux-audit skill validates UXQ compliance

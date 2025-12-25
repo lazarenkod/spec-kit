@@ -32,6 +32,13 @@ handoffs:
 scripts:
   sh: scripts/bash/create-new-feature.sh --json "{ARGS}"
   ps: scripts/powershell/create-new-feature.ps1 -Json "{ARGS}"
+skills:
+  - name: ux-audit
+    trigger: "Before finalizing spec when UXQ domain is active"
+    usage: "Read templates/skills/ux-audit.md to validate specification against UXQ principles"
+  - name: code-explore
+    trigger: "Brownfield mode - understanding existing codebase"
+    usage: "Read templates/skills/code-explore.md to document current behaviors before specification"
 ---
 
 ## User Input

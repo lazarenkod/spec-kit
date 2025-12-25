@@ -1,5 +1,6 @@
 ---
 description: Create visual specifications and design system for UI-heavy features. Use AFTER /speckit.specify when the feature requires significant user interface work.
+persona: ux-designer-agent
 handoffs:
   - label: Build Technical Plan
     agent: speckit.plan
@@ -11,17 +12,29 @@ handoffs:
   - label: Analyze Consistency
     agent: speckit.analyze
     prompt: Validate design specs against functional requirements
+  - label: UX Audit
+    agent: speckit.analyze
+    prompt: Run UX audit to validate design against UXQ domain principles
+    auto: false
+    condition:
+      - "UXQ domain is active in constitution"
 claude_code:
   reasoning_mode: extended
   thinking_budget: 8000
   plan_mode_trigger: true
-  subagents:
-    - role: design-researcher
-      trigger: "when exploring UI patterns or competitor designs"
-      prompt: "Research UI patterns and best practices for {DOMAIN}"
-    - role: accessibility-auditor
-      trigger: "when validating WCAG compliance"
-      prompt: "Audit accessibility requirements for {COMPONENTS}"
+skills:
+  - name: interaction-design
+    trigger: "When defining component states and behaviors"
+    usage: "Read templates/skills/interaction-design.md for detailed component specifications"
+  - name: wireframe-spec
+    trigger: "When creating layout specifications"
+    usage: "Read templates/skills/wireframe-spec.md for annotated wireframes"
+  - name: accessibility-audit
+    trigger: "When validating WCAG compliance"
+    usage: "Read templates/skills/accessibility-audit.md for comprehensive a11y review"
+  - name: ux-audit
+    trigger: "When validating UXQ domain compliance"
+    usage: "Read templates/skills/ux-audit.md to check UXQ principles"
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-spec
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireSpec

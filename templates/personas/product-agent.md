@@ -57,3 +57,20 @@ What this agent MUST provide to the Architect Agent:
 2. Should we support social login or only email/password?
 3. What happens if the user forgets their password?"
 ```
+
+## Available Skills
+
+Skills are instruction sets this persona uses. They are invoked via commands, not directly.
+
+| Skill | Used Via | When to Use |
+|-------|----------|-------------|
+| **market-research** | `/speckit.concept` | Validate product ideas with market data |
+| **competitive-analysis** | `/speckit.concept` | Understand competitive landscape |
+| **prioritization** | `/speckit.plan` | Data-driven feature prioritization (ICE/RICE) |
+| **ux-audit** | `/speckit.specify` | Validate specs against UXQ principles |
+
+### Skill Integration Points
+
+- **During `/speckit.concept`**: market-research and competitive-analysis skills active
+- **During `/speckit.plan`**: prioritization skill ranks features
+- **During `/speckit.specify`**: ux-audit skill validates UXQ compliance

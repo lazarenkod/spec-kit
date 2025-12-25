@@ -12,13 +12,13 @@ claude_code:
   reasoning_mode: extended
   thinking_budget: 10000
   plan_mode_trigger: true
-  subagents:
-    - role: market-researcher
-      trigger: "when exploring competitors, market trends, or user pain points"
-      prompt: "Research market landscape for {DOMAIN}: competitors, trends, user complaints"
-    - role: design-researcher
-      trigger: "when exploring UI patterns or user experience approaches"
-      prompt: "Research UI/UX patterns and best practices for {DOMAIN}"
+skills:
+  - name: market-research
+    trigger: "Phase 0b: Market & User Research"
+    usage: "Read templates/skills/market-research.md for comprehensive competitor and market analysis"
+  - name: ux-audit
+    trigger: "When validating concept for UX quality"
+    usage: "Read templates/skills/ux-audit.md to validate UXQ compliance before specification"
 scripts:
   sh: scripts/bash/create-concept.sh --json "{ARGS}"
   ps: scripts/powershell/create-concept.ps1 -Json "{ARGS}"

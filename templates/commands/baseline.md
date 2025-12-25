@@ -43,10 +43,10 @@ pre_gates:
 claude_code:
   reasoning_mode: extended
   thinking_budget: 10000
-  subagents:
-    - role: code-explorer
-      trigger: "when analyzing code structure or tracing dependencies"
-      prompt: "Explore codebase for {PATTERN} to document current behavior"
+skills:
+  - name: code-explore
+    trigger: "When analyzing code structure or tracing dependencies"
+    usage: "Read templates/skills/code-explore.md to thoroughly document existing behaviors and architecture"
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json
   ps: scripts/powershell/check-prerequisites.ps1 -Json
