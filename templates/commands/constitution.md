@@ -46,6 +46,14 @@ Layer 2: /memory/constitution.md ──────── Project overrides
 | healthcare | `domains/healthcare.md` | EHR, patient portals, HIPAA-regulated |
 | e-commerce | `domains/e-commerce.md` | Online stores, marketplaces, checkout |
 | saas | `domains/saas.md` | Multi-tenant B2B platforms |
+| uxq | `domains/uxq.md` | B2C apps, dashboards, onboarding, forms, consumer products |
+
+**Domain Combinations**: Domains can be combined for hybrid contexts:
+- `uxq + saas` → Multi-tenant apps with consumer-grade UX
+- `uxq + healthcare` → Patient-facing health applications
+- `uxq + e-commerce` → Shopping experiences with delight moments
+
+When combining domains, copy both to `constitution.domain.md` and merge principles (stricter level wins).
 
 ## Execution Flow
 

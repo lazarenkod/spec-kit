@@ -664,6 +664,23 @@ Answer each question by examining the specification:
 | SR-SPEC-09 | Edge cases (EC-xxx) identified for error scenarios? | MEDIUM |
 | SR-SPEC-10 | Traceability Summary table complete and accurate? | LOW |
 
+**UXQ Domain Criteria** *(apply when UXQ domain is active)*:
+
+Check if `memory/constitution.domain.md` references UXQ domain. If yes, also validate:
+
+| ID | Question | Severity |
+|----|----------|----------|
+| SR-UXQ-01 | Jobs to Be Done documented with proper format (When/Want/So)? | HIGH |
+| SR-UXQ-02 | Each FR traces to at least one JTBD? | HIGH |
+| SR-UXQ-03 | User Mental Model section describes user expectations? | MEDIUM |
+| SR-UXQ-04 | FTUE section documents first-time user flow separately? | HIGH |
+| SR-UXQ-05 | All friction points have type AND justification? | HIGH |
+| SR-UXQ-06 | No unjustified friction remains in the list? | CRITICAL |
+| SR-UXQ-07 | Delight opportunities identified for success states? | LOW |
+| SR-UXQ-08 | Emotional journey maps key steps with design responses? | MEDIUM |
+| SR-UXQ-09 | Accessibility framed as empowerment (not just compliance)? | HIGH |
+| SR-UXQ-10 | Error messages documented from user perspective (UXQ-005)? | HIGH |
+
 **Evaluation format**:
 ```text
 🔍 Self-Review: Specification Quality

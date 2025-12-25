@@ -64,6 +64,7 @@ This command captures the **complete vision and scope** of a service/product BEF
    - Competitor mentions without differentiation: "like Trello but...", "как X только лучше"
    - Single-sentence descriptions without specific features
    - Uncertainty markers: "I think", "probably", "наверное"
+   - Words related to product vision: "product vision", "product strategy", "product concept"
 
    **Capture Mode triggers** (skip to step 5):
    - Structured feature lists with 3+ items

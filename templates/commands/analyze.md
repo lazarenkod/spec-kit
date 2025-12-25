@@ -1133,6 +1133,237 @@ The following categories (R-U) are executed when `/speckit.analyze` runs after `
 
 ---
 
+#### X. UXQ Domain Validation *(if UXQ domain active)*
+
+**Purpose**: Validate User Experience Quality principles when UXQ domain is active.
+
+**Activation Check**:
+
+```text
+IF memory/constitution.domain.md exists:
+  Read file content
+  IF content references "uxq.md" OR contains "UXQ-":
+    UXQ_DOMAIN_ACTIVE = true
+  ELSE:
+    UXQ_DOMAIN_ACTIVE = false
+ELSE:
+  UXQ_DOMAIN_ACTIVE = false
+
+IF NOT UXQ_DOMAIN_ACTIVE:
+  SKIP this validation pass
+```
+
+**1. UXQ Section Presence**:
+
+```text
+IF spec.md exists:
+  Search for "## User Experience Quality" OR "## UXQ" section
+  IF section not found:
+    → CRITICAL: "UXQ domain active but spec.md missing UXQ section"
+    → Suggest: "Add User Experience Quality section per UXQ domain requirements"
+
+  IF section found:
+    Verify subsections exist:
+    - "Jobs to Be Done" OR "JTBD"
+    - "User Mental Model"
+    - "First-Time User Experience" OR "FTUE"
+    - "Friction Points"
+
+    FOR EACH missing subsection:
+      → HIGH: "UXQ section missing required subsection: {name}"
+```
+
+**2. Jobs-to-Be-Done Traceability (UXQ-008)**:
+
+```text
+IF JTBD table exists in spec.md:
+  FOR EACH JTBD-xxx entry:
+    IF Job Statement column empty:
+      → HIGH: "JTBD-xxx missing job statement"
+    IF Job Statement not in format "When [situation], I want to [motivation], so I can [outcome]":
+      → MEDIUM: "JTBD-xxx job statement not in standard format"
+    IF Related FRs column empty:
+      → HIGH: "JTBD-xxx has no related FRs"
+
+  FOR EACH FR-xxx in Functional Requirements:
+    Search JTBD table "Related FRs" columns for FR-xxx reference
+    IF not found:
+      → HIGH: "FR-xxx has no JTBD traceability (violates UXQ-008)"
+      → Suggest: "Add JTBD entry for FR-xxx or link to existing JTBD"
+```
+
+**3. Friction Justification Validation (UXQ-003)**:
+
+```text
+IF Friction Points table exists:
+  FOR EACH FP-xxx entry:
+    IF Friction Point column empty:
+      → HIGH: "FP-xxx missing friction point description"
+    IF Type column NOT IN [SECURITY, LEGAL, DATA QUALITY, INTENTIONAL, TECHNICAL]:
+      → LOW: "FP-xxx has non-standard friction type: {type}"
+    IF Justification column empty:
+      → CRITICAL: "FP-xxx has no justification (violates UXQ-003 MUST)"
+      → Suggest: "Every friction point MUST document: why it exists, what value it provides"
+    IF Mitigation column empty:
+      → HIGH: "FP-xxx missing mitigation strategy"
+
+ELSE:
+  # Check if spec has friction indicators without table
+  Search spec.md for friction keywords:
+  - "user must wait", "requires confirmation", "additional step"
+  - "verification", "manual", "delay", "approval needed"
+
+  IF friction indicators found AND no Friction Points table:
+    → MEDIUM: "Potential friction points detected but no Friction Points table"
+    → Suggest: "Document friction points in Friction Points table with justifications"
+```
+
+**4. FTUE Documentation (UXQ-006)**:
+
+```text
+IF "First-Time User Experience" OR "FTUE" section exists:
+  IF section content < 50 characters:
+    → MEDIUM: "FTUE section is stub (too brief)"
+
+  Search for FTUE elements:
+  - Empty state handling
+  - Progressive disclosure
+  - Onboarding guidance
+  - First meaningful action
+
+  IF none found:
+    → HIGH: "FTUE section lacks specific guidance (violates UXQ-006)"
+    → Suggest: "Document: empty states, progressive disclosure, first meaningful action"
+
+ELSE:
+  → HIGH: "Missing FTUE section (violates UXQ-006 MUST)"
+```
+
+**5. Mental Model Alignment (UXQ-001)**:
+
+```text
+IF "User Mental Model" section exists:
+  IF section content < 100 characters:
+    → MEDIUM: "Mental Model section is too brief"
+
+  # Check for jargon vs user vocabulary
+  Search spec.md for technical jargon markers:
+  - Database table names (snake_case, ALL_CAPS)
+  - Technical acronyms not in Glossary
+  - Implementation terms ("repository", "service layer", "controller")
+
+  IF technical jargon found in user-facing descriptions:
+    → MEDIUM: "Technical jargon in user-facing content (violates UXQ-001)"
+    → Suggest: "Replace '{jargon}' with user vocabulary"
+
+ELSE:
+  → HIGH: "Missing User Mental Model section (violates UXQ-001)"
+```
+
+**6. Error Empathy Check (UXQ-005)**:
+
+```text
+Search spec.md for error handling sections:
+- "Error Handling", "Error Messages", "Edge Cases"
+
+FOR EACH error scenario found:
+  Check if error description includes:
+  - User perspective explanation (what went wrong for user)
+  - Action guidance (what user can do)
+
+  IF error is system-centric only ("500 Internal Server Error", "Database timeout"):
+    → MEDIUM: "Error scenario lacks user empathy (violates UXQ-005)"
+    → Suggest: "Reframe error from user perspective with actionable guidance"
+```
+
+**7. Accessibility Empowerment (UXQ-010)**:
+
+```text
+IF spec.md contains accessibility sections (A11y, Accessibility, WCAG):
+  Check framing:
+  - "compliance" only → MEDIUM: "Accessibility framed as compliance, not empowerment"
+  - "checklist" only → MEDIUM: "Accessibility is checkbox, not user value"
+  - "meets requirements" → MEDIUM: "Accessibility lacks empowerment framing"
+
+  Check specificity:
+  - IF no WCAG level specified:
+    → MEDIUM: "Accessibility section missing WCAG conformance level"
+  - IF no specific assistive tech mentioned:
+    → LOW: "Consider specifying screen reader or keyboard navigation support"
+
+IF UXQ domain active AND no accessibility mention:
+  → HIGH: "UXQ domain requires accessibility documentation (UXQ-010)"
+```
+
+**8. Delight Opportunities (UXQ-004)**:
+
+```text
+IF "Delight" section OR "Success States" section exists:
+  IF content describes positive feedback/celebration:
+    → OK: "Delight moments documented"
+  ELSE:
+    → LOW: "Delight section present but lacks specific opportunities"
+
+IF neither section exists:
+  # Advisory only - UXQ-004 is SHOULD
+  → LOW: "Consider adding Delight Opportunities section (UXQ-004 SHOULD)"
+```
+
+**9. Emotional Journey (UXQ-002)**:
+
+```text
+IF "Emotional Journey" OR "User Journey" section has emotional annotations:
+  → OK: "Emotional journey documented"
+
+IF user journey exists WITHOUT emotional states:
+  → LOW: "User journey missing emotional state annotations (UXQ-002 SHOULD)"
+  → Suggest: "Add emotional states (frustration, confidence, delight) at journey steps"
+```
+
+**10. Persona Integration (UXQ-009)**:
+
+```text
+IF spec.md references personas by name OR role:
+  FOR EACH feature/FR:
+    Check if persona context mentioned
+    IF feature lacks persona reference:
+      → LOW: "Feature {id} has no persona context (UXQ-009 SHOULD)"
+
+IF no persona references in spec.md:
+  → LOW: "Consider adding persona references for user-centered design (UXQ-009)"
+```
+
+**Severity Summary for Pass X:**
+
+| Condition | Severity |
+|-----------|----------|
+| UXQ active but missing UXQ section | CRITICAL |
+| Friction point without justification | CRITICAL |
+| FR has no JTBD traceability | HIGH |
+| Missing FTUE section | HIGH |
+| Missing User Mental Model section | HIGH |
+| Missing accessibility documentation | HIGH |
+| UXQ subsection missing | HIGH |
+| JTBD missing job statement or FRs | HIGH |
+| FTUE lacks specific guidance | HIGH |
+| Friction missing mitigation | HIGH |
+| JTBD format non-standard | MEDIUM |
+| FTUE section is stub | MEDIUM |
+| Mental model too brief | MEDIUM |
+| Technical jargon in user content | MEDIUM |
+| Error lacks user empathy | MEDIUM |
+| A11y framed as compliance only | MEDIUM |
+| A11y missing WCAG level | MEDIUM |
+| Friction indicators without table | MEDIUM |
+| No delight opportunities | LOW |
+| No emotional journey annotations | LOW |
+| Feature lacks persona context | LOW |
+| No persona references | LOW |
+| Non-standard friction type | LOW |
+| No assistive tech specified | LOW |
+
+---
+
 ### 5. Severity Assignment
 
 Use this heuristic to prioritize findings:
@@ -1150,6 +1381,8 @@ Use this heuristic to prioritize findings:
   - **Tests failed** (QA: acceptance scenarios not passing)
   - **Critical vulnerabilities** (QA: security audit found critical CVEs)
   - **Potential secret in code** (QA: hardcoded credentials detected)
+  - **UXQ section missing** (UXQ domain active but spec.md lacks UXQ section)
+  - **Friction without justification** (UXQ: violates UXQ-003 MUST)
 
 - **HIGH**:
   - Duplicate or conflicting requirement
@@ -1184,6 +1417,14 @@ Use this heuristic to prioritize findings:
   - **Critical EC without test task** (Test-Spec: security-critical edge case uncovered)
   - **Implementation complete but test not written** (Test-Spec: TTM shows impl done, test missing)
   - **Story has impl but no tests for required AS** (Test-Spec: user story test gap)
+  - **FR has no JTBD traceability** (UXQ: violates UXQ-008 MUST)
+  - **Missing FTUE section** (UXQ: violates UXQ-006 MUST)
+  - **Missing User Mental Model section** (UXQ: violates UXQ-001 MUST)
+  - **Missing accessibility documentation** (UXQ: violates UXQ-010 MUST)
+  - **UXQ subsection missing** (UXQ: required subsection not present)
+  - **JTBD missing job statement or FRs** (UXQ: incomplete traceability)
+  - **FTUE lacks specific guidance** (UXQ: empty states, progressive disclosure missing)
+  - **Friction missing mitigation** (UXQ: friction point lacks mitigation strategy)
 
 - **MEDIUM**:
   - Terminology drift
@@ -1221,6 +1462,14 @@ Use this heuristic to prioritize findings:
   - **Resource limit exceeded** (QA: memory/CPU above spec limits)
   - **Missing security headers** (QA: web app security configuration)
   - **Moderate vulnerabilities** (QA: security audit found >10 moderate CVEs)
+  - **JTBD format non-standard** (UXQ: job statement not in When/Want/So format)
+  - **FTUE section is stub** (UXQ: too brief to be useful)
+  - **Mental model too brief** (UXQ: insufficient detail)
+  - **Technical jargon in user content** (UXQ: violates UXQ-001)
+  - **Error lacks user empathy** (UXQ: system-centric error message)
+  - **A11y framed as compliance only** (UXQ: not empowerment-framed)
+  - **A11y missing WCAG level** (UXQ: no conformance level specified)
+  - **Friction indicators without table** (UXQ: undocumented friction)
 
 - **LOW**:
   - Style/wording improvements
@@ -1250,6 +1499,12 @@ Use this heuristic to prioritize findings:
   - **Consider Feature Flag for large migrations** (>3 CHG-xxx)
   - **Build warnings** (QA: minor compilation warnings)
   - **No baseline measurement for NFR** (QA: performance untested)
+  - **No delight opportunities** (UXQ: UXQ-004 SHOULD not met)
+  - **No emotional journey annotations** (UXQ: UXQ-002 SHOULD not met)
+  - **Feature lacks persona context** (UXQ: UXQ-009 SHOULD not met)
+  - **No persona references** (UXQ: missing user-centered context)
+  - **Non-standard friction type** (UXQ: friction type not in standard list)
+  - **No assistive tech specified** (UXQ: missing screen reader/keyboard nav)
 
 ### 6. Produce Compact Analysis Report
 
@@ -1263,7 +1518,7 @@ Output a Markdown report (no file writes) with the following structure:
 | G1 | Dependency | CRITICAL | tasks.md | Circular: T005 → T012 → T005 | Break cycle at T012 → T005 |
 | H1 | Traceability | HIGH | spec.md, tasks.md | FR-003 has no tasks | Add [FR:FR-003] to relevant task |
 
-(Add one row per finding; generate stable IDs prefixed by category initial: A=Dup, B=Ambig, C=Underspec, D=Constitution, E=Coverage, F=Inconsist, G=Depend, H=Trace, I=Concept, J=RTM, K=SysImpact, L=SysInteg, M=Impact, N=CodeTrace, O=Freshness, P=Brownfield, Q=Migration, R=Build, S=Tests, T=Perf, U=Security)
+(Add one row per finding; generate stable IDs prefixed by category initial: A=Dup, B=Ambig, C=Underspec, D=Constitution, E=Coverage, F=Inconsist, G=Depend, H=Trace, I=Concept, J=RTM, K=SysImpact, L=SysInteg, M=Impact, N=CodeTrace, O=Freshness, P=Brownfield, Q=Migration, R=Build, S=Tests, T=Perf, U=Security, V=APIDocs, W=TestSpec, X=UXQ)
 
 **Dependency Graph Status:**
 
@@ -1287,6 +1542,31 @@ Cycles: [count] | Orphan Refs: [count] | Cross-Story Deps: [count]
 | Stories (EPIC-x.Fx.Sx) | N | M | X% |
 | Journeys (J00x) | N | M | X% |
 | Ideas Backlog | N | N validated | - |
+
+**UXQ Domain Status:** *(if UXQ domain active)*
+
+```text
+Domain: UXQ | Status: ACTIVE
+Constitution Layer: memory/constitution.domain.md
+```
+
+| UXQ Component | Status | Issues |
+|---------------|--------|--------|
+| Jobs to Be Done (JTBD) | ✅/❌ | {FR coverage}% traced |
+| User Mental Model | ✅/❌ | {notes} |
+| FTUE Documentation | ✅/❌ | {completeness} |
+| Friction Points | ✅/❌ | {unjustified count} unjustified |
+| Delight Opportunities | ✅/⚠️ | {count} documented |
+| Accessibility | ✅/❌ | {WCAG level or missing} |
+
+| Principle | Level | Compliance | Issues |
+|-----------|-------|------------|--------|
+| UXQ-001 Mental Model | MUST | ✅/❌ | {details} |
+| UXQ-003 Friction | MUST | ✅/❌ | {details} |
+| UXQ-005 Error Empathy | MUST | ✅/❌ | {details} |
+| UXQ-006 FTUE | MUST | ✅/❌ | {details} |
+| UXQ-008 JTBD | MUST | ✅/❌ | {details} |
+| UXQ-010 A11y | MUST | ✅/❌ | {details} |
 
 **System Spec Status:** (if specs/system/ exists)
 

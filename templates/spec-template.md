@@ -314,6 +314,165 @@
 - **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
 - **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
 
+---
+
+## User Experience Quality *(UXQ domain)*
+
+<!--
+  INCLUDE THIS SECTION when UXQ domain is applied (memory/constitution.domain.md = uxq.md).
+  These sections ensure product thinking and user empathy are documented alongside technical requirements.
+
+  Skip this section for:
+  - API-only features without user-facing components
+  - CLI tools (unless targeting non-technical users)
+  - Internal/backend services
+
+  See memory/domains/uxq.md for principle definitions.
+-->
+
+### Jobs to Be Done
+
+<!--
+  Document the user jobs this feature helps accomplish.
+  Format: "When [situation], I want to [motivation], so I can [outcome]."
+  Each FR should trace to at least one JTBD.
+-->
+
+| ID | Job Statement | Related FRs | Priority |
+|----|---------------|-------------|----------|
+| JTBD-001 | When [situation], I want to [motivation], so I can [outcome] | FR-001, FR-002 | P1a |
+| JTBD-002 | When [situation], I want to [motivation], so I can [outcome] | FR-003 | P1b |
+
+### User Mental Model
+
+<!--
+  Document how users think about this feature's domain.
+  This prevents building features that work correctly but feel wrong.
+
+  Include:
+  - Key concepts users already understand
+  - Terminology users expect (vs. internal jargon)
+  - Analogies users draw to familiar systems
+  - Assumptions users bring to the interaction
+-->
+
+**Domain Understanding**:
+- Users expect [concept] to work like [familiar analogy]
+- Users call this "[user term]" not "[internal term]"
+- Users assume [common assumption]
+
+**Terminology Mapping**:
+
+| User Term | System Term | Notes |
+|-----------|-------------|-------|
+| [what users say] | [what system calls it] | [when to use which] |
+
+### First-Time User Experience (FTUE)
+
+<!--
+  Document the initial interaction for new users.
+  New users have different needs than power users - document both.
+
+  UXQ-006 requires FTUE to be documented separately from repeat-use flows.
+-->
+
+**Entry Point**: [How do first-time users discover/access this feature?]
+
+**Initial State**:
+- [What do first-time users see?]
+- [Empty state handling]
+
+**Guidance Approach**:
+- [ ] Onboarding wizard / tutorial
+- [ ] Contextual hints / tooltips
+- [ ] Sample data / templates
+- [ ] None needed (self-explanatory)
+
+**First Meaningful Action**: [What action should new users take first? Why?]
+
+**Success Moment**: [How do users know they've succeeded? What feedback do they get?]
+
+### Friction Points
+
+<!--
+  CRITICAL: Every friction point MUST be justified (UXQ-003).
+  Unjustified friction = design debt = user abandonment.
+
+  Friction types:
+  - SECURITY: Required for protection (auth, confirmation)
+  - LEGAL: Required by regulations (consent, terms)
+  - DATA QUALITY: Required for system integrity (validation)
+  - INTENTIONAL: Slows users down deliberately (prevent mistakes)
+  - TECHNICAL: Limitation we can't easily remove (performance)
+-->
+
+| ID | Friction Point | Type | Justification | Mitigation |
+|----|----------------|------|---------------|------------|
+| FP-001 | [what slows user down] | SECURITY | [why necessary] | [how we minimize impact] |
+| FP-002 | [what slows user down] | DATA QUALITY | [why necessary] | [how we minimize impact] |
+
+**Unjustified Friction** (must be eliminated):
+- [ ] None identified
+- [ ] [Friction] - Removal planned in [task/PR]
+
+### Delight Opportunities
+
+<!--
+  Document opportunities to exceed user expectations (UXQ-004).
+  Delight moments build loyalty and differentiate the product.
+
+  Types:
+  - CELEBRATION: Acknowledge user achievements
+  - ANTICIPATION: Predict user needs before they ask
+  - RECOVERY: Turn failures into positive experiences
+  - EASTER EGG: Unexpected pleasant surprises
+-->
+
+| ID | Moment | Type | Implementation Idea | Priority |
+|----|--------|------|---------------------|----------|
+| DM-001 | [when user achieves X] | CELEBRATION | [confetti, message, badge] | SHOULD |
+| DM-002 | [when system prevents error] | ANTICIPATION | [smart defaults, autofill] | SHOULD |
+
+### Emotional Journey
+
+<!--
+  Map expected emotional states at key points (UXQ-002).
+  Helps identify where to add support/delight and reduce friction.
+
+  Emotions: Curious → Confused → Frustrated → Anxious → Relieved → Satisfied → Delighted
+-->
+
+| Journey Step | Expected Emotion | Design Response |
+|--------------|------------------|-----------------|
+| [discovery/entry] | [emotion] | [how we support this] |
+| [first action] | [emotion] | [how we support this] |
+| [challenge/friction] | [emotion] | [how we support this] |
+| [success/completion] | [emotion] | [how we support this] |
+
+### Accessibility as Empowerment
+
+<!--
+  Frame accessibility as expanding capabilities, not just compliance (UXQ-010).
+  Document specific ways this feature empowers diverse users.
+-->
+
+**Target Level**: WCAG 2.1 [A / AA / AAA]
+
+**Empowerment Goals**:
+- Users with [ability difference] can [achieve outcome] because [how we enable it]
+- Users in [challenging context] can [achieve outcome] because [how we enable it]
+
+**Specific Accommodations**:
+
+| User Need | How We Accommodate | Why It Matters |
+|-----------|-------------------|----------------|
+| Screen reader users | [specific approach] | [user outcome] |
+| Keyboard-only users | [specific approach] | [user outcome] |
+| Low vision users | [specific approach] | [user outcome] |
+| Users with motor differences | [specific approach] | [user outcome] |
+
+---
+
 ## Traceability Summary *(auto-generated)*
 
 <!--
