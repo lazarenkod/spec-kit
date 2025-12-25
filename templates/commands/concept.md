@@ -394,3 +394,154 @@ Ideas Backlog:
 - [?] AI task suggestions - needs validation
 - [>] Mobile app - deferred to v2.0
 ```
+
+---
+
+## Self-Review Phase (MANDATORY)
+
+**Before declaring concept.md complete, you MUST perform self-review.**
+
+This ensures the concept hierarchy is valid, complete, and ready for specification.
+
+### Step 1: Re-read Generated Artifact
+
+Read the concept file you created:
+- `specs/concept.md`
+
+Parse to extract hierarchy and validate structure.
+
+### Step 2: Quality Criteria
+
+| ID | Criterion | Check | Severity |
+|----|-----------|-------|----------|
+| SR-CONCEPT-01 | Vision Concrete | No vague words ("better", "improved", "enhanced") | CRITICAL |
+| SR-CONCEPT-02 | Personas Defined | At least 2 user personas with specific goals | CRITICAL |
+| SR-CONCEPT-03 | Hierarchy Valid | All IDs follow EPIC-NNN.FNN.SNN format | CRITICAL |
+| SR-CONCEPT-04 | Epics Have Features | Every Epic has ≥1 Feature | HIGH |
+| SR-CONCEPT-05 | Features Have Stories | Every Feature has ≥1 Story | HIGH |
+| SR-CONCEPT-06 | IDs Unique | No duplicate EPIC/Feature/Story IDs | CRITICAL |
+| SR-CONCEPT-07 | Dependencies Acyclic | No circular dependencies in DAG | CRITICAL |
+| SR-CONCEPT-08 | Journeys Mapped | At least 1 journey per primary persona | HIGH |
+| SR-CONCEPT-09 | Backlog Populated | Ideas Backlog section exists (even if empty note) | MEDIUM |
+| SR-CONCEPT-10 | Glossary Present | Domain-specific terms defined | MEDIUM |
+
+### Step 3: Hierarchy Validation
+
+Verify hierarchy structure:
+
+```text
+EPICS = {}
+FEATURES = {}
+STORIES = {}
+
+FOR EACH line matching EPIC-NNN pattern:
+  Validate format: EPIC-NNN
+  Check uniqueness
+  EPICS[id] = entry
+
+FOR EACH line matching EPIC-NNN.FNN pattern:
+  Validate parent EPIC exists
+  Check uniqueness
+  FEATURES[id] = entry
+
+FOR EACH line matching EPIC-NNN.FNN.SNN pattern:
+  Validate parent Feature exists
+  Check uniqueness
+  STORIES[id] = entry
+
+# Validate completeness
+FOR EACH epic in EPICS:
+  IF no features reference this epic:
+    ERROR: "Epic {id} has no features"
+
+FOR EACH feature in FEATURES:
+  IF no stories reference this feature:
+    ERROR: "Feature {id} has no stories"
+```
+
+### Step 4: Dependency Validation
+
+Check for circular dependencies:
+
+```text
+BUILD directed graph from dependency declarations:
+  - Feature A depends on Feature B → edge B → A
+
+RUN topological sort:
+  IF cycle detected:
+    Extract cycle path
+    ERROR: "Circular dependency: {path}"
+
+VALIDATE cross-Epic dependencies are documented
+```
+
+### Step 5: Verdict
+
+- **PASS**: All CRITICAL/HIGH criteria pass, hierarchy valid → proceed to handoff
+- **FAIL**: Any CRITICAL issue → self-correct (max 3 iterations)
+  - Duplicate IDs → renumber
+  - Missing hierarchy levels → add
+  - Circular dependencies → break cycle
+- **WARN**: Only MEDIUM issues → show warnings, proceed
+
+### Step 6: Self-Correction Loop
+
+```text
+IF issues found AND iteration < 3:
+  1. Fix each issue:
+     - Renumber duplicate IDs
+     - Add missing Features/Stories
+     - Break circular dependencies
+     - Add Ideas Backlog section
+     - Populate Glossary
+  2. Re-run self-review from Step 1
+  3. Report: "Self-review iteration {N}: Fixed {issues}, re-validating..."
+
+IF still failing after 3 iterations:
+  - STOP and report to user
+  - List hierarchy validation failures
+  - Do NOT proceed to handoff
+```
+
+### Step 7: Self-Review Report
+
+After passing self-review, output:
+
+```text
+## Self-Review Complete ✓
+
+**Artifact**: specs/concept.md
+**Iterations**: {N}
+
+### Hierarchy Summary
+
+| Level | Count | Status |
+|-------|-------|--------|
+| Epics | {N} | ✓ All have Features |
+| Features | {N} | ✓ All have Stories |
+| Stories | {N} | ✓ All IDs unique |
+
+### Validation Results
+
+| Check | Result |
+|-------|--------|
+| Vision | ✓ Concrete (no vague terms) |
+| Personas | ✓ {N} defined |
+| ID Format | ✓ All valid |
+| Dependencies | ✓ DAG valid (no cycles) |
+| User Journeys | ✓ {N} journeys mapped |
+| Ideas Backlog | ✓ {N} ideas captured |
+
+### Priority Distribution
+
+| Priority | Stories |
+|----------|---------|
+| P1a | {N} |
+| P1b | {N} |
+| P2 | {N} |
+| P3 | {N} |
+
+### Ready for Specification
+
+Concept capture complete. Next: `/speckit.specify EPIC-001.F01.S01`
+```

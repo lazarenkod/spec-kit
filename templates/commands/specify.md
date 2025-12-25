@@ -631,3 +631,146 @@ Users can always choose to:
 - Skip automation by selecting a different handoff option
 - Force proceed (with acknowledgment of incomplete items)
 - Run `/speckit.clarify` to address [NEEDS CLARIFICATION] markers first
+
+---
+
+## Self-Review Phase (MANDATORY)
+
+**Before declaring the specification complete, you MUST perform self-review.**
+
+This phase ensures specification quality and catches issues before handoff to planning.
+
+### Step 1: Re-read Your Output
+
+Read the spec.md file you just created:
+1. Open `FEATURE_DIR/spec.md`
+2. Read through all sections completely
+3. Check for consistency and completeness
+
+### Step 2: Quality Criteria
+
+Answer each question by examining the specification:
+
+| ID | Question | Severity |
+|----|----------|----------|
+| SR-SPEC-01 | All mandatory sections filled (Overview, User Stories, FR, AS, SC)? | CRITICAL |
+| SR-SPEC-02 | No implementation details (frameworks, APIs, databases, languages)? | HIGH |
+| SR-SPEC-03 | Each FR has at least one linked AS? | HIGH |
+| SR-SPEC-04 | All AS follow Given/When/Then format? | MEDIUM |
+| SR-SPEC-05 | No [NEEDS CLARIFICATION] markers remain (or max 3 critical ones)? | MEDIUM |
+| SR-SPEC-06 | Success Criteria are measurable with specific metrics? | HIGH |
+| SR-SPEC-07 | Success Criteria are technology-agnostic? | HIGH |
+| SR-SPEC-08 | User Stories have clear acceptance scenarios? | MEDIUM |
+| SR-SPEC-09 | Edge cases (EC-xxx) identified for error scenarios? | MEDIUM |
+| SR-SPEC-10 | Traceability Summary table complete and accurate? | LOW |
+
+**Evaluation format**:
+```text
+🔍 Self-Review: Specification Quality
+├── SR-SPEC-01: ✅ PASS - All 5 mandatory sections present
+├── SR-SPEC-02: ⚠️ HIGH - Found "PostgreSQL" in FR-003
+├── SR-SPEC-03: ✅ PASS - 8/8 FRs linked to AS
+├── SR-SPEC-04: ✅ PASS - All AS use Given/When/Then
+├── SR-SPEC-05: ✅ PASS - 0 unresolved markers
+├── SR-SPEC-06: ✅ PASS - All SC have metrics
+├── SR-SPEC-07: ⚠️ HIGH - SC-002 mentions "API response time"
+├── SR-SPEC-08: ✅ PASS - All stories have AS
+├── SR-SPEC-09: ✅ PASS - 4 edge cases defined
+└── SR-SPEC-10: ✅ PASS - Traceability table complete
+
+Summary: CRITICAL=0, HIGH=2, MEDIUM=0, LOW=0
+```
+
+### Step 3: Verdict
+
+Determine the self-review verdict:
+
+| Verdict | Condition | Action |
+|---------|-----------|--------|
+| **PASS** | CRITICAL=0 AND HIGH=0 | Proceed to /speckit.plan handoff |
+| **WARN** | CRITICAL=0 AND HIGH≤2 | Show warnings, proceed with caution |
+| **FAIL** | CRITICAL>0 OR HIGH>2 | Self-correct, re-check |
+
+### Step 4: Self-Correction Loop
+
+**IF verdict is FAIL AND iteration < 3**:
+1. Fix each CRITICAL and HIGH issue:
+   - Remove implementation details (replace with technology-agnostic language)
+   - Add missing FR→AS links
+   - Rewrite SC to remove technical metrics
+   - Resolve or reduce [NEEDS CLARIFICATION] markers
+2. Re-run self-review from Step 1
+3. Increment iteration counter
+4. Report: `Self-Review Iteration 2/3...`
+
+**Common fixes**:
+| Issue | Fix |
+|-------|-----|
+| "PostgreSQL" in FR | Replace with "persistent data storage" |
+| "API response < 200ms" | Replace with "Users see results instantly" |
+| Missing AS link | Add `*Acceptance Scenarios*: AS-xxx` to FR |
+| Vague SC | Add specific metric: "completion rate", "time", "error rate" |
+
+**IF still FAIL after 3 iterations**:
+```text
+❌ Self-Review FAILED after 3 iterations
+
+Remaining issues:
+- SR-SPEC-02: Implementation detail in FR-003 ("uses WebSocket")
+- SR-SPEC-07: SC-002 still mentions "API latency"
+
+⛔ BLOCKING: Cannot proceed to planning.
+   Fix remaining issues or override with user confirmation.
+
+User: Proceed anyway? (yes/no)
+```
+
+**IF verdict is PASS or WARN**:
+```text
+✅ Self-Review PASSED
+
+Summary:
+- Quality Criteria: 10/10 passing
+- Iterations: 1
+- Traceability: 8 FRs → 12 AS → 4 EC
+
+→ Proceeding to handoff: /speckit.plan
+```
+
+### Self-Review Report Template
+
+Generate this report before handoff:
+
+```markdown
+## Self-Review Report
+
+**Command**: /speckit.specify
+**Artifact**: spec.md
+**Reviewed at**: {{TIMESTAMP}}
+**Iteration**: {{N}}/3
+
+### Quality Criteria
+| ID | Question | Status |
+|----|----------|--------|
+| SR-SPEC-01 | All mandatory sections? | ✅ PASS |
+| SR-SPEC-02 | No implementation details? | ✅ PASS |
+| SR-SPEC-03 | FR→AS links complete? | ✅ PASS |
+| SR-SPEC-04 | AS format correct? | ✅ PASS |
+| SR-SPEC-05 | Clarifications resolved? | ✅ PASS |
+| SR-SPEC-06 | SC measurable? | ✅ PASS |
+| SR-SPEC-07 | SC tech-agnostic? | ✅ PASS |
+| SR-SPEC-08 | Stories have AS? | ✅ PASS |
+| SR-SPEC-09 | Edge cases defined? | ✅ PASS |
+| SR-SPEC-10 | Traceability complete? | ✅ PASS |
+
+### Traceability Summary
+- Functional Requirements: 8 (FR-001 to FR-008)
+- Acceptance Scenarios: 12 (AS-1A to AS-4C)
+- Edge Cases: 4 (EC-001 to EC-004)
+- Concept Reference: EPIC-001.F01.S01 (or "Standalone")
+
+### Verdict: ✅ PASS
+**Reason**: All criteria met, specification ready for planning.
+
+→ Proceeding to handoff: /speckit.plan
+```

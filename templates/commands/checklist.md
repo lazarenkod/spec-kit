@@ -295,3 +295,149 @@ Sample items:
 - Correct: Validation of requirement quality
 - Wrong: "Does it do X?"
 - Correct: "Is X clearly specified?"
+
+---
+
+## Self-Review Phase (MANDATORY)
+
+**Before declaring checklist complete, you MUST perform self-review.**
+
+This ensures the checklist tests requirements quality, not implementation behavior.
+
+### Step 1: Re-read Generated Artifact
+
+Read the checklist file you created:
+- `FEATURE_DIR/checklists/{domain}.md`
+
+### Step 2: Quality Criteria
+
+| ID | Criterion | Check | Severity |
+|----|-----------|-------|----------|
+| SR-CHK-01 | No Implementation Tests | No items test code behavior | CRITICAL |
+| SR-CHK-02 | Requirements Focus | All items test requirement quality | CRITICAL |
+| SR-CHK-03 | CHK IDs Sequential | CHK001, CHK002, ... with no gaps | HIGH |
+| SR-CHK-04 | Quality Dimensions | Items use [Completeness], [Clarity], etc. | HIGH |
+| SR-CHK-05 | Traceability Present | ≥80% items have [Spec §X.Y] or [Gap] | HIGH |
+| SR-CHK-06 | Prohibited Words Absent | No "verify", "test", "confirm", "check" + behavior | CRITICAL |
+| SR-CHK-07 | Required Patterns Used | Items use "Are...defined?", "Is...specified?" | HIGH |
+| SR-CHK-08 | Categories Structured | Items grouped by quality dimension | MEDIUM |
+| SR-CHK-09 | Item Count Reasonable | 10-40 items (consolidated if >40 raw) | MEDIUM |
+| SR-CHK-10 | No Duplicates | Each requirement aspect tested once | MEDIUM |
+
+### Step 3: Anti-Pattern Detection
+
+Scan for prohibited patterns:
+
+```text
+PROHIBITED_PATTERNS = [
+  /^Verify .* (displays|works|renders|loads|executes)/i,
+  /^Test .* (correctly|properly|successfully)/i,
+  /^Confirm .* (navigates|responds|behaves)/i,
+  /^Check (that|if) .* (click|submit|load)/i,
+  /displays correctly/i,
+  /works properly/i,
+  /functions as expected/i
+]
+
+FOR EACH checklist item:
+  FOR EACH pattern in PROHIBITED_PATTERNS:
+    IF item matches pattern:
+      ERROR: "Item CHK{N} tests implementation, not requirements: '{item}'"
+      Add to issues
+```
+
+### Step 4: Required Pattern Validation
+
+Verify items follow correct patterns:
+
+```text
+REQUIRED_PATTERNS = [
+  /^Are .* (defined|specified|documented)/i,
+  /^Is .* (quantified|clarified|measurable)/i,
+  /^Are requirements consistent/i,
+  /^Can .* be objectively/i,
+  /^Does the spec define/i
+]
+
+valid_count = 0
+FOR EACH checklist item:
+  IF item matches ANY required pattern:
+    valid_count++
+
+coverage = valid_count / total_items
+IF coverage < 0.8:
+  WARN: "Only {coverage}% of items follow required patterns (target ≥80%)"
+```
+
+### Step 5: Verdict
+
+- **PASS**: No prohibited patterns, ≥80% required patterns → complete
+- **FAIL**: Any prohibited pattern found → self-correct (max 3 iterations)
+  - Rewrite item to test requirement quality, not behavior
+- **WARN**: Low pattern coverage → show warning, proceed
+
+### Step 6: Self-Correction Loop
+
+```text
+IF prohibited patterns found AND iteration < 3:
+  FOR EACH violating item:
+    Rewrite from implementation test to requirement quality test:
+
+    BEFORE: "Verify button displays correctly"
+    AFTER: "Are button visual specifications defined with states and sizes?"
+
+    BEFORE: "Test error handling works"
+    AFTER: "Are error handling requirements specified for all failure modes?"
+
+  Re-run self-review from Step 1
+  Report: "Self-review iteration {N}: Rewrote {N} items, re-validating..."
+
+IF still failing after 3 iterations:
+  - STOP and report to user
+  - List items that couldn't be converted
+```
+
+### Step 7: Self-Review Report
+
+After passing self-review, output:
+
+```text
+## Self-Review Complete ✓
+
+**Artifact**: FEATURE_DIR/checklists/{domain}.md
+**Iterations**: {N}
+
+### Validation Results
+
+| Check | Result |
+|-------|--------|
+| Implementation Tests | ✓ None found |
+| Required Patterns | ✓ {N}% coverage |
+| CHK IDs | ✓ Sequential CHK001-CHK{N} |
+| Traceability | ✓ {N}% have references |
+| Prohibited Words | ✓ None found |
+
+### Item Distribution
+
+| Quality Dimension | Count |
+|-------------------|-------|
+| Completeness | {N} |
+| Clarity | {N} |
+| Consistency | {N} |
+| Coverage | {N} |
+| Measurability | {N} |
+
+### Checklist Ready
+
+Checklist validates requirement quality, not implementation.
+Total items: {N}
+```
+
+### Rewrite Examples
+
+| Implementation Test (WRONG) | Requirement Quality Test (CORRECT) |
+|-----------------------------|-----------------------------------|
+| "Verify page loads in <2s" | "Are performance requirements quantified with specific thresholds?" |
+| "Test form submits data" | "Are form submission requirements and validation rules defined?" |
+| "Confirm error message appears" | "Are error message requirements specified for each failure mode?" |
+| "Check hover state works" | "Are hover state requirements consistently defined across components?" |

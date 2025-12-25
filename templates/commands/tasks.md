@@ -402,3 +402,169 @@ Users can always choose to:
 - Skip automation by selecting a different handoff option
 - Return to `/speckit.plan` if tasks reveal planning gaps
 - Run `/speckit.tasks` again to regenerate with updated plan
+
+---
+
+## Self-Review Phase (MANDATORY)
+
+**Before declaring tasks.md complete, you MUST perform self-review.**
+
+This ensures the generated tasks are valid, traceable, and ready for implementation.
+
+### Step 1: Re-read Generated Artifact
+
+Read the tasks.md file you just created:
+- `FEATURE_DIR/tasks.md`
+
+Parse the file to extract:
+- All task IDs (T001, T002, ...)
+- All [DEP:] references
+- All [FR:] markers
+- All [TEST:] markers
+- RTM table entries
+
+### Step 2: Quality Criteria
+
+Answer each question by validating against the artifact:
+
+| ID | Criterion | Check | Severity |
+|----|-----------|-------|----------|
+| SR-TASK-01 | Task Format Valid | Every task line starts with `- [ ] T###` pattern | CRITICAL |
+| SR-TASK-02 | Task IDs Sequential | T001, T002, T003... with no gaps or duplicates | HIGH |
+| SR-TASK-03 | File Paths Present | Implementation tasks include file paths | HIGH |
+| SR-TASK-04 | Story Labels Valid | User story phase tasks have [US#] markers | MEDIUM |
+| SR-TASK-05 | FR Coverage Complete | Every FR-xxx from spec.md has at least one [FR:FR-xxx] task | CRITICAL |
+| SR-TASK-06 | AS Coverage Complete | Every AS-xxx from spec.md has at least one [TEST:AS-xxx] task (if tests requested) | HIGH |
+| SR-TASK-07 | DEP References Valid | All [DEP:T###] reference existing task IDs | CRITICAL |
+| SR-TASK-08 | No Circular Dependencies | Dependency graph has no cycles | CRITICAL |
+| SR-TASK-09 | RTM Table Complete | Requirements Traceability Matrix lists all FRs with linked tasks | MEDIUM |
+| SR-TASK-10 | Coverage Summary Present | Coverage Summary section shows FR/AS coverage stats | MEDIUM |
+
+### Step 3: Dependency Validation
+
+Build dependency graph and validate:
+
+```text
+TASK_GRAPH = {}
+ALL_TASK_IDS = set()
+
+FOR EACH task in tasks.md:
+  Extract task_id (e.g., T001)
+  ALL_TASK_IDS.add(task_id)
+
+  Extract dep_list from [DEP:T###,T###]
+  FOR EACH dep_id in dep_list:
+    IF dep_id NOT IN ALL_TASK_IDS (defined before current):
+      ERROR: "Task {task_id} references undefined dependency {dep_id}"
+    TASK_GRAPH[task_id].depends_on(dep_id)
+
+# Detect cycles using topological sort
+IF topological_sort(TASK_GRAPH) fails:
+  Extract cycle path
+  ERROR: "Circular dependency detected: {cycle_path}"
+```
+
+### Step 4: Traceability Validation
+
+Cross-reference with spec.md:
+
+```text
+# Load from spec.md (already parsed in Step 3 of main workflow)
+FR_LIST = [FR-001, FR-002, ...]
+AS_LIST = [AS-1A, AS-1B, ...]
+
+# Extract from tasks.md
+TASK_FR_MARKERS = extract all [FR:FR-xxx] references
+TASK_AS_MARKERS = extract all [TEST:AS-xxx] references
+
+# Validate FR coverage
+FOR EACH fr in FR_LIST:
+  IF fr NOT IN TASK_FR_MARKERS:
+    WARN: "FR {fr} has no implementation task"
+    Add to gaps
+
+# Validate AS coverage (if tests requested)
+FOR EACH as in AS_LIST:
+  IF as NOT IN TASK_AS_MARKERS:
+    WARN: "AS {as} has no test task"
+    Add to gaps
+```
+
+### Step 5: Verdict
+
+Based on validation results:
+
+- **PASS**: All CRITICAL criteria pass, no circular dependencies, FR coverage complete → proceed to handoff
+- **FAIL**: Any CRITICAL issue → self-correct and re-check (max 3 iterations)
+  - Missing FR coverage → add missing [FR:] markers to appropriate tasks
+  - Invalid DEP references → fix task IDs or add missing tasks
+  - Circular dependency → break the cycle by removing weakest dependency
+- **WARN**: Only MEDIUM issues (missing story labels, incomplete RTM) → show warnings, proceed
+
+### Step 6: Self-Correction Loop
+
+```text
+IF issues found AND iteration < 3:
+  1. Fix each issue in tasks.md:
+     - Add missing [FR:] markers
+     - Fix [DEP:] references
+     - Break circular dependencies
+     - Add missing tasks for uncovered FRs
+     - Complete RTM table
+  2. Re-run self-review from Step 1
+  3. Report: "Self-review iteration {N}: Fixed {issues}, re-validating..."
+
+IF still failing after 3 iterations:
+  - STOP
+  - Report blocking issues to user
+  - Do NOT auto-transition to /speckit.implement
+```
+
+### Step 7: Self-Review Report
+
+After passing self-review, output:
+
+```text
+## Self-Review Complete ✓
+
+**Artifact**: FEATURE_DIR/tasks.md
+**Iterations**: {N}
+
+### Validation Results
+
+| Check | Result |
+|-------|--------|
+| Task Format | ✓ All {N} tasks follow format |
+| Task IDs | ✓ Sequential T001-T{N} |
+| Dependencies | ✓ {N} valid, 0 circular |
+| FR Coverage | ✓ {N}/{M} FRs have [FR:] tasks |
+| AS Coverage | ✓ {N}/{M} ASs have [TEST:] tasks |
+| RTM Complete | ✓ {N} rows |
+
+### Coverage Summary
+
+- **Functional Requirements**: {covered}/{total} ({percentage}%)
+- **Acceptance Scenarios**: {covered}/{total} ({percentage}%)
+- **Gaps Identified**: {count}
+
+{IF gaps exist:}
+### Gaps (documented in Coverage Summary section)
+- FR-xxx: No implementation task
+- AS-xxx: No test task
+
+### Ready for Implementation
+
+All quality gates passed. Auto-transitioning to `/speckit.implement`.
+```
+
+### Common Task Generation Issues
+
+| Issue | Detection | Fix |
+|-------|-----------|-----|
+| Missing checkbox | Task doesn't start with `- [ ]` | Prepend `- [ ]` to task line |
+| Missing task ID | No T### pattern after checkbox | Add sequential T### ID |
+| Orphan FR | FR-xxx not in any [FR:] marker | Add [FR:FR-xxx] to most relevant task |
+| Dangling DEP | [DEP:T999] references non-existent task | Remove invalid reference or add missing task |
+| Cycle detected | Topological sort fails | Remove one edge to break cycle |
+| Missing file path | Implementation task has no path | Add target file path to description |
+| Wrong story label | [US5] but only 3 user stories | Fix to match spec.md story numbers |

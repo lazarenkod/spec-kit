@@ -182,3 +182,125 @@ Behavior rules:
 - If quota reached with unresolved high-impact categories remaining, explicitly flag them under Deferred with rationale.
 
 Context for prioritization: {ARGS}
+
+---
+
+## Self-Review Phase (MANDATORY)
+
+**Before declaring clarification complete, you MUST perform self-review.**
+
+This ensures all clarifications are properly integrated and the spec is ready for planning.
+
+### Step 1: Re-read Updated Spec
+
+Read the spec file you modified:
+- `FEATURE_SPEC` (path from script output)
+
+Parse to verify clarification integration.
+
+### Step 2: Quality Criteria
+
+| ID | Criterion | Check | Severity |
+|----|-----------|-------|----------|
+| SR-CLAR-01 | Clarifications Logged | Session entry exists under ## Clarifications | CRITICAL |
+| SR-CLAR-02 | Answers Recorded | Each Q&A pair is documented | CRITICAL |
+| SR-CLAR-03 | Spec Sections Updated | Clarifications applied to appropriate sections | HIGH |
+| SR-CLAR-04 | No Contradictions | Updated text doesn't conflict with existing | HIGH |
+| SR-CLAR-05 | Markers Resolved | No [NEEDS CLARIFICATION] for answered questions | HIGH |
+| SR-CLAR-06 | Terms Normalized | Same canonical term used throughout | MEDIUM |
+| SR-CLAR-07 | Markdown Valid | Structure and headings intact | MEDIUM |
+| SR-CLAR-08 | Coverage Balanced | High-impact categories addressed first | MEDIUM |
+
+### Step 3: Integration Verification
+
+For each clarification recorded, verify:
+
+```text
+FOR EACH clarification in ## Clarifications > ### Session YYYY-MM-DD:
+  1. Extract Q&A pair
+  2. Find target section where answer was integrated
+  3. Verify answer text appears in target section
+  4. Check no conflicting text remains in spec
+  5. Confirm terminology is consistent with glossary (if exists)
+
+IF clarification not found in any section:
+  ERROR: "Clarification for '{question}' not integrated into spec"
+  Add to issues
+```
+
+### Step 4: Contradiction Scan
+
+Check for conflicting statements:
+
+```text
+FOR EACH updated section:
+  Scan for opposing statements about same topic
+  Examples of contradictions:
+  - "Users must authenticate" vs "No login required"
+  - "Maximum 5 items" vs "No limit on items"
+  - "Real-time updates" vs "Batch processing only"
+
+IF contradiction found:
+  ERROR: "Contradiction in {section}: {statement1} vs {statement2}"
+```
+
+### Step 5: Verdict
+
+- **PASS**: All clarifications logged, integrated, no contradictions → report completion
+- **FAIL**: Missing integration or contradiction → self-correct (max 3 iterations)
+- **WARN**: Minor issues (formatting, optional sections) → show warnings, proceed
+
+### Step 6: Self-Correction Loop
+
+```text
+IF issues found AND iteration < 3:
+  1. Fix each issue:
+     - Add missing clarification entries
+     - Integrate answers into correct sections
+     - Remove contradictory statements
+     - Normalize terminology
+  2. Save spec file
+  3. Re-run self-review from Step 1
+  4. Report: "Self-review iteration {N}: Fixed {issues}, re-validating..."
+
+IF still failing after 3 iterations:
+  - STOP and report to user
+  - List unresolved integration issues
+```
+
+### Step 7: Self-Review Report
+
+After passing self-review, output:
+
+```text
+## Self-Review Complete ✓
+
+**Artifact**: FEATURE_SPEC
+**Clarifications Processed**: {N}
+
+### Integration Verification
+
+| Question | Integrated To | Status |
+|----------|---------------|--------|
+| {Q1} | {section} | ✓ |
+| {Q2} | {section} | ✓ |
+
+### Quality Checks
+
+| Check | Result |
+|-------|--------|
+| Clarifications Logged | ✓ {N} entries in Session section |
+| Spec Sections Updated | ✓ {M} sections modified |
+| Contradictions | ✓ None found |
+| Terminology | ✓ Consistent |
+
+### Coverage Summary
+
+| Category | Status |
+|----------|--------|
+| {category} | Resolved / Clear / Deferred |
+
+### Ready for Planning
+
+Spec clarification complete. Suggest: `/speckit.plan`
+```

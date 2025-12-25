@@ -363,6 +363,137 @@ After completion:
    - Run `/speckit.plan` to create technical plan with design system
    - Or update existing plan.md with Design System section
 
+---
+
+## Self-Review Phase (MANDATORY)
+
+**Before declaring design.md complete, you MUST perform self-review.**
+
+This ensures visual specifications are complete, accessible, and ready for implementation.
+
+### Step 1: Re-read Generated Artifact
+
+Read the design file you created:
+- `specs/[NNN-feature]/design.md`
+
+### Step 2: Quality Criteria
+
+| ID | Criterion | Check | Severity |
+|----|-----------|-------|----------|
+| SR-DESIGN-01 | Color Tokens Defined | All semantic colors have values | CRITICAL |
+| SR-DESIGN-02 | Contrast Ratios Valid | All text colors meet WCAG minimums (≥4.5:1) | CRITICAL |
+| SR-DESIGN-03 | Typography Scale Complete | All heading levels + body defined | HIGH |
+| SR-DESIGN-04 | Component States Listed | Each component has all states (default, hover, etc.) | HIGH |
+| SR-DESIGN-05 | Accessibility Documented | ARIA roles, keyboard nav for each component | HIGH |
+| SR-DESIGN-06 | Screen Flows Mapped | All user journeys have screen sequences | HIGH |
+| SR-DESIGN-07 | Responsive Defined | Breakpoints and behavior documented | MEDIUM |
+| SR-DESIGN-08 | Interactions Specified | Animation timing/easing documented | MEDIUM |
+| SR-DESIGN-09 | Traceability Present | Components linked to FR/AS from spec.md | MEDIUM |
+| SR-DESIGN-10 | Accessibility Checklist | WCAG checklist completed for target level | HIGH |
+
+### Step 3: Accessibility Validation
+
+Verify contrast ratios for all color tokens:
+
+```text
+FOR EACH text color token:
+  Calculate contrast ratio against background
+  IF ratio < 4.5:1 (AA) OR < 7:1 (AAA if target):
+    ERROR: "Color {token} fails contrast: {ratio}:1 (min {required}:1)"
+
+FOR EACH interactive element:
+  Verify focus indicator is defined
+  Verify keyboard interaction is documented
+  Verify touch target ≥ 44px (if mobile)
+```
+
+### Step 4: Component Completeness
+
+For each component in inventory, verify:
+
+```text
+FOR EACH component:
+  Required states = [default, hover, active, focus, disabled]
+  IF component is form element:
+    Required states += [error, success, loading]
+
+  FOR EACH required_state:
+    IF state not documented:
+      WARN: "Component {name} missing state: {state}"
+
+  IF no ARIA role defined:
+    ERROR: "Component {name} missing accessibility role"
+
+  IF no keyboard interaction defined:
+    ERROR: "Component {name} missing keyboard interaction"
+```
+
+### Step 5: Verdict
+
+- **PASS**: All CRITICAL/HIGH criteria pass, accessibility validated → proceed to handoff
+- **FAIL**: Any CRITICAL issue (contrast, missing components) → self-correct (max 3 iterations)
+- **WARN**: Only MEDIUM issues → show warnings, proceed
+
+### Step 6: Self-Correction Loop
+
+```text
+IF issues found AND iteration < 3:
+  1. Fix each issue:
+     - Adjust colors to meet contrast ratios
+     - Add missing component states
+     - Document keyboard interactions
+     - Complete accessibility checklist
+  2. Re-run self-review from Step 1
+  3. Report: "Self-review iteration {N}: Fixed {issues}, re-validating..."
+
+IF still failing after 3 iterations:
+  - STOP and report to user
+  - List accessibility compliance gaps
+  - Do NOT proceed to handoff
+```
+
+### Step 7: Self-Review Report
+
+After passing self-review, output:
+
+```text
+## Self-Review Complete ✓
+
+**Artifact**: specs/[NNN-feature]/design.md
+**Iterations**: {N}
+
+### Validation Results
+
+| Check | Result |
+|-------|--------|
+| Color Tokens | ✓ {N} defined |
+| Contrast Ratios | ✓ All ≥ {min}:1 |
+| Typography | ✓ Complete scale |
+| Components | ✓ {N} specified with states |
+| Accessibility | ✓ WCAG {level} compliant |
+| Screen Flows | ✓ {N} screens mapped |
+
+### Accessibility Summary
+
+| Token | Background | Contrast | Status |
+|-------|------------|----------|--------|
+| text-primary | white | 7.2:1 | ✓ AA |
+| text-secondary | white | 5.1:1 | ✓ AA |
+| error | white | 4.6:1 | ✓ AA |
+
+### Component Coverage
+
+| Component | States | A11y | Responsive |
+|-----------|--------|------|------------|
+| {name} | ✓ 6/6 | ✓ | ✓ |
+
+### Ready for Planning
+
+Design specification complete. Suggest: `/speckit.plan`
+```
+
+---
+
 ## Example
 
 **User Input**: "Create design spec for user onboarding wizard"

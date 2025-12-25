@@ -133,6 +133,9 @@ build_variant() {
   mkdir -p "$SPEC_DIR"
   
   [[ -d memory ]] && { cp -r memory "$SPEC_DIR/"; echo "Copied memory -> .specify"; }
+
+  # Copy QUICKSTART.md to project root
+  [[ -f templates/QUICKSTART.md ]] && { cp templates/QUICKSTART.md "$base_dir/QUICKSTART.md"; echo "Copied QUICKSTART.md"; }
   
   # Only copy the relevant script variant directory
   if [[ -d scripts ]]; then

@@ -481,3 +481,186 @@ Users can always choose to:
 - Re-run specific phases if issues discovered
 - Skip QA verification (not recommended)
 - Manually trigger QA at any point
+
+---
+
+## Self-Review Phase (MANDATORY)
+
+**Before declaring implementation complete, you MUST perform self-review.**
+
+This phase ensures code quality and catches issues before handoff to QA.
+
+### Step 1: Run Auto Checks
+
+Execute these checks from the project root:
+
+| Check | Command | Required | On Failure |
+|-------|---------|----------|------------|
+| **Build** | Detect from `package.json`/`Cargo.toml`/`pyproject.toml`/`go.mod`/`pom.xml` and run appropriate build command | YES | STOP |
+| **Lint** | Detect from `.eslintrc*`/`.pylintrc`/`rustfmt.toml` and run linter | NO | WARN |
+| **Test** | Run test suite for modified code | YES | STOP |
+| **TypeCheck** | If TypeScript/mypy configured, run type checker | NO | WARN |
+
+**Auto-detection logic**:
+```text
+IF package.json exists:
+  Build: npm run build OR yarn build OR pnpm build
+  Lint: npm run lint (if script exists)
+  Test: npm test
+  TypeCheck: npx tsc --noEmit (if tsconfig.json exists)
+
+IF Cargo.toml exists:
+  Build: cargo build
+  Lint: cargo clippy
+  Test: cargo test
+
+IF pyproject.toml OR setup.py exists:
+  Build: pip install -e . OR python setup.py build
+  Lint: ruff check . OR pylint
+  Test: pytest
+  TypeCheck: mypy . (if configured)
+
+IF go.mod exists:
+  Build: go build ./...
+  Lint: golangci-lint run
+  Test: go test ./...
+```
+
+**Output format**:
+```text
+🔍 Self-Review: Auto Checks
+├── Build:     ✅ PASS (npm run build - 0 errors)
+├── Lint:      ⚠️ WARN (3 warnings, 0 errors)
+├── Test:      ✅ PASS (42 tests, 0 failures)
+└── TypeCheck: ✅ PASS (tsc --noEmit)
+
+Auto Checks: PASS (1 warning)
+```
+
+**On REQUIRED check failure**: STOP immediately, display error, do not proceed.
+
+### Step 2: Re-read Modified Files
+
+Review the files you created/modified in this implementation:
+1. List all files touched during implementation
+2. For each significant file, scan for obvious issues
+
+### Step 3: Quality Criteria
+
+Answer each question by examining the implementation:
+
+| ID | Question | Severity |
+|----|----------|----------|
+| SR-IMPL-01 | All P1 tasks marked `[X]` in tasks.md? | CRITICAL |
+| SR-IMPL-02 | Build passes without errors? | CRITICAL |
+| SR-IMPL-03 | All tests pass? | CRITICAL |
+| SR-IMPL-04 | No `TODO`, `FIXME`, `HACK` comments left in new code? | HIGH |
+| SR-IMPL-05 | `@speckit:FR:` annotations present in implementation code? | MEDIUM |
+| SR-IMPL-06 | `@speckit:AS:` annotations present in test code? | HIGH |
+| SR-IMPL-07 | No hardcoded secrets, API keys, or credentials? | CRITICAL |
+| SR-IMPL-08 | Error handling present for external calls? | HIGH |
+| SR-IMPL-09 | No console.log/print debug statements left? | MEDIUM |
+| SR-IMPL-10 | File/function naming follows project conventions? | LOW |
+
+**Evaluation**:
+```text
+🔍 Self-Review: Quality Criteria
+├── SR-IMPL-01: ✅ PASS - 12/12 P1 tasks complete
+├── SR-IMPL-02: ✅ PASS - Build successful
+├── SR-IMPL-03: ✅ PASS - 42/42 tests passing
+├── SR-IMPL-04: ⚠️ HIGH - Found 2 TODO comments in src/api/handler.ts
+├── SR-IMPL-05: ✅ PASS - 8 @speckit:FR annotations found
+├── SR-IMPL-06: ⚠️ HIGH - Missing @speckit:AS in tests/auth.test.ts
+├── SR-IMPL-07: ✅ PASS - No secrets detected
+├── SR-IMPL-08: ✅ PASS - Error handling present
+├── SR-IMPL-09: ✅ PASS - No debug statements
+└── SR-IMPL-10: ✅ PASS - Naming conventions followed
+
+Summary: CRITICAL=0, HIGH=2, MEDIUM=0, LOW=0
+```
+
+### Step 4: Verdict
+
+Determine the self-review verdict:
+
+| Verdict | Condition | Action |
+|---------|-----------|--------|
+| **PASS** | CRITICAL=0 AND HIGH=0 | Proceed to QA handoff |
+| **WARN** | CRITICAL=0 AND HIGH≤2 AND all HIGH are non-blocking | Show warnings, proceed |
+| **FAIL** | CRITICAL>0 OR HIGH>2 | Self-correct, re-check |
+
+### Step 5: Self-Correction Loop
+
+**IF verdict is FAIL AND iteration < 3**:
+1. Fix each CRITICAL and HIGH issue:
+   - Remove TODO/FIXME comments or convert to tracked issues
+   - Add missing @speckit annotations
+   - Fix any failing tests or build errors
+2. Re-run self-review from Step 1
+3. Increment iteration counter
+4. Report: `Self-Review Iteration 2/3...`
+
+**IF still FAIL after 3 iterations**:
+```text
+❌ Self-Review FAILED after 3 iterations
+
+Remaining issues:
+- SR-IMPL-04: 1 TODO comment in src/api/handler.ts:45
+- SR-IMPL-06: Missing @speckit:AS annotation
+
+⛔ BLOCKING: Cannot proceed to QA verification.
+   Fix remaining issues or override with user confirmation.
+
+User: Proceed anyway? (yes/no)
+```
+
+**IF verdict is PASS or WARN**:
+```text
+✅ Self-Review PASSED
+
+Summary:
+- Auto Checks: PASS
+- Quality Criteria: 10/10 passing
+- Iterations: 1
+
+→ Proceeding to QA Verification (/speckit.analyze)
+```
+
+### Self-Review Report Template
+
+Generate this report before handoff:
+
+```markdown
+## Self-Review Report
+
+**Command**: /speckit.implement
+**Reviewed at**: {{TIMESTAMP}}
+**Iteration**: {{N}}/3
+
+### Auto Checks
+| Check | Status | Details |
+|-------|--------|---------|
+| Build | ✅ PASS | npm run build (0 errors) |
+| Lint | ⚠️ WARN | 3 warnings |
+| Test | ✅ PASS | 42/42 passing |
+| TypeCheck | ✅ PASS | tsc --noEmit |
+
+### Quality Criteria
+| ID | Question | Status |
+|----|----------|--------|
+| SR-IMPL-01 | All P1 tasks complete? | ✅ PASS |
+| SR-IMPL-02 | Build passes? | ✅ PASS |
+| SR-IMPL-03 | Tests pass? | ✅ PASS |
+| SR-IMPL-04 | No TODO/FIXME? | ✅ PASS |
+| SR-IMPL-05 | @speckit:FR annotations? | ✅ PASS |
+| SR-IMPL-06 | @speckit:AS annotations? | ✅ PASS |
+| SR-IMPL-07 | No hardcoded secrets? | ✅ PASS |
+| SR-IMPL-08 | Error handling? | ✅ PASS |
+| SR-IMPL-09 | No debug statements? | ✅ PASS |
+| SR-IMPL-10 | Naming conventions? | ✅ PASS |
+
+### Verdict: ✅ PASS
+**Reason**: All criteria met, no blocking issues.
+
+→ Proceeding to handoff: /speckit.analyze (QA mode)
+```

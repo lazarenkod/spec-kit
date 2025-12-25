@@ -485,3 +485,177 @@ Users can always choose to:
 ## Context
 
 {ARGS}
+
+---
+
+## Self-Review Phase (MANDATORY)
+
+**Before declaring baseline.md complete, you MUST perform self-review.**
+
+This ensures all current behaviors are accurately documented and code references are valid.
+
+### Step 1: Re-read Generated Artifact
+
+Read the baseline file you created:
+- `FEATURE_DIR/baseline.md`
+
+Parse to extract CB-xxx entries and validate structure.
+
+### Step 2: Quality Criteria
+
+| ID | Criterion | Check | Severity |
+|----|-----------|-------|----------|
+| SR-BASE-01 | CB Entries Exist | At least one CB-xxx entry documented | CRITICAL |
+| SR-BASE-02 | CB IDs Unique | No duplicate CB-xxx identifiers | CRITICAL |
+| SR-BASE-03 | CB Format Valid | Each CB-xxx follows CB-NNN pattern (3 digits) | HIGH |
+| SR-BASE-04 | Code Locations Present | Each CB has file:line reference | CRITICAL |
+| SR-BASE-05 | Code Locations Valid | All file:line references point to existing files | CRITICAL |
+| SR-BASE-06 | Behavior Described | Each CB has "Current Behavior" description (not empty) | HIGH |
+| SR-BASE-07 | Signature Documented | Each CB has code signature with types | MEDIUM |
+| SR-BASE-08 | Dependencies Mapped | Dependency Graph section populated | HIGH |
+| SR-BASE-09 | Mermaid Valid | Dependency graph has valid Mermaid syntax | MEDIUM |
+| SR-BASE-10 | No Placeholders | No [TODO], [TBD], or placeholder text remains | HIGH |
+
+### Step 3: CB Entry Validation
+
+Verify each CB-xxx entry is complete:
+
+```text
+CB_ENTRIES = {}
+FILE_REFS = []
+
+FOR EACH section matching "### CB-NNN":
+  1. Extract CB ID (must be CB-NNN format, 3 digits)
+  2. Check uniqueness against CB_ENTRIES
+  3. Extract file:line reference from **File** field
+  4. Add to FILE_REFS for validation
+  5. Verify "Current Behavior" section is not empty
+  6. Verify "Signature" code block exists
+  7. CB_ENTRIES[id] = entry
+
+IF duplicate CB ID found:
+  ERROR: "Duplicate CB ID: {id}"
+  Add to issues
+
+IF CB_ENTRIES is empty:
+  ERROR: "No CB-xxx entries found in baseline"
+  CRITICAL failure
+```
+
+### Step 4: Code Location Verification
+
+Validate all file references exist in codebase:
+
+```text
+FOR EACH file_ref in FILE_REFS:
+  1. Parse path and line number from "file:line" format
+  2. Check if file exists in filesystem
+  3. If line number specified, verify file has that many lines
+
+  IF file does not exist:
+    ERROR: "CB-xxx references non-existent file: {path}"
+    Add to issues
+
+  IF line number exceeds file length:
+    WARN: "CB-xxx line {line} exceeds file length ({actual} lines)"
+    Add to warnings
+```
+
+### Step 5: Dependency Graph Validation
+
+Verify Mermaid diagram is valid:
+
+```text
+GRAPH_SECTION = extract "## Dependency Graph" section
+
+IF GRAPH_SECTION is empty OR missing mermaid block:
+  WARN: "Dependency Graph section is empty or missing"
+  Add to warnings
+
+FOR EACH CB referenced in mermaid graph:
+  IF CB not in CB_ENTRIES:
+    ERROR: "Graph references undefined CB: {id}"
+    Add to issues
+
+# Basic Mermaid syntax check
+IF mermaid block exists:
+  Verify "graph" or "flowchart" directive present
+  Verify node definitions match CB IDs
+  Verify arrow syntax is valid (-->, --, -->|label|)
+```
+
+### Step 6: Verdict
+
+- **PASS**: All CRITICAL/HIGH criteria pass, code locations valid → proceed to handoff
+- **FAIL**: Any CRITICAL issue → self-correct (max 3 iterations)
+  - Missing CB entries → analyze more components
+  - Invalid file references → correct paths or remove invalid CBs
+  - Duplicate IDs → renumber
+- **WARN**: Only MEDIUM issues → show warnings, proceed
+
+### Step 7: Self-Correction Loop
+
+```text
+IF issues found AND iteration < 3:
+  1. Fix each issue:
+     - Renumber duplicate CB IDs
+     - Remove CBs with invalid file references (or correct paths)
+     - Add missing behavior descriptions
+     - Fix Mermaid syntax errors
+     - Remove placeholder text
+  2. Re-run self-review from Step 1
+  3. Report: "Self-review iteration {N}: Fixed {issues}, re-validating..."
+
+IF still failing after 3 iterations:
+  - STOP and report to user
+  - List invalid file references
+  - List incomplete CB entries
+  - Do NOT proceed to handoff
+```
+
+### Step 8: Self-Review Report
+
+After passing self-review, output:
+
+```text
+## Self-Review Complete ✓
+
+**Artifact**: FEATURE_DIR/baseline.md
+**Iterations**: {N}
+
+### CB Entry Summary
+
+| ID | Component | File | Valid |
+|----|-----------|------|-------|
+| CB-001 | {name} | {path:line} | ✓ |
+| CB-002 | {name} | {path:line} | ✓ |
+
+### Validation Results
+
+| Check | Result |
+|-------|--------|
+| CB Entries | ✓ {N} documented |
+| CB IDs Unique | ✓ All unique |
+| Code Locations | ✓ All files exist |
+| Behaviors Described | ✓ All complete |
+| Dependency Graph | ✓ Valid Mermaid |
+| Placeholders | ✓ None found |
+
+### File Reference Verification
+
+| CB | Path | Line | Exists |
+|----|------|------|--------|
+| CB-001 | {path} | {line} | ✓ |
+| CB-002 | {path} | {line} | ✓ |
+
+### Dependency Coverage
+
+| Dependency Type | Count |
+|-----------------|-------|
+| Internal (in scope) | {N} |
+| External (out of scope) | {N} |
+
+### Ready for Specification
+
+Baseline capture complete. Suggest: `/speckit.specify [brownfield]`
+```

@@ -232,3 +232,159 @@ Users can always choose to:
 - Run `/speckit.checklist` to create domain-specific checklists first
 - Skip automation by selecting a different handoff option
 - Return to `/speckit.specify` to refine requirements
+
+---
+
+## Self-Review Phase (MANDATORY)
+
+**Before declaring plan.md complete, you MUST perform self-review.**
+
+This ensures the implementation plan is complete, verified, and ready for task generation.
+
+### Step 1: Re-read Generated Artifacts
+
+Read the artifacts you created:
+- `FEATURE_DIR/plan.md` (main plan)
+- `FEATURE_DIR/research.md` (if generated)
+- `FEATURE_DIR/data-model.md` (if generated)
+- `FEATURE_DIR/contracts/*` (if generated)
+
+### Step 2: Quality Criteria
+
+Answer each question by validating against the artifacts:
+
+| ID | Criterion | Check | Severity |
+|----|-----------|-------|----------|
+| SR-PLAN-01 | Technical Context Complete | All sections filled (Stack, Framework, Database, etc.) | CRITICAL |
+| SR-PLAN-02 | No Placeholder Markers | No TODO, TBD, FIXME, or [NEEDS CLARIFICATION] remain | CRITICAL |
+| SR-PLAN-03 | Dependency Registry Filled | All dependencies listed with versions | HIGH |
+| SR-PLAN-04 | Dependencies Verified | Each dependency verified via Context7 or official docs | HIGH |
+| SR-PLAN-05 | Documentation URLs Present | Each dependency has official documentation link | MEDIUM |
+| SR-PLAN-06 | Research Complete | research.md exists if NEEDS CLARIFICATION was present | HIGH |
+| SR-PLAN-07 | Constitution Checked | Constitution Check section filled, violations justified | MEDIUM |
+| SR-PLAN-08 | Architecture Defined | Architecture decisions documented with rationale | HIGH |
+| SR-PLAN-09 | Data Model Generated | data-model.md exists (if entities in spec) | MEDIUM |
+| SR-PLAN-10 | Contracts Generated | API contracts in /contracts/ (if API endpoints in spec) | MEDIUM |
+
+### Step 3: Dependency Verification
+
+For each entry in Dependency Registry, verify:
+
+```text
+FOR EACH dependency in plan.md Dependency Registry:
+  1. Package name matches official name (case-sensitive)
+  2. Version exists in package registry
+  3. Documentation URL is valid and accessible
+  4. Key APIs listed actually exist in that version
+
+  IF Context7 available:
+    Use resolve-library-id → get-library-docs to verify
+  ELSE:
+    Flag for manual verification
+
+  Result: VERIFIED | UNVERIFIED | DEPRECATED | NOT_FOUND
+```
+
+### Step 4: Completeness Scan
+
+Scan plan.md for incomplete sections:
+
+```text
+INCOMPLETE_MARKERS = [
+  "TODO", "TBD", "FIXME", "XXX",
+  "[NEEDS CLARIFICATION]", "[RESEARCH NEEDED]",
+  "???", "...", "< fill in >", "< TBD >"
+]
+
+FOR EACH section in plan.md:
+  FOR EACH marker in INCOMPLETE_MARKERS:
+    IF section contains marker:
+      ERROR: "Section '{section}' contains incomplete marker: {marker}"
+      Add to issues
+
+FOR EACH required_section in [Technical Context, Dependency Registry, Architecture]:
+  IF section is empty OR section contains only headers:
+    ERROR: "Required section '{section}' is empty"
+    Add to issues
+```
+
+### Step 5: Verdict
+
+Based on validation results:
+
+- **PASS**: All CRITICAL/HIGH criteria pass, dependencies verified → proceed to handoff
+- **FAIL**: Any CRITICAL issue → self-correct and re-check (max 3 iterations)
+  - Incomplete markers → research and fill in
+  - Unverified dependencies → use Context7 or mark for manual check
+  - Empty sections → generate content from spec
+- **WARN**: Only MEDIUM issues → show warnings, proceed
+
+### Step 6: Self-Correction Loop
+
+```text
+IF issues found AND iteration < 3:
+  1. Fix each issue:
+     - Replace TODO/TBD markers with researched answers
+     - Verify dependencies via Context7
+     - Fill empty sections from spec requirements
+     - Generate missing research.md if needed
+  2. Re-run self-review from Step 1
+  3. Report: "Self-review iteration {N}: Fixed {issues}, re-validating..."
+
+IF still failing after 3 iterations:
+  - STOP
+  - Report blocking issues to user
+  - List unresolved items requiring human decision
+  - Do NOT auto-transition to /speckit.tasks
+```
+
+### Step 7: Self-Review Report
+
+After passing self-review, output:
+
+```text
+## Self-Review Complete ✓
+
+**Artifact**: FEATURE_DIR/plan.md
+**Iterations**: {N}
+
+### Validation Results
+
+| Check | Result |
+|-------|--------|
+| Technical Context | ✓ All sections filled |
+| Incomplete Markers | ✓ None found |
+| Dependency Registry | ✓ {N} dependencies listed |
+| Dependencies Verified | ✓ {verified}/{total} via Context7 |
+| Research Complete | ✓ research.md generated |
+| Architecture | ✓ Decisions documented |
+
+### Dependency Verification
+
+| Package | Version | Status | Docs |
+|---------|---------|--------|------|
+| {package} | {version} | ✓ Verified | [link]({url}) |
+| {package} | {version} | ⚠ Manual check needed | [link]({url}) |
+
+### Generated Artifacts
+
+- [x] plan.md (updated)
+- [x] research.md
+- [x] data-model.md
+- [x] contracts/api.yaml
+
+### Ready for Task Generation
+
+All quality gates passed. Auto-transitioning to `/speckit.tasks`.
+```
+
+### Common Planning Issues
+
+| Issue | Detection | Fix |
+|-------|-----------|-----|
+| TODO markers | Regex scan for TODO/TBD/FIXME | Research answer and replace |
+| Unverified dependency | No Context7 confirmation | Query Context7 or note "manual verification required" |
+| Empty section | Section has only header | Generate content from spec or mark as N/A with reason |
+| Missing research.md | NEEDS CLARIFICATION was present but no research.md | Generate research.md with findings |
+| Deprecated package | Context7 shows deprecation | Find replacement, document migration |
+| Version mismatch | Specified version doesn't exist | Use latest stable or document constraint |
