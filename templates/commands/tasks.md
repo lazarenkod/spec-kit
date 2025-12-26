@@ -58,6 +58,23 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
+0. **Load project language setting**:
+
+   Read `/memory/constitution.md` and extract the `language` value from the Project Settings table.
+
+   ```text
+   IF Project Settings section exists AND language row found:
+     ARTIFACT_LANGUAGE = extracted value (e.g., "ru", "en", "de")
+   ELSE:
+     ARTIFACT_LANGUAGE = "en" (default)
+
+   Apply language rules from templates/shared/language-context.md:
+   - Generate all prose content in ARTIFACT_LANGUAGE
+   - Keep IDs (T1, FR-001, AS-001), technical terms, and code in English
+   ```
+
+   Report: "Generating tasks in {LANGUAGE_NAME} ({ARTIFACT_LANGUAGE})..."
+
 1. **Setup**: Run `{SCRIPT}` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
 2. **Load design documents**: Read from FEATURE_DIR:

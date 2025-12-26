@@ -32,6 +32,7 @@ import tempfile
 import shutil
 import shlex
 import json
+import re
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -967,6 +968,7 @@ def init(
     debug: bool = typer.Option(False, "--debug", help="Show verbose diagnostic output for network and extraction failures"),
     github_token: str = typer.Option(None, "--github-token", help="GitHub token to use for API requests (or set GH_TOKEN or GITHUB_TOKEN environment variable)"),
     repo: str = typer.Option(None, "--repo", help="Custom GitHub repo to download templates from (format: 'owner/repo-name', e.g., 'myuser/spec-kit')"),
+    language: str = typer.Option(None, "--language", "-l", help="Project language for artifacts: en, ru, de, fr, es, zh, ja, ko, pt, it, pl, uk, ar, hi"),
 ):
     """
     Initialize a new Specify project from the latest template.
@@ -992,9 +994,34 @@ def init(
         specify init --here
         specify init --here --force  # Skip confirmation when current directory not empty
         specify init my-project --ai claude --repo "myuser/spec-kit"  # Use custom fork
+        specify init my-project --ai claude --language ru  # Generate artifacts in Russian
+        specify init my-project -l de  # Short form for German
     """
 
     show_banner()
+
+    # Validate language if provided
+    VALID_LANGUAGES = {
+        "en": "English",
+        "ru": "Russian",
+        "de": "German",
+        "fr": "French",
+        "es": "Spanish",
+        "zh": "Chinese",
+        "ja": "Japanese",
+        "ko": "Korean",
+        "pt": "Portuguese",
+        "it": "Italian",
+        "pl": "Polish",
+        "uk": "Ukrainian",
+        "ar": "Arabic",
+        "hi": "Hindi",
+    }
+
+    if language and language not in VALID_LANGUAGES:
+        console.print(f"[red]Error:[/red] Invalid language '[cyan]{language}[/cyan]'")
+        console.print(f"Valid options: {', '.join(VALID_LANGUAGES.keys())}")
+        raise typer.Exit(1)
 
     if project_name == ".":
         here = True
@@ -1051,6 +1078,10 @@ def init(
 
     if repo:
         setup_lines.append(f"{'Template Repo':<15} [yellow]{repo}[/yellow]")
+
+    if language:
+        lang_name = VALID_LANGUAGES.get(language, language)
+        setup_lines.append(f"{'Language':<15} [magenta]{lang_name}[/magenta] ({language})")
 
     console.print(Panel("\n".join(setup_lines), border_style="cyan", padding=(1, 2)))
 
@@ -1144,6 +1175,21 @@ def init(
             download_and_extract_template(project_path, selected_ai, selected_script, here, verbose=False, tracker=tracker, client=local_client, debug=debug, github_token=github_token, repo=repo)
 
             ensure_executable_scripts(project_path, tracker=tracker)
+
+            # Update constitution.md with language setting if specified
+            if language:
+                constitution_path = project_path / "memory" / "constitution.md"
+                if constitution_path.exists():
+                    try:
+                        content = constitution_path.read_text(encoding="utf-8")
+                        # Replace default language value in Project Settings table
+                        # Pattern: | **language** | `en` | -> | **language** | `ru` |
+                        pattern = r'(\| \*\*language\*\* \| `)en(` \|)'
+                        replacement = rf'\g<1>{language}\g<2>'
+                        updated_content = re.sub(pattern, replacement, content)
+                        constitution_path.write_text(updated_content, encoding="utf-8")
+                    except Exception:
+                        pass  # Silently ignore if update fails
 
             if not no_git:
                 tracker.start("git")

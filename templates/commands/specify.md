@@ -246,6 +246,23 @@ The text the user typed after `/speckit.specify` in the triggering message **is*
 
 Given that feature description, do this:
 
+0. **Load project language setting**:
+
+   Read `/memory/constitution.md` and extract the `language` value from the Project Settings table.
+
+   ```text
+   IF Project Settings section exists AND language row found:
+     ARTIFACT_LANGUAGE = extracted value (e.g., "ru", "en", "de")
+   ELSE:
+     ARTIFACT_LANGUAGE = "en" (default)
+
+   Apply language rules from templates/shared/language-context.md:
+   - Generate all prose content in ARTIFACT_LANGUAGE
+   - Keep IDs (FR-001, AS-001), technical terms (API, JWT), and code in English
+   ```
+
+   Report: "Generating specification in {LANGUAGE_NAME} ({ARTIFACT_LANGUAGE})..."
+
 1. **Generate a concise short name** (2-4 words) for the branch:
    - Analyze the feature description and extract the most meaningful keywords
    - Create a 2-4 word short name that captures the essence of the feature

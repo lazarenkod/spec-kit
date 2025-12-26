@@ -49,6 +49,23 @@ This command captures the **complete vision and scope** of a service/product BEF
 
 ## Outline
 
+0. **Load project language setting**:
+
+   Read `/memory/constitution.md` and extract the `language` value from the Project Settings table.
+
+   ```text
+   IF Project Settings section exists AND language row found:
+     ARTIFACT_LANGUAGE = extracted value (e.g., "ru", "en", "de")
+   ELSE:
+     ARTIFACT_LANGUAGE = "en" (default)
+
+   Apply language rules from templates/shared/language-context.md:
+   - Generate all prose content in ARTIFACT_LANGUAGE
+   - Keep IDs (EPIC-001, F01, S01), technical terms, and code in English
+   ```
+
+   Report: "Generating concept in {LANGUAGE_NAME} ({ARTIFACT_LANGUAGE})..."
+
 1. **Initialize concept document**:
    - Run script `{SCRIPT}` to create `specs/concept.md`
    - The script creates the file from `templates/concept-template.md`

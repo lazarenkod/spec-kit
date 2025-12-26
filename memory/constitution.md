@@ -30,7 +30,38 @@ Layer 2: constitution.md (this file) ─ Your project overrides
 
 1. **Review base principles**: Read `constitution.base.md` to understand defaults
 2. **Select domain** (optional): Copy `domains/[domain].md` to `constitution.domain.md`
-3. **Add overrides below**: Strengthen or add principles as needed
+3. **Configure project settings**: Set language and other preferences below
+4. **Add overrides below**: Strengthen or add principles as needed
+
+---
+
+## Project Settings
+
+<!-- Project-wide settings that affect artifact generation -->
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| **language** | `en` | Primary language for generated artifacts. Options: `en` (English), `ru` (Russian), `de` (German), `fr` (French), `es` (Spanish), `zh` (Chinese), `ja` (Japanese), `ko` (Korean), `pt` (Portuguese), `it` (Italian), `pl` (Polish), `uk` (Ukrainian), `ar` (Arabic), `hi` (Hindi) |
+| **date_format** | `ISO` | Date format in documents. Options: `ISO` (2024-01-15), `US` (01/15/2024), `EU` (15.01.2024) |
+| **measurements** | `metric` | Unit system. Options: `metric`, `imperial` |
+
+### Language Guidelines
+
+When `language` is set:
+- All generated artifacts (spec.md, plan.md, tasks.md, design.md, concept.md) use this language
+- Technical terms (API, CRUD, JWT, etc.) remain in English
+- Code comments follow project's code style (usually English)
+- User-facing content (acceptance criteria, user stories) uses the configured language
+
+**Example for Russian**:
+```markdown
+language: ru
+
+# Results in:
+## Функциональные требования
+### FR-001: Аутентификация пользователя
+Пользователь ДОЛЖЕН иметь возможность войти в систему используя email и пароль.
+```
 
 ---
 

@@ -65,6 +65,7 @@ Parse user input for operation:
 |-----------|-----------|
 | "set domain fintech" | Select domain layer |
 | "add principle" / "strengthen" | Modify project layer |
+| "set language ru" / "язык русский" | Configure artifact language |
 | "--merge" / "show effective" | Generate merged view |
 | (no specific flag) | Interactive edit of project layer |
 
@@ -121,6 +122,27 @@ ADD project-specific principles
 
 OUTPUT merged constitution
 ```
+
+### 3d. Project Settings (if "set language" or similar)
+
+If configuring project settings:
+
+1. Locate the **Project Settings** table in `/memory/constitution.md`
+2. Update the requested setting:
+
+   | Setting | Valid Values | Default |
+   |---------|--------------|---------|
+   | language | `en`, `ru`, `de`, `fr`, `es`, `zh`, `ja`, `ko`, `pt`, `it`, `pl`, `uk`, `ar`, `hi` | `en` |
+   | date_format | `ISO`, `US`, `EU` | `ISO` |
+   | measurements | `metric`, `imperial` | `metric` |
+
+3. Report: "Project setting updated: language = ru"
+
+**Language affects all artifact generation commands** (`/speckit.specify`, `/speckit.plan`, `/speckit.tasks`, `/speckit.design`, `/speckit.concept`).
+
+See `templates/shared/language-context.md` for language behavior details:
+- All prose content generated in configured language
+- IDs, technical terms, and code remain in English
 
 ### 4. Validation
 

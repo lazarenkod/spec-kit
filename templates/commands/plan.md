@@ -60,9 +60,26 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
+0. **Load project language setting**:
+
+   Read `/memory/constitution.md` and extract the `language` value from the Project Settings table.
+
+   ```text
+   IF Project Settings section exists AND language row found:
+     ARTIFACT_LANGUAGE = extracted value (e.g., "ru", "en", "de")
+   ELSE:
+     ARTIFACT_LANGUAGE = "en" (default)
+
+   Apply language rules from templates/shared/language-context.md:
+   - Generate all prose content in ARTIFACT_LANGUAGE
+   - Keep IDs, technical terms (API, JWT), and code in English
+   ```
+
+   Report: "Generating plan in {LANGUAGE_NAME} ({ARTIFACT_LANGUAGE})..."
+
 1. **Setup**: Run `{SCRIPT}` from repo root and parse JSON for FEATURE_SPEC, IMPL_PLAN, SPECS_DIR, BRANCH. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
-2. **Load context**: Read FEATURE_SPEC and `/memory/constitution.md`. Load IMPL_PLAN template (already copied).
+2. **Load context**: Read FEATURE_SPEC and `/memory/constitution.md`. Load IMPL_PLAN template (already copied). Confirm ARTIFACT_LANGUAGE from constitution Project Settings.
 
 3. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
    - Fill Technical Context (mark unknowns as "NEEDS CLARIFICATION")

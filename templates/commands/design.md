@@ -73,6 +73,23 @@ This command creates **visual and interaction specifications** for UI-heavy feat
 
 ## Outline
 
+0. **Load project language setting**:
+
+   Read `/memory/constitution.md` and extract the `language` value from the Project Settings table.
+
+   ```text
+   IF Project Settings section exists AND language row found:
+     ARTIFACT_LANGUAGE = extracted value (e.g., "ru", "en", "de")
+   ELSE:
+     ARTIFACT_LANGUAGE = "en" (default)
+
+   Apply language rules from templates/shared/language-context.md:
+   - Generate all prose content in ARTIFACT_LANGUAGE
+   - Keep IDs, technical terms (WCAG, CSS, ARIA), and code in English
+   ```
+
+   Report: "Generating design specification in {LANGUAGE_NAME} ({ARTIFACT_LANGUAGE})..."
+
 1. **Initialize design document**:
    - Run script `{SCRIPT}` to verify spec.md exists
    - Create `specs/[NNN-feature]/design.md` from `templates/design-template.md`
