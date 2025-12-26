@@ -300,6 +300,55 @@
 |------------|-------------|---------------|----------------|
 | [old method/API] | [new method/API] | [version] | [migration URL] |
 
+## Cross-Repository Dependencies *(for multi-repo workspaces)*
+
+<!--
+  INCLUDE THIS SECTION when this feature depends on or is depended upon by
+  features in other repositories within the workspace.
+
+  Use format: repo-alias:feature-id (e.g., api:002-payment-api, web:005-checkout)
+
+  Skip this section for:
+  - Single-repository projects
+  - Features with no cross-repo dependencies
+
+  Run `specify workspace list` to see available repository aliases.
+-->
+
+### Dependencies on Other Repositories
+
+<!--
+  List features in other repos that THIS feature depends on.
+  These should be implemented/available before this feature can be completed.
+-->
+
+| This Feature | Depends On | Dependency Type | Reason |
+|--------------|------------|-----------------|--------|
+| [current-repo:XXX-this-feature] | [other-repo:XXX-feature] | REQUIRES | [Why this dependency exists] |
+
+### Features Depending on This
+
+<!--
+  List features in other repos that depend on THIS feature.
+  Useful for understanding impact and prioritization.
+-->
+
+| External Feature | Dependency Type | Notes |
+|------------------|-----------------|-------|
+| [other-repo:XXX-feature] | REQUIRES | [How they depend on this feature] |
+
+### Dependency Types Reference
+
+| Type | Description |
+|------|-------------|
+| REQUIRES | Hard dependency - target must be implemented first |
+| BLOCKS | This feature blocks the target from completion |
+| EXTENDS | Extends functionality of the target feature |
+| IMPLEMENTS | Implements a contract/interface defined by target |
+| USES | Soft dependency - uses target but doesn't strictly require it |
+
+---
+
 ## Success Criteria *(mandatory)*
 
 <!--

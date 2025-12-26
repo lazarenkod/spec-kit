@@ -80,6 +80,47 @@ You **MUST** consider the user input before proceeding (if not empty).
 **When BROWNFIELD_MODE = true**:
 
 1. If baseline.md exists, parse it to auto-populate:
+
+---
+
+## Workspace Detection
+
+**Automatically detect if this feature is part of a multi-repository workspace**:
+
+```text
+1. Check for workspace marker (traverse up from current directory):
+   - IF .speckit-workspace file exists:
+     WORKSPACE_MODE = true
+     WORKSPACE_ROOT = directory containing .speckit-workspace
+     WORKSPACE_CONFIG = parse YAML from .speckit-workspace
+
+2. If WORKSPACE_MODE = true:
+   - Extract current repository alias from workspace config
+   - Load list of related repositories
+   - Set CURRENT_REPO_ALIAS for cross-repo references
+
+3. Determine workspace context:
+   - CURRENT_REPO_ALIAS = repository alias for this feature
+   - AVAILABLE_REPOS = list of all repos in workspace
+   - CROSS_DEPENDENCIES = existing cross-repo dependencies from workspace config
+```
+
+**When WORKSPACE_MODE = true**:
+
+1. Include "Cross-Repository Dependencies" section in spec.md
+2. Suggest potential cross-repo dependencies based on:
+   - Repository roles (e.g., frontend depends on backend API)
+   - Existing patterns in workspace cross_dependencies
+3. Use format: `repo-alias:feature-id` for all cross-repo references
+
+**When WORKSPACE_MODE = false** (single-repo project):
+
+1. Skip the "Cross-Repository Dependencies" section entirely
+2. All feature references are local (just feature-id, no repo prefix)
+
+---
+
+**When BROWNFIELD_MODE = true**:
    - Current State Analysis (CB-xxx entries from baseline components)
    - Current Limitations (infer from user description)
    - Initial Change Delta (infer ADD/MODIFY/REMOVE from user intent)
@@ -373,7 +414,37 @@ Given that feature description, do this:
         | FR-001 | AS-1A, AS-1B | EC-001 | Defined |
         ```
 
-    11. **IF BROWNFIELD_MODE = true**: Generate Change Specification section:
+    11. **IF WORKSPACE_MODE = true**: Generate Cross-Repository Dependencies section:
+
+        a) Identify the current repository alias from workspace config
+
+        b) Analyze feature requirements for cross-repo dependencies:
+           - API calls to other services → REQUIRES dependency
+           - Shared data models or events → USES dependency
+           - Feature extending another repo's capability → EXTENDS dependency
+           - Feature implementing a contract from another repo → IMPLEMENTS dependency
+
+        c) Populate "Dependencies on Other Repositories" table:
+           ```markdown
+           | This Feature | Depends On | Dependency Type | Reason |
+           |--------------|------------|-----------------|--------|
+           | {CURRENT_REPO}:{FEATURE_ID} | api:002-payment-api | REQUIRES | Needs payment processing |
+           ```
+
+        d) Identify potential reverse dependencies:
+           - If this feature exposes an API, which repos might consume it?
+           - If this feature publishes events, which repos might subscribe?
+
+        e) Suggest cross-repo dependencies based on repository roles:
+           - Frontend repos typically REQUIRES backend APIs
+           - Mobile repos often USES same APIs as web frontend
+           - Shared libraries are typically USED BY multiple consumers
+
+        f) IF no cross-repo dependencies identified:
+           - Remove the Cross-Repository Dependencies section from spec
+           - Note: "No cross-repository dependencies detected"
+
+    12. **IF BROWNFIELD_MODE = true**: Generate Change Specification section:
 
         a) Parse baseline.md (if exists) to extract:
            - Component inventory → CB-xxx entries
@@ -408,7 +479,7 @@ Given that feature description, do this:
            - Add default metrics: error rate, response time
            - Suggest custom metrics based on feature type
 
-    12. Return: SUCCESS (spec ready for planning)
+    13. Return: SUCCESS (spec ready for planning)
 
 5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
 
@@ -520,6 +591,14 @@ Given that feature description, do this:
      - Preserved Behaviors: N (PB-001 to PB-00N)
      - Migration Phases: N (if applicable)
      - Baseline used: [Yes - baseline.md | No - manual entry]
+   - **Workspace summary** (if WORKSPACE_MODE = true):
+     - Workspace: [workspace name]
+     - Current Repository: [repo-alias]
+     - Cross-Repository Dependencies: N
+       - REQUIRES: N
+       - EXTENDS: N
+       - USES: N
+     - Features Depending on This: N (if identified)
    - Readiness for the next phase (`/speckit.clarify` or `/speckit.plan`)
 
 **NOTE:** The script creates and checks out the new branch and initializes the spec file before writing.
@@ -704,6 +783,18 @@ Check if `memory/constitution.domain.md` references UXQ domain. If yes, also val
 | SR-UXQ-08 | Emotional journey maps key steps with design responses? | MEDIUM |
 | SR-UXQ-09 | Accessibility framed as empowerment (not just compliance)? | HIGH |
 | SR-UXQ-10 | Error messages documented from user perspective (UXQ-005)? | HIGH |
+
+**Workspace Criteria** *(apply when WORKSPACE_MODE = true)*:
+
+Check if `.speckit-workspace` exists in parent directories. If yes, also validate:
+
+| ID | Question | Severity |
+|----|----------|----------|
+| SR-WS-01 | Cross-Repository Dependencies section present (if dependencies exist)? | MEDIUM |
+| SR-WS-02 | All cross-repo references use valid `repo-alias:feature-id` format? | HIGH |
+| SR-WS-03 | Referenced repository aliases exist in workspace config? | HIGH |
+| SR-WS-04 | Dependency types are valid (REQUIRES, BLOCKS, EXTENDS, IMPLEMENTS, USES)? | MEDIUM |
+| SR-WS-05 | No self-referential dependencies (feature depending on itself)? | HIGH |
 
 **Evaluation format**:
 ```text

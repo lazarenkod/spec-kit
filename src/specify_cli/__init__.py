@@ -7,6 +7,7 @@
 #     "platformdirs",
 #     "readchar",
 #     "httpx",
+#     "pyyaml",
 # ]
 # ///
 """
@@ -33,8 +34,11 @@ import shutil
 import shlex
 import json
 import re
+from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List, Dict, Any
+
+import yaml
 
 import typer
 import httpx
@@ -232,6 +236,234 @@ AGENT_CONFIG = {
 SCRIPT_TYPE_CHOICES = {"sh": "POSIX Shell (bash/zsh)", "ps": "PowerShell"}
 
 CLAUDE_LOCAL_PATH = Path.home() / ".claude" / "local" / "claude"
+
+# Workspace configuration
+WORKSPACE_CONFIG_FILE = ".speckit-workspace"
+WORKSPACE_LINKS_DIR = ".speckit/links/repos"
+WORKSPACE_CACHE_DIR = ".speckit/cache"
+WORKSPACE_VERSION = "1.0"
+
+# Link strategy constants
+LINK_STRATEGY_AUTO = "auto"
+LINK_STRATEGY_SYMLINK = "symlink"
+LINK_STRATEGY_JUNCTION = "junction"  # Windows directory symlinks
+LINK_STRATEGY_PATH_REF = "path_ref"  # Fallback for restricted environments
+
+# Repository role types
+REPO_ROLES = ["backend", "frontend", "mobile", "shared", "infrastructure", "docs", "other"]
+
+
+@dataclass
+class RepoConfig:
+    """Configuration for a single repository in a workspace."""
+    path: str
+    alias: Optional[str] = None
+    role: str = "other"
+    domain: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for YAML serialization."""
+        result = {"path": self.path}
+        if self.alias:
+            result["alias"] = self.alias
+        if self.role and self.role != "other":
+            result["role"] = self.role
+        if self.domain:
+            result["domain"] = self.domain
+        return result
+
+    @classmethod
+    def from_dict(cls, name: str, data: Dict[str, Any]) -> "RepoConfig":
+        """Create from dictionary (YAML data)."""
+        if isinstance(data, str):
+            # Simple format: just a path
+            return cls(path=data, alias=name)
+        return cls(
+            path=data.get("path", ""),
+            alias=data.get("alias", name),
+            role=data.get("role", "other"),
+            domain=data.get("domain"),
+        )
+
+
+@dataclass
+class CrossDependency:
+    """Cross-repository dependency."""
+    source: str  # Format: "repo-alias:feature-id"
+    target: str  # Format: "repo-alias:feature-id"
+    dep_type: str = "REQUIRES"  # REQUIRES, BLOCKS, EXTENDS, IMPLEMENTS
+
+    def to_dict(self) -> Dict[str, str]:
+        return {
+            "source": self.source,
+            "target": self.target,
+            "type": self.dep_type,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, str]) -> "CrossDependency":
+        return cls(
+            source=data.get("source", ""),
+            target=data.get("target", ""),
+            dep_type=data.get("type", "REQUIRES"),
+        )
+
+
+@dataclass
+class WorkspaceConfig:
+    """Workspace configuration stored in .speckit-workspace."""
+    name: str
+    version: str = WORKSPACE_VERSION
+    link_strategy: str = LINK_STRATEGY_AUTO
+    repositories: Dict[str, RepoConfig] = field(default_factory=dict)
+    cross_dependencies: List[CrossDependency] = field(default_factory=list)
+
+    def to_yaml(self) -> str:
+        """Serialize to YAML string."""
+        data = {
+            "version": self.version,
+            "name": self.name,
+            "link_strategy": self.link_strategy,
+            "repositories": {
+                name: repo.to_dict()
+                for name, repo in self.repositories.items()
+            },
+        }
+        if self.cross_dependencies:
+            data["cross_dependencies"] = [
+                dep.to_dict() for dep in self.cross_dependencies
+            ]
+        return yaml.dump(data, default_flow_style=False, sort_keys=False, allow_unicode=True)
+
+    @classmethod
+    def from_yaml(cls, yaml_str: str) -> "WorkspaceConfig":
+        """Parse from YAML string."""
+        data = yaml.safe_load(yaml_str)
+        if not data:
+            raise ValueError("Empty or invalid YAML")
+
+        repos = {}
+        for name, repo_data in data.get("repositories", {}).items():
+            repos[name] = RepoConfig.from_dict(name, repo_data)
+
+        deps = []
+        for dep_data in data.get("cross_dependencies", []):
+            deps.append(CrossDependency.from_dict(dep_data))
+
+        return cls(
+            name=data.get("name", ""),
+            version=data.get("version", WORKSPACE_VERSION),
+            link_strategy=data.get("link_strategy", LINK_STRATEGY_AUTO),
+            repositories=repos,
+            cross_dependencies=deps,
+        )
+
+    def save(self, workspace_root: Path) -> None:
+        """Save configuration to workspace root."""
+        config_path = workspace_root / WORKSPACE_CONFIG_FILE
+        config_path.write_text(self.to_yaml(), encoding="utf-8")
+
+    @classmethod
+    def load(cls, workspace_root: Path) -> "WorkspaceConfig":
+        """Load configuration from workspace root."""
+        config_path = workspace_root / WORKSPACE_CONFIG_FILE
+        if not config_path.exists():
+            raise FileNotFoundError(f"No workspace config found at {config_path}")
+        return cls.from_yaml(config_path.read_text(encoding="utf-8"))
+
+
+def find_workspace_root(start_path: Path = None) -> Optional[Path]:
+    """Find the workspace root by searching upward for .speckit-workspace file.
+
+    Args:
+        start_path: Path to start searching from (defaults to cwd)
+
+    Returns:
+        Path to workspace root, or None if not found
+    """
+    if start_path is None:
+        start_path = Path.cwd()
+
+    current = start_path.resolve()
+
+    # Search upward until we hit the root
+    while current != current.parent:
+        config_file = current / WORKSPACE_CONFIG_FILE
+        if config_file.exists():
+            return current
+        current = current.parent
+
+    # Check root as well
+    config_file = current / WORKSPACE_CONFIG_FILE
+    if config_file.exists():
+        return current
+
+    return None
+
+
+def detect_link_strategy() -> str:
+    """Auto-detect the best link strategy for the current platform.
+
+    Returns:
+        One of: symlink, junction, path_ref
+    """
+    # Check environment variable override
+    env_strategy = os.environ.get("SPECKIT_LINK_STRATEGY", "").lower()
+    if env_strategy in [LINK_STRATEGY_SYMLINK, LINK_STRATEGY_JUNCTION, LINK_STRATEGY_PATH_REF]:
+        return env_strategy
+
+    if os.name == "nt":
+        # Windows: try junction first, fall back to path_ref
+        # Junctions don't require admin privileges on modern Windows
+        try:
+            # Test if we can create junctions
+            test_dir = Path(tempfile.gettempdir()) / f".speckit_junction_test_{os.getpid()}"
+            target_dir = Path(tempfile.gettempdir())
+
+            # Clean up any existing test
+            if test_dir.exists():
+                test_dir.unlink()
+
+            # Try to create a junction
+            subprocess.run(
+                ["cmd", "/c", "mklink", "/J", str(test_dir), str(target_dir)],
+                check=True,
+                capture_output=True,
+            )
+
+            # Clean up
+            if test_dir.exists():
+                test_dir.unlink()
+
+            return LINK_STRATEGY_JUNCTION
+        except Exception:
+            return LINK_STRATEGY_PATH_REF
+    else:
+        # Unix: symlinks are the default
+        try:
+            # Test if we can create symlinks
+            test_link = Path(tempfile.gettempdir()) / f".speckit_symlink_test_{os.getpid()}"
+            target = Path(tempfile.gettempdir())
+
+            if test_link.exists() or test_link.is_symlink():
+                test_link.unlink()
+
+            test_link.symlink_to(target)
+            test_link.unlink()
+
+            return LINK_STRATEGY_SYMLINK
+        except Exception:
+            return LINK_STRATEGY_PATH_REF
+
+
+def resolve_link_strategy(strategy: str) -> str:
+    """Resolve 'auto' to actual strategy, or validate explicit strategy."""
+    if strategy == LINK_STRATEGY_AUTO:
+        return detect_link_strategy()
+    if strategy not in [LINK_STRATEGY_SYMLINK, LINK_STRATEGY_JUNCTION, LINK_STRATEGY_PATH_REF]:
+        raise ValueError(f"Invalid link strategy: {strategy}")
+    return strategy
+
 
 BANNER = """
 ███████╗██████╗ ███████╗ ██████╗██╗███████╗██╗   ██╗
@@ -1423,6 +1655,544 @@ def version():
 
     console.print(panel)
     console.print()
+
+# =============================================================================
+# Workspace Commands - Multi-Repository Support
+# =============================================================================
+
+workspace_app = typer.Typer(
+    name="workspace",
+    help="Manage multi-repository workspaces for Spec-Driven Development",
+    add_completion=False,
+)
+
+
+@workspace_app.command("create")
+def workspace_create(
+    name: str = typer.Option(None, "--name", "-n", help="Name for the workspace"),
+    link_strategy: str = typer.Option(
+        LINK_STRATEGY_AUTO,
+        "--link-strategy", "-s",
+        help=f"Link strategy: {LINK_STRATEGY_AUTO}, {LINK_STRATEGY_SYMLINK}, {LINK_STRATEGY_JUNCTION}, or {LINK_STRATEGY_PATH_REF}",
+    ),
+):
+    """
+    Create a new multi-repository workspace in the current directory.
+
+    A workspace coordinates multiple git repositories for cross-repo
+    spec-driven development. It creates a .speckit-workspace configuration
+    file and a .speckit/ directory for links and cache.
+
+    Examples:
+        specify workspace create --name my-platform
+        specify workspace create -n ecommerce
+        specify workspace create --name myapp --link-strategy symlink
+    """
+    workspace_root = Path.cwd()
+    config_file = workspace_root / WORKSPACE_CONFIG_FILE
+
+    # Check if workspace already exists
+    if config_file.exists():
+        console.print(f"[red]Error:[/red] Workspace already exists at {workspace_root}")
+        console.print(f"[dim]Config file: {config_file}[/dim]")
+        raise typer.Exit(1)
+
+    # Interactive name prompt if not provided
+    if not name:
+        suggested_name = workspace_root.name
+        name = typer.prompt("Workspace name", default=suggested_name)
+
+    # Resolve link strategy
+    try:
+        resolved_strategy = resolve_link_strategy(link_strategy)
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+    # Create workspace config
+    config = WorkspaceConfig(
+        name=name,
+        version=WORKSPACE_VERSION,
+        link_strategy=link_strategy,  # Store original (may be 'auto')
+    )
+
+    # Create .speckit directory structure
+    speckit_dir = workspace_root / ".speckit"
+    links_dir = workspace_root / WORKSPACE_LINKS_DIR
+    cache_dir = workspace_root / WORKSPACE_CACHE_DIR
+
+    try:
+        speckit_dir.mkdir(exist_ok=True)
+        links_dir.mkdir(parents=True, exist_ok=True)
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
+        # Save config
+        config.save(workspace_root)
+
+        console.print()
+        console.print(f"[bold green]✓[/bold green] Workspace '[cyan]{name}[/cyan]' created successfully!")
+        console.print()
+        console.print("[dim]Created:[/dim]")
+        console.print(f"  • {WORKSPACE_CONFIG_FILE}")
+        console.print(f"  • {WORKSPACE_LINKS_DIR}/")
+        console.print(f"  • {WORKSPACE_CACHE_DIR}/")
+        console.print()
+        console.print(f"[dim]Link strategy:[/dim] {resolved_strategy}" +
+                      (" (auto-detected)" if link_strategy == LINK_STRATEGY_AUTO else ""))
+        console.print()
+        console.print("[bold]Next steps:[/bold]")
+        console.print("  specify workspace add ./repo-path --alias myrepo --role backend")
+        console.print("  specify workspace list")
+        console.print()
+
+    except Exception as e:
+        console.print(f"[red]Error creating workspace:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@workspace_app.command("add")
+def workspace_add(
+    path: str = typer.Argument(..., help="Path to the repository to add"),
+    alias: str = typer.Option(None, "--alias", "-a", help="Alias for the repository (defaults to directory name)"),
+    role: str = typer.Option("other", "--role", "-r", help=f"Repository role: {', '.join(REPO_ROLES)}"),
+    domain: str = typer.Option(None, "--domain", "-d", help="Business domain (e.g., payments, auth)"),
+):
+    """
+    Add a repository to the current workspace.
+
+    The repository path can be relative or absolute. A symbolic link
+    (or equivalent based on link strategy) will be created in the
+    .speckit/links/repos/ directory.
+
+    Examples:
+        specify workspace add ./backend-api --alias api --role backend
+        specify workspace add ../frontend-web --alias web --role frontend
+        specify workspace add /path/to/repo --alias mobile --role mobile --domain commerce
+    """
+    # Find workspace root
+    workspace_root = find_workspace_root()
+    if not workspace_root:
+        console.print("[red]Error:[/red] Not inside a workspace.")
+        console.print("[dim]Run 'specify workspace create' to create a workspace.[/dim]")
+        raise typer.Exit(1)
+
+    # Resolve repository path
+    repo_path = Path(path).resolve()
+    if not repo_path.exists():
+        console.print(f"[red]Error:[/red] Repository path does not exist: {repo_path}")
+        raise typer.Exit(1)
+
+    if not repo_path.is_dir():
+        console.print(f"[red]Error:[/red] Path is not a directory: {repo_path}")
+        raise typer.Exit(1)
+
+    # Check if it's a git repo
+    git_dir = repo_path / ".git"
+    if not git_dir.exists():
+        console.print(f"[yellow]Warning:[/yellow] {repo_path} is not a git repository")
+
+    # Default alias to directory name
+    if not alias:
+        alias = repo_path.name
+
+    # Validate role
+    if role not in REPO_ROLES:
+        console.print(f"[red]Error:[/red] Invalid role '{role}'")
+        console.print(f"[dim]Valid roles: {', '.join(REPO_ROLES)}[/dim]")
+        raise typer.Exit(1)
+
+    # Load workspace config
+    try:
+        config = WorkspaceConfig.load(workspace_root)
+    except Exception as e:
+        console.print(f"[red]Error loading workspace config:[/red] {e}")
+        raise typer.Exit(1)
+
+    # Check if alias already exists
+    if alias in config.repositories:
+        console.print(f"[red]Error:[/red] Repository with alias '{alias}' already exists")
+        console.print(f"[dim]Current path: {config.repositories[alias].path}[/dim]")
+        raise typer.Exit(1)
+
+    # Create relative path from workspace root
+    try:
+        relative_path = repo_path.relative_to(workspace_root)
+        path_str = f"./{relative_path}"
+    except ValueError:
+        # Path is outside workspace, use absolute
+        path_str = str(repo_path)
+
+    # Add repository to config
+    repo_config = RepoConfig(
+        path=path_str,
+        alias=alias,
+        role=role,
+        domain=domain,
+    )
+    config.repositories[alias] = repo_config
+
+    # Create link based on strategy
+    resolved_strategy = resolve_link_strategy(config.link_strategy)
+    links_dir = workspace_root / WORKSPACE_LINKS_DIR
+    link_path = links_dir / alias
+
+    try:
+        # Remove existing link if present
+        if link_path.exists() or link_path.is_symlink():
+            if link_path.is_symlink() or (os.name == "nt" and link_path.is_dir()):
+                if os.name == "nt":
+                    # Windows: might be a junction
+                    os.rmdir(str(link_path))
+                else:
+                    link_path.unlink()
+            else:
+                shutil.rmtree(link_path)
+
+        # Create link based on strategy
+        if resolved_strategy == LINK_STRATEGY_SYMLINK:
+            link_path.symlink_to(repo_path, target_is_directory=True)
+        elif resolved_strategy == LINK_STRATEGY_JUNCTION:
+            # Windows junction
+            subprocess.run(
+                ["cmd", "/c", "mklink", "/J", str(link_path), str(repo_path)],
+                check=True,
+                capture_output=True,
+            )
+        elif resolved_strategy == LINK_STRATEGY_PATH_REF:
+            # Create a .path file with the absolute path
+            path_ref_file = links_dir / f"{alias}.path"
+            path_ref_file.write_text(str(repo_path), encoding="utf-8")
+
+        # Save updated config
+        config.save(workspace_root)
+
+        console.print()
+        console.print(f"[bold green]✓[/bold green] Added repository '[cyan]{alias}[/cyan]' to workspace")
+        console.print()
+        console.print(f"  [dim]Path:[/dim]   {path_str}")
+        console.print(f"  [dim]Role:[/dim]   {role}")
+        if domain:
+            console.print(f"  [dim]Domain:[/dim] {domain}")
+        console.print(f"  [dim]Link:[/dim]   {resolved_strategy}")
+        console.print()
+
+    except Exception as e:
+        console.print(f"[red]Error adding repository:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@workspace_app.command("remove")
+def workspace_remove(
+    alias: str = typer.Argument(..., help="Alias of the repository to remove"),
+    keep_link: bool = typer.Option(False, "--keep-link", help="Keep the symlink/junction (only remove from config)"),
+):
+    """
+    Remove a repository from the current workspace.
+
+    This removes the repository from the workspace configuration and
+    deletes the link in .speckit/links/repos/. The actual repository
+    files are NOT deleted.
+
+    Examples:
+        specify workspace remove api
+        specify workspace remove web --keep-link
+    """
+    # Find workspace root
+    workspace_root = find_workspace_root()
+    if not workspace_root:
+        console.print("[red]Error:[/red] Not inside a workspace.")
+        raise typer.Exit(1)
+
+    # Load workspace config
+    try:
+        config = WorkspaceConfig.load(workspace_root)
+    except Exception as e:
+        console.print(f"[red]Error loading workspace config:[/red] {e}")
+        raise typer.Exit(1)
+
+    # Check if alias exists
+    if alias not in config.repositories:
+        console.print(f"[red]Error:[/red] No repository with alias '{alias}' found")
+        console.print("[dim]Run 'specify workspace list' to see available repositories[/dim]")
+        raise typer.Exit(1)
+
+    # Get repo info before removing
+    repo = config.repositories[alias]
+
+    # Remove from config
+    del config.repositories[alias]
+
+    # Remove cross-dependencies involving this repo
+    config.cross_dependencies = [
+        dep for dep in config.cross_dependencies
+        if not (dep.source.startswith(f"{alias}:") or dep.target.startswith(f"{alias}:"))
+    ]
+
+    # Remove link unless --keep-link
+    links_dir = workspace_root / WORKSPACE_LINKS_DIR
+    link_path = links_dir / alias
+    path_ref_file = links_dir / f"{alias}.path"
+
+    if not keep_link:
+        try:
+            if link_path.exists() or link_path.is_symlink():
+                if link_path.is_symlink() or (os.name == "nt" and link_path.is_dir()):
+                    if os.name == "nt":
+                        os.rmdir(str(link_path))
+                    else:
+                        link_path.unlink()
+            if path_ref_file.exists():
+                path_ref_file.unlink()
+        except Exception as e:
+            console.print(f"[yellow]Warning:[/yellow] Could not remove link: {e}")
+
+    # Save updated config
+    try:
+        config.save(workspace_root)
+    except Exception as e:
+        console.print(f"[red]Error saving config:[/red] {e}")
+        raise typer.Exit(1)
+
+    console.print()
+    console.print(f"[bold green]✓[/bold green] Removed repository '[cyan]{alias}[/cyan]' from workspace")
+    console.print(f"  [dim]Was at:[/dim] {repo.path}")
+    if keep_link:
+        console.print(f"  [dim]Link kept at:[/dim] {link_path}")
+    console.print()
+
+
+@workspace_app.command("list")
+def workspace_list(
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed information"),
+):
+    """
+    List all repositories in the current workspace.
+
+    Shows repository aliases, paths, roles, and link status.
+    Use --verbose for additional details including domains and
+    cross-dependencies.
+
+    Examples:
+        specify workspace list
+        specify workspace list --verbose
+    """
+    # Find workspace root
+    workspace_root = find_workspace_root()
+    if not workspace_root:
+        console.print("[red]Error:[/red] Not inside a workspace.")
+        console.print("[dim]Run 'specify workspace create' to create a workspace.[/dim]")
+        raise typer.Exit(1)
+
+    # Load workspace config
+    try:
+        config = WorkspaceConfig.load(workspace_root)
+    except Exception as e:
+        console.print(f"[red]Error loading workspace config:[/red] {e}")
+        raise typer.Exit(1)
+
+    console.print()
+    console.print(f"[bold cyan]Workspace:[/bold cyan] {config.name}")
+    console.print(f"[dim]Location:[/dim] {workspace_root}")
+    console.print(f"[dim]Link strategy:[/dim] {config.link_strategy}")
+    console.print()
+
+    if not config.repositories:
+        console.print("[dim]No repositories added yet.[/dim]")
+        console.print("[dim]Run 'specify workspace add <path>' to add a repository.[/dim]")
+        return
+
+    # Create table for repositories
+    table = Table(title="Repositories", show_header=True, header_style="bold")
+    table.add_column("Alias", style="cyan")
+    table.add_column("Role", style="green")
+    table.add_column("Path")
+    table.add_column("Status")
+
+    if verbose:
+        table.add_column("Domain", style="dim")
+
+    links_dir = workspace_root / WORKSPACE_LINKS_DIR
+
+    for alias, repo in config.repositories.items():
+        # Resolve path and check existence
+        if repo.path.startswith("./") or repo.path.startswith("../"):
+            resolved_path = (workspace_root / repo.path).resolve()
+        else:
+            resolved_path = Path(repo.path)
+
+        # Check link status
+        link_path = links_dir / alias
+        path_ref = links_dir / f"{alias}.path"
+
+        if link_path.exists() or link_path.is_symlink():
+            status = "[green]linked[/green]"
+        elif path_ref.exists():
+            status = "[blue]path-ref[/blue]"
+        elif resolved_path.exists():
+            status = "[yellow]unlinked[/yellow]"
+        else:
+            status = "[red]missing[/red]"
+
+        row = [alias, repo.role, repo.path, status]
+        if verbose:
+            row.append(repo.domain or "-")
+
+        table.add_row(*row)
+
+    console.print(table)
+
+    # Show cross-dependencies in verbose mode
+    if verbose and config.cross_dependencies:
+        console.print()
+        deps_table = Table(title="Cross-Repository Dependencies", show_header=True, header_style="bold")
+        deps_table.add_column("Source", style="cyan")
+        deps_table.add_column("Type", style="yellow")
+        deps_table.add_column("Target", style="green")
+
+        for dep in config.cross_dependencies:
+            deps_table.add_row(dep.source, dep.dep_type, dep.target)
+
+        console.print(deps_table)
+
+    console.print()
+
+
+@workspace_app.command("sync")
+def workspace_sync(
+    force: bool = typer.Option(False, "--force", "-f", help="Force re-creation of all links"),
+):
+    """
+    Synchronize workspace links with the configuration.
+
+    This command ensures that all repositories in the workspace
+    configuration have corresponding links in .speckit/links/repos/.
+    Use --force to recreate all links.
+
+    Examples:
+        specify workspace sync
+        specify workspace sync --force
+    """
+    # Find workspace root
+    workspace_root = find_workspace_root()
+    if not workspace_root:
+        console.print("[red]Error:[/red] Not inside a workspace.")
+        raise typer.Exit(1)
+
+    # Load workspace config
+    try:
+        config = WorkspaceConfig.load(workspace_root)
+    except Exception as e:
+        console.print(f"[red]Error loading workspace config:[/red] {e}")
+        raise typer.Exit(1)
+
+    resolved_strategy = resolve_link_strategy(config.link_strategy)
+    links_dir = workspace_root / WORKSPACE_LINKS_DIR
+    links_dir.mkdir(parents=True, exist_ok=True)
+
+    console.print()
+    console.print(f"[bold cyan]Syncing workspace:[/bold cyan] {config.name}")
+    console.print(f"[dim]Strategy:[/dim] {resolved_strategy}")
+    console.print()
+
+    synced = 0
+    skipped = 0
+    errors = 0
+
+    for alias, repo in config.repositories.items():
+        # Resolve repo path
+        if repo.path.startswith("./") or repo.path.startswith("../"):
+            repo_path = (workspace_root / repo.path).resolve()
+        else:
+            repo_path = Path(repo.path)
+
+        link_path = links_dir / alias
+        path_ref = links_dir / f"{alias}.path"
+
+        # Check if repo exists
+        if not repo_path.exists():
+            console.print(f"  [red]✗[/red] {alias}: repository not found at {repo_path}")
+            errors += 1
+            continue
+
+        # Check if link already exists and is valid
+        if not force:
+            if resolved_strategy == LINK_STRATEGY_PATH_REF:
+                if path_ref.exists():
+                    existing_path = path_ref.read_text(encoding="utf-8").strip()
+                    if existing_path == str(repo_path):
+                        console.print(f"  [dim]○[/dim] {alias}: already synced")
+                        skipped += 1
+                        continue
+            elif link_path.exists() or link_path.is_symlink():
+                try:
+                    if link_path.resolve() == repo_path:
+                        console.print(f"  [dim]○[/dim] {alias}: already synced")
+                        skipped += 1
+                        continue
+                except Exception:
+                    pass  # Link is broken, will recreate
+
+        # Create or recreate link
+        try:
+            # Remove existing link/path-ref
+            if link_path.exists() or link_path.is_symlink():
+                if link_path.is_symlink() or (os.name == "nt" and link_path.is_dir()):
+                    if os.name == "nt":
+                        os.rmdir(str(link_path))
+                    else:
+                        link_path.unlink()
+            if path_ref.exists():
+                path_ref.unlink()
+
+            # Create new link
+            if resolved_strategy == LINK_STRATEGY_SYMLINK:
+                link_path.symlink_to(repo_path, target_is_directory=True)
+            elif resolved_strategy == LINK_STRATEGY_JUNCTION:
+                subprocess.run(
+                    ["cmd", "/c", "mklink", "/J", str(link_path), str(repo_path)],
+                    check=True,
+                    capture_output=True,
+                )
+            elif resolved_strategy == LINK_STRATEGY_PATH_REF:
+                path_ref.write_text(str(repo_path), encoding="utf-8")
+
+            console.print(f"  [green]✓[/green] {alias}: synced")
+            synced += 1
+
+        except Exception as e:
+            console.print(f"  [red]✗[/red] {alias}: {e}")
+            errors += 1
+
+    # Generate unified manifest cache
+    cache_dir = workspace_root / WORKSPACE_CACHE_DIR
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    manifest = {
+        "workspace": config.name,
+        "version": config.version,
+        "repositories": {
+            alias: {
+                "path": repo.path,
+                "role": repo.role,
+                "domain": repo.domain,
+            }
+            for alias, repo in config.repositories.items()
+        },
+        "cross_dependencies": [dep.to_dict() for dep in config.cross_dependencies],
+    }
+
+    manifest_path = cache_dir / "unified-manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    console.print()
+    console.print(f"[bold]Summary:[/bold] {synced} synced, {skipped} skipped, {errors} errors")
+    console.print(f"[dim]Manifest updated:[/dim] {manifest_path.relative_to(workspace_root)}")
+    console.print()
+
+
+# Register workspace commands with main app
+app.add_typer(workspace_app, name="workspace")
+
 
 def main():
     app()
