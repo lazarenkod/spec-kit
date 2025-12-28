@@ -7,6 +7,37 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.39] - 2025-12-28
+
+### Added
+
+- **Design Tool Integration (5.4)** — Figma import and OpenAPI generation
+  - **Figma Import** in `/speckit.design`:
+    - New `figma_import:` YAML configuration section
+    - Step 0.5: Auto-extract design tokens (colors, typography, shadows, spacing)
+    - Auto-extract component specifications with variant mapping
+    - Non-destructive merge into design.md (preserves manual entries)
+    - `<!-- figma-sync -->` markers for re-import updates
+    - Skip with `--no-figma` flag
+    - Environment: `FIGMA_ACCESS_TOKEN` for API authentication
+  - **OpenAPI Generation** in `/speckit.plan`:
+    - New `openapi_generation:` YAML configuration section
+    - Step 4.5: Parse FR-xxx for API-related requirements
+    - Generate `contracts/api.yaml` in OpenAPI 3.0.3 format
+    - FR-to-endpoint mapping rules (create→POST, get→GET, etc.)
+    - Schema inference from FR descriptions
+    - Validate endpoint coverage against spec requirements
+    - Skip with `--no-contracts` flag
+  - **Template Updates**:
+    - `spec-template.md`: Enhanced Design System field with Figma/Storybook/Tokens URL comments
+    - `plan-template.md`: Added API Contracts section with Generated Endpoints table
+    - `design-template.md`: Added Import Metadata section for tracking Figma sync status
+  - **New Shared Context Files**:
+    - `templates/shared/figma-import.md`: Figma API mapping, token extraction rules, conflict resolution
+    - `templates/shared/openapi-generation.md`: FR-to-endpoint mapping, schema inference, validation rules
+
+---
+
 ## [0.0.38] - 2025-12-28
 
 ### Added
@@ -70,18 +101,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Self-Healing Engine: Build Error Auto-Fixes** — Automatic compilation error recovery
   - New `build_error_patterns:` YAML section with language-specific patterns
-  - **6 Build Fix rules** (BF-001 to BF-006):
-    - BF-001: Missing import/module → Auto-add import (TS/Py/Go/Rust)
-    - BF-002: Unused variable → Prefix with `_` (TS/ESLint/Go/Rust)
-    - BF-003: Property not on type → Add interface annotation (TypeScript)
+  - **11 Build Fix rules** (BF-001 to BF-011):
+    - BF-001: Missing import/module → Auto-add import (TS/Py/Go/Rust/Kt/Java)
+    - BF-002: Unused variable → Prefix with `_` (TS/ESLint/Go/Rust/Kt/Java)
+    - BF-003: Type mismatch → Add annotation or cast (TS/Kt/Java)
     - BF-004: Missing key prop → Add `key={index}` (React)
     - BF-005: Conditional hook call → Move hook to top (React)
-    - BF-006: Undefined name → Add import or define (Python)
+    - BF-006: Undefined name/symbol → Add import or define (Python/Java)
+    - BF-007: Missing companion object → Add `companion object {}` (Kotlin)
+    - BF-008: Suspend outside coroutine → Wrap in coroutine scope (Kotlin)
+    - BF-009: Missing @Composable → Add annotation (Compose)
+    - BF-010: Modifier wrong position → Reorder to first optional (Compose)
+    - BF-011: Static context error → Add instance or make static (Java)
   - **Step 0.5: Build-Until-Works Loop** in self-review phase
     - Iterative build → parse stderr → apply fixes → retry
     - Max 3 attempts before human escalation
     - Skip with `--no-build-fix` flag
-  - Languages supported: TypeScript, React, Python, Go, Rust, ESLint
+  - Languages supported: TypeScript, React, Python, Go, Rust, ESLint, Kotlin, Kotlin Compose, Java
   - Target: 70% build errors auto-fixed (vs ~10% before)
 
 ---

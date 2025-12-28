@@ -149,6 +149,48 @@ build_error_patterns:
       - pattern: "'(.+)' is defined but never used"
         rule: BF-002
         action: prefix_unused
+    kotlin:
+      - pattern: "Unresolved reference: (.+)"
+        rule: BF-001
+        action: add_import
+      - pattern: "Variable '(.+)' is never used"
+        rule: BF-002
+        action: prefix_unused
+      - pattern: "Type mismatch: inferred type is .+ but (.+) was expected"
+        rule: BF-003
+        action: add_type_annotation
+      - pattern: "Classifier '(.+)' does not have a companion object"
+        rule: BF-007
+        action: add_companion_object
+      - pattern: "'(.+)' is a suspend function"
+        rule: BF-008
+        action: wrap_in_coroutine_scope
+    kotlin_compose:
+      - pattern: "@Composable invocations can only happen"
+        rule: BF-009
+        action: add_composable_annotation
+      - pattern: "Modifier parameter should be the first"
+        rule: BF-010
+        action: reorder_modifier_param
+    java:
+      - pattern: "cannot find symbol.*symbol:\\s*class (.+)"
+        rule: BF-001
+        action: add_import
+      - pattern: "cannot find symbol.*symbol:\\s*variable (.+)"
+        rule: BF-006
+        action: add_import_or_define
+      - pattern: "variable (.+) is never used"
+        rule: BF-002
+        action: prefix_unused
+      - pattern: "package (.+) does not exist"
+        rule: BF-001
+        action: add_import
+      - pattern: "incompatible types: (.+) cannot be converted"
+        rule: BF-003
+        action: add_type_cast
+      - pattern: "non-static method .+ cannot be referenced from a static context"
+        rule: BF-011
+        action: add_instance_or_static
 claude_code:
   model: opus
   reasoning_mode: extended
@@ -1124,6 +1166,35 @@ FUNCTION build_until_works():
                   suggest_definition(error.file, name)
                 fixes_applied++
 
+              # Kotlin-specific actions
+              CASE "add_companion_object":
+                class_name = match.group(1)
+                add_companion_object_block(error.file, class_name)
+                fixes_applied++
+
+              CASE "wrap_in_coroutine_scope":
+                wrap_suspend_call_in_scope(error.file, error.line)
+                fixes_applied++
+
+              # Kotlin Compose-specific actions
+              CASE "add_composable_annotation":
+                add_annotation(error.file, error.line, "@Composable")
+                fixes_applied++
+
+              CASE "reorder_modifier_param":
+                move_modifier_to_first_optional(error.file, error.line)
+                fixes_applied++
+
+              # Java-specific actions
+              CASE "add_type_cast":
+                target_type = match.group(2)
+                insert_cast(error.file, error.line, target_type)
+                fixes_applied++
+
+              CASE "add_instance_or_static":
+                make_method_static_or_create_instance(error.file, error.line)
+                fixes_applied++
+
             BREAK  # Pattern matched, move to next error
 
     IF fixes_applied == 0:
@@ -1241,12 +1312,17 @@ Auto Checks: PASS (1 warning)
 
 | Rule ID | Language | Error Pattern | Action |
 |---------|----------|---------------|--------|
-| BF-001 | TS/Py/Go/Rust | Missing module/import | Auto-add import statement |
-| BF-002 | TS/ESLint/Go/Rust | Unused variable | Prefix with `_` or remove |
-| BF-003 | TypeScript | Property not on type | Add interface/type annotation |
+| BF-001 | TS/Py/Go/Rust/Kt/Java | Missing module/import | Auto-add import statement |
+| BF-002 | TS/ESLint/Go/Rust/Kt/Java | Unused variable | Prefix with `_` or remove |
+| BF-003 | TS/Kt/Java | Type mismatch | Add type annotation or cast |
 | BF-004 | React | Missing key prop | Add `key={index}` or `key={item.id}` |
 | BF-005 | React | Conditional hook call | Move hook before conditions |
-| BF-006 | Python | Undefined name | Add import or define variable |
+| BF-006 | Python/Java | Undefined name/symbol | Add import or define variable |
+| BF-007 | Kotlin | Missing companion object | Add `companion object {}` block |
+| BF-008 | Kotlin | Suspend outside coroutine | Wrap in `runBlocking {}` or `launch {}` |
+| BF-009 | Compose | Missing @Composable | Add `@Composable` annotation |
+| BF-010 | Compose | Modifier wrong position | Reorder to first optional param |
+| BF-011 | Java | Static context error | Add instance or make method static |
 
 **Non-Auto-Fixable Issues** (require human judgment):
 

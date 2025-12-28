@@ -8,6 +8,32 @@
 - **Concept**: `specs/concept.md` (if applicable)
 - **Concept IDs Covered**: [EPIC-xxx.Fxx.Sxx] (if from concept)
 
+## Import Metadata
+
+<!--
+  Auto-populated by /speckit.design Figma import (Step 0.5).
+  Manual entries are preserved on re-import.
+  Entries marked with "figma-sync" comment are updated on re-sync.
+-->
+
+| Source | Value |
+|--------|-------|
+| Figma File | [{file_name}]({figma_url}) <!-- figma-sync --> |
+| Import Date | [DATE] <!-- figma-sync --> |
+| Tokens Extracted | [count] <!-- figma-sync --> |
+| Components Extracted | [count] <!-- figma-sync --> |
+| Last Sync | [timestamp] <!-- figma-sync --> |
+
+**Import Status**: [NOT_IMPORTED / IMPORTED / SYNCED / MANUAL]
+
+<!--
+  Status meanings:
+  - NOT_IMPORTED: No Figma file linked, manual design only
+  - IMPORTED: Initial import complete, awaiting sync
+  - SYNCED: Re-synced with Figma (latest import date)
+  - MANUAL: Design created manually, Figma not used
+-->
+
 ---
 
 ## Visual Language

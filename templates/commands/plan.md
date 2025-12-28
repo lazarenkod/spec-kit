@@ -82,6 +82,14 @@ scripts:
 agent_scripts:
   sh: scripts/bash/update-agent-context.sh __AGENT__
   ps: scripts/powershell/update-agent-context.ps1 -AgentType __AGENT__
+openapi_generation:
+  enabled: true
+  skip_flag: "--no-contracts"
+  output_path: "contracts/api.yaml"
+  openapi_version: "3.0.3"
+  extract_from:
+    - "FR-xxx with API/endpoint/request/response keywords"
+    - "Technical Dependencies → External API Dependencies"
 ---
 
 ## User Input
@@ -135,6 +143,74 @@ You **MUST** consider the user input before proceeding (if not empty).
      Update Status column: SPEC_COMPLETE → PLANNED
      Update "Last Updated" column: today's date
    ```
+
+4.5. **Generate API Contracts** (Optional):
+
+   ```text
+   IF openapi_generation.enabled AND NOT --no-contracts flag:
+
+     1. Parse spec.md for API-related FRs:
+        KEYWORDS = ["API", "endpoint", "request", "response", "POST", "GET", "PUT", "DELETE", "REST", "webhook"]
+
+        FOR EACH FR in spec.md Functional Requirements:
+          IF FR.description contains any KEYWORD:
+            Extract: FR-ID, inferred HTTP method, path pattern, schema hints
+            ADD to API_FRS[]
+
+     2. Parse plan.md Dependency Registry (if exists):
+        - API-xxx entries → External API references (don't regenerate, link only)
+        - PKG-xxx with HTTP clients → SDK integrations to document
+
+     3. Infer endpoints from API_FRS[]:
+        MAPPING_RULES (from templates/shared/openapi-generation.md):
+        - "create/add/register {X}" → POST /api/v1/{x}s
+        - "get/fetch/retrieve {X}" → GET /api/v1/{x}s/{id}
+        - "list/show all {X}" → GET /api/v1/{x}s
+        - "update/modify/edit {X}" → PUT /api/v1/{x}s/{id}
+        - "delete/remove {X}" → DELETE /api/v1/{x}s/{id}
+
+     4. Generate contracts/api.yaml:
+        ```yaml
+        openapi: 3.0.3
+        info:
+          title: "{PROJECT_NAME} API"
+          version: "1.0.0"
+          description: "Auto-generated from spec.md FR-xxx requirements"
+        servers:
+          - url: /api/v1
+        paths:
+          /{resource}:
+            {method}:
+              operationId: "{FR-ID}"
+              summary: "{FR description}"
+              tags: ["{domain}"]
+              requestBody:
+                content:
+                  application/json:
+                    schema: {inferred_schema}
+              responses:
+                '200': {success_schema}
+                '400': {error_schema}
+        ```
+
+     5. Validate generated contract:
+        - All API_FRS[] have corresponding paths
+        - No duplicate operationIds
+        - Request/response schemas are consistent
+        - Authentication requirements documented (if any)
+
+     6. Update plan.md with API Contracts section:
+        | Contract | Path | Source FRs | Status |
+        |----------|------|------------|--------|
+        | Main API | contracts/api.yaml | {FR_IDS} | GENERATED |
+
+     7. Output CONTRACTS_GENERATED_REPORT
+
+   ELSE:
+     LOG "OpenAPI generation disabled or --no-contracts flag set"
+   ```
+
+   Read `templates/shared/openapi-generation.md` for FR-to-endpoint mapping rules.
 
 5. **Stop and report**: Command ends after Phase 2 planning. Report branch, IMPL_PLAN path, and generated artifacts.
 

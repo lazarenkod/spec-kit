@@ -39,6 +39,15 @@ skills:
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-spec
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireSpec
+figma_import:
+  enabled: true
+  skip_flag: "--no-figma"
+  token_env: "FIGMA_ACCESS_TOKEN"
+  file_key_source: "spec.md"
+  extract:
+    - design_tokens
+    - components
+    - icons
 ---
 
 ## User Input
@@ -90,6 +99,59 @@ This command creates **visual and interaction specifications** for UI-heavy feat
    ```
 
    Report: "Generating design specification in {LANGUAGE_NAME} ({ARTIFACT_LANGUAGE})..."
+
+0.5. **Figma Import** (Optional):
+
+   ```text
+   IF figma_import.enabled AND NOT --no-figma flag:
+
+     1. Check FIGMA_ACCESS_TOKEN environment variable
+        IF not set:
+          LOG "⚠️ FIGMA_ACCESS_TOKEN not set, skipping Figma import"
+          SKIP to Step 1
+
+     2. Extract Figma file key from spec.md Design System field:
+        PATTERN: "figma.com/(file|design)/([a-zA-Z0-9]+)"
+        IF no Figma URL found:
+          LOG "ℹ️ No Figma URL in spec.md Design System field"
+          SKIP to Step 1
+
+     3. Call Figma API:
+        GET https://api.figma.com/v1/files/{file_key}
+        Headers: X-Figma-Token: {FIGMA_ACCESS_TOKEN}
+
+     4. Extract design tokens:
+        - Colors: document.styles WHERE type="FILL"
+          → Map to Color Palette table (name, hex, rgb, semantic role)
+        - Typography: document.styles WHERE type="TEXT"
+          → Map to Typography Scale (family, size, weight, line-height)
+        - Effects: document.styles WHERE type="EFFECT"
+          → Map to Shadow System (name, CSS value)
+
+     5. Extract components (if extract includes "components"):
+        - Component sets: document.componentSets
+          → Generate Component Specifications skeleton
+        - Variants: component.variants
+          → Map to States table (default, hover, active, disabled)
+
+     6. Generate FIGMA_IMPORT_REPORT:
+        ```
+        ## Figma Import Report
+        - File: {file_name} ({file_key})
+        - Colors extracted: {count}
+        - Typography styles: {count}
+        - Components: {count}
+        - Icons: {count}
+        ```
+
+     7. Mark imported entries with <!-- figma-sync --> comment
+        for future re-import (non-destructive merge)
+
+   ELSE:
+     LOG "Figma import disabled or --no-figma flag set"
+   ```
+
+   Read `templates/shared/figma-import.md` for detailed Figma API mapping rules.
 
 1. **Initialize design document**:
    - Run script `{SCRIPT}` to verify spec.md exists

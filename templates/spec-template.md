@@ -228,6 +228,9 @@
 -->
 
 - **Design System**: [Existing system to follow / New system to create / N/A]
+  <!-- Figma: paste URL like https://www.figma.com/file/{file_key}/... for auto-import -->
+  <!-- Storybook: paste URL for component reference -->
+  <!-- Tokens: path to design-tokens.json for local tokens -->
 - **Accessibility Level**: WCAG 2.1 [A / AA / AAA]
 - **Responsive Breakpoints**: [mobile-first / desktop-first / specific breakpoints]
 - **Browser Support**: [matrix, e.g., "Last 2 versions of Chrome, Firefox, Safari, Edge"]
