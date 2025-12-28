@@ -14,6 +14,28 @@ handoffs:
       - "plan.md completed with all phases"
       - "research.md exists (Phase 0 complete)"
       - "All [NEEDS CLARIFICATION] resolved"
+    pre_handoff_action:
+      name: "Plan Validation"
+      invoke: speckit.analyze
+      args: "--profile plan_validate --quiet"
+      skip_flag: "--skip-validate"
+      timeout: 45s
+      gates:
+        - name: "Constitution Alignment Gate"
+          pass: D
+          threshold: 0
+          severity: CRITICAL
+          block_if: "constitution violations > 0"
+          message: "Plan violates project constitution. Resolve before task generation."
+        - name: "Tech Consistency Gate"
+          pass: F
+          threshold: 0
+          severity: HIGH
+          block_if: "terminology inconsistencies > 0"
+          message: "Technical inconsistencies between spec and plan detected."
+      on_failure:
+        action: block
+        message: "Plan validation failed. Review findings and update plan.md."
     gates:
       - name: "Plan Completeness Gate"
         check: "Technical Context filled, Architecture defined, Phases outlined"

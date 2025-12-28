@@ -12,6 +12,28 @@ handoffs:
     condition:
       - "spec.md created and valid"
       - "No unresolved [NEEDS CLARIFICATION] markers"
+    pre_handoff_action:
+      name: "Spec Validation"
+      invoke: speckit.analyze
+      args: "--profile spec_validate --quiet"
+      skip_flag: "--skip-validate"
+      timeout: 30s
+      gates:
+        - name: "Constitution Alignment Gate"
+          pass: D
+          threshold: 0
+          severity: CRITICAL
+          block_if: "constitution violations > 0"
+          message: "Spec violates project constitution. Resolve before planning."
+        - name: "Ambiguity Gate"
+          pass: B
+          threshold: 5
+          severity: HIGH
+          block_if: "ambiguity count > 5"
+          message: "Too many ambiguities detected. Clarification required."
+      on_failure:
+        auto_remediate: speckit.clarify
+        inject_context: "extracted_questions_from_validation"
     gates:
       - name: "Spec Quality Gate"
         check: "All checklist items in checklists/requirements.md pass"
@@ -961,4 +983,99 @@ Generate this report before handoff:
 **Reason**: All criteria met, specification ready for planning.
 
 → Proceeding to handoff: /speckit.plan
+```
+
+## Spec Validation Phase (Auto-Triggered)
+
+After Self-Review passes, the `pre_handoff_action` automatically triggers spec validation before handing off to `/speckit.plan`. This catches constitution violations and ambiguities early.
+
+### Validation Flow
+
+```text
+1. Self-Review completes with PASS verdict
+2. pre_handoff_action triggers:
+   - Invoke: /speckit.analyze --profile spec_validate --quiet
+   - Timeout: 30 seconds
+3. Evaluate validation gates:
+   - Constitution Alignment (Pass D): threshold 0, severity CRITICAL
+   - Ambiguity Count (Pass B): threshold 5, severity HIGH
+4. On gate status:
+   - ALL PASS → Proceed to /speckit.plan
+   - ANY FAIL → Auto-remediate via /speckit.clarify
+```
+
+### Validation Output (Compact)
+
+When spec validation runs, display compact gate results:
+
+```markdown
+## Spec Validation Complete
+
+| Gate | Pass | Threshold | Actual | Status |
+|------|------|-----------|--------|--------|
+| Constitution Alignment | D | 0 | 0 | ✅ |
+| Ambiguity Count | B | 5 | 3 | ✅ |
+
+**Result**: PASS
+
+→ Proceeding to handoff: /speckit.plan
+```
+
+### On Validation Failure
+
+When gates fail, block handoff and auto-invoke clarify:
+
+```markdown
+## Spec Validation BLOCKED
+
+| Gate | Pass | Threshold | Actual | Status |
+|------|------|-----------|--------|--------|
+| Constitution Alignment | D | 0 | 2 | ❌ FAIL |
+| Ambiguity Count | B | 5 | 7 | ⚠️ WARN |
+
+**Result**: FAIL
+
+### Blocking Issues
+
+1. **[CRITICAL] Constitution Violation**: FR-003 conflicts with principle "No External Dependencies Without Approval"
+2. **[CRITICAL] Constitution Violation**: AS-2B implies server-side storage, violates "Privacy First" principle
+
+### Extracted Clarification Questions
+
+1. FR-003 references "cloud sync" - does this require explicit user opt-in per constitution?
+2. AS-2B stores user data server-side - what anonymization is required?
+3. [Plus 5 ambiguity-derived questions from Pass B]
+
+→ Auto-invoking `/speckit.clarify` with 7 extracted questions...
+```
+
+### Skip Validation
+
+To bypass spec validation (not recommended):
+
+```bash
+# Skip validation gate
+/speckit.specify --skip-validate
+
+# Equivalent short form
+/speckit.specify --fast
+```
+
+When skipped, log warning:
+
+```text
+⚠️ Spec validation skipped (--skip-validate). Constitution and ambiguity gates not enforced.
+→ Proceeding to handoff: /speckit.plan (unvalidated)
+```
+
+### Post-Clarification Loop
+
+After `/speckit.clarify` resolves issues, re-run validation:
+
+```text
+1. clarify completes
+2. Re-invoke: /speckit.analyze --profile spec_validate --quiet
+3. If gates pass → Resume handoff to /speckit.plan
+4. If gates fail → Repeat clarification (max 3 iterations)
+5. After 3 iterations → Require manual intervention
 ```

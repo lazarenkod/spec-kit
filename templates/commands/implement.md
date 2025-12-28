@@ -70,6 +70,38 @@ pre_gates:
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
+auto_fix_rules:
+  enabled: true
+  skip_flag: "--no-auto-fix"
+  max_iterations: 3
+  rules:
+    - id: AF-001
+      name: "Missing @speckit annotations"
+      trigger: "SR-IMPL-05 or SR-IMPL-06 FAIL"
+      action: insert_annotation
+      source: "task markers [FR:FR-xxx], [TEST:AS-xxx]"
+    - id: AF-002
+      name: "TODO/FIXME/HACK comments"
+      trigger: "SR-IMPL-04 FAIL"
+      action: convert_to_issue
+      target: ".speckit/issues.md"
+    - id: AF-003
+      name: "Lint warnings (fixable)"
+      trigger: "Lint check with fixable errors"
+      action: run_auto_formatter
+      commands:
+        javascript: "npx eslint --fix OR npx prettier --write"
+        python: "ruff format . OR black ."
+        rust: "cargo fmt"
+        go: "gofmt -w ."
+    - id: AF-004
+      name: "Missing .env.example"
+      trigger: "SR-IMPL-13 FAIL"
+      action: generate_env_example
+    - id: AF-005
+      name: "Debug statements"
+      trigger: "SR-IMPL-09 FAIL"
+      action: remove_debug_statements
 ---
 
 ## User Input
@@ -914,6 +946,112 @@ Auto Checks: PASS (1 warning)
 
 **On REQUIRED check failure**: STOP immediately, display error, do not proceed.
 
+### Step 1.5: Self-Healing Engine
+
+**Purpose**: Automatically fix common issues before manual intervention to reduce iteration cycles.
+
+**Skip flag**: Pass `--no-auto-fix` to disable self-healing and use manual fixes only.
+
+**Auto-Fix Rules**:
+
+| Rule ID | Issue | Action | Maps To |
+|---------|-------|--------|---------|
+| AF-001 | Missing `@speckit:FR:` annotations | Insert from task markers `[FR:FR-xxx]` | SR-IMPL-05 |
+| AF-001 | Missing `@speckit:AS:` annotations | Insert from task markers `[TEST:AS-xxx]` | SR-IMPL-06 |
+| AF-002 | `TODO`/`FIXME`/`HACK` comments | Convert to `.speckit/issues.md` entries | SR-IMPL-04 |
+| AF-003 | Lint warnings (fixable) | Run auto-formatter for detected language | Lint check |
+| AF-004 | Missing `.env.example` | Generate from `process.env`/`os.getenv` scans | SR-IMPL-13 |
+| AF-005 | Debug statements | Remove `console.log`/`print` statements | SR-IMPL-09 |
+
+**Non-Auto-Fixable Issues** (require human judgment):
+
+| Issue | Reason |
+|-------|--------|
+| Build failures (SR-IMPL-02) | Requires code logic understanding |
+| Test failures (SR-IMPL-03) | May indicate real bugs |
+| Hardcoded secrets (SR-IMPL-07) | Security-critical decision |
+| Error handling (SR-IMPL-08) | Requires domain knowledge |
+
+**Self-Healing Execution**:
+
+```text
+FUNCTION execute_self_healing(failed_criteria):
+  IF "--no-auto-fix" in ARGS:
+    RETURN {applied: [], skipped: failed_criteria}
+
+  applied_fixes = []
+  remaining_issues = []
+
+  FOR EACH criterion in failed_criteria:
+    rule = match_auto_fix_rule(criterion.id)
+
+    IF rule IS NULL:
+      remaining_issues.append(criterion)
+      CONTINUE
+
+    SWITCH rule.action:
+      CASE "insert_annotation":
+        # Extract task markers from tasks.md
+        markers = extract_task_markers(TASKS_FILE)
+        FOR EACH file in criterion.affected_files:
+          FOR EACH marker in markers WHERE marker.file == file:
+            IF marker.type == "FR":
+              insert_comment(file, marker.line, "@speckit:FR:{marker.id}")
+            ELIF marker.type == "TEST":
+              insert_comment(file, marker.line, "@speckit:AS:{marker.id}")
+        applied_fixes.append({rule: "AF-001", count: len(markers)})
+
+      CASE "convert_to_issue":
+        # Convert TODO/FIXME to tracked issues
+        issues_file = ".speckit/issues.md"
+        ensure_file_exists(issues_file)
+        FOR EACH todo in criterion.items:
+          append_to_file(issues_file, format_issue(todo))
+          remove_line(todo.file, todo.line)
+        applied_fixes.append({rule: "AF-002", count: len(criterion.items)})
+
+      CASE "run_auto_formatter":
+        # Detect language and run appropriate formatter
+        lang = detect_project_language()
+        cmd = get_formatter_command(lang)  # From auto_fix_rules.rules[2].commands
+        run_command(cmd)
+        applied_fixes.append({rule: "AF-003", files: count_formatted_files()})
+
+      CASE "generate_env_example":
+        # Scan for environment variable usage
+        env_vars = []
+        FOR EACH file in project_files:
+          env_vars.extend(extract_env_vars(file))  # process.env.X, os.getenv("X")
+        generate_env_example(env_vars)
+        applied_fixes.append({rule: "AF-004", variables: len(env_vars)})
+
+      CASE "remove_debug_statements":
+        # Remove console.log/print debug statements
+        patterns = ["console.log(", "console.debug(", "print(", "println!", "fmt.Println("]
+        FOR EACH file in criterion.affected_files:
+          remove_matching_lines(file, patterns)
+        applied_fixes.append({rule: "AF-005", count: lines_removed})
+
+  RETURN {applied: applied_fixes, remaining: remaining_issues}
+```
+
+**Self-Healing Output Format**:
+
+```text
+🔧 Self-Healing Report
+├── Fixes Applied: {N}
+│   ├── AF-001: Added {X} @speckit annotations
+│   ├── AF-002: Converted {Y} TODOs to issues
+│   ├── AF-003: Auto-formatted {Z} files
+│   ├── AF-004: Generated .env.example ({V} variables)
+│   └── AF-005: Removed {W} debug statements
+├── Fixes Failed: {M}
+│   └── {reason}
+└── Status: {N} issues auto-resolved, {M} require manual fix
+
+→ Re-running self-review with fixes applied...
+```
+
 ### Step 2: Re-read Modified Files
 
 Review the files you created/modified in this implementation:
@@ -967,27 +1105,50 @@ Determine the self-review verdict:
 | **WARN** | CRITICAL=0 AND HIGH≤2 AND all HIGH are non-blocking | Show warnings, proceed |
 | **FAIL** | CRITICAL>0 OR HIGH>2 | Self-correct, re-check |
 
-### Step 5: Self-Correction Loop
+### Step 5: Self-Correction Loop (with Self-Healing)
 
 **IF verdict is FAIL AND iteration < 3**:
-1. Fix each CRITICAL and HIGH issue:
-   - Remove TODO/FIXME comments or convert to tracked issues
-   - Add missing @speckit annotations
-   - Fix any failing tests or build errors
-2. Re-run self-review from Step 1
-3. Increment iteration counter
-4. Report: `Self-Review Iteration 2/3...`
+
+1. **Attempt Auto-Fix First** (if `--no-auto-fix` not passed):
+   ```text
+   failed_criteria = collect_failed_criteria(SR-IMPL-*)
+   healing_result = execute_self_healing(failed_criteria)
+
+   IF healing_result.applied.length > 0:
+     Display Self-Healing Report (see Step 1.5 output format)
+   ```
+
+2. **Recalculate Verdict**:
+   - Re-run quality criteria checks for auto-fixed issues only
+   - Update criterion status: `❌ FAIL → ✅ FIXED (AF-XXX)`
+   - Recalculate: `CRITICAL_COUNT`, `HIGH_COUNT`
+
+3. **Manual Fix Remaining Issues**:
+   - For each issue in `healing_result.remaining`:
+     - Non-auto-fixable (build, test, secrets, error handling): Apply manual fix
+     - Auto-fix failed: Investigate and fix manually
+   - Fix any failing tests or build errors (requires human judgment)
+
+4. **Re-run Self-Review**:
+   - Execute from Step 1 with updated code
+   - Increment iteration counter
+   - Report: `Self-Review Iteration 2/3 (Auto-fixed: {N}, Manual: {M})...`
 
 **IF still FAIL after 3 iterations**:
 ```text
 ❌ Self-Review FAILED after 3 iterations
 
-Remaining issues:
-- SR-IMPL-04: 1 TODO comment in src/api/handler.ts:45
-- SR-IMPL-06: Missing @speckit:AS annotation
+Self-Healing Summary:
+├── Auto-fixes attempted: {total_attempts}
+├── Auto-fixes successful: {successful}
+└── Auto-fixes failed: {failed}
+
+Remaining issues (require human intervention):
+- SR-IMPL-02: Build failure in src/api/handler.ts (non-auto-fixable)
+- SR-IMPL-03: Test failure in tests/auth.test.ts (non-auto-fixable)
 
 ⛔ BLOCKING: Cannot proceed to QA verification.
-   Fix remaining issues or override with user confirmation.
+   These issues require manual code changes.
 
 User: Proceed anyway? (yes/no)
 ```
@@ -998,8 +1159,10 @@ User: Proceed anyway? (yes/no)
 
 Summary:
 - Auto Checks: PASS
-- Quality Criteria: 10/10 passing
-- Iterations: 1
+- Quality Criteria: {passing}/{total} passing
+- Self-Healing: {auto_fixed} issues auto-resolved
+- Iterations: {N}
+- Estimated time saved: ~{minutes} minutes
 
 → Proceeding to QA Verification (/speckit.analyze)
 ```
@@ -1014,41 +1177,61 @@ Generate this report before handoff:
 **Command**: /speckit.implement
 **Reviewed at**: {{TIMESTAMP}}
 **Iteration**: {{N}}/3
+**Self-Healing**: {{ENABLED|DISABLED}}
 
 ### Auto Checks
 | Check | Status | Details |
 |-------|--------|---------|
 | Build | ✅ PASS | npm run build (0 errors) |
-| Lint | ⚠️ WARN | 3 warnings |
+| Lint | ✅ FIXED | 3 warnings → 0 (AF-003 applied) |
 | Test | ✅ PASS | 42/42 passing |
 | TypeCheck | ✅ PASS | tsc --noEmit |
 
 ### Quality Criteria
-| ID | Question | Status |
-|----|----------|--------|
-| SR-IMPL-01 | All P1 tasks complete? | ✅ PASS |
-| SR-IMPL-02 | Build passes? | ✅ PASS |
-| SR-IMPL-03 | Tests pass? | ✅ PASS |
-| SR-IMPL-04 | No TODO/FIXME? | ✅ PASS |
-| SR-IMPL-05 | @speckit:FR annotations? | ✅ PASS |
-| SR-IMPL-06 | @speckit:AS annotations? | ✅ PASS |
-| SR-IMPL-07 | No hardcoded secrets? | ✅ PASS |
-| SR-IMPL-08 | Error handling? | ✅ PASS |
-| SR-IMPL-09 | No debug statements? | ✅ PASS |
-| SR-IMPL-10 | Naming conventions? | ✅ PASS |
-| SR-IMPL-11 | RUNNING.md exists? | ✅ PASS |
-| SR-IMPL-12 | README.md updated? | ✅ PASS |
-| SR-IMPL-13 | .env.example exists? | ✅ PASS |
+| ID | Question | Initial | After Auto-Fix |
+|----|----------|---------|----------------|
+| SR-IMPL-01 | All P1 tasks complete? | ✅ PASS | — |
+| SR-IMPL-02 | Build passes? | ✅ PASS | — |
+| SR-IMPL-03 | Tests pass? | ✅ PASS | — |
+| SR-IMPL-04 | No TODO/FIXME? | ❌ FAIL | ✅ FIXED (AF-002) |
+| SR-IMPL-05 | @speckit:FR annotations? | ❌ FAIL | ✅ FIXED (AF-001) |
+| SR-IMPL-06 | @speckit:AS annotations? | ❌ FAIL | ✅ FIXED (AF-001) |
+| SR-IMPL-07 | No hardcoded secrets? | ✅ PASS | — |
+| SR-IMPL-08 | Error handling? | ✅ PASS | — |
+| SR-IMPL-09 | No debug statements? | ❌ FAIL | ✅ FIXED (AF-005) |
+| SR-IMPL-10 | Naming conventions? | ✅ PASS | — |
+| SR-IMPL-11 | RUNNING.md exists? | ✅ PASS | — |
+| SR-IMPL-12 | README.md updated? | ✅ PASS | — |
+| SR-IMPL-13 | .env.example exists? | ❌ FAIL | ✅ FIXED (AF-004) |
+
+### Self-Healing Summary
+| Rule | Action | Count | Status |
+|------|--------|-------|--------|
+| AF-001 | Insert @speckit annotations | 8 | ✅ Applied |
+| AF-002 | Convert TODOs to issues | 2 | ✅ Applied |
+| AF-003 | Run auto-formatter | 5 files | ✅ Applied |
+| AF-004 | Generate .env.example | 12 vars | ✅ Applied |
+| AF-005 | Remove debug statements | 3 | ✅ Applied |
+
+### Self-Healing Metrics
+| Metric | Value |
+|--------|-------|
+| Issues initially failing | 5 |
+| Issues auto-fixed | 5 |
+| Issues requiring manual fix | 0 |
+| Iterations required | 1 |
+| Estimated time saved | ~15 minutes |
 
 ### Documentation
 | File | Status | Sections |
 |------|--------|----------|
 | RUNNING.md | ✅ Created | Prerequisites, Installation, Running, Testing |
 | README.md | ✅ Updated | Features (+3), Tech Stack, Quick Start |
-| .env.example | ✅ Created | 12 variables |
+| .env.example | ✅ Generated | 12 variables (via AF-004) |
+| .speckit/issues.md | ✅ Created | 2 tracked issues (via AF-002) |
 
 ### Verdict: ✅ PASS
-**Reason**: All criteria met, documentation generated.
+**Reason**: All criteria met (5 via self-healing), documentation generated.
 
 → Proceeding to handoff: /speckit.analyze (QA mode)
 ```

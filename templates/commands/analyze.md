@@ -77,6 +77,59 @@ claude_code:
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
+validation_profiles:
+  spec_validate:
+    description: "Lightweight spec validation for auto-gating before plan"
+    passes: [B, D]
+    gates:
+      constitution_alignment:
+        pass: D
+        threshold: 0
+        severity: CRITICAL
+      ambiguity_count:
+        pass: B
+        threshold: 5
+        severity: HIGH
+    timeout_seconds: 30
+    output_mode: compact
+  plan_validate:
+    description: "Plan consistency validation before task generation"
+    passes: [D, F, V]
+    gates:
+      constitution_alignment:
+        pass: D
+        threshold: 0
+        severity: CRITICAL
+      tech_consistency:
+        pass: F
+        threshold: 0
+        severity: HIGH
+    timeout_seconds: 45
+    output_mode: compact
+  tasks_validate:
+    description: "Task graph validation before implementation"
+    passes: [G, H, J]
+    gates:
+      no_circular_deps:
+        pass: G
+        threshold: 0
+        severity: CRITICAL
+      fr_coverage:
+        pass: H
+        threshold: 0
+        severity: HIGH
+    timeout_seconds: 30
+    output_mode: compact
+  full:
+    description: "Complete pre-implementation analysis"
+    passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q]
+    timeout_seconds: 300
+    output_mode: detailed
+  qa:
+    description: "Post-implementation QA verification"
+    passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q, R, S, T, U, V, W, X, Y]
+    timeout_seconds: 600
+    output_mode: detailed
 ---
 
 ## User Input
@@ -106,6 +159,99 @@ This command MUST run only after `/speckit.tasks` has successfully produced a co
 **STRICTLY READ-ONLY**: Do **not** modify any files. Output a structured analysis report. Offer an optional remediation plan (user must explicitly approve before any follow-up editing commands would be invoked manually).
 
 **Constitution Authority**: The project constitution (`/memory/constitution.md`) is **non-negotiable** within this analysis scope. Constitution conflicts are automatically CRITICAL and require adjustment of the spec, plan, or tasks—not dilution, reinterpretation, or silent ignoring of the principle. If a principle itself needs to change, that must occur in a separate, explicit constitution update outside `/speckit.analyze`.
+
+## Profile-Based Execution
+
+When invoked with `--profile <name>`, analyze runs a lightweight subset of passes optimized for specific validation gates. This enables proactive validation between workflow phases without the overhead of full analysis.
+
+### Profile Detection
+
+Parse `$ARGUMENTS` for profile mode:
+
+```text
+IF $ARGUMENTS contains "--profile <name>":
+  PROFILE_MODE = true
+  ACTIVE_PROFILE = validation_profiles[<name>]
+  IF ACTIVE_PROFILE is undefined:
+    ERROR: "Unknown profile: <name>. Available: spec_validate, plan_validate, tasks_validate, full, qa"
+  ACTIVE_PASSES = ACTIVE_PROFILE.passes
+  OUTPUT_MODE = ACTIVE_PROFILE.output_mode (default: compact)
+  TIMEOUT = ACTIVE_PROFILE.timeout_seconds
+ELSE:
+  PROFILE_MODE = false
+  ACTIVE_PASSES = [A-Y] (all passes)
+  OUTPUT_MODE = detailed
+```
+
+### Profile Execution Flow
+
+When `PROFILE_MODE = true`:
+
+1. **Execute only ACTIVE_PASSES** from the Detection Passes section
+2. **Skip all other passes** not in the profile
+3. **Evaluate gates** defined in ACTIVE_PROFILE.gates:
+
+```text
+FOR EACH gate in ACTIVE_PROFILE.gates:
+  PASS_RESULT = findings from gate.pass
+  ISSUE_COUNT = count(PASS_RESULT where severity >= gate.severity)
+  IF ISSUE_COUNT > gate.threshold:
+    GATE_STATUS[gate.name] = FAIL
+  ELSE:
+    GATE_STATUS[gate.name] = PASS
+```
+
+4. **Generate compact output** (see Profile Output Format below)
+
+### Profile Output Format (Compact)
+
+When `OUTPUT_MODE = compact`, generate a condensed validation summary:
+
+```markdown
+## Validation Profile: {PROFILE_NAME}
+
+| Gate | Pass | Threshold | Actual | Status |
+|------|------|-----------|--------|--------|
+| Constitution Alignment | D | 0 | {count} | {✅/❌} |
+| Ambiguity Count | B | 5 | {count} | {✅/⚠️/❌} |
+
+**Result**: {PASS | FAIL | WARN}
+
+{IF any gates FAIL}
+### Blocking Issues
+
+{List only CRITICAL/HIGH findings from failed gates, max 5}
+
+### Recommended Action
+
+→ Auto-invoking `/speckit.clarify` with {N} extracted questions...
+{OR}
+→ Manual review required. Run `/speckit.clarify` to address ambiguities.
+{ENDIF}
+
+{IF all gates PASS}
+→ Proceeding to next phase
+{ENDIF}
+```
+
+### Available Profiles
+
+| Profile | Passes | Use Case | Timeout |
+|---------|--------|----------|---------|
+| `spec_validate` | B, D | Pre-plan spec validation | 30s |
+| `plan_validate` | D, F, V | Pre-tasks plan validation | 45s |
+| `tasks_validate` | G, H, J | Pre-implement task validation | 30s |
+| `full` | A-Q | Complete pre-implementation analysis | 300s |
+| `qa` | A-Y | Post-implementation QA verification | 600s |
+
+### Profile Flags
+
+| Flag | Effect |
+|------|--------|
+| `--profile <name>` | Run specific validation profile |
+| `--quiet` | Suppress non-essential output (only gates + result) |
+| `--strict` | Lower thresholds (e.g., ambiguity < 3 instead of 5) |
+| `--json` | Output as JSON for programmatic consumption |
 
 ## Execution Steps
 

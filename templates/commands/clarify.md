@@ -1,9 +1,26 @@
 ---
 description: Identify underspecified areas in the current feature spec by asking up to 5 highly targeted clarification questions and encoding answers back into the spec.
-handoffs: 
+handoffs:
   - label: Build Technical Plan
     agent: speckit.plan
     prompt: Create a plan for the spec. I am building with...
+auto_invocation:
+  enabled: true
+  triggers:
+    - source: speckit.analyze
+      profile: spec_validate
+      gates:
+        - ambiguity_count
+        - constitution_alignment
+      inject: extracted_questions
+    - source: speckit.specify
+      trigger: pre_handoff_action_failure
+      inject: extracted_questions_from_validation
+  behavior:
+    skip_coverage_scan: true
+    use_injected_questions: true
+    max_questions: 5
+    post_clarification: re_validate
 scripts:
    sh: scripts/bash/check-prerequisites.sh --json --paths-only
    ps: scripts/powershell/check-prerequisites.ps1 -Json -PathsOnly
@@ -303,4 +320,134 @@ After passing self-review, output:
 ### Ready for Planning
 
 Spec clarification complete. Suggest: `/speckit.plan`
+```
+
+## Auto-Invocation Handling
+
+When `/speckit.clarify` is automatically invoked by a validation gate failure, it operates in a streamlined mode that uses pre-extracted questions instead of performing a full coverage scan.
+
+### Detection
+
+Parse `$ARGUMENTS` for auto-invocation context:
+
+```text
+IF $ARGUMENTS contains "--from-validation":
+  AUTO_INVOKED = true
+  VALIDATION_SOURCE = extract source command (e.g., "speckit.specify")
+  INJECTED_QUESTIONS = parse injected question payload
+  SKIP_COVERAGE_SCAN = true
+ELSE:
+  AUTO_INVOKED = false
+  Run normal clarification workflow
+```
+
+### Auto-Invocation Flow
+
+When `AUTO_INVOKED = true`:
+
+```text
+1. Parse injected questions from validation context:
+   - Constitution violations (Pass D) → Convert to design questions
+   - Ambiguities (Pass B) → Convert to clarification questions
+
+2. Skip Steps 2-3 (coverage scan + question generation)
+   - Use INJECTED_QUESTIONS directly as the question queue
+
+3. Present validation context to user:
+   ---
+   ## Auto-Clarification Triggered
+
+   Spec validation detected issues requiring clarification before planning.
+
+   **Source**: {VALIDATION_SOURCE}
+   **Reason**: {gate failures}
+   **Questions**: {N} extracted from validation
+
+   Proceeding with targeted clarification...
+   ---
+
+4. Execute sequential questioning loop (Step 4) with injected questions
+
+5. After all questions answered, trigger re-validation:
+   - Invoke: /speckit.analyze --profile spec_validate --quiet
+   - If gates pass → Resume handoff to /speckit.plan
+   - If gates fail → Report remaining issues (max 3 iterations)
+```
+
+### Question Conversion
+
+Convert validation findings to clarification questions:
+
+**Constitution Violations (Pass D)**:
+
+```text
+Finding: "FR-003 conflicts with principle 'No External Dependencies'"
+→ Question: "FR-003 references cloud sync. How should this work within the 'No External Dependencies' principle?"
+   Options:
+   A) Make cloud sync optional with explicit user opt-in
+   B) Replace with local-only storage
+   C) Document as approved exception to constitution
+   D) Remove the feature entirely
+```
+
+**Ambiguities (Pass B)**:
+
+```text
+Finding: "Vague adjective 'fast response' in FR-005 lacks measurable criteria"
+→ Question: "What is the acceptable response time for FR-005?"
+   Options:
+   A) < 100ms (real-time feel)
+   B) < 500ms (quick)
+   C) < 2000ms (acceptable)
+   D) [Short answer: specify target]
+```
+
+### Post-Clarification Validation
+
+After clarification completes, automatically re-run validation:
+
+```text
+1. Clarify completes with all questions answered
+2. Invoke: /speckit.analyze --profile spec_validate --quiet
+3. Check gate results:
+
+IF all gates PASS:
+  ## Validation Passed ✓
+
+  Clarifications resolved all blocking issues.
+  → Resuming handoff to /speckit.plan
+
+IF any gates FAIL AND iteration < 3:
+  ## Validation Still Failing
+
+  {N} issues remain after clarification.
+
+  | Gate | Threshold | Actual | Status |
+  |------|-----------|--------|--------|
+  | Constitution | 0 | 1 | ❌ |
+
+  Extracting additional questions...
+  → Re-invoking clarification (iteration {M}/3)
+
+IF gates FAIL after 3 iterations:
+  ## Validation Blocked - Manual Intervention Required
+
+  Unable to resolve all issues through clarification.
+  Remaining problems:
+  1. {issue description}
+  2. {issue description}
+
+  Please review spec.md manually and re-run /speckit.specify or /speckit.clarify.
+```
+
+### Bypass Auto-Invocation
+
+To skip auto-invocation behavior:
+
+```bash
+# Disable auto-invocation for this session
+/speckit.clarify --no-auto
+
+# Force full coverage scan even when auto-invoked
+/speckit.clarify --from-validation --full-scan
 ```

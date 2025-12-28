@@ -26,6 +26,28 @@ handoffs:
       - "tasks.md generated with valid task structure"
       - "At least one P1 task defined"
       - "No circular dependencies detected"
+    pre_handoff_action:
+      name: "Tasks Validation"
+      invoke: speckit.analyze
+      args: "--profile tasks_validate --quiet"
+      skip_flag: "--skip-validate"
+      timeout: 30s
+      gates:
+        - name: "Circular Dependencies Gate"
+          pass: G
+          threshold: 0
+          severity: CRITICAL
+          block_if: "circular dependencies > 0"
+          message: "Circular task dependencies detected. Fix before implementation."
+        - name: "FR Coverage Gate"
+          pass: H
+          threshold: 0
+          severity: HIGH
+          block_if: "FRs without tasks > 0"
+          message: "Some requirements have no implementation tasks."
+      on_failure:
+        action: block
+        message: "Tasks validation failed. Review dependency graph and traceability."
     gates:
       - name: "Tasks Ready Gate"
         check: "All P1 tasks have file paths and dependencies defined"
