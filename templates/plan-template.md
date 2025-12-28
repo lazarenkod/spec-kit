@@ -75,6 +75,32 @@
 |----|-----------|---------|------|------------------------|
 | FW-001 | [name] | [version] | [docs URL] | [list major breaking changes] |
 
+#### Infrastructure Dependencies (INFRA-xxx)
+
+<!--
+  Infrastructure requirements from spec.md Infrastructure Requirements section.
+  These define cloud resources needed for deployment.
+  Referenced by /speckit.ship for provisioning via Terraform.
+
+  Types: database, cache, queue, storage, compute, network, secret
+  Provisioned by: provision.sh using infra.yaml configuration
+-->
+
+| ID | Type | Service | Config | Environments | Status |
+|----|------|---------|--------|--------------|--------|
+| INFRA-001 | database | [e.g., PostgreSQL 16] | [size/config] | [staging, production] | [Existing/New] |
+| INFRA-002 | cache | [e.g., Redis 7] | [size/config] | [all] | [Existing/New] |
+
+**Provisioning Strategy**:
+- `Existing`: Infrastructure already exists in environment, reuse
+- `New`: Must be provisioned by /speckit.ship before deployment
+- Infrastructure is shared across features in the same environment
+
+**Generated Artifacts**:
+- `infra.yaml` - Terraform configuration for provisioning
+- `deploy.yaml` - Helm/docker-compose configuration for deployment
+- `verify.yaml` - Health check and acceptance test configuration
+
 ### API Method Reference
 
 <!--

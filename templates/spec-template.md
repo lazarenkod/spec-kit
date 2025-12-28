@@ -300,6 +300,91 @@
 |------------|-------------|---------------|----------------|
 | [old method/API] | [new method/API] | [version] | [migration URL] |
 
+## Infrastructure Requirements *(for features requiring infrastructure)*
+
+<!--
+  INCLUDE THIS SECTION when the feature requires cloud infrastructure beyond
+  what exists in the current deployment. This enables /speckit.ship to
+  provision and deploy the feature autonomously.
+
+  Infrastructure is tied to ENVIRONMENTS, not features - meaning multiple
+  features share the same database, cache, etc. in a given environment.
+
+  Skip this section for:
+  - Features that work with existing infrastructure
+  - Frontend-only features
+  - CLI tools that run locally
+
+  Run /speckit.ship to provision, deploy, and verify the feature.
+-->
+
+### Required Services
+
+<!--
+  List all infrastructure services needed for this feature.
+  These will be translated to infra.yaml and provisioned via Terraform.
+
+  Types: database, cache, queue, storage, compute, network, secret
+  Config should specify requirements without implementation details.
+-->
+
+| ID | Type | Service | Config | Environments | Notes |
+|----|------|---------|--------|--------------|-------|
+| INFRA-001 | database | PostgreSQL 16 | 2vCPU, 4GB RAM, 50GB SSD | staging, production | Primary data store |
+| INFRA-002 | cache | Redis 7 | 1GB, single node | all | Session/cache storage |
+| INFRA-003 | storage | S3-compatible | 10GB, versioned | all | File uploads |
+
+### Environment Configuration
+
+<!--
+  Define environment-specific variations.
+  Local environment uses docker-compose; staging/production use Terraform.
+-->
+
+**Local (docker-compose)**:
+- All services run as containers
+- Data persists in Docker volumes
+- No external network access required
+
+**Staging**:
+- Uses managed cloud services
+- Feature isolation via namespaces
+- Shared database with feature-specific schemas
+
+**Production**:
+- High-availability configuration
+- Multi-AZ deployment where applicable
+- Automated backups enabled
+
+### Connection Requirements
+
+<!--
+  Document how the application connects to infrastructure.
+  These become environment variables in deploy.yaml.
+-->
+
+| Environment Variable | Source | Example |
+|---------------------|--------|---------|
+| DATABASE_URL | INFRA-001 | `postgres://user:pass@host:5432/db` |
+| REDIS_URL | INFRA-002 | `redis://host:6379` |
+| S3_ENDPOINT | INFRA-003 | `https://s3.cloud.example.com` |
+| S3_BUCKET | INFRA-003 | `feature-uploads` |
+
+### Verification Endpoints
+
+<!--
+  Define health check endpoints for /speckit.ship verification.
+  These are used by verify.yaml to confirm successful deployment.
+-->
+
+| Endpoint | Expected Status | Purpose |
+|----------|-----------------|---------|
+| `/health` | 200 | Basic application health |
+| `/ready` | 200 | Dependencies connected |
+| `/api/v1` | 200 | API is responding |
+
+---
+
 ## Cross-Repository Dependencies *(for multi-repo workspaces)*
 
 <!--

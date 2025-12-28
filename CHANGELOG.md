@@ -7,6 +7,93 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.36] - 2025-12-27
+
+### Added
+
+- **Autonomous Infrastructure & Deployment: `/speckit.ship`** — Full pipeline from spec to running system
+  - New slash command with provision → deploy → verify workflow
+  - Supports `--env local|staging|production`, `--only infra|deploy|verify`, `--destroy`, `--dry-run`
+  - Multi-cloud support: VK Cloud, Yandex Cloud, Google Cloud Platform
+  - Idempotent provisioning with Terraform drift detection
+  - State management in `.speckit/state/{env}/` prevents infrastructure recreation
+
+- **New Templates**:
+  - `templates/infra-template.yaml` — Infrastructure specification (Terraform config)
+  - `templates/deploy-template.yaml` — Deployment specification (Helm/docker-compose)
+  - `templates/verify-template.yaml` — Verification specification (tests + security scans)
+  - `templates/commands/ship.md` — Slash command definition for AI agents
+
+- **New Deployment Scripts** (`scripts/bash/`):
+  - `ship.sh` — Main orchestrator (provision → deploy → verify)
+  - `provision.sh` — Terraform wrapper with drift detection and S3 backend
+  - `deploy.sh` — Helm/docker-compose deployment with namespace management
+  - `verify.sh` — Health checks, acceptance tests, and results generation
+
+- **Infrastructure Requirements section in `spec-template.md`**:
+  - Required Services table (INFRA-xxx IDs)
+  - Environment Configuration (local/staging/production)
+  - Connection Requirements (environment variables)
+  - Verification Endpoints (health checks)
+
+- **INFRA-xxx dependency type in `plan-template.md`**:
+  - Infrastructure Dependencies table in Dependency Registry
+  - Provisioning Strategy (Existing/New)
+  - Generated Artifacts reference (infra.yaml, deploy.yaml, verify.yaml)
+
+- **Verification Feedback Loop**:
+  - `verify-results.md` generated after deployment
+  - Automatic update of `spec.md` with verification status
+  - Traceability: AS-xxx acceptance scenarios → verify.yaml → results
+
+---
+
+## [0.0.35] - 2025-12-26
+
+### Added
+
+- **Multi-Repository Workspace Support**
+  - Cross-repository feature dependencies via `specify workspace` commands
+  - Repository aliases for referencing features across repos (e.g., `api:002-payment-api`)
+  - Dependency types: REQUIRES, BLOCKS, EXTENDS, IMPLEMENTS, USES
+  - Cross-Repository Dependencies section in spec-template.md
+
+- **Agent Skills Enhancement**
+  - Improved skill definitions and handoff mechanisms
+  - Better context preservation between agent phases
+
+---
+
+## [0.0.34] - 2025-12-25
+
+### Added
+
+- **Language Setting for Generated Artifacts**
+  - All generated artifacts (specs, plans, tasks) now support configurable language
+  - Consistent language across the entire workflow
+
+- **Inline Agents Support**
+  - Agents can be defined inline within commands
+  - Reduces need for separate persona files for simple agents
+
+- **User Experience Quality (UXQ) Domain**
+  - New domain extension for UX-focused projects
+  - 10 UXQ principles (Jobs to Be Done, Friction Justification, Delight Moments, etc.)
+  - UXQ section in spec-template.md with:
+    - Jobs to Be Done table
+    - User Mental Model documentation
+    - First-Time User Experience (FTUE) section
+    - Friction Points table with justification requirements
+    - Delight Opportunities table
+    - Emotional Journey mapping
+    - Accessibility as Empowerment section
+
+- **Self-Testing Capabilities**
+  - Enhanced automated test generation and validation
+  - Better integration with test frameworks
+
+---
+
 ## [0.0.33] - 2025-12-24
 
 ### Added

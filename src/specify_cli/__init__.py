@@ -658,12 +658,15 @@ def select_with_arrows(options: dict, prompt_text: str = "Select an option", def
 console = Console()
 
 class BannerGroup(TyperGroup):
-    """Custom group that shows banner before help."""
+    """Custom group that shows banner before help and workflow after."""
 
     def format_help(self, ctx, formatter):
         # Show banner before help
         show_banner()
         super().format_help(ctx, formatter)
+        # Show workflow after help (compact version)
+        console.print()
+        show_workflow(compact=True)
 
 
 app = typer.Typer(
@@ -687,6 +690,102 @@ def show_banner():
     console.print(Align.center(styled_banner))
     console.print(Align.center(Text(TAGLINE, style="italic bright_yellow")))
     console.print()
+
+
+def show_workflow(compact: bool = False):
+    """Display available commands and recommended workflow.
+
+    Args:
+        compact: If True, show a more compact version for --help
+    """
+    # Core Workflow Commands
+    core_table = Table(show_header=True, header_style="bold cyan", box=None, padding=(0, 2))
+    core_table.add_column("Command", style="cyan", no_wrap=True)
+    core_table.add_column("Description")
+
+    core_commands = [
+        ("/speckit.constitution", "Define project principles and constraints"),
+        ("/speckit.specify", "Create a feature specification (what & why)"),
+        ("/speckit.clarify", "Resolve ambiguities in the specification"),
+        ("/speckit.plan", "Create technical implementation plan"),
+        ("/speckit.tasks", "Generate actionable task breakdown"),
+        ("/speckit.implement", "Execute the implementation"),
+    ]
+
+    for cmd, desc in core_commands:
+        core_table.add_row(cmd, desc)
+
+    console.print(Panel(core_table, title="[bold]Core Workflow[/bold]", border_style="cyan", padding=(1, 2)))
+
+    if not compact:
+        # Workflow Diagram
+        workflow_text = """
+[dim]Recommended order:[/dim]
+
+  [cyan]1. CONSTITUTION[/cyan]  →  Define project rules & principles
+        ↓
+  [cyan]2. SPECIFY[/cyan]      →  Describe what you want (not how)
+        ↓
+  [cyan]3. CLARIFY[/cyan]       →  Resolve any ambiguities
+        ↓
+  [cyan]4. PLAN[/cyan]          →  Define tech stack & architecture
+        ↓
+  [cyan]5. TASKS[/cyan]         →  Break down into actionable items
+        ↓
+  [cyan]6. IMPLEMENT[/cyan]     →  Let the AI build it
+"""
+        console.print(Panel(workflow_text.strip(), title="[bold]Workflow[/bold]", border_style="green", padding=(1, 2)))
+
+    # Extended Commands
+    extended_table = Table(show_header=True, header_style="bold", box=None, padding=(0, 2))
+    extended_table.add_column("Command", style="cyan", no_wrap=True)
+    extended_table.add_column("Description")
+    extended_table.add_column("When to Use", style="dim")
+
+    extended_commands = [
+        ("/speckit.concept", "Capture complete service concept", "Large projects (50+ requirements)"),
+        ("/speckit.design", "Create visual specs & design system", "UI-heavy features"),
+        ("/speckit.baseline", "Capture current system state", "Brownfield projects"),
+        ("/speckit.analyze", "Cross-artifact consistency check", "Before implementation"),
+        ("/speckit.checklist", "Validate spec completeness", "After planning"),
+    ]
+
+    for cmd, desc, when in extended_commands:
+        extended_table.add_row(cmd, desc, when)
+
+    console.print(Panel(extended_table, title="[bold]Extended Commands[/bold]", border_style="yellow", padding=(1, 2)))
+
+    # Feature Management
+    mgmt_table = Table(show_header=True, header_style="bold", box=None, padding=(0, 2))
+    mgmt_table.add_column("Command", style="cyan", no_wrap=True)
+    mgmt_table.add_column("Description")
+
+    mgmt_commands = [
+        ("/speckit.list", "List all specifications in the project"),
+        ("/speckit.switch", "Switch to a different specification"),
+        ("/speckit.extend", "Extend a merged feature with new capabilities"),
+        ("/speckit.merge", "Finalize feature after PR merge"),
+        ("/speckit.taskstoissues", "Convert tasks into GitHub issues"),
+    ]
+
+    for cmd, desc in mgmt_commands:
+        mgmt_table.add_row(cmd, desc)
+
+    console.print(Panel(mgmt_table, title="[bold]Feature Management[/bold]", border_style="magenta", padding=(1, 2)))
+
+    # Infrastructure & Deployment
+    infra_table = Table(show_header=True, header_style="bold", box=None, padding=(0, 2))
+    infra_table.add_column("Command", style="cyan", no_wrap=True)
+    infra_table.add_column("Description")
+
+    infra_commands = [
+        ("/speckit.ship", "Provision infrastructure, deploy, and verify"),
+    ]
+
+    for cmd, desc in infra_commands:
+        infra_table.add_row(cmd, desc)
+
+    console.print(Panel(infra_table, title="[bold]Infrastructure & Deployment[/bold]", border_style="blue", padding=(1, 2)))
 
 @app.callback()
 def callback(ctx: typer.Context):
@@ -1492,12 +1591,13 @@ def init(
         console.print()
         console.print(security_notice)
 
-    steps_lines = []
+    # Quick start instructions
+    quick_start_lines = []
     if not here:
-        steps_lines.append(f"1. Go to the project folder: [cyan]cd {project_name}[/cyan]")
+        quick_start_lines.append(f"[bold]1.[/bold] Go to the project folder: [cyan]cd {project_name}[/cyan]")
         step_num = 2
     else:
-        steps_lines.append("1. You're already in the project directory!")
+        quick_start_lines.append("[bold]1.[/bold] You're already in the project directory!")
         step_num = 2
 
     # Add Codex-specific setup step if needed
@@ -1508,32 +1608,19 @@ def init(
             cmd = f"setx CODEX_HOME {quoted_path}"
         else:  # Unix-like systems
             cmd = f"export CODEX_HOME={quoted_path}"
-        
-        steps_lines.append(f"{step_num}. Set [cyan]CODEX_HOME[/cyan] environment variable before running Codex: [cyan]{cmd}[/cyan]")
+
+        quick_start_lines.append(f"[bold]{step_num}.[/bold] Set [cyan]CODEX_HOME[/cyan] environment variable: [cyan]{cmd}[/cyan]")
         step_num += 1
 
-    steps_lines.append(f"{step_num}. Start using slash commands with your AI agent:")
+    quick_start_lines.append(f"[bold]{step_num}.[/bold] Start using slash commands with your AI agent")
 
-    steps_lines.append("   2.1 [cyan]/speckit.constitution[/] - Establish project principles")
-    steps_lines.append("   2.2 [cyan]/speckit.specify[/] - Create baseline specification")
-    steps_lines.append("   2.3 [cyan]/speckit.plan[/] - Create implementation plan")
-    steps_lines.append("   2.4 [cyan]/speckit.tasks[/] - Generate actionable tasks")
-    steps_lines.append("   2.5 [cyan]/speckit.implement[/] - Execute implementation")
-
-    steps_panel = Panel("\n".join(steps_lines), title="Next Steps", border_style="cyan", padding=(1,2))
+    quick_start_panel = Panel("\n".join(quick_start_lines), title="[bold]Quick Start[/bold]", border_style="green", padding=(1, 2))
     console.print()
-    console.print(steps_panel)
+    console.print(quick_start_panel)
 
-    enhancement_lines = [
-        "Optional commands that you can use for your specs [bright_black](improve quality & confidence)[/bright_black]",
-        "",
-        f"○ [cyan]/speckit.clarify[/] [bright_black](optional)[/bright_black] - Ask structured questions to de-risk ambiguous areas before planning (run before [cyan]/speckit.plan[/] if used)",
-        f"○ [cyan]/speckit.analyze[/] [bright_black](optional)[/bright_black] - Cross-artifact consistency & alignment report (after [cyan]/speckit.tasks[/], before [cyan]/speckit.implement[/])",
-        f"○ [cyan]/speckit.checklist[/] [bright_black](optional)[/bright_black] - Generate quality checklists to validate requirements completeness, clarity, and consistency (after [cyan]/speckit.plan[/])"
-    ]
-    enhancements_panel = Panel("\n".join(enhancement_lines), title="Enhancement Commands", border_style="cyan", padding=(1,2))
+    # Show full workflow with all available commands
     console.print()
-    console.print(enhancements_panel)
+    show_workflow()
 
 @app.command()
 def check():
@@ -1739,11 +1826,24 @@ def workspace_create(
         console.print()
         console.print(f"[dim]Link strategy:[/dim] {resolved_strategy}" +
                       (" (auto-detected)" if link_strategy == LINK_STRATEGY_AUTO else ""))
+
+        # Quick start for workspace
+        workspace_steps = [
+            "[bold]1.[/bold] Add repositories to your workspace:",
+            "   [cyan]specify workspace add ./repo-path --alias myrepo --role backend[/cyan]",
+            "",
+            "[bold]2.[/bold] List and verify repositories:",
+            "   [cyan]specify workspace list[/cyan]",
+            "",
+            "[bold]3.[/bold] Initialize spec-driven development in each repository:",
+            "   [cyan]cd ./repo-path && specify init --here --ai <agent>[/cyan]",
+        ]
         console.print()
-        console.print("[bold]Next steps:[/bold]")
-        console.print("  specify workspace add ./repo-path --alias myrepo --role backend")
-        console.print("  specify workspace list")
+        console.print(Panel("\n".join(workspace_steps), title="[bold]Quick Start[/bold]", border_style="green", padding=(1, 2)))
+
+        # Show full workflow with all available commands
         console.print()
+        show_workflow()
 
     except Exception as e:
         console.print(f"[red]Error creating workspace:[/red] {e}")

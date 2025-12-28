@@ -1,0 +1,395 @@
+# Verification Specification Template
+# Links acceptance scenarios (AS-xxx) from spec.md to actual tests
+# Used by /speckit.ship for post-deployment verification
+
+apiVersion: speckit.dev/v1
+kind: VerificationSpec
+
+metadata:
+  # Feature identification
+  feature: "{{FEATURE_ID}}"           # e.g., "001-user-auth"
+  version: "1.0.0"
+  created: "{{TIMESTAMP}}"
+  updated: "{{TIMESTAMP}}"
+
+  # Traceability to spec.md
+  spec_ref: "spec.md#acceptance-scenarios"
+
+# =============================================================================
+# VERIFICATION CONFIGURATION
+# =============================================================================
+config:
+  # Base URL patterns per environment
+  base_urls:
+    local: "http://localhost:8080"
+    staging: "https://{{FEATURE_SLUG}}.staging.{{DOMAIN}}"
+    production: "https://app.{{DOMAIN}}"
+
+  # Global timeouts
+  timeouts:
+    smoke: 10s
+    acceptance: 60s
+    security: 300s
+    performance: 600s
+
+  # Retry configuration
+  retries:
+    count: 3
+    delay: 5s
+    backoff: exponential
+
+  # Parallelization
+  parallel:
+    smoke: true                       # Run smoke tests in parallel
+    acceptance: false                 # Run acceptance tests sequentially
+    security: true
+    performance: false                # Performance tests need isolation
+
+# =============================================================================
+# SMOKE TESTS (Always run first)
+# =============================================================================
+checks:
+  smoke:
+    description: "Quick health checks to verify basic functionality"
+    required: true                    # Block on failure
+    timeout: 30s
+
+    tests:
+      # Health endpoint
+      - name: api-health
+        type: http
+        description: "Verify API health endpoint responds"
+        request:
+          method: GET
+          url: "{{BASE_URL}}/health"
+          headers:
+            Accept: application/json
+        expect:
+          status: 200
+          body:
+            json:
+              status: ok
+          latency_max: 500ms
+
+      # Readiness endpoint
+      - name: api-ready
+        type: http
+        description: "Verify API readiness (database connected)"
+        request:
+          method: GET
+          url: "{{BASE_URL}}/ready"
+        expect:
+          status: 200
+          body:
+            json:
+              database: connected
+              cache: connected
+
+      # Static assets (if applicable)
+      # - name: static-assets
+      #   type: http
+      #   request:
+      #     method: HEAD
+      #     url: "{{BASE_URL}}/static/main.js"
+      #   expect:
+      #     status: 200
+      #     headers:
+      #       cache-control: "public, max-age=31536000"
+
+# =============================================================================
+# ACCEPTANCE TESTS (Linked to AS-xxx from spec.md)
+# =============================================================================
+  acceptance:
+    description: "Verify acceptance scenarios from specification"
+    required: true
+    timeout: 300s
+
+    tests:
+      # Example: AS-1A from spec.md
+      - name: user-can-register
+        ref: AS-1A                    # Links to spec.md acceptance scenario
+        type: api                     # api | playwright | cypress | manual
+        description: "User can register with valid email and password"
+        priority: P1
+
+        # API test configuration
+        request:
+          method: POST
+          url: "{{BASE_URL}}/api/v1/auth/register"
+          headers:
+            Content-Type: application/json
+          body:
+            email: "test-{{TIMESTAMP}}@example.com"
+            password: "SecureP@ss123"
+            name: "Test User"
+        expect:
+          status: 201
+          body:
+            json:
+              success: true
+              user:
+                email: "test-{{TIMESTAMP}}@example.com"
+          latency_max: 1000ms
+
+      # Example: AS-1B - E2E test with Playwright
+      - name: user-can-login
+        ref: AS-1B
+        type: playwright
+        description: "User can login with valid credentials"
+        priority: P1
+
+        # Playwright test configuration
+        script: tests/e2e/auth/login.spec.ts
+        # Or inline steps:
+        # steps:
+        #   - goto: "{{BASE_URL}}/login"
+        #   - fill: { selector: "#email", value: "test@example.com" }
+        #   - fill: { selector: "#password", value: "password123" }
+        #   - click: { selector: "button[type=submit]" }
+        #   - expect: { url: "{{BASE_URL}}/dashboard" }
+
+        environment:
+          PLAYWRIGHT_BASE_URL: "{{BASE_URL}}"
+
+      # Example: AS-2A - API test
+      - name: user-can-view-profile
+        ref: AS-2A
+        type: api
+        description: "Authenticated user can view their profile"
+        priority: P2
+        # Depends on previous test for auth token
+        depends_on: [user-can-login]
+
+        # Use token from previous test
+        request:
+          method: GET
+          url: "{{BASE_URL}}/api/v1/users/me"
+          headers:
+            Authorization: "Bearer {{AUTH_TOKEN}}"
+        expect:
+          status: 200
+          body:
+            json:
+              email: "test@example.com"
+
+      # Example: Edge case EC-001
+      - name: invalid-email-rejected
+        ref: EC-001
+        type: api
+        description: "Registration fails with invalid email format"
+        priority: P2
+
+        request:
+          method: POST
+          url: "{{BASE_URL}}/api/v1/auth/register"
+          headers:
+            Content-Type: application/json
+          body:
+            email: "not-an-email"
+            password: "SecureP@ss123"
+        expect:
+          status: 400
+          body:
+            json:
+              error:
+                code: VALIDATION_ERROR
+                field: email
+
+      # Manual verification (when automation not possible)
+      # - name: email-received
+      #   ref: AS-1C
+      #   type: manual
+      #   description: "User receives welcome email after registration"
+      #   priority: P2
+      #   instructions: |
+      #     1. Check inbox of test-{{TIMESTAMP}}@example.com
+      #     2. Verify welcome email was received
+      #     3. Confirm email contains activation link
+      #   timeout: 300s  # Give human time to verify
+
+# =============================================================================
+# SECURITY TESTS
+# =============================================================================
+  security:
+    description: "Security vulnerability scans"
+    required: false                   # Warning only, don't block
+    timeout: 600s
+    environments: [staging, production]  # Skip in local
+
+    tests:
+      # OWASP ZAP baseline scan
+      - name: owasp-zap-baseline
+        type: dast                    # Dynamic Application Security Testing
+        tool: zap
+        description: "OWASP ZAP baseline security scan"
+
+        config:
+          target: "{{BASE_URL}}"
+          scan_type: baseline         # baseline | full
+          ajax_spider: true
+          # Ignore certain alerts
+          ignore_alerts:
+            - 10096  # Timestamp disclosure
+            - 10055  # CSP header missing (if intentional)
+          # Authentication (if needed)
+          # auth:
+          #   login_url: "{{BASE_URL}}/login"
+          #   username_field: email
+          #   password_field: password
+          #   username: "{{TEST_USER}}"
+          #   password: "{{TEST_PASSWORD}}"
+
+        expect:
+          max_high: 0                 # No high severity findings
+          max_medium: 5               # Allow some medium findings
+          # Generate report
+          report:
+            format: html
+            path: .speckit/reports/zap-report.html
+
+      # Dependency vulnerability check
+      - name: dependency-check
+        type: sca                     # Software Composition Analysis
+        tool: trivy
+        description: "Check for vulnerable dependencies"
+
+        config:
+          scan_type: fs               # Filesystem scan
+          path: .
+          severity: HIGH,CRITICAL
+          ignore_unfixed: true
+
+        expect:
+          max_critical: 0
+          max_high: 0
+
+      # Secret detection
+      - name: secret-scan
+        type: secret
+        tool: gitleaks
+        description: "Scan for hardcoded secrets"
+
+        config:
+          path: .
+          # Ignore test files
+          exclude:
+            - "**/*_test.go"
+            - "**/test_*.py"
+            - "**/*.spec.ts"
+
+        expect:
+          findings: 0
+
+# =============================================================================
+# PERFORMANCE TESTS
+# =============================================================================
+  performance:
+    description: "Load and performance testing"
+    required: false
+    timeout: 900s
+    environments: [staging]           # Only run in staging
+
+    tests:
+      # K6 load test
+      - name: api-load-test
+        type: load
+        tool: k6
+        description: "API load test with ramping VUs"
+
+        config:
+          script: tests/load/api.js
+          # Or inline options:
+          options:
+            stages:
+              - duration: 30s
+                target: 10            # Ramp up to 10 VUs
+              - duration: 60s
+                target: 50            # Ramp up to 50 VUs
+              - duration: 30s
+                target: 0             # Ramp down
+
+          environment:
+            K6_BASE_URL: "{{BASE_URL}}"
+
+        # Performance thresholds
+        thresholds:
+          http_req_duration:
+            p50: 100ms
+            p95: 200ms
+            p99: 500ms
+          http_req_failed:
+            rate: 0.01                # <1% error rate
+          http_reqs:
+            rate: 100                 # At least 100 RPS
+
+        expect:
+          all_thresholds_passed: true
+
+      # Lighthouse performance (for web apps)
+      # - name: lighthouse-performance
+      #   type: lighthouse
+      #   description: "Web performance audit"
+      #   config:
+      #     url: "{{BASE_URL}}"
+      #     preset: desktop
+      #   thresholds:
+      #     performance: 90
+      #     accessibility: 95
+      #     best-practices: 90
+      #     seo: 90
+
+# =============================================================================
+# OUTPUT CONFIGURATION
+# =============================================================================
+output:
+  # Results file
+  results_file: verify-results.md
+  results_json: .speckit/state/{{ENV}}/last-verify.json
+
+  # Report format
+  format: |
+    # Verification Results
+
+    **Environment**: {{ENV}}
+    **Timestamp**: {{TIMESTAMP}}
+    **Git SHA**: {{GIT_SHA}}
+    **Base URL**: {{BASE_URL}}
+
+    ## Summary
+
+    | Category | Total | Passed | Failed | Skipped |
+    |----------|-------|--------|--------|---------|
+    {{#each categories}}
+    | {{name}} | {{total}} | {{passed}} | {{failed}} | {{skipped}} |
+    {{/each}}
+
+    **Verdict**: {{verdict}}
+
+    ## Detailed Results
+
+    | Ref | Name | Status | Duration | Error |
+    |-----|------|--------|----------|-------|
+    {{#each results}}
+    | {{ref}} | {{name}} | {{status}} | {{duration}} | {{error}} |
+    {{/each}}
+
+    {{#if failed_tests}}
+    ## Failed Tests
+
+    {{#each failed_tests}}
+    ### {{ref}}: {{name}}
+
+    **Error**: {{error}}
+    **Duration**: {{duration}}
+    **Suggested Action**: {{suggestion}}
+
+    {{/each}}
+    {{/if}}
+
+  # Update spec.md with results
+  update_spec: true
+  spec_update_format: |
+    **Verification Status**: {{status}} ({{ENV}}, {{TIMESTAMP}})
+    {{#if error}}
+    **Last Error**: {{error}}
+    {{/if}}
