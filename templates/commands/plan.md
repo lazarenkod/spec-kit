@@ -58,11 +58,22 @@ claude_code:
   reasoning_mode: extended
   thinking_budget: 8000
   plan_mode_trigger: true
+  orchestration:
+    max_parallel: 2
+    role_isolation: false
   subagents:
     - role: architecture-specialist
+      role_group: REVIEW
+      parallel: true
+      depends_on: []
+      priority: 8
       trigger: "when evaluating technology choices or designing system structure"
       prompt: "Analyze architecture options for {REQUIREMENT}: trade-offs, patterns, recommendations"
     - role: design-researcher
+      role_group: REVIEW
+      parallel: true
+      depends_on: []
+      priority: 7
       trigger: "when planning UI features requiring design system decisions"
       prompt: "Research design system approaches for {UI_FEATURE}"
 scripts:

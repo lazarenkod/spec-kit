@@ -108,3 +108,21 @@ The toolkit implements a workflow where AI agents use slash commands:
 7. `/speckit.implement` - Execute implementation
 
 Templates in `templates/commands/` define these slash command behaviors.
+
+## Post-Implementation Workflow
+
+After completing any feature or significant change, ALWAYS:
+
+1. **Update CHANGELOG.md**:
+   - Determine current version from top entry
+   - If today's date differs from latest entry → create new version (increment patch)
+   - If same date → append to existing entry
+   - Format: `## [X.Y.Z] - YYYY-MM-DD` with `### Added/Changed/Fixed` subsections
+
+2. **Version bump** (if CLI code changed):
+   - Update `pyproject.toml` → `project.version`
+   - Keep in sync with CHANGELOG version
+
+3. **Summary**: Report completed changes to user
+
+This ensures traceability and prevents changelog updates from being forgotten.

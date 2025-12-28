@@ -7,6 +7,69 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.38] - 2025-12-28
+
+### Added
+
+- **Proactive Validation Pipeline** — Auto-validation gates before phase transitions
+  - `pre_handoff_action` in `/speckit.specify` and `/speckit.plan` command templates
+  - Constitution Alignment Gate (Pass D): blocks on any constitution violations
+  - Ambiguity Gate (Pass B): warns if >5 ambiguous findings
+  - Tech Consistency Gate (Pass F): blocks on terminology inconsistencies
+  - Auto-invokes `/speckit.clarify` with extracted questions on gate failures
+  - Compact validation output format for quick scanning
+
+- **Self-Healing Implementation Loop** — Auto-fix common issues during self-review
+  - `auto_fix_rules` section in `/speckit.implement` template
+  - 5 auto-fix rules:
+    - AF-001: Missing @speckit annotations → insert from task markers
+    - AF-002: TODO/FIXME/HACK comments → convert to `.speckit/issues.md`
+    - AF-003: Lint warnings → run project auto-formatter (eslint/prettier/black/gofmt)
+    - AF-004: Missing .env.example → generate from code scanning
+    - AF-005: Debug statements → remove console.log/print
+  - Max 3 auto-fix iterations before human escalation
+  - Skip with `--no-auto-fix` flag
+
+- **Post-Implementation Workflow Rule** — Added to CLAUDE.md
+  - Automatic CHANGELOG.md updates after completing features
+  - Version bump reminder for CLI changes
+  - Ensures traceability across sessions
+
+- **Intelligent Model Routing** — Cost optimization through model selection per command
+  - Added `model:` field to `claude_code:` YAML sections across all 11 command templates
+  - **Opus** for high-reasoning tasks: `/speckit.constitution`, `/speckit.concept`, `/speckit.specify`, `/speckit.plan`, `/speckit.design`
+  - **Sonnet** for balanced tasks: `/speckit.clarify`, `/speckit.tasks`, `/speckit.analyze`, `/speckit.baseline`, `/speckit.merge`
+  - **Haiku** for simple/repetitive tasks: setup phase, self-review phase
+  - **Phase-aware routing for `/speckit.implement`**:
+    - `setup` phase → Haiku (boilerplate, deps, config files)
+    - `core` phase → Opus (business logic, services, models)
+    - `tests` phase → Sonnet (test generation)
+    - `self_review` phase → Haiku (auto-fix, formatting)
+  - Expected cost reduction: 40-60%
+
+- **Multi-Agent Orchestration** — Parallel subagent execution with dependency resolution
+  - New `orchestration:` YAML section in `claude_code:` config
+    - `max_parallel`: Max concurrent agents (default: 1)
+    - `role_isolation`: One agent per role_group at a time (default: false)
+    - `conflict_resolution`: queue | abort | merge
+    - `timeout_per_agent`: Timeout in ms
+    - `retry_on_failure`: Retry count
+  - Extended subagent attributes:
+    - `role_group`: FRONTEND | BACKEND | TESTING | INFRA | REVIEW | DOCS
+    - `parallel`: Can run in parallel (default: false)
+    - `depends_on`: List of role dependencies
+    - `priority`: 1-10, higher runs first
+    - `model_override`: Override model for specific agent
+  - **Commands updated**:
+    - `/speckit.implement`: 10 subagents in 4 waves (scaffolder → builders → testers → reviewers)
+    - `/speckit.plan`: 2 parallel research agents
+    - `/speckit.analyze`: 4 validation agents with dependency chain
+    - `/speckit.tasks`: 3 mapping agents (dependency → FR → AS)
+    - `/speckit.merge`: Extended with role_group attributes
+  - Wave-based execution prevents file conflicts between FRONTEND/BACKEND/TESTING agents
+
+---
+
 ## [0.0.37] - 2025-12-27
 
 ### Added

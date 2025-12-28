@@ -71,8 +71,36 @@ claude_code:
   model: sonnet
   reasoning_mode: extended
   thinking_budget: 12000
+  orchestration:
+    max_parallel: 2
+    role_isolation: false
   subagents:
+    - role: spec-validator
+      role_group: REVIEW
+      parallel: true
+      depends_on: []
+      priority: 9
+      trigger: "when validating spec artifacts for completeness and constitution alignment"
+      prompt: "Validate {SPEC_FILE} against constitution principles and completeness criteria"
+    - role: code-validator
+      role_group: REVIEW
+      parallel: true
+      depends_on: []
+      priority: 9
+      trigger: "when validating implementation code against spec requirements"
+      prompt: "Validate implementation coverage for {REQUIREMENT_IDS} in codebase"
+    - role: consistency-checker
+      role_group: REVIEW
+      parallel: true
+      depends_on: [spec-validator, code-validator]
+      priority: 8
+      trigger: "when checking cross-artifact terminology and reference consistency"
+      prompt: "Check terminology consistency across spec, plan, and implementation"
     - role: code-explorer
+      role_group: REVIEW
+      parallel: true
+      depends_on: []
+      priority: 7
       trigger: "when tracing implementation coverage or validating file references"
       prompt: "Explore codebase for {PATTERN} to validate implementation coverage"
 scripts:

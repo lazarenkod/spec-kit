@@ -127,6 +127,92 @@ claude_code:
       reasoning_mode: normal
       thinking_budget: 2000
       description: "Auto-fix, annotations, formatting"
+  orchestration:
+    max_parallel: 3
+    conflict_resolution: queue
+    timeout_per_agent: 300000
+    retry_on_failure: 1
+    role_isolation: true
+  subagents:
+    # Wave 1: Infrastructure (no deps)
+    - role: project-scaffolder
+      role_group: INFRA
+      parallel: true
+      depends_on: []
+      priority: 10
+      trigger: "during setup phase"
+      prompt: "Create project structure per plan.md: directories, config files, .gitignore"
+      model_override: haiku
+    - role: dependency-installer
+      role_group: INFRA
+      parallel: true
+      depends_on: [project-scaffolder]
+      priority: 9
+      trigger: "after project structure exists"
+      prompt: "Install dependencies from Dependency Registry, configure package.json/requirements.txt"
+      model_override: haiku
+    # Wave 2: Core Implementation (parallel by role_group)
+    - role: data-layer-builder
+      role_group: BACKEND
+      parallel: true
+      depends_on: [dependency-installer]
+      priority: 8
+      trigger: "when implementing data models"
+      prompt: "Build data models, schemas, migrations from data-model.md"
+    - role: ui-foundation-builder
+      role_group: FRONTEND
+      parallel: true
+      depends_on: [dependency-installer]
+      priority: 8
+      trigger: "when implementing UI foundation"
+      prompt: "Build UX foundation: layout, navigation, error handling, auth UI"
+    - role: api-builder
+      role_group: BACKEND
+      parallel: true
+      depends_on: [data-layer-builder]
+      priority: 7
+      trigger: "when implementing API endpoints"
+      prompt: "Build API endpoints from contracts/, connect to data layer"
+    - role: ui-feature-builder
+      role_group: FRONTEND
+      parallel: true
+      depends_on: [ui-foundation-builder, api-builder]
+      priority: 6
+      trigger: "when implementing feature UI"
+      prompt: "Build feature components, connect to API, implement user stories"
+    # Wave 3: Testing (parallel per test type)
+    - role: unit-test-generator
+      role_group: TESTING
+      parallel: true
+      depends_on: [data-layer-builder, api-builder]
+      priority: 5
+      trigger: "when generating unit tests"
+      prompt: "Generate unit tests for completed services and models"
+      model_override: sonnet
+    - role: integration-test-generator
+      role_group: TESTING
+      parallel: true
+      depends_on: [ui-feature-builder, api-builder]
+      priority: 4
+      trigger: "when generating integration tests"
+      prompt: "Generate integration and e2e tests for user journeys"
+      model_override: sonnet
+    # Wave 4: Review (sequential)
+    - role: code-reviewer
+      role_group: REVIEW
+      parallel: false
+      depends_on: [unit-test-generator, integration-test-generator]
+      priority: 3
+      trigger: "when reviewing implementation"
+      prompt: "Review code quality, security, @speckit annotations, DoD compliance"
+    - role: documentation-generator
+      role_group: DOCS
+      parallel: true
+      depends_on: [code-reviewer]
+      priority: 2
+      trigger: "when generating documentation"
+      prompt: "Generate RUNNING.md, update README.md with setup instructions"
+      model_override: haiku
 ---
 
 ## User Input

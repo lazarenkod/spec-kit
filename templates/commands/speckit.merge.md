@@ -13,6 +13,10 @@ claude_code:
   thinking_budget: 8000
   subagents:
     - role: code-explorer
+      role_group: REVIEW
+      parallel: false
+      depends_on: []
+      priority: 5
       trigger: "when validating implementation matches system specs"
       prompt: "Explore codebase for {PATTERN} to validate spec accuracy"
 scripts:

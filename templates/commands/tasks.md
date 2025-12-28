@@ -72,6 +72,32 @@ claude_code:
   model: sonnet
   reasoning_mode: extended
   thinking_budget: 6000
+  orchestration:
+    max_parallel: 2
+    role_isolation: true
+  subagents:
+    - role: dependency-analyzer
+      role_group: INFRA
+      parallel: true
+      depends_on: []
+      priority: 9
+      trigger: "when analyzing task dependencies and build order"
+      prompt: "Analyze dependencies between components in plan.md to determine optimal task ordering"
+      model_override: haiku
+    - role: fr-mapper
+      role_group: BACKEND
+      parallel: true
+      depends_on: []
+      priority: 8
+      trigger: "when mapping functional requirements to implementation tasks"
+      prompt: "Map functional requirements {FR_IDS} to concrete implementation tasks"
+    - role: as-mapper
+      role_group: TESTING
+      parallel: true
+      depends_on: [fr-mapper]
+      priority: 7
+      trigger: "when mapping acceptance scenarios to test tasks"
+      prompt: "Map acceptance scenarios {AS_IDS} to test implementation tasks"
 ---
 
 ## User Input
