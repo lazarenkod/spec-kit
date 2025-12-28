@@ -7,6 +7,86 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.42] - 2025-12-28
+
+### Added
+
+- **Component Library Recommendations (6.3)** — Auto-recommend UI component libraries based on detected framework
+  - **Framework Detection** in `/speckit.design` Step 0.75:
+    - Parses spec.md Framework Requirements table for React, Vue, Angular, Svelte
+    - Reads constitution.md Technology Constraints for UI Framework field
+    - Detects TypeScript usage for refined recommendations
+  - **Library Mapping** (`templates/shared/library-recommendations.md`):
+    - React + TypeScript → shadcn/ui (primary), MUI, Radix UI (alternatives)
+    - React (JS) → MUI (primary), shadcn/ui, Chakra UI (alternatives)
+    - Vue.js → Vuetify (primary), PrimeVue, Quasar (alternatives)
+    - Angular → Angular Material (primary), PrimeNG, ng-bootstrap (alternatives)
+    - Svelte → Skeleton UI (primary), Svelte Material UI (alternatives)
+  - **Domain Modifiers**:
+    - UXQ domain → prefer rich UX libraries (shadcn/ui, MUI)
+    - SaaS domain → prefer data-dense libraries (MUI, Angular Material)
+    - Fintech domain → prefer mature, audited libraries (MUI, Angular Material)
+    - Healthcare domain → prefer accessible-first libraries (Angular Material, MUI)
+  - **WCAG Level Modifiers**:
+    - AAA compliance → filter to tier-1 accessible libraries (Angular Material, shadcn/ui, MUI)
+  - **Preset Application**:
+    - Auto-applies matching preset from design-system-presets.md on user confirmation
+    - Shows preset preview (framework, primary color, font family, component URL)
+    - User can choose alternatives or skip
+  - **Configuration Updates**:
+    - New UI Framework field in constitution.md Technology Constraints table
+    - New `library_recommendation:` frontmatter in design.md with `--no-recommendation` skip flag
+  - **Template Updates**:
+    - spec-template.md Framework Requirements section with library recommendation note
+    - design.md Step 0.75 with complete auto-discovery algorithm
+
+---
+
+## [0.0.41] - 2025-12-28
+
+### Added
+
+- **Design System Enforcement (6.2)** — Validate UI code against design tokens and component libraries
+  - **New DSS Principles** in `constitution.base.md`:
+    - DSS-001: Use Library Components First (SHOULD) — prefer configured library components over custom
+    - DSS-002: Color Token Compliance (MUST) — all colors must reference design tokens
+    - DSS-003: Typography Consistency (SHOULD) — use typography tokens for text styling
+  - **Design System Configuration** in `constitution.md`:
+    - `design_system:` YAML block for framework, theme tokens, and enforcement level
+    - Supported frameworks: shadcn/ui, MUI, Vuetify, Angular Material, Tailwind, Bootstrap
+    - Enforcement levels: `strict` (blocks deployment), `warn` (reports violations), `off` (disabled)
+    - Theme tokens: colors, typography scale, spacing units, border radii
+  - **Framework Presets** (`templates/shared/design-system-presets.md`):
+    - Pre-configured tokens for shadcn/ui, MUI, Tailwind CSS
+    - Includes color palettes, typography scales, and component library URLs
+    - Easily extendable preset system
+  - **Code Analysis** via Pass Z in `/speckit.analyze`:
+    - DSS-002: Scan for hardcoded hex/RGB/HSL colors (excludes *.config.*, tokens.*)
+    - DSS-001: Detect custom components when library equivalent exists
+    - DSS-003: Find hardcoded font-family/font-size values
+    - Token coverage analysis with utilization metrics
+    - Severity mapping based on enforcement level
+  - **Vision Validation Integration** (`templates/shared/vision-validation.md`):
+    - Design System Vision Prompt for visual token compliance
+    - Color comparison with 5% RGB Euclidean distance tolerance
+    - Typography and component consistency checks
+    - Integrated into UX Audit Report output
+  - **Implementation Enforcement** (`templates/commands/implement.md`):
+    - Step 3.6: Design System Context Loading (parse config, load presets)
+    - New self-review criteria: SR-IMPL-18 (colors), SR-IMPL-19 (components), SR-IMPL-20 (typography)
+    - Auto-fix rules: AF-006 (hex→CSS variable), AF-007 (custom→library), AF-008 (font-size→token)
+  - **Report Enhancements**:
+    - Design System Status section in analysis report
+    - Token utilization metrics (colors, typography, spacing, radii)
+    - DSS principle compliance table with issue counts
+  - **New Severity Entries**:
+    - CRITICAL: Hardcoded color in strict mode (DSS-002)
+    - HIGH: Hardcoded color in warn mode, unknown preset, custom component (strict)
+    - MEDIUM: Custom component (warn), hardcoded typography (warn)
+    - LOW: Low token utilization, invalid color format in config
+
+---
+
 ## [0.0.40] - 2025-12-28
 
 ### Added

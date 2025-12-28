@@ -288,6 +288,16 @@
 
 ### Framework Requirements
 
+<!--
+  NOTE: UI frameworks listed here (React, Vue, Angular, Svelte, Next.js, Nuxt, SvelteKit)
+  will trigger automatic component library recommendations when running /speckit.design.
+  See templates/shared/library-recommendations.md for framework → library mapping.
+
+  Example: "React 18 + TypeScript" → recommends shadcn/ui
+           "Vue.js 3" → recommends Vuetify
+           "Angular 17" → recommends Angular Material
+-->
+
 | ID | Framework | Version | Documentation | Critical Features Used |
 |----|-----------|---------|---------------|------------------------|
 | FW-001 | [framework] | ^X.Y.Z | [docs URL] | [feature1, feature2] |

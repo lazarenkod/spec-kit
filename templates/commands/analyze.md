@@ -151,12 +151,12 @@ validation_profiles:
     output_mode: compact
   full:
     description: "Complete pre-implementation analysis"
-    passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q]
+    passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q, Z]
     timeout_seconds: 300
     output_mode: detailed
   qa:
     description: "Post-implementation QA verification"
-    passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q, R, S, T, U, V, W, X, Y]
+    passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z]
     timeout_seconds: 600
     output_mode: detailed
 ---
@@ -270,8 +270,8 @@ When `OUTPUT_MODE = compact`, generate a condensed validation summary:
 | `spec_validate` | B, D | Pre-plan spec validation | 30s |
 | `plan_validate` | D, F, V | Pre-tasks plan validation | 45s |
 | `tasks_validate` | G, H, J | Pre-implement task validation | 30s |
-| `full` | A-Q | Complete pre-implementation analysis | 300s |
-| `qa` | A-Y | Post-implementation QA verification | 600s |
+| `full` | A-Q, Z | Complete pre-implementation analysis | 300s |
+| `qa` | A-Z | Post-implementation QA verification | 600s |
 
 ### Profile Flags
 
@@ -1744,6 +1744,202 @@ FOR EACH feature in Feature Hierarchy:
 
 ---
 
+#### Z. Design System Compliance Validation *(if design_system configured)*
+
+**Purpose**: Validate UI code adheres to configured design tokens and component library patterns.
+
+**Activation Check**:
+
+```text
+IF memory/constitution.md exists:
+  Read file content
+  Parse YAML block under "## Design System Configuration"
+  IF design_system.framework != "none" AND design_system.enforcement_level != "off":
+    DESIGN_SYSTEM_ACTIVE = true
+    ENFORCEMENT_LEVEL = design_system.enforcement_level (strict | warn)
+  ELSE:
+    DESIGN_SYSTEM_ACTIVE = false
+ELSE:
+  DESIGN_SYSTEM_ACTIVE = false
+
+IF NOT DESIGN_SYSTEM_ACTIVE:
+  SKIP this validation pass
+```
+
+**1. Configuration Validation**:
+
+```text
+IF design_system block exists:
+  Verify required fields:
+  - framework: MUST be non-empty string
+  - enforcement_level: MUST be "strict", "warn", or "off"
+
+  IF using preset:
+    Verify preset exists in design-system-presets.md
+    IF preset not found:
+      → HIGH: "Unknown design system preset: {preset}"
+
+  IF theme.colors defined:
+    FOR EACH color token:
+      IF value is not valid hex (#XXX or #XXXXXX):
+        → LOW: "Invalid color format for {token}: {value}"
+```
+
+**2. DSS-002: Color Token Compliance**:
+
+```text
+Scan UI source files for hardcoded colors:
+- Directories: src/, frontend/, app/, components/, pages/, views/
+- Extensions: .tsx, .jsx, .vue, .svelte, .css, .scss, .less, .styled.ts
+- Exclusions: *.config.*, theme.*, tokens.*, tailwind.config.*, *.test.*, *.spec.*
+
+Patterns to detect:
+1. Hardcoded hex colors:
+   PATTERN: /#[0-9A-Fa-f]{6}\b|#[0-9A-Fa-f]{3}\b/
+   CONTEXT: Not in token definition file
+
+2. Hardcoded RGB/RGBA:
+   PATTERN: /rgba?\s*\(\s*\d+\s*,\s*\d+\s*,\s*\d+/
+   CONTEXT: Not in gradient using tokens
+
+3. Hardcoded HSL/HSLA:
+   PATTERN: /hsla?\s*\(\s*\d+\s*,\s*[\d.]+%\s*,\s*[\d.]+%/
+
+4. Tailwind arbitrary color values:
+   PATTERN: /(?:bg|text|border|fill|stroke)-\[#[0-9A-Fa-f]+\]/
+
+FOR EACH hardcoded color found:
+  IF in excluded file pattern:
+    SKIP
+  IF has "// DSS-002 exception:" comment on same or previous line:
+    → INFO: "DSS-002 exception documented: {file}:{line}"
+    SKIP
+  ELSE:
+    Match color to closest design token using RGB Euclidean distance
+    IF distance < 5%:
+      → Severity per enforcement_level: "Hardcoded color in {file}:{line} - use var(--{token})"
+      → Suggest: "Replace {hardcoded} with var(--{closest_token})"
+    ELSE:
+      → HIGH: "Color {hardcoded} in {file}:{line} not in design system"
+      → Suggest: "Add token to constitution.md or use existing token"
+```
+
+**3. DSS-001: Component Library Compliance**:
+
+```text
+IF design_system.framework is component library (shadcn/ui, mui, vuetify, etc.):
+
+  Load component mapping from constitution.md or design-system-presets.md:
+  - LIBRARY_COMPONENTS = [Button, Input, Select, Dialog, Card, ...]
+
+  Scan for custom component patterns:
+
+  React/shadcn/ui:
+    PATTERN: /function\s+(?:Custom)?(?:Button|Input|Select|Modal|Dialog|Card|Table|Dropdown)\s*\(/
+    PATTERN: /const\s+(?:Custom)?(?:Button|Input|Select|Modal|Dialog|Card)\s*=\s*(?:styled|React)/
+
+  Vue/Vuetify:
+    PATTERN: /<template>[\s\S]*<(?:custom-|my-)(button|input|select|modal|card)/
+
+  Angular Material:
+    PATTERN: /@Component[\s\S]*selector:\s*['"](?:app|custom)-(button|input|modal)/
+
+  FOR EACH custom component detected:
+    IF component type has library equivalent:
+      Check if library component is imported in same file
+      IF library component imported and used:
+        SKIP (proper extension pattern)
+      ELSE:
+        → Severity per enforcement_level: "Custom {component} detected - library provides equivalent"
+        → Suggest: "Import from {library_import_path}"
+```
+
+**4. DSS-003: Typography Token Compliance**:
+
+```text
+Scan for hardcoded typography values:
+
+Patterns to detect:
+1. Hardcoded font-family:
+   PATTERN: /font-family:\s*['"]?(?!var\(|inherit|unset)/
+
+2. Hardcoded font-size (px values):
+   PATTERN: /font-size:\s*\d+px/
+
+3. Tailwind arbitrary font values:
+   PATTERN: /text-\[\d+px\]|font-\[['"][^var]/
+
+FOR EACH hardcoded typography found:
+  IF in excluded file pattern:
+    SKIP
+  ELSE:
+    Map value to closest typography token:
+    - 12px → var(--text-xs) / text-xs
+    - 14px → var(--text-sm) / text-sm
+    - 16px → var(--text-base) / text-base
+    - 18px → var(--text-lg) / text-lg
+    - etc.
+
+    → Severity per enforcement_level: "Hardcoded typography in {file}:{line}"
+    → Suggest: "Replace {hardcoded} with {token_suggestion}"
+```
+
+**5. Token Coverage Analysis**:
+
+```text
+Calculate design token utilization:
+
+1. Count token definitions in constitution.md theme:
+   - color_tokens_defined = count(theme.colors.*)
+   - typography_tokens_defined = count(theme.typography.scale.*)
+
+2. Count token usages in codebase:
+   - Search for var(--{token_name}) patterns
+   - Search for Tailwind utility classes matching tokens
+   - color_tokens_used = unique count
+   - typography_tokens_used = unique count
+
+3. Calculate coverage:
+   - color_coverage = color_tokens_used / color_tokens_defined * 100
+   - typography_coverage = typography_tokens_used / typography_tokens_defined * 100
+
+4. Report:
+   IF color_coverage < 50%:
+     → LOW: "Low color token utilization: {coverage}% ({used}/{defined})"
+   IF typography_coverage < 50%:
+     → LOW: "Low typography token utilization: {coverage}% ({used}/{defined})"
+```
+
+**Severity Mapping for Pass Z:**
+
+| Condition | Strict Mode | Warn Mode |
+|-----------|-------------|-----------|
+| DSS-002: Hardcoded color (close to token) | CRITICAL | HIGH |
+| DSS-002: Hardcoded color (not in system) | CRITICAL | HIGH |
+| DSS-001: Custom component with library equivalent | HIGH | MEDIUM |
+| DSS-003: Hardcoded typography | HIGH | MEDIUM |
+| Unknown preset | HIGH | HIGH |
+| Low token utilization | LOW | LOW |
+| Invalid color format in config | LOW | LOW |
+
+**Severity Summary for Pass Z:**
+
+| Condition | Severity |
+|-----------|----------|
+| Hardcoded color (strict mode) | CRITICAL |
+| Hardcoded color (warn mode) | HIGH |
+| Color not in design system | HIGH |
+| Custom component with library equivalent (strict) | HIGH |
+| Custom component with library equivalent (warn) | MEDIUM |
+| Hardcoded typography (strict) | HIGH |
+| Hardcoded typography (warn) | MEDIUM |
+| Unknown design system preset | HIGH |
+| Low color token utilization (<50%) | LOW |
+| Low typography token utilization (<50%) | LOW |
+| Invalid color format in config | LOW |
+
+---
+
 ### 5. Severity Assignment
 
 Use this heuristic to prioritize findings:
@@ -1763,6 +1959,7 @@ Use this heuristic to prioritize findings:
   - **Potential secret in code** (QA: hardcoded credentials detected)
   - **UXQ section missing** (UXQ domain active but spec.md lacks UXQ section)
   - **Friction without justification** (UXQ: violates UXQ-003 MUST)
+  - **Hardcoded color in strict mode** (DSS: violates DSS-002 in strict enforcement)
 
 - **HIGH**:
   - Duplicate or conflicting requirement
@@ -1805,6 +2002,10 @@ Use this heuristic to prioritize findings:
   - **JTBD missing job statement or FRs** (UXQ: incomplete traceability)
   - **FTUE lacks specific guidance** (UXQ: empty states, progressive disclosure missing)
   - **Friction missing mitigation** (UXQ: friction point lacks mitigation strategy)
+  - **Hardcoded color in warn mode** (DSS: violates DSS-002 in warn enforcement)
+  - **Color not in design system** (DSS: hardcoded color doesn't match any token)
+  - **Unknown design system preset** (DSS: preset not found in presets file)
+  - **Custom component with library equivalent (strict)** (DSS: violates DSS-001 in strict mode)
 
 - **MEDIUM**:
   - Terminology drift
@@ -1850,6 +2051,8 @@ Use this heuristic to prioritize findings:
   - **A11y framed as compliance only** (UXQ: not empowerment-framed)
   - **A11y missing WCAG level** (UXQ: no conformance level specified)
   - **Friction indicators without table** (UXQ: undocumented friction)
+  - **Custom component with library equivalent (warn)** (DSS: violates DSS-001 in warn mode)
+  - **Hardcoded typography (warn)** (DSS: violates DSS-003 in warn mode)
 
 - **LOW**:
   - Style/wording improvements
@@ -1885,6 +2088,10 @@ Use this heuristic to prioritize findings:
   - **No persona references** (UXQ: missing user-centered context)
   - **Non-standard friction type** (UXQ: friction type not in standard list)
   - **No assistive tech specified** (UXQ: missing screen reader/keyboard nav)
+  - **Low color token utilization** (DSS: <50% of configured color tokens used)
+  - **Low typography token utilization** (DSS: <50% of typography scale used)
+  - **Invalid color format in config** (DSS: malformed hex/rgb in design_system)
+  - **Hardcoded typography (strict)** (DSS: violates DSS-003 in strict mode - should be HIGH but downgraded if minor)
 
 ### 6. Produce Compact Analysis Report
 
@@ -1947,6 +2154,26 @@ Constitution Layer: memory/constitution.domain.md
 | UXQ-006 FTUE | MUST | ✅/❌ | {details} |
 | UXQ-008 JTBD | MUST | ✅/❌ | {details} |
 | UXQ-010 A11y | MUST | ✅/❌ | {details} |
+
+**Design System Status:** *(if design_system configured and enforcement_level ≠ "off")*
+
+```text
+Framework: {framework} | Enforcement: {strict/warn}
+Token Coverage: {X}% colors | {Y}% typography
+```
+
+| Principle | Level | Compliance | Issues |
+|-----------|-------|------------|--------|
+| DSS-001 Components | SHOULD | ✅/⚠️/❌ | {custom component count} custom vs library |
+| DSS-002 Colors | MUST | ✅/❌ | {hardcoded color count} hardcoded |
+| DSS-003 Typography | SHOULD | ✅/⚠️/❌ | {hardcoded typography count} hardcoded |
+
+| Token Category | Defined | Used | Coverage |
+|----------------|---------|------|----------|
+| Colors | {N} | {M} | {%} |
+| Typography | {N} | {M} | {%} |
+| Spacing | {N} | {M} | {%} |
+| Radii | {N} | {M} | {%} |
 
 **System Spec Status:** (if specs/system/ exists)
 

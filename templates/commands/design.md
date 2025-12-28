@@ -48,6 +48,12 @@ figma_import:
     - design_tokens
     - components
     - icons
+library_recommendation:
+  enabled: true
+  skip_flag: "--no-recommendation"
+  trigger_condition: "design_system.framework == 'none'"
+  mapping_source: "templates/shared/library-recommendations.md"
+  presets_source: "templates/shared/design-system-presets.md"
 ---
 
 ## User Input
@@ -152,6 +158,132 @@ This command creates **visual and interaction specifications** for UI-heavy feat
    ```
 
    Read `templates/shared/figma-import.md` for detailed Figma API mapping rules.
+
+0.75. **Component Library Recommendation** (Auto-Discovery):
+
+   ```text
+   TRIGGER: design_system.framework in constitution.md is "none" or not configured
+
+   IF design_system.framework != "none" AND design_system.framework is configured:
+     LOG "ℹ️ Design system already configured ({framework}), skipping recommendation"
+     SKIP to Step 1
+
+   IF --no-recommendation flag passed:
+     LOG "ℹ️ Component library recommendation disabled"
+     SKIP to Step 1
+   ```
+
+   **Step 0.75.1: Detect UI Framework**
+
+   ```text
+   1. Read spec.md → "Framework Requirements" table
+      - Look for: React, Next.js, Vue, Nuxt, Angular, Svelte, SvelteKit
+      - Check if TypeScript mentioned (tsx, ts, TypeScript)
+
+   2. Read constitution.md → "Technology Constraints" table
+      - Find "UI Framework" row
+      - Extract value: React | Vue | Angular | Svelte | None
+
+   3. Determine framework:
+      IF constitution.md has explicit UI Framework:
+        ui_framework = constitution_value
+      ELIF spec.md has Framework Requirements:
+        ui_framework = detected_from_spec
+      ELSE:
+        ui_framework = "unknown"
+
+   4. Detect TypeScript:
+      IF "typescript" OR "tsx" in spec.md Framework Requirements:
+        typescript_enabled = true
+   ```
+
+   **Step 0.75.2: Load Recommendation Rules**
+
+   ```text
+   Read templates/shared/library-recommendations.md
+
+   Apply framework → library mapping:
+   - React + TypeScript → shadcn/ui (primary), MUI, Radix UI (alternatives)
+   - React (JS) → MUI (primary), shadcn/ui, Chakra UI (alternatives)
+   - Vue.js → Vuetify (primary), PrimeVue, Quasar (alternatives)
+   - Angular → Angular Material (primary), PrimeNG, ng-bootstrap (alternatives)
+   - Svelte → Skeleton UI (primary), Svelte Material UI (alternatives)
+
+   Apply domain modifiers (from constitution.md Domain Layer):
+   - uxq domain → prefer rich UX libraries (shadcn/ui, MUI)
+   - saas domain → prefer data-dense libraries (MUI, Angular Material)
+   - fintech domain → prefer mature, audited libraries (MUI, Angular Material)
+
+   Apply WCAG modifiers (from spec.md Design Constraints):
+   - AAA level → filter to accessible-first libraries
+   ```
+
+   **Step 0.75.3: Generate Recommendation**
+
+   ```text
+   OUTPUT:
+   ┌─────────────────────────────────────────────────────────────┐
+   │ Component Library Recommendation                            │
+   ├─────────────────────────────────────────────────────────────┤
+   │ Detected Framework: {framework} {+ TypeScript if detected}  │
+   │ Source: {spec.md / constitution.md}                         │
+   │                                                             │
+   │ Primary Recommendation: {library}                           │
+   │ Reasoning: {reasoning from library-recommendations.md}      │
+   │                                                             │
+   │ Alternatives: {alt1}, {alt2}, {alt3}                        │
+   │                                                             │
+   │ Preset Available: {Yes/No} in design-system-presets.md      │
+   └─────────────────────────────────────────────────────────────┘
+   ```
+
+   **Step 0.75.4: Suggest Preset Application**
+
+   ```text
+   IF preset exists in design-system-presets.md:
+
+     1. Show preset preview:
+        - Framework: {preset.framework}
+        - Primary color: {preset.theme.colors.primary}
+        - Font family: {preset.theme.typography.font_family}
+        - Component URL: {preset.component_library_url}
+
+     2. Prompt user:
+        "Apply {library} preset to constitution.md? [Y/n/choose alternative]"
+
+     3. IF user confirms (Y or default):
+        - Load preset YAML from design-system-presets.md
+        - Update design_system block in constitution.md
+        - LOG "✓ Applied {library} preset to constitution.md"
+
+     4. IF user chooses alternative:
+        - Show alternative presets
+        - Let user select
+        - Apply selected preset
+
+     5. IF user declines (n):
+        - LOG "ℹ️ Preset not applied. Configure manually in constitution.md"
+        - Continue with framework: "none" (tokens from constitution.md theme block)
+
+   ELSE:
+     LOG "⚠️ No preset found for {library}. Using custom tokens from constitution.md"
+   ```
+
+   **Step 0.75.5: Skip Conditions**
+
+   ```text
+   Skip this step when:
+   - design_system.framework already configured (not "none")
+   - UI Framework explicitly set to "None" in Technology Constraints
+   - No UI framework detected in spec.md or constitution.md
+   - Backend-only project (no Frontend markers in Framework Requirements)
+   - --no-recommendation flag passed
+
+   When skipped, output:
+   "Step 0.75: Component Library Recommendation - Skipped ({reason})"
+   ```
+
+   Read `templates/shared/library-recommendations.md` for detailed framework→library mapping and algorithm.
 
 1. **Initialize design document**:
    - Run script `{SCRIPT}` to verify spec.md exists

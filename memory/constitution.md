@@ -119,8 +119,93 @@ Use format: PRJ-001, PRJ-002, etc.
 |----------|----------|-----------|
 | Language | [e.g., Python 3.11+] | [why] |
 | Framework | [e.g., FastAPI] | [why] |
+| UI Framework | [React \| Vue \| Angular \| Svelte \| None] | [frontend framework - triggers library recommendations] |
 | Database | [e.g., PostgreSQL 15] | [why] |
 | Cloud | [e.g., AWS] | [why] |
+
+---
+
+## Design System Configuration
+
+<!--
+  Configure your UI framework, theme tokens, and enforcement level.
+  This section enables DSS (Design System) principle enforcement.
+  Presets available: shadcn/ui, mui, vuetify, tailwind, bootstrap, none
+  See templates/shared/design-system-presets.md for preset values.
+-->
+
+### Framework Selection
+
+| Setting | Value | Options |
+|---------|-------|---------|
+| **framework** | `none` | `shadcn/ui`, `mui`, `vuetify`, `angular-material`, `skeleton-ui`, `tailwind`, `bootstrap`, `none` |
+| **component_library_url** | - | URL to documentation (auto-filled by preset) |
+| **enforcement_level** | `warn` | `strict` (block deployment), `warn` (report violations), `off` (disabled) |
+
+### Theme Tokens
+
+Configure your design system tokens below. Use a preset or define custom tokens:
+
+```yaml
+design_system:
+  # Preset: uncomment ONE to use predefined tokens, or define custom below
+  # preset: "shadcn/ui"   # See design-system-presets.md
+  # preset: "mui"
+  # preset: "tailwind"
+
+  framework: "none"
+
+  theme:
+    colors:
+      # Core palette
+      primary: "#3B82F6"
+      secondary: "#10B981"
+      background: "#FFFFFF"
+      foreground: "#1F2937"
+      muted: "#F3F4F6"
+      accent: "#8B5CF6"
+      destructive: "#EF4444"
+
+      # Component-specific (optional)
+      # border: "#E5E7EB"
+      # ring: "#3B82F6"
+      # card: "#FFFFFF"
+      # popover: "#FFFFFF"
+
+    typography:
+      font_family: "Inter, system-ui, sans-serif"
+      font_family_mono: "JetBrains Mono, monospace"
+      scale:
+        xs: "0.75rem"    # 12px
+        sm: "0.875rem"   # 14px
+        base: "1rem"     # 16px
+        lg: "1.125rem"   # 18px
+        xl: "1.25rem"    # 20px
+        2xl: "1.5rem"    # 24px
+        3xl: "1.875rem"  # 30px
+
+    spacing:
+      unit: "4px"        # Base unit for spacing calculations
+
+    radii:
+      none: "0"
+      sm: "0.25rem"      # 4px
+      md: "0.375rem"     # 6px
+      lg: "0.5rem"       # 8px
+      xl: "0.75rem"      # 12px
+      full: "9999px"
+
+  component_library_url: ""
+  enforcement_level: "warn"   # strict | warn | off
+```
+
+### Enforcement Behavior
+
+| Level | DSS-001 (Components) | DSS-002 (Colors) | DSS-003 (Typography) |
+|-------|---------------------|------------------|---------------------|
+| `strict` | HIGH (blocks) | CRITICAL (blocks) | HIGH (blocks) |
+| `warn` | MEDIUM (reports) | HIGH (reports) | MEDIUM (reports) |
+| `off` | Disabled | Disabled | Disabled |
 
 ---
 

@@ -220,6 +220,135 @@ Vision validation can detect these visual anti-patterns:
 
 Flow-based anti-patterns (UX-002 infinite scroll, UX-004 dead ends, etc.) require user journey analysis.
 
+### Design System Compliance (DSS Principles)
+
+When `design_system` is configured in `memory/constitution.md`, vision validation includes design token compliance checks.
+
+#### Configuration Loading
+
+```text
+1. Read design_system block from constitution.md
+2. Extract theme.colors, theme.typography tokens
+3. If preset specified, merge from design-system-presets.md
+4. Load enforcement_level (strict/warn/off)
+```
+
+#### Design System Vision Prompt
+
+Use this prompt when design system config is present:
+
+```text
+Analyze this UI screenshot for design system compliance.
+
+## Configured Design Tokens
+
+**Framework**: [FRAMEWORK]
+**Colors**:
+- Primary: [PRIMARY_HEX]
+- Secondary: [SECONDARY_HEX]
+- Background: [BACKGROUND_HEX]
+- Foreground: [FOREGROUND_HEX]
+- Destructive: [DESTRUCTIVE_HEX]
+
+**Typography**:
+- Font Family: [FONT_FAMILY]
+- Base Size: [BASE_SIZE]
+
+## Design System Checks
+
+### DSS-002: Color Token Compliance
+Scan visible colors and compare against configured palette:
+1. Primary action buttons should use primary color
+2. Error states should use destructive color
+3. Text should use foreground/muted colors
+4. Backgrounds should match background tokens
+5. Flag colors that don't match any token (>5% RGB distance)
+
+### DSS-003: Typography Consistency
+Verify typography matches configured tokens:
+1. Body text uses configured font family
+2. Font sizes align with typography scale
+3. No mixed font families (unless intentional mono/sans)
+4. Heading hierarchy follows scale
+
+### DSS-001: Component Consistency
+Identify component patterns and verify consistency:
+1. All buttons share consistent styling
+2. Form inputs have uniform appearance
+3. Cards/containers use consistent radii
+4. Spacing appears systematic (based on unit)
+
+## Output Format
+
+Report design system violations as:
+- ID: DSS-00x
+- Element: [UI element description]
+- Expected: [token name and value from config]
+- Actual: [what appears in screenshot]
+- Severity: [based on enforcement_level]
+- Suggestion: [how to fix using design tokens]
+```
+
+#### Color Comparison Algorithm
+
+When comparing screenshot colors to design tokens:
+
+```text
+Tolerance: 5% (12.75 on 0-255 RGB scale)
+
+Process:
+1. Sample dominant color from UI element region
+2. Convert screenshot color and token to RGB
+3. Calculate Euclidean distance:
+   d = sqrt((r1-r2)² + (g1-g2)² + (b1-b2)²)
+4. Maximum distance (black→white): 441.67
+5. Percent difference: (d / 441.67) × 100
+6. If difference > 5%, flag as potential violation
+7. Suggest closest matching token if distance < 15%
+```
+
+#### Severity Mapping
+
+Design system severities depend on `enforcement_level`:
+
+| Check | Strict Mode | Warn Mode |
+|-------|-------------|-----------|
+| DSS-002 (Color mismatch) | CRITICAL | HIGH |
+| DSS-003 (Typography mismatch) | HIGH | MEDIUM |
+| DSS-001 (Component inconsistency) | HIGH | MEDIUM |
+
+#### Integration with Report
+
+When design system checks are performed, add to UX Audit Report:
+
+```markdown
+## Design System Compliance
+
+**Framework**: [framework]
+**Enforcement**: [strict/warn/off]
+
+| Check | Status | Issues |
+|-------|--------|--------|
+| DSS-002 Colors | [PASS/WARN/FAIL] | [count] |
+| DSS-003 Typography | [PASS/WARN/FAIL] | [count] |
+| DSS-001 Components | [PASS/WARN/FAIL] | [count] |
+
+### Design Token Violations
+
+| ID | Element | Expected | Actual | Severity |
+|----|---------|----------|--------|----------|
+| DSS-002 | Submit button | primary (#3B82F6) | #2196F3 (8% off) | HIGH |
+| DSS-003 | Body text | Inter | Roboto | MEDIUM |
+```
+
+#### Skip Conditions for Design System Checks
+
+Design system vision checks are skipped when:
+1. No `design_system` block in constitution.md
+2. `enforcement_level: "off"`
+3. Preset/framework is `"none"`
+4. Feature has no UI screens to validate
+
 ## Report Generation
 
 ### UX Audit Report Structure

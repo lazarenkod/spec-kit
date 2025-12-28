@@ -933,6 +933,57 @@ UI SHOULD meet WCAG 2.1 AA standards:
 
 ---
 
+## DSS: Design System
+
+<!--
+  Principles ensuring consistent application of design system tokens,
+  component library usage, and visual consistency across the application.
+  These principles are enforced by vision validation in /speckit.implement
+  and design validation in /speckit.analyze Pass Z.
+-->
+
+### DSS-001: Use Library Components First
+
+**Level**: SHOULD
+**Applies to**: All UI components
+
+When a component library is configured in the project constitution, agents SHOULD prefer library components over custom implementations. Custom components SHOULD only be created when:
+- No suitable library component exists
+- Library component cannot be extended to meet requirements
+- Performance constraints require custom implementation
+
+**Validation**: Code analysis for custom component patterns when library equivalent exists
+**Violations**: MEDIUM - Inconsistent UI, increased maintenance burden
+
+---
+
+### DSS-002: Color Token Compliance
+
+**Level**: MUST
+**Applies to**: All color values in UI code
+
+All color values MUST reference design tokens defined in the project's design system configuration. Hardcoded hex values, RGB, or HSL colors MUST NOT be used except in:
+- Design token definition files (theme.ts, tokens.css, tailwind.config.*)
+- Gradients constructed from tokens
+- Third-party component overrides (documented in code comments)
+
+**Validation**: Grep for hardcoded color patterns; vision validation for color consistency
+**Violations**: CRITICAL - Design system violation, brand inconsistency
+
+---
+
+### DSS-003: Typography Consistency
+
+**Level**: SHOULD
+**Applies to**: All text rendering in UI
+
+Text styling SHOULD use typography tokens from the design system (font-family, font-size, font-weight, line-height). Custom typography values SHOULD be avoided unless defining new tokens. Vision validation SHOULD verify visual typography consistency across screens.
+
+**Validation**: Vision analysis for typography patterns; code analysis for font declarations
+**Violations**: MEDIUM - Visual inconsistency, accessibility concerns
+
+---
+
 ## Summary
 
 | Domain | Principles | MUST | SHOULD |
@@ -945,9 +996,11 @@ UI SHOULD meet WCAG 2.1 AA standards:
 | API (API Design) | 6 | 3 | 3 |
 | DOC (API Documentation) | 6 | 4 | 2 |
 | TFA (Twelve-Factor App) | 9 | 4 | 5 |
+| TST (Test-Spec Traceability) | 5 | 2 | 3 |
 | PRF (Performance) | 4 | 1 | 3 |
 | CMP (Compliance) | 4 | 1 | 3 |
-| **Total** | **57** | **28** | **29** |
+| DSS (Design System) | 3 | 1 | 2 |
+| **Total** | **65** | **31** | **34** |
 
 ---
 

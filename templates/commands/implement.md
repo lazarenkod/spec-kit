@@ -102,6 +102,27 @@ auto_fix_rules:
       name: "Debug statements"
       trigger: "SR-IMPL-09 FAIL"
       action: remove_debug_statements
+    - id: AF-006
+      name: "Hardcoded hex color to CSS variable"
+      trigger: "SR-IMPL-18 FAIL"
+      action: replace_hardcoded_color
+      patterns:
+        - "#[0-9A-Fa-f]{6}"
+        - "#[0-9A-Fa-f]{3}"
+      transform: "Match to closest design token, replace with var(--token-name)"
+    - id: AF-007
+      name: "Custom component to library import"
+      trigger: "SR-IMPL-19 FAIL"
+      action: suggest_library_component
+      source: "constitution.md design_system.components mapping"
+    - id: AF-008
+      name: "Hardcoded font-size to typography token"
+      trigger: "SR-IMPL-20 FAIL"
+      action: replace_hardcoded_typography
+      patterns:
+        - "font-size:\\s*\\d+px"
+        - "fontSize:\\s*\\d+"
+      transform: "Map px to typography scale token"
 build_error_patterns:
   enabled: true
   max_build_attempts: 3
@@ -430,6 +451,88 @@ You **MUST** consider the user input before proceeding (if not empty).
       - Tasks without [DEP:] or [APIDOC:] markers
       - Internal project dependencies (no external docs)
       - Setup/configuration tasks
+
+3.6. **Design System Context Loading** (if `design_system` configured):
+
+   **Purpose**: Load design system tokens and component library context to enforce DSS principles during code generation.
+
+   **Activation check**:
+   ```text
+   IF exists(design_system block in constitution.md) AND enforcement_level != "off":
+     LOAD design system context
+   ELSE:
+     SKIP this step
+   ```
+
+   **Context loading steps**:
+
+   a) **Parse design_system configuration**:
+      ```text
+      1. Read memory/constitution.md
+      2. Extract design_system YAML block
+      3. IF preset specified:
+         - Load preset from templates/shared/design-system-presets.md
+         - Merge with any custom overrides
+      4. Validate required fields: framework, enforcement_level
+      ```
+
+   b) **Prepare framework documentation context**:
+      ```text
+      IF component_library_url is specified:
+        - IF Context7 MCP available:
+          → resolve-library-id for framework
+          → get-library-docs with topic="components"
+        - ELSE:
+          → Store URL for reference in agent prompts
+      ```
+
+   c) **Inject design system context into agents**:
+      ```text
+      FOR EACH subagent WITH role_group = FRONTEND:
+        APPEND to agent prompt:
+          "## Design System Tokens (from constitution.md)
+           Framework: {framework}
+           Enforcement: {enforcement_level}
+
+           ### Color Tokens - USE THESE, NOT HARDCODED VALUES
+           {colors as CSS variables or theme object}
+
+           ### Typography Tokens
+           {typography scale}
+
+           ### Component Library
+           {component_library_url}
+           Prefer library components over custom implementations.
+
+           ### DSS Enforcement Rules
+           - DSS-001: Use library components before custom
+           - DSS-002: All colors via tokens (MUST)
+           - DSS-003: Typography via scale tokens (SHOULD)"
+      ```
+
+   d) **Set enforcement instructions based on level**:
+      ```text
+      IF enforcement_level == "strict":
+        INSTRUCT agents: "BLOCK on any DSS violation. Do not proceed with hardcoded colors."
+      ELIF enforcement_level == "warn":
+        INSTRUCT agents: "WARN on DSS violations but continue. Flag for self-review."
+      ```
+
+   e) **Report context loaded**:
+      ```text
+      📐 Design System Context Loaded:
+      ├── Framework: {framework}
+      ├── Enforcement: {enforcement_level}
+      ├── Color tokens: {count} defined
+      ├── Typography scale: {count} sizes
+      ├── Component library docs: {loaded|not available}
+      └── Agents updated: FRONTEND role_group
+      ```
+
+   **Skip conditions**:
+   - No `design_system` block in constitution.md
+   - `enforcement_level: "off"`
+   - Feature has no FRONTEND role_group tasks
 
 4. **Project Setup Verification**:
    - **REQUIRED**: Create/verify ignore files based on actual project setup:
@@ -1634,6 +1737,11 @@ Answer each question by examining the implementation:
 | SR-IMPL-15 | No CRITICAL UX violations detected by vision analysis? | CRITICAL |
 | SR-IMPL-16 | Loading, error, and empty states implemented for UI components? | HIGH |
 | SR-IMPL-17 | Visual accessibility checks pass (contrast, touch targets)? | HIGH |
+| SR-IMPL-18 | No hardcoded colors in UI code (DSS-002)? | HIGH |
+| SR-IMPL-19 | Component library used where equivalent exists (DSS-001)? | MEDIUM |
+| SR-IMPL-20 | Typography tokens used instead of hardcoded values (DSS-003)? | MEDIUM |
+
+**Design System Criteria (SR-IMPL-18/19/20)**: Only evaluated when `design_system` is configured in constitution.md and `enforcement_level != "off"`. Mark as `N/A` if design system enforcement is disabled.
 
 **Evaluation**:
 ```text
@@ -1654,9 +1762,12 @@ Answer each question by examining the implementation:
 ├── SR-IMPL-14: ✅ PASS - UI renders across viewports (vision check)
 ├── SR-IMPL-15: ✅ PASS - No critical UX violations
 ├── SR-IMPL-16: ⚠️ HIGH - Missing loading state in checkout form
-└── SR-IMPL-17: ✅ PASS - Accessibility visual checks pass
+├── SR-IMPL-17: ✅ PASS - Accessibility visual checks pass
+├── SR-IMPL-18: ⚠️ HIGH - Found 2 hardcoded colors in src/Button.tsx (DSS-002)
+├── SR-IMPL-19: ✅ PASS - Library components used (DSS-001)
+└── SR-IMPL-20: ✅ PASS - Typography tokens used (DSS-003)
 
-Summary: CRITICAL=0, HIGH=3, MEDIUM=0, LOW=0
+Summary: CRITICAL=0, HIGH=4, MEDIUM=0, LOW=0
 ```
 
 ### Step 4: Verdict
