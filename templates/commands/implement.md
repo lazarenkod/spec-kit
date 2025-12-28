@@ -102,6 +102,53 @@ auto_fix_rules:
       name: "Debug statements"
       trigger: "SR-IMPL-09 FAIL"
       action: remove_debug_statements
+build_error_patterns:
+  enabled: true
+  max_build_attempts: 3
+  skip_flag: "--no-build-fix"
+  patterns:
+    typescript:
+      - pattern: "Cannot find module '(.+)'"
+        rule: BF-001
+        action: add_import
+      - pattern: "'(.+)' is declared but its value is never read"
+        rule: BF-002
+        action: prefix_unused
+      - pattern: "Property '(.+)' does not exist on type"
+        rule: BF-003
+        action: add_type_annotation
+    react:
+      - pattern: "Each child in a list should have a unique \"key\" prop"
+        rule: BF-004
+        action: add_key_prop
+      - pattern: "React Hook .+ is called conditionally"
+        rule: BF-005
+        action: move_hook_to_top
+    python:
+      - pattern: "ModuleNotFoundError: No module named '(.+)'"
+        rule: BF-001
+        action: add_import
+      - pattern: "NameError: name '(.+)' is not defined"
+        rule: BF-006
+        action: add_import_or_define
+    go:
+      - pattern: "undefined: (.+)"
+        rule: BF-001
+        action: add_import
+      - pattern: "(.+) declared but not used"
+        rule: BF-002
+        action: prefix_unused
+    rust:
+      - pattern: "cannot find .+ `(.+)` in this scope"
+        rule: BF-001
+        action: add_use_statement
+      - pattern: "unused variable: `(.+)`"
+        rule: BF-002
+        action: prefix_unused
+    eslint:
+      - pattern: "'(.+)' is defined but never used"
+        rule: BF-002
+        action: prefix_unused
 claude_code:
   model: opus
   reasoning_mode: extended
@@ -1008,6 +1055,122 @@ Users can always choose to:
 
 This phase ensures code quality and catches issues before handoff to QA.
 
+### Step 0.5: Build-Until-Works Loop
+
+**Purpose**: Iteratively fix common compilation errors before proceeding to full validation.
+
+**When**: After initial code generation, before running auto checks.
+
+**Skip flag**: Pass `--no-build-fix` to disable build error auto-fixing.
+
+**Execution**:
+
+```text
+FUNCTION build_until_works():
+  IF "--no-build-fix" in ARGS:
+    RETURN SKIP  # Proceed to Step 1 without build loop
+
+  build_cmd = detect_build_command()  # npm run build, cargo build, python -m py_compile, go build
+
+  FOR iteration IN range(1, max_build_attempts + 1):
+    build_result = run_command(build_cmd)
+
+    IF build_result.exit_code == 0:
+      LOG "✅ Build successful on attempt {iteration}"
+      RETURN SUCCESS
+
+    errors = parse_build_errors(build_result.stderr)
+    fixes_applied = 0
+
+    FOR EACH error IN errors:
+      FOR EACH lang_patterns IN build_error_patterns.patterns:
+        FOR EACH pattern IN lang_patterns:
+          match = regex_match(pattern.pattern, error.message)
+          IF match:
+            SWITCH pattern.action:
+              CASE "add_import":
+                module = match.group(1)
+                insert_import_statement(error.file, module)
+                fixes_applied++
+
+              CASE "prefix_unused":
+                var_name = match.group(1)
+                rename_variable(error.file, var_name, "_" + var_name)
+                fixes_applied++
+
+              CASE "add_type_annotation":
+                property = match.group(1)
+                add_interface_property(error.file, property)
+                fixes_applied++
+
+              CASE "add_key_prop":
+                insert_key_prop(error.file, error.line, "index")
+                fixes_applied++
+
+              CASE "move_hook_to_top":
+                refactor_hook_to_component_top(error.file)
+                fixes_applied++
+
+              CASE "add_use_statement":
+                item = match.group(1)
+                insert_rust_use_statement(error.file, item)
+                fixes_applied++
+
+              CASE "add_import_or_define":
+                name = match.group(1)
+                IF is_standard_library(name):
+                  insert_import_statement(error.file, name)
+                ELSE:
+                  suggest_definition(error.file, name)
+                fixes_applied++
+
+            BREAK  # Pattern matched, move to next error
+
+    IF fixes_applied == 0:
+      LOG "⚠️ No auto-fixes available for {len(errors)} errors"
+      RETURN BLOCKED  # Escalate to human
+
+    LOG "🔧 Applied {fixes_applied} fixes, retrying build..."
+
+  LOG "❌ Max attempts ({max_build_attempts}) reached"
+  RETURN BLOCKED
+```
+
+**Build-Until-Works Output Format**:
+
+```text
+🔨 Build-Until-Works Loop
+├── Attempt 1/3
+│   ├── Build: FAILED (5 errors)
+│   ├── Patterns Matched: 4
+│   ├── Fixes Applied:
+│   │   ├── BF-001: Added import for 'lodash' in src/utils.ts
+│   │   ├── BF-002: Prefixed '_unused' in src/types.ts:45
+│   │   ├── BF-004: Added key={item.id} in src/List.tsx:23
+│   │   └── BF-004: Added key={index} in src/Grid.tsx:67
+│   └── Retrying build...
+├── Attempt 2/3
+│   ├── Build: SUCCESS ✅
+│   └── All compilation errors resolved
+└── Status: READY for Step 1
+
+OR (if blocked):
+
+🔨 Build-Until-Works Loop
+├── Attempt 1/3
+│   ├── Build: FAILED (3 errors)
+│   ├── Patterns Matched: 0
+│   └── ⚠️ Unrecognized errors - escalating to human
+└── Status: BLOCKED - manual fix required
+
+Unresolved Build Errors:
+  1. src/api.ts:34 - Type 'Promise<void>' is not assignable to type 'Response'
+  2. src/utils.ts:12 - Argument of type 'string' is not assignable to parameter of type 'number'
+  3. src/hooks.ts:8 - Cannot use namespace 'React' as a type
+```
+
+**On BLOCKED**: Report unresolved errors and suggest manual fixes before continuing.
+
 ### Step 1: Run Auto Checks
 
 Execute these checks from the project root:
@@ -1074,11 +1237,22 @@ Auto Checks: PASS (1 warning)
 | AF-004 | Missing `.env.example` | Generate from `process.env`/`os.getenv` scans | SR-IMPL-13 |
 | AF-005 | Debug statements | Remove `console.log`/`print` statements | SR-IMPL-09 |
 
+**Build Error Auto-Fix Rules** (triggered by build stderr parsing):
+
+| Rule ID | Language | Error Pattern | Action |
+|---------|----------|---------------|--------|
+| BF-001 | TS/Py/Go/Rust | Missing module/import | Auto-add import statement |
+| BF-002 | TS/ESLint/Go/Rust | Unused variable | Prefix with `_` or remove |
+| BF-003 | TypeScript | Property not on type | Add interface/type annotation |
+| BF-004 | React | Missing key prop | Add `key={index}` or `key={item.id}` |
+| BF-005 | React | Conditional hook call | Move hook before conditions |
+| BF-006 | Python | Undefined name | Add import or define variable |
+
 **Non-Auto-Fixable Issues** (require human judgment):
 
 | Issue | Reason |
 |-------|--------|
-| Build failures (SR-IMPL-02) | Requires code logic understanding |
+| Complex build failures | When BF-xxx patterns don't match (type logic, async errors) |
 | Test failures (SR-IMPL-03) | May indicate real bugs |
 | Hardcoded secrets (SR-IMPL-07) | Security-critical decision |
 | Error handling (SR-IMPL-08) | Requires domain knowledge |

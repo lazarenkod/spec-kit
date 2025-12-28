@@ -68,6 +68,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `/speckit.merge`: Extended with role_group attributes
   - Wave-based execution prevents file conflicts between FRONTEND/BACKEND/TESTING agents
 
+- **Self-Healing Engine: Build Error Auto-Fixes** — Automatic compilation error recovery
+  - New `build_error_patterns:` YAML section with language-specific patterns
+  - **6 Build Fix rules** (BF-001 to BF-006):
+    - BF-001: Missing import/module → Auto-add import (TS/Py/Go/Rust)
+    - BF-002: Unused variable → Prefix with `_` (TS/ESLint/Go/Rust)
+    - BF-003: Property not on type → Add interface annotation (TypeScript)
+    - BF-004: Missing key prop → Add `key={index}` (React)
+    - BF-005: Conditional hook call → Move hook to top (React)
+    - BF-006: Undefined name → Add import or define (Python)
+  - **Step 0.5: Build-Until-Works Loop** in self-review phase
+    - Iterative build → parse stderr → apply fixes → retry
+    - Max 3 attempts before human escalation
+    - Skip with `--no-build-fix` flag
+  - Languages supported: TypeScript, React, Python, Go, Rust, ESLint
+  - Target: 70% build errors auto-fixed (vs ~10% before)
+
 ---
 
 ## [0.0.37] - 2025-12-27
