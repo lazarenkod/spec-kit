@@ -7,6 +7,46 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.40] - 2025-12-28
+
+### Added
+
+- **Vision-Powered UX Validation (6.1)** — Automated visual UX auditing in `/speckit.implement`
+  - **Screenshot Capture** via Playwright MCP:
+    - Multi-viewport capture: mobile (375px), tablet (768px), desktop (1440px)
+    - Multi-state coverage: default, loading, error, empty, success
+    - Triggered for tasks with `[VR:VR-xxx]` markers or `role_group = FRONTEND`
+  - **Vision Analysis** via Claude Opus:
+    - Validates against UXQ principles (UXQ-001, 003, 005, 006, 010)
+    - Validates against Nielsen Heuristics (H1, H2, H4, H6, H8)
+    - Detects UX anti-patterns (modal overload, cognitive overload, mobile neglect)
+    - Outputs structured JSON with severity-classified violations
+  - **UX Audit Report** generation (`specs/{feature}/ux-audit.md`):
+    - Executive summary with overall UX score (0-100)
+    - Critical/High/Medium/Low issue breakdown
+    - Per-screen analysis with suggestions
+    - Screenshot gallery with coverage matrix
+  - **Deployment Gate**:
+    - CRITICAL violations block deployment (`SR-IMPL-15`)
+    - Skip with `--no-vision` flag
+  - **New YAML Configuration** (`vision_validation:` section):
+    - `enabled: true` for feature toggle
+    - `skip_flag: "--no-vision"` for opt-out
+    - Configurable viewports, states, severity threshold
+  - **New Quality Criteria** (SR-IMPL-14 through SR-IMPL-17):
+    - SR-IMPL-14: UI renders across viewports (HIGH)
+    - SR-IMPL-15: No CRITICAL UX violations (CRITICAL)
+    - SR-IMPL-16: Loading/error/empty states implemented (HIGH)
+    - SR-IMPL-17: Visual accessibility checks pass (HIGH)
+  - **New Templates**:
+    - `templates/shared/vision-validation.md`: Screenshot strategy, vision prompts, severity classification
+    - `templates/ux-audit-template.md`: UX Audit Report template with scoring rubric
+  - **Integration Points**:
+    - Step 1.7 in Self-Review Phase (after Self-Healing, before Re-read Files)
+    - References existing `memory/domains/uxq.md`, `memory/knowledge/frameworks/nielsen-heuristics.md`, `memory/knowledge/anti-patterns/ux.md`
+
+---
+
 ## [0.0.39] - 2025-12-28
 
 ### Added

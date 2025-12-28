@@ -191,6 +191,34 @@ build_error_patterns:
       - pattern: "non-static method .+ cannot be referenced from a static context"
         rule: BF-011
         action: add_instance_or_static
+vision_validation:
+  enabled: true
+  skip_flag: "--no-vision"
+  trigger: "UI_FEATURE"  # Only for tasks with [VR:VR-xxx] markers or role_group = FRONTEND
+  screenshots:
+    tool: "playwright_mcp"
+    viewports:
+      - { name: "mobile", width: 375, height: 812 }
+      - { name: "tablet", width: 768, height: 1024 }
+      - { name: "desktop", width: 1440, height: 900 }
+    states:
+      - default
+      - loading
+      - error
+      - empty
+      - success
+  validation:
+    frameworks:
+      - "memory/domains/uxq.md"
+      - "memory/knowledge/frameworks/nielsen-heuristics.md"
+    anti_patterns:
+      - "memory/knowledge/anti-patterns/ux.md"
+    severity_threshold: "HIGH"  # Block on CRITICAL
+    max_issues: 10
+  output:
+    report_path: "specs/{feature}/ux-audit.md"
+    template: "templates/ux-audit-template.md"
+    format: "markdown"
 claude_code:
   model: opus
   reasoning_mode: extended
@@ -1413,6 +1441,170 @@ FUNCTION execute_self_healing(failed_criteria):
 → Re-running self-review with fixes applied...
 ```
 
+### Step 1.7: Vision-Powered UX Validation (Conditional)
+
+**Purpose**: Automatically validate UI implementation against UX quality principles using screenshot analysis.
+
+**Trigger Conditions**: Execute ONLY if ALL conditions are met:
+1. `vision_validation.enabled = true` in YAML config
+2. `--no-vision` flag is NOT passed
+3. Task has `[VR:VR-xxx]` markers OR `role_group = FRONTEND` in tasks.md
+4. Playwright MCP server is available
+
+**Skip Conditions**:
+- API-only or backend features (no UI)
+- CLI tools without graphical interface
+- Tasks without `[VR:]` markers AND no frontend components
+
+**Execution Flow**:
+
+```text
+FUNCTION execute_vision_validation():
+  IF "--no-vision" in ARGS:
+    LOG "Vision validation skipped (--no-vision flag)"
+    RETURN SKIP
+
+  ui_tasks = filter_tasks(markers=["VR:VR-xxx"] OR role_group="FRONTEND")
+  IF ui_tasks.empty:
+    LOG "Vision validation skipped (no UI tasks detected)"
+    RETURN SKIP
+
+  # 1. Identify Screens to Capture
+  screens = []
+  FOR EACH task in ui_tasks:
+    IF task.marker matches "[VR:VR-xxx]":
+      screen = extract_screen_from_marker(task)
+      screens.append({
+        id: screen.id,
+        path: infer_route_from_task(task),
+        component: extract_component_name(task),
+        states: ["default", "loading", "error", "empty", "success"]
+      })
+
+  # 2. Capture Screenshots (Playwright MCP)
+  screenshots = []
+  FOR EACH screen in screens:
+    FOR EACH viewport in [mobile: 375x812, tablet: 768x1024, desktop: 1440x900]:
+      FOR EACH state in screen.states:
+        # Navigate and trigger state
+        browser_navigate(screen.path)
+        trigger_state(state)  # Mock API response for state
+
+        # Capture screenshot
+        filename = "screenshots/{screen.id}_{viewport.name}_{state}.png"
+        browser_take_screenshot(filename)
+        screenshots.append({
+          screen: screen.id,
+          viewport: viewport.name,
+          state: state,
+          file: filename
+        })
+
+  # 3. Vision Analysis (Claude Opus with vision)
+  violations = []
+  FOR EACH screenshot in screenshots:
+    analysis = analyze_with_vision(screenshot.file, VISION_PROMPT)
+    violations.extend(analysis.violations)
+
+  # 4. Generate UX Audit Report
+  report = generate_ux_audit_report(violations, screenshots)
+  write_file("specs/{feature}/ux-audit.md", report)
+
+  # 5. Apply Gate
+  critical_violations = filter(violations, severity="CRITICAL")
+  IF critical_violations.count > 0:
+    BLOCK deployment
+    ERROR "UX validation failed. {N} critical issues must be resolved:"
+    FOR EACH violation in critical_violations:
+      PRINT "  - [{violation.id}] {violation.issue}"
+      PRINT "    Suggestion: {violation.suggestion}"
+    RETURN FAIL
+
+  IF violations.count > vision_validation.max_issues:
+    WARN "UX validation found {N} issues. Review recommended."
+
+  RETURN PASS
+```
+
+**Vision Analysis Prompt** (sent with each screenshot):
+
+```text
+Analyze this UI screenshot against UX quality principles.
+
+## UXQ Principles to Check (from memory/domains/uxq.md)
+- UXQ-001: Mental Model Alignment (no jargon, intuitive labels)
+- UXQ-003: Friction Justification (every step must add value)
+- UXQ-005: Error Empathy (helpful messages, not blaming)
+- UXQ-006: FTUE Clear Guidance (onboarding clarity)
+- UXQ-010: Accessibility (contrast, touch targets)
+
+## Nielsen Heuristics to Check (from memory/knowledge/frameworks/nielsen-heuristics.md)
+- H1: Visibility of System Status (feedback, loading indicators)
+- H2: Match Between System and Real World (familiar terms)
+- H4: Consistency and Standards (UI patterns)
+- H6: Recognition Rather Than Recall (visible options)
+- H8: Aesthetic and Minimalist Design (no clutter)
+
+## Anti-Patterns to Detect (from memory/knowledge/anti-patterns/ux.md)
+- UX-001: Modal Overload (too many popups)
+- UX-003: Form Abandonment Design (hostile forms)
+- UX-005: Cognitive Overload (too much at once)
+- UX-007: Mobile Neglect (touch targets, responsive)
+
+Output as JSON:
+{
+  "screen": "{screen_name}",
+  "viewport": "{viewport}",
+  "state": "{state}",
+  "violations": [
+    {
+      "id": "UXQ-xxx / H-x / UX-xxx",
+      "severity": "CRITICAL | HIGH | MEDIUM | LOW",
+      "element": "description of UI element",
+      "issue": "what's wrong",
+      "suggestion": "how to fix"
+    }
+  ],
+  "score": 0-100
+}
+```
+
+**Severity Classification**:
+
+| Severity | Criteria | Examples | Action |
+|----------|----------|----------|--------|
+| CRITICAL | Blocks core task, accessibility barrier | Missing form labels, <3:1 contrast, no error message | BLOCK deploy |
+| HIGH | Significant usability issue | Confusing labels, hidden actions, no loading state | WARN, recommend fix |
+| MEDIUM | Minor friction | Inconsistent spacing, verbose text | Log for backlog |
+| LOW | Polish opportunity | Could be more delightful | Optional |
+
+**Output Format**:
+
+```text
+👁️ Vision-Powered UX Validation
+├── Screens Analyzed: {N}
+├── Screenshots Captured: {N} (across 3 viewports × 5 states)
+├── Violations Found:
+│   ├── CRITICAL: {count}
+│   ├── HIGH: {count}
+│   ├── MEDIUM: {count}
+│   └── LOW: {count}
+├── Overall UX Score: {score}/100
+└── Report: specs/{feature}/ux-audit.md
+
+{IF CRITICAL > 0}
+⛔ DEPLOYMENT BLOCKED - Critical UX issues must be resolved:
+  - [UXQ-010] Form input missing label (accessibility)
+  - [H1] No loading indicator on submit button
+{ENDIF}
+```
+
+**Reference Documentation**:
+- Vision validation guide: `templates/shared/vision-validation.md`
+- UX audit template: `templates/ux-audit-template.md`
+- UXQ domain: `memory/domains/uxq.md`
+- Nielsen heuristics: `memory/knowledge/frameworks/nielsen-heuristics.md`
+
 ### Step 2: Re-read Modified Files
 
 Review the files you created/modified in this implementation:
@@ -1438,6 +1630,10 @@ Answer each question by examining the implementation:
 | SR-IMPL-11 | RUNNING.md exists and has valid run commands? | HIGH |
 | SR-IMPL-12 | README.md exists and reflects implemented features? | HIGH |
 | SR-IMPL-13 | .env.example exists if env vars are used? | MEDIUM |
+| SR-IMPL-14 | UI renders correctly across viewports (mobile, tablet, desktop)? | HIGH |
+| SR-IMPL-15 | No CRITICAL UX violations detected by vision analysis? | CRITICAL |
+| SR-IMPL-16 | Loading, error, and empty states implemented for UI components? | HIGH |
+| SR-IMPL-17 | Visual accessibility checks pass (contrast, touch targets)? | HIGH |
 
 **Evaluation**:
 ```text
@@ -1451,9 +1647,16 @@ Answer each question by examining the implementation:
 ├── SR-IMPL-07: ✅ PASS - No secrets detected
 ├── SR-IMPL-08: ✅ PASS - Error handling present
 ├── SR-IMPL-09: ✅ PASS - No debug statements
-└── SR-IMPL-10: ✅ PASS - Naming conventions followed
+├── SR-IMPL-10: ✅ PASS - Naming conventions followed
+├── SR-IMPL-11: ✅ PASS - RUNNING.md exists
+├── SR-IMPL-12: ✅ PASS - README.md updated
+├── SR-IMPL-13: ✅ PASS - .env.example exists
+├── SR-IMPL-14: ✅ PASS - UI renders across viewports (vision check)
+├── SR-IMPL-15: ✅ PASS - No critical UX violations
+├── SR-IMPL-16: ⚠️ HIGH - Missing loading state in checkout form
+└── SR-IMPL-17: ✅ PASS - Accessibility visual checks pass
 
-Summary: CRITICAL=0, HIGH=2, MEDIUM=0, LOW=0
+Summary: CRITICAL=0, HIGH=3, MEDIUM=0, LOW=0
 ```
 
 ### Step 4: Verdict
@@ -1564,6 +1767,10 @@ Generate this report before handoff:
 | SR-IMPL-11 | RUNNING.md exists? | ✅ PASS | — |
 | SR-IMPL-12 | README.md updated? | ✅ PASS | — |
 | SR-IMPL-13 | .env.example exists? | ❌ FAIL | ✅ FIXED (AF-004) |
+| SR-IMPL-14 | UI renders across viewports? | ✅ PASS | — |
+| SR-IMPL-15 | No critical UX violations? | ✅ PASS | — |
+| SR-IMPL-16 | Loading/error/empty states? | ⚠️ HIGH | (manual fix needed) |
+| SR-IMPL-17 | Accessibility visual checks? | ✅ PASS | — |
 
 ### Self-Healing Summary
 | Rule | Action | Count | Status |
