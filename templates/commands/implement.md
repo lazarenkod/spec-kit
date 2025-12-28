@@ -1,5 +1,5 @@
 ---
-description: Execute the implementation plan by processing and executing all tasks defined in tasks.md
+description: Execute the implementation plan, generate documentation (RUNNING.md, README.md), and validate with self-review
 persona: developer-agent
 handoff:
   requires: handoffs/tasks-to-implement.md
@@ -235,10 +235,11 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 7. Execute implementation following the task plan:
    - **Phase-by-phase execution**: Complete each phase before moving to the next
-   - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together  
+   - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
    - **Validation checkpoints**: Verify each phase completion before proceeding
+   - **⚠️ MANDATORY**: After completing each task, IMMEDIATELY mark it as `[X]` in tasks.md (see Step 9)
 
 8. Implementation execution rules:
    - **Setup first**: Initialize project structure, dependencies, configuration
@@ -292,13 +293,50 @@ You **MUST** consider the user input before proceeding (if not empty).
    func validatePassword(password string) error {
    ```
 
-9. Progress tracking and error handling:
-   - Report progress after each completed task
-   - Halt execution if any non-parallel task fails
-   - For parallel tasks [P], continue with successful tasks, report failed ones
-   - Provide clear error messages with context for debugging
-   - Suggest next steps if implementation cannot proceed
-   - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.
+9. **Task Completion Protocol** (MANDATORY after each task):
+
+   **CRITICAL**: After completing EACH task, you MUST immediately update tasks.md:
+
+   a) **Mark task as complete**:
+      ```text
+      BEFORE: - [ ] T005 Implement user authentication service [FR:FR-001]
+      AFTER:  - [X] T005 Implement user authentication service [FR:FR-001]
+      ```
+
+   b) **Update sequence** (after each task):
+      1. Complete the task implementation
+      2. Verify the task works (compile/test if applicable)
+      3. **IMMEDIATELY** edit tasks.md to change `[ ]` → `[X]`
+      4. Report progress to user
+      5. Proceed to next task
+
+   c) **Progress report format** (after marking task):
+      ```text
+      ✓ T005 [FR:FR-001] Implement user authentication service - DONE
+        Files: src/services/auth.ts, src/models/user.ts
+        Progress: 5/12 tasks complete (42%)
+      ```
+
+   d) **Error handling**:
+      - Halt execution if any non-parallel task fails
+      - For parallel tasks [P], continue with successful tasks, report failed ones
+      - Provide clear error messages with context for debugging
+      - If task cannot be completed, mark with `[!]` and explain:
+        ```text
+        - [!] T005 Implement user authentication service [FR:FR-001]
+          ⚠️ BLOCKED: Missing database schema, need T003 first
+        ```
+
+   e) **Verification checkpoint** (every 3-5 tasks):
+      ```text
+      📊 Progress Check:
+      ├── Completed: T001, T002, T003, T004, T005 (5 tasks)
+      ├── Remaining: T006, T007, T008... (7 tasks)
+      ├── Blocked: none
+      └── Next: T006 - Create API endpoints
+      ```
+
+   **NEVER proceed to the next task without marking the current task as [X] in tasks.md.**
 
 10. **Definition of Done (DoD)** — Per User Story:
 
@@ -411,6 +449,230 @@ You **MUST** consider the user input before proceeding (if not empty).
     - AS-1A: ❌ → ✅ (tests/auth/test_login.py)
     - AS-1B: ❌ → ✅ (tests/auth/test_login.py)
     ```
+
+14. **Documentation Generation** (after implementation complete):
+
+    Create or update run instructions in `RUNNING.md` at repository root:
+
+    a) **Detect project type and generate instructions**:
+       ```text
+       Analyze project structure from plan.md and package files:
+       - package.json → Node.js/npm/yarn/pnpm commands
+       - pyproject.toml/setup.py → Python/pip/uv commands
+       - Cargo.toml → Rust/cargo commands
+       - go.mod → Go commands
+       - pom.xml/build.gradle → Java/Maven/Gradle commands
+       - Gemfile → Ruby/bundler commands
+       - docker-compose.yml → Docker commands
+       ```
+
+    b) **RUNNING.md structure**:
+       ```markdown
+       # Running the Application
+
+       ## Prerequisites
+
+       - [Runtime version from plan.md, e.g., Node.js 20+, Python 3.11+]
+       - [Package manager, e.g., npm, uv, cargo]
+       - [External dependencies, e.g., PostgreSQL, Redis] (from INFRA-xxx in plan.md)
+
+       ## Installation
+
+       ```bash
+       # Clone and install dependencies
+       [detected install command: npm install / uv sync / cargo build]
+       ```
+
+       ## Configuration
+
+       Required environment variables:
+       | Variable | Description | Default |
+       |----------|-------------|---------|
+       | DATABASE_URL | Database connection string | - |
+       | ... | (extracted from code/plan.md) | ... |
+
+       Copy `.env.example` to `.env` and configure:
+       ```bash
+       cp .env.example .env
+       # Edit .env with your values
+       ```
+
+       ## Running
+
+       ### Development
+       ```bash
+       [detected dev command: npm run dev / python -m app / cargo run]
+       ```
+
+       ### Production
+       ```bash
+       [detected prod command: npm start / gunicorn / cargo run --release]
+       ```
+
+       ### With Docker
+       ```bash
+       docker-compose up -d
+       # or
+       docker build -t app . && docker run -p 8080:8080 app
+       ```
+
+       ## Testing
+
+       ```bash
+       [detected test command: npm test / pytest / cargo test]
+       ```
+
+       ## Common Issues
+
+       ### [Issue 1 - detected from implementation]
+       **Symptom**: [description]
+       **Solution**: [fix]
+
+       ---
+       *Auto-generated by Spec Kit /speckit.implement*
+       ```
+
+    c) **Update logic**:
+       ```text
+       IF RUNNING.md exists:
+         - Parse existing sections
+         - Update only sections that changed (preserve custom additions)
+         - Add new sections for newly discovered requirements
+         - Mark auto-generated sections with <!-- speckit:auto --> comments
+       ELSE:
+         - Create new RUNNING.md from template
+       ```
+
+    d) **Environment file generation**:
+       ```text
+       IF .env.example does not exist:
+         - Scan code for environment variable references
+         - Scan plan.md Infrastructure Dependencies for connection strings
+         - Generate .env.example with placeholder values
+       ```
+
+15. **README.md Auto-Update** (after documentation generation):
+
+    Create or update `README.md` at repository root:
+
+    a) **Source data extraction**:
+       ```text
+       FROM spec.md:
+         - Title: Feature name
+         - Description: Objective section
+         - Features: Functional Requirements list (FR-xxx)
+         - User Stories: AS-xxx summaries
+
+       FROM plan.md:
+         - Tech Stack: Language/Version, Primary Dependencies
+         - Architecture: Project Structure section
+         - Infrastructure: INFRA-xxx dependencies
+
+       FROM RUNNING.md:
+         - Quick Start: Installation + Running sections
+         - Prerequisites: Requirements section
+       ```
+
+    b) **README.md structure**:
+       ```markdown
+       # [Project Name]
+
+       > [One-line description from spec.md Objective]
+
+       ## Features
+
+       - ✅ [FR-001 description]
+       - ✅ [FR-002 description]
+       - ... (from spec.md Functional Requirements)
+
+       ## Tech Stack
+
+       - **Runtime**: [from plan.md]
+       - **Framework**: [from plan.md Primary Dependencies]
+       - **Database**: [from plan.md INFRA-xxx]
+       - **Cache**: [from plan.md INFRA-xxx]
+
+       ## Quick Start
+
+       ### Prerequisites
+
+       - [from RUNNING.md Prerequisites]
+
+       ### Installation
+
+       ```bash
+       [from RUNNING.md Installation]
+       ```
+
+       ### Running
+
+       ```bash
+       [from RUNNING.md Development command]
+       ```
+
+       ## Development
+
+       See [RUNNING.md](./RUNNING.md) for detailed development instructions.
+
+       ## Testing
+
+       ```bash
+       [from RUNNING.md Testing]
+       ```
+
+       ## Project Structure
+
+       ```
+       [from plan.md Project Structure, simplified]
+       ```
+
+       ## Documentation
+
+       - [Specification](./specs/[feature]/spec.md)
+       - [Implementation Plan](./specs/[feature]/plan.md)
+       - [Task Breakdown](./specs/[feature]/tasks.md)
+
+       ## License
+
+       [Detect from LICENSE file or default to project standard]
+
+       ---
+       *Generated with [Spec Kit](https://github.com/sddevelopment-be/spec-kit) - Spec-Driven Development Toolkit*
+       ```
+
+    c) **Update strategy**:
+       ```text
+       IF README.md exists:
+         - Detect sections marked with <!-- speckit:auto --> or <!-- speckit:managed -->
+         - Update ONLY auto-managed sections
+         - Preserve all custom sections (Contributing, Authors, Badges, etc.)
+         - Add new auto sections if missing
+
+       Section markers:
+         <!-- speckit:auto:features --> ... <!-- /speckit:auto:features -->
+         <!-- speckit:auto:quickstart --> ... <!-- /speckit:auto:quickstart -->
+         <!-- speckit:auto:techstack --> ... <!-- /speckit:auto:techstack -->
+
+       ELSE:
+         - Create new README.md with full template
+         - All sections marked as auto-managed
+       ```
+
+    d) **Multi-feature support**:
+       ```text
+       IF multiple features implemented (specs/features/001-*, 002-*, ...):
+         - README Features section aggregates all feature FRs
+         - Documentation section links to all feature specs
+         - Quick Start uses most recent/primary feature setup
+       ```
+
+    e) **Output confirmation**:
+       ```text
+       📝 Documentation Updated:
+       ├── RUNNING.md: Created/Updated (Prerequisites, Installation, Running, Testing)
+       ├── .env.example: Created (12 environment variables)
+       └── README.md: Updated (Features: +3, Tech Stack: synced)
+       ```
 
 Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit.tasks` first to regenerate the task list.
 
@@ -561,6 +823,9 @@ Answer each question by examining the implementation:
 | SR-IMPL-08 | Error handling present for external calls? | HIGH |
 | SR-IMPL-09 | No console.log/print debug statements left? | MEDIUM |
 | SR-IMPL-10 | File/function naming follows project conventions? | LOW |
+| SR-IMPL-11 | RUNNING.md exists and has valid run commands? | HIGH |
+| SR-IMPL-12 | README.md exists and reflects implemented features? | HIGH |
+| SR-IMPL-13 | .env.example exists if env vars are used? | MEDIUM |
 
 **Evaluation**:
 ```text
@@ -658,9 +923,19 @@ Generate this report before handoff:
 | SR-IMPL-08 | Error handling? | ✅ PASS |
 | SR-IMPL-09 | No debug statements? | ✅ PASS |
 | SR-IMPL-10 | Naming conventions? | ✅ PASS |
+| SR-IMPL-11 | RUNNING.md exists? | ✅ PASS |
+| SR-IMPL-12 | README.md updated? | ✅ PASS |
+| SR-IMPL-13 | .env.example exists? | ✅ PASS |
+
+### Documentation
+| File | Status | Sections |
+|------|--------|----------|
+| RUNNING.md | ✅ Created | Prerequisites, Installation, Running, Testing |
+| README.md | ✅ Updated | Features (+3), Tech Stack, Quick Start |
+| .env.example | ✅ Created | 12 variables |
 
 ### Verdict: ✅ PASS
-**Reason**: All criteria met, no blocking issues.
+**Reason**: All criteria met, documentation generated.
 
 → Proceeding to handoff: /speckit.analyze (QA mode)
 ```
