@@ -41,6 +41,7 @@ pre_gates:
     block_if: "No scope defined"
     message: "Specify scope for baseline capture (file paths, modules, or keywords)"
 claude_code:
+  model: sonnet
   reasoning_mode: extended
   thinking_budget: 10000
 skills:

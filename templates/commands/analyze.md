@@ -68,6 +68,7 @@ handoffs:
     post_actions:
       - "log: QA verification passed, ready for merge"
 claude_code:
+  model: sonnet
   reasoning_mode: extended
   thinking_budget: 12000
   subagents:

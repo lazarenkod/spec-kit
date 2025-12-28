@@ -8,6 +8,7 @@ handoffs:
     agent: speckit.specify
     prompt: Create a new feature that extends the merged system specs
 claude_code:
+  model: sonnet
   reasoning_mode: extended
   thinking_budget: 8000
   subagents:

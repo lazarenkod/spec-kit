@@ -24,6 +24,10 @@ auto_invocation:
 scripts:
    sh: scripts/bash/check-prerequisites.sh --json --paths-only
    ps: scripts/powershell/check-prerequisites.ps1 -Json -PathsOnly
+claude_code:
+  model: sonnet
+  reasoning_mode: normal
+  thinking_budget: 4000
 ---
 
 ## User Input

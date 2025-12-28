@@ -102,6 +102,31 @@ auto_fix_rules:
       name: "Debug statements"
       trigger: "SR-IMPL-09 FAIL"
       action: remove_debug_statements
+claude_code:
+  model: opus
+  reasoning_mode: extended
+  thinking_budget: 8000
+  phases:
+    setup:
+      model: haiku
+      reasoning_mode: normal
+      thinking_budget: 2000
+      description: "Project init, deps, ignore files"
+    core:
+      model: opus
+      reasoning_mode: extended
+      thinking_budget: 10000
+      description: "Business logic, services, models"
+    tests:
+      model: sonnet
+      reasoning_mode: normal
+      thinking_budget: 4000
+      description: "Test code generation"
+    self_review:
+      model: haiku
+      reasoning_mode: normal
+      thinking_budget: 2000
+      description: "Auto-fix, annotations, formatting"
 ---
 
 ## User Input

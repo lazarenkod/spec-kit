@@ -19,6 +19,7 @@ handoffs:
     condition:
       - "UXQ domain is active in constitution"
 claude_code:
+  model: opus
   reasoning_mode: extended
   thinking_budget: 8000
   plan_mode_trigger: true

@@ -61,6 +61,10 @@ skills:
   - name: code-explore
     trigger: "Brownfield mode - understanding existing codebase"
     usage: "Read templates/skills/code-explore.md to document current behaviors before specification"
+claude_code:
+  model: opus
+  reasoning_mode: extended
+  thinking_budget: 10000
 ---
 
 ## User Input

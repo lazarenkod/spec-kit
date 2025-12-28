@@ -10,6 +10,10 @@ handoffs:
 scripts:
   sh: echo "Constitution management - no prerequisites required"
   ps: Write-Host "Constitution management - no prerequisites required"
+claude_code:
+  model: opus
+  reasoning_mode: extended
+  thinking_budget: 8000
 ---
 
 ## User Input

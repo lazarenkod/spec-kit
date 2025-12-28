@@ -68,6 +68,10 @@ handoffs:
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json
   ps: scripts/powershell/check-prerequisites.ps1 -Json
+claude_code:
+  model: sonnet
+  reasoning_mode: extended
+  thinking_budget: 6000
 ---
 
 ## User Input

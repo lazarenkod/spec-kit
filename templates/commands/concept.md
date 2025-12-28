@@ -9,6 +9,7 @@ handoffs:
     agent: speckit.analyze
     prompt: Check concept completeness and consistency
 claude_code:
+  model: opus
   reasoning_mode: extended
   thinking_budget: 10000
   plan_mode_trigger: true
