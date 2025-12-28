@@ -99,6 +99,43 @@ This command captures the **complete vision and scope** of a service/product BEF
      → Ask user: "Would you like to brainstorm and research first, or do you have a clear concept ready?"
    ```
 
+2b. **Project Type Detection**:
+
+   Analyze codebase to determine project type and required UX foundations.
+
+   ```text
+   INDICATORS = {
+     "Web SPA": package.json with React/Vue/Angular/Svelte,
+     "Web SSR": package.json with Next.js/Nuxt/SvelteKit,
+     "Mobile": ios/ or android/ directories,
+     "CLI": --help flag, cli.py, argparse, commander.js,
+     "API": openapi.yaml, swagger.json, api/ directory,
+     "Desktop": Electron, Tauri indicators,
+     "Service": Dockerfile only, no UI
+   }
+
+   FOR EACH indicator in INDICATORS:
+     IF indicator matches codebase:
+       PROJECT_TYPE = indicator.type
+       BREAK (use first match by priority)
+
+   # Load required foundations from catalog
+   READ memory/knowledge/frameworks/ux-foundations.md
+   REQUIRED_FOUNDATIONS = lookup by PROJECT_TYPE
+
+   Report: "Detected project type: {PROJECT_TYPE}"
+   Report: "Required UX foundations: {REQUIRED_FOUNDATIONS}"
+   ```
+
+   **Project Type Priority** (when multiple match):
+   1. Mobile (if ios/ or android/)
+   2. Web SSR (if SSR framework)
+   3. Web SPA (if SPA framework)
+   4. Desktop (if Electron/Tauri)
+   5. CLI (if CLI indicators)
+   6. API (if OpenAPI/swagger)
+   7. Service (fallback)
+
 3. **Phase 0: Discovery Mode** (if triggered):
 
    ### Phase 0a: Problem Discovery (Brainstorming)
@@ -216,6 +253,42 @@ This command captures the **complete vision and scope** of a service/product BEF
    - If implied: Infer from context and document as assumption
    - If unclear: Use reasonable industry defaults (or use Discovery findings if available)
 
+5b. **Extract UX Foundation Layer**:
+
+   Generate foundation features based on detected project type.
+
+   ```text
+   # Load foundation scenarios from catalog
+   READ memory/knowledge/frameworks/ux-foundations.md
+
+   FOR EACH foundation in REQUIRED_FOUNDATIONS:
+     1. Load scenario definitions (UXF-xxx IDs)
+     2. Generate corresponding Epic/Feature/Story entries:
+        - AUTH → EPIC-001 User Access
+          - F01 Registration (UXF-AUTH-001, UXF-AUTH-002)
+          - F02 Session Management (UXF-AUTH-003, UXF-AUTH-004)
+        - ERROR → Infrastructure layer (cross-cutting)
+        - LAYOUT → Infrastructure layer (cross-cutting)
+        - NAV → Feature in EPIC-001 or separate EPIC
+        - FTUE → EPIC for Onboarding
+        - FEEDBACK → Infrastructure layer (cross-cutting)
+
+     3. Assign Wave:
+        - Wave 1: AUTH, LAYOUT, ERROR (core infrastructure)
+        - Wave 2: NAV, FTUE, FEEDBACK (user experience)
+
+     4. Auto-set priority:
+        - Wave 1 foundations → P1a (always highest priority)
+        - Wave 2 foundations → P1b
+
+     5. Mark in "UX Foundation Layer" section of concept.md
+   ```
+
+   **Output**:
+   - Populate "UX Foundation Layer" section with detected foundations
+   - Generate foundation Epic/Features/Stories BEFORE user-defined features
+   - Set up "Foundation Scenarios" mapping table
+
 6. **Build Feature Hierarchy**:
 
    Analyze the user description to identify capabilities and organize them:
@@ -256,6 +329,58 @@ This command captures the **complete vision and scope** of a service/product BEF
      5. Note where journeys share features (integration points)
    ```
 
+7b. **Scenario Completeness Validation**:
+
+   Validate each non-foundation story has complete context.
+
+   ```text
+   COMPLETENESS_CHECKS = {
+     "Entry Point": "How does user navigate here?",
+     "Auth Context": "GUEST | AUTHENTICATED | ADMIN?",
+     "Error Handling": "What if the action fails?",
+     "Exit Point": "Where does user go after success?"
+   }
+
+   FOR EACH story in Feature Hierarchy:
+     IF story.wave >= 3:  # Non-foundation story
+       FOR EACH check in COMPLETENESS_CHECKS:
+         IF check not documented:
+           WARN: "Story {story.id} missing: {check}"
+
+   # Generate completeness table
+   | Story ID | Entry Point | Auth | Error | Exit | Complete? |
+   |----------|-------------|------|-------|------|-----------|
+   | EPIC-002.F01.S01 | Nav menu | AUTH | Shows error toast | Returns to list | ✓ |
+   | EPIC-002.F01.S02 | Direct link | AUTH | ? | ? | ⚠ INCOMPLETE |
+   ```
+
+   **Output**:
+   - List of incomplete stories with missing fields
+   - Recommendation: "Complete scenario context before specification"
+
+7c. **Generate Golden Path**:
+
+   Create J000 journey that validates Wave 1-2 completion.
+
+   ```text
+   GOLDEN_PATH_TEMPLATE = [
+     "[Guest] Views home page → LAYOUT",
+     "[Guest] Clicks Sign Up → NAV",
+     "[Guest] Registers account → AUTH",
+     "[User] Completes onboarding → FTUE",
+     "[User] Performs first action → First P1a feature",
+     "[User] Sees confirmation → FEEDBACK"
+   ]
+
+   FOR EACH step in GOLDEN_PATH_TEMPLATE:
+     1. Find matching feature in hierarchy
+     2. Link to Feature ID
+     3. Note Wave number
+     4. Set status = [ ] (pending)
+
+   ADD to "Execution Order" section as "Golden Path"
+   ```
+
 8. **Document Cross-Feature Dependencies**:
 
    Build dependency matrix:
@@ -268,6 +393,71 @@ This command captures the **complete vision and scope** of a service/product BEF
    ```
 
    Generate Mermaid diagram for visual representation.
+
+8b. **Foundation Layer Detection (Pattern-Based)**:
+
+   Identify user-defined features that ARE foundations (even if not from catalog).
+
+   ```text
+   FOUNDATION_PATTERNS = {
+     "AUTH": ["auth*", "login*", "signin*", "signup*", "register*", "session*", "oauth*", "sso*"],
+     "USER_MGMT": ["user*", "account*", "profile*", "permission*", "role*", "member*"],
+     "CORE_DATA": ["schema*", "database*", "migration*", "model*", "entity*"],
+     "INFRASTRUCTURE": ["config*", "env*", "logging*", "error*", "monitoring*"],
+     "NAV": ["nav*", "route*", "router*", "menu*", "sidebar*"],
+     "LAYOUT": ["layout*", "shell*", "frame*", "container*", "header*", "footer*"]
+   }
+
+   FOR EACH feature in Feature Hierarchy:
+     feature_name_lower = lowercase(feature.name)
+
+     FOR EACH (foundation_type, patterns) in FOUNDATION_PATTERNS:
+       FOR EACH pattern in patterns:
+         IF feature_name_lower MATCHES pattern (glob-style):
+           MARK feature.is_foundation = true
+           MARK feature.foundation_type = foundation_type
+
+           # Auto-assign Wave based on foundation type
+           IF foundation_type in ["AUTH", "USER_MGMT", "CORE_DATA", "INFRASTRUCTURE", "LAYOUT"]:
+             SET feature.wave = 1
+             IF feature.priority > "P1a":
+               WARN: "Elevating {feature.id} to P1a (foundation)"
+               SET feature.priority = "P1a"
+           ELSE IF foundation_type in ["NAV"]:
+             SET feature.wave = 2
+             IF feature.priority > "P1b":
+               SET feature.priority = "P1b"
+
+           BREAK  # First match wins
+   ```
+
+   **Output**:
+   - List of detected foundation features with their types
+   - Wave assignments for all foundations
+   - Priority elevation warnings (if any)
+
+8c. **Populate Execution Order**:
+
+   Organize all features into Waves in the concept.md template.
+
+   ```text
+   WAVE_1_FEATURES = filter(features, wave == 1)
+   WAVE_2_FEATURES = filter(features, wave == 2)
+   WAVE_3_PLUS = filter(features, wave >= 3)
+
+   FOR EACH feature in WAVE_1_FEATURES:
+     ADD to "Wave 1: Foundation Layer" table
+
+   FOR EACH feature in WAVE_2_FEATURES:
+     ADD to "Wave 2: Experience Layer" table
+
+   FOR EACH feature in WAVE_3_PLUS:
+     ADD to "Wave 3+: Business Features" table
+
+   # Calculate what each feature blocks
+   FOR EACH feature:
+     feature.blocks = find_features_that_depend_on(feature.id)
+   ```
 
 9. **Capture Ideas Backlog**:
 
@@ -442,6 +632,11 @@ Parse to extract hierarchy and validate structure.
 | SR-CONCEPT-08 | Journeys Mapped | At least 1 journey per primary persona | HIGH |
 | SR-CONCEPT-09 | Backlog Populated | Ideas Backlog section exists (even if empty note) | MEDIUM |
 | SR-CONCEPT-10 | Glossary Present | Domain-specific terms defined | MEDIUM |
+| SR-CONCEPT-11 | Foundation Detected | UX Foundation Layer populated with detected type | CRITICAL |
+| SR-CONCEPT-12 | Foundations are P1a | All Wave 1 foundations have P1a priority | HIGH |
+| SR-CONCEPT-13 | Execution Order Valid | Wave assignments complete, no Wave 3 without Wave 1-2 | HIGH |
+| SR-CONCEPT-14 | Golden Path Exists | J000 journey defined covering Wave 1-2 features | CRITICAL |
+| SR-CONCEPT-15 | No Orphan Features | All features assigned to a Wave | MEDIUM |
 
 ### Step 3: Hierarchy Validation
 
@@ -475,6 +670,46 @@ FOR EACH epic in EPICS:
 FOR EACH feature in FEATURES:
   IF no stories reference this feature:
     ERROR: "Feature {id} has no stories"
+```
+
+### Step 3b: Foundation & Wave Validation
+
+Verify UX Foundation Layer and Execution Order:
+
+```text
+# SR-CONCEPT-11: Foundation Detected
+IF "UX Foundation Layer" section is empty OR PROJECT_TYPE not set:
+  ERROR: "Foundation layer not populated"
+
+# SR-CONCEPT-12: Foundations are P1a
+FOR EACH feature WHERE wave == 1:
+  IF feature.priority != "P1a":
+    ERROR: "Wave 1 feature {id} must be P1a, found {priority}"
+
+# SR-CONCEPT-13: Execution Order Valid
+WAVE_1_COUNT = count(features WHERE wave == 1)
+WAVE_2_COUNT = count(features WHERE wave == 2)
+WAVE_3_COUNT = count(features WHERE wave >= 3)
+
+IF WAVE_3_COUNT > 0 AND WAVE_1_COUNT == 0:
+  ERROR: "Wave 3 features exist but no Wave 1 foundations"
+
+IF WAVE_3_COUNT > 0 AND WAVE_2_COUNT == 0:
+  WARN: "Wave 3 features exist but no Wave 2 experience layer"
+
+# SR-CONCEPT-14: Golden Path Exists
+IF "Golden Path" section is empty OR J000 not defined:
+  ERROR: "Golden Path (J000) not defined"
+
+GOLDEN_PATH_FEATURES = extract features from J000
+FOR EACH feature in GOLDEN_PATH_FEATURES:
+  IF feature not in FEATURES:
+    ERROR: "Golden Path references undefined feature: {id}"
+
+# SR-CONCEPT-15: No Orphan Features
+FOR EACH feature in FEATURES:
+  IF feature.wave is undefined:
+    WARN: "Feature {id} not assigned to any Wave"
 ```
 
 ### Step 4: Dependency Validation
@@ -550,6 +785,22 @@ After passing self-review, output:
 | User Journeys | ✓ {N} journeys mapped |
 | Ideas Backlog | ✓ {N} ideas captured |
 
+### Foundation Layer
+
+| Check | Result |
+|-------|--------|
+| Project Type | ✓ {PROJECT_TYPE} detected |
+| Foundations | ✓ {N} required, {N} defined |
+| Golden Path | ✓ J000 defined with {N} steps |
+
+### Wave Distribution
+
+| Wave | Features | Status |
+|------|----------|--------|
+| Wave 1 (Foundation) | {N} | ✓ All P1a |
+| Wave 2 (Experience) | {N} | ✓ All P1b |
+| Wave 3+ (Business) | {N} | Ready after Wave 1-2 |
+
 ### Priority Distribution
 
 | Priority | Stories |
@@ -561,5 +812,12 @@ After passing self-review, output:
 
 ### Ready for Specification
 
-Concept capture complete. Next: `/speckit.specify EPIC-001.F01.S01`
+Concept capture complete.
+
+**Recommended order** (Wave-based):
+1. Start with Wave 1 foundations: `/speckit.specify EPIC-001.F01.S01`
+2. Then Wave 2 experience: (after Wave 1 complete)
+3. Then Wave 3+ business features: (after Golden Path testable)
+
+**Golden Path status**: [ ] Not yet testable (requires Wave 1-2 completion)
 ```

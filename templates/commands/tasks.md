@@ -197,7 +197,38 @@ You **MUST** consider the user input before proceeding (if not empty).
      Update "Last Updated" column: today's date
    ```
 
-10. **Report**: Output path to generated tasks.md and summary:
+10. **Update Concept Traceability** (if concept.md exists):
+
+   ```text
+   IF exists("specs/concept.md"):
+     1. Read concept.md
+     2. Find "Traceability Skeleton" section
+
+     3. Extract CONCEPT_IDS from spec.md (parsed in Step 3):
+        - Concept IDs Covered: EPIC-001.F01.S01, EPIC-001.F01.S02
+
+     4. FOR EACH concept_id in CONCEPT_IDS:
+        Find row in Traceability Skeleton where Concept ID = concept_id
+        UPDATE row:
+          - "Tasks": Count of tasks or range (e.g., "T001-T015" or "15 tasks")
+          - "Status": "TASKED"
+
+     5. Update "Progress Rollup" section:
+        - Recount statuses across all rows
+        - Update percentages
+
+     6. Update "Foundation Progress" section:
+        - Check if this feature is in Wave 1 or Wave 2
+        - Update Wave completion counts if applicable
+
+     7. Set "Last Updated": "{today's date} by /speckit.tasks"
+
+     8. Write updated concept.md
+   ```
+
+   Report: "Concept traceability updated: {CONCEPT_IDS} → TASKED ({task_count} tasks)"
+
+11. **Report**: Output path to generated tasks.md and summary:
    - Total task count
    - Task count per user story
    - Parallel opportunities identified

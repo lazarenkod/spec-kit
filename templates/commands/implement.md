@@ -227,6 +227,33 @@ You **MUST** consider the user input before proceeding (if not empty).
        Update "Last Updated" column: today's date
    ```
 
+5.5. **Update Concept Traceability - IMPLEMENTING** (if concept.md exists):
+
+   ```text
+   IF exists("specs/concept.md"):
+     1. Read concept.md
+     2. Find "Traceability Skeleton" section
+
+     3. Extract CONCEPT_IDS from spec.md (via tasks.md traceability headers):
+        - Source: "Concept IDs Covered" in tasks.md or spec.md
+
+     4. FOR EACH concept_id in CONCEPT_IDS:
+        Find row in Traceability Skeleton where Concept ID = concept_id
+        IF Status != "IMPLEMENTING" AND Status != "IMPLEMENTED":
+          UPDATE row:
+            - "Status": "IMPLEMENTING"
+
+     5. Update "Progress Rollup" section:
+        - Recount statuses across all rows
+        - Update percentages
+
+     6. Set "Last Updated": "{today's date} by /speckit.implement (start)"
+
+     7. Write updated concept.md
+   ```
+
+   Report: "Concept traceability updated: {CONCEPT_IDS} → IMPLEMENTING"
+
 6. Parse tasks.md structure and extract:
    - **Task phases**: Setup, Tests, Core, Integration, Polish
    - **Task dependencies**: Sequential vs parallel execution rules
@@ -371,6 +398,44 @@ You **MUST** consider the user input before proceeding (if not empty).
    ✓ Tests pass locally
    ✓ @speckit annotations added
    → Story COMPLETE ✅
+   ```
+
+   **Changelog Update** (after DoD passes):
+
+   After a user story passes DoD validation, update `CHANGELOG.md`:
+
+   a) **Check** if `CHANGELOG.md` exists at project root
+      - If not exists: Create with standard header (Keep a Changelog format)
+
+   b) **Extract** from completed story:
+      - Story ID and title from tasks.md heading
+      - Acceptance Scenarios (AS-xxx) descriptions from spec.md
+      - Functional Requirements (FR-xxx) implemented (from task markers)
+      - Feature directory path for spec reference
+
+   c) **Generate** changelog entry under `## [Unreleased]` → `### Added`:
+      ```markdown
+      - **[{story_id}] {story_title}** (spec: {feature_dir}/spec.md)
+        - {acceptance_scenario_1_description} (AS-1A)
+        - {acceptance_scenario_2_description} (AS-1B)
+        - Implements: FR-001, FR-002, FR-003
+        - Tests: AS-1A ✅, AS-1B ✅
+      ```
+
+   d) **Append** entry preserving existing content (prepend to `### Added` section)
+
+   **Skip changelog update if:**
+   - Story is infrastructure/foundation (Wave 1-2) without user-facing behavior
+   - Story marked as `[INTERNAL]` or `[NO-CHANGELOG]` in tasks.md
+   - All tasks are setup/config tasks (no FR-xxx markers)
+
+   **Example output:**
+   ```text
+   📝 Changelog Updated:
+   Added entry for [US1] User Registration
+   - 2 acceptance scenarios documented
+   - 3 functional requirements linked
+   → CHANGELOG.md updated ✅
    ```
 
 11. Completion validation:
@@ -673,6 +738,54 @@ You **MUST** consider the user input before proceeding (if not empty).
        ├── .env.example: Created (12 environment variables)
        └── README.md: Updated (Features: +3, Tech Stack: synced)
        ```
+
+16. **Update Concept Traceability - IMPLEMENTED** (after all P1 tasks complete):
+
+   ```text
+   IF exists("specs/concept.md"):
+     1. Read concept.md
+     2. Find "Traceability Skeleton" section
+
+     3. Extract CONCEPT_IDS from spec.md (via tasks.md traceability headers)
+
+     4. Gather test results from implementation:
+        - Count passing tests for each story
+        - Count total tests for each story
+        - Determine overall test status
+
+     5. FOR EACH concept_id in CONCEPT_IDS:
+        Find row in Traceability Skeleton where Concept ID = concept_id
+        UPDATE row:
+          - "Tests": "{passing}/{total}" (e.g., "5/5" or "3/5")
+          - "Status": "IMPLEMENTED"
+
+     6. Update "Progress Rollup" section:
+        - Recount statuses across all rows
+        - Update percentages
+        - Calculate: "N of M stories IMPLEMENTED"
+
+     7. Update "Foundation Progress" section:
+        - Check if all Wave 1 features are now IMPLEMENTED → mark Wave 1 complete
+        - Check if all Wave 2 features are now IMPLEMENTED → mark Wave 2 complete
+        - IF both Wave 1 and Wave 2 complete:
+          → Update "Golden Path Status": "[x] Testable"
+
+     8. Set "Last Updated": "{today's date} by /speckit.implement (complete)"
+
+     9. Write updated concept.md
+   ```
+
+   Report summary:
+   ```text
+   📊 Concept Traceability Updated:
+   ├── Stories: {CONCEPT_IDS} → IMPLEMENTED
+   ├── Tests: {passing}/{total} passing
+   ├── Wave Progress:
+   │   ├── Wave 1: {implemented}/{total} ({percentage}%)
+   │   ├── Wave 2: {implemented}/{total} ({percentage}%)
+   │   └── Wave 3+: {implemented}/{total} ({percentage}%)
+   └── Golden Path: {testable_status}
+   ```
 
 Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit.tasks` first to regenerate the task list.
 

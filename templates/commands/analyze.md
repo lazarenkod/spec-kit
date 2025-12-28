@@ -1364,6 +1364,211 @@ IF no persona references in spec.md:
 
 ---
 
+#### Y. UX Foundation Validation *(if concept.md exists with UX Foundation Layer)*
+
+**Purpose**: Validate UX Foundation Layer completeness, wave ordering, and Golden Path testability.
+
+**Activation Check**:
+
+```text
+IF exists("specs/concept.md"):
+  Read file content
+  IF content contains "## UX Foundation Layer" OR "## Execution Order":
+    UX_FOUNDATION_ACTIVE = true
+  ELSE:
+    UX_FOUNDATION_ACTIVE = false
+ELSE:
+  UX_FOUNDATION_ACTIVE = false
+
+IF NOT UX_FOUNDATION_ACTIVE:
+  SKIP this validation pass
+```
+
+**1. Foundation Coverage Validation**:
+
+```text
+IF "Required Foundations" table exists:
+  FOR EACH foundation row where Status = "[ ] Needed":
+    IF Stories column is empty or "-":
+      → HIGH: "Foundation {name} marked as needed but has no stories defined"
+      → Suggest: "Add stories to cover {foundation} scenarios"
+
+  FOR EACH foundation row where Status = "[x] Covered":
+    Verify referenced stories exist in Feature Hierarchy
+    IF stories not found:
+      → MEDIUM: "Foundation {name} references non-existent stories: {story_ids}"
+```
+
+**2. Foundation Scenario Traceability**:
+
+```text
+IF "Foundation Scenarios" section exists:
+  FOR EACH UXF-xxx scenario in Foundation Scenarios tables:
+    Extract "Defined In" column (e.g., "[EPIC-001.F01.S01]")
+    IF Defined In is empty or placeholder:
+      → HIGH: "UXF-{id} has no story definition"
+      → Suggest: "Map scenario to existing story or create new story"
+
+    IF Defined In references story ID:
+      Verify story exists in Feature Hierarchy section
+      IF not found:
+        → HIGH: "UXF-{id} references non-existent story: {story_id}"
+
+  Load ux-foundations.md from memory/knowledge/frameworks/
+  Compare required scenarios for detected project type
+  FOR EACH required scenario NOT in Foundation Scenarios:
+    → MEDIUM: "Missing required scenario for project type: UXF-{id}"
+```
+
+**3. Wave Order Validation**:
+
+```text
+IF "Execution Order" section exists:
+  # Validate Wave 1 completion gates
+  FOR EACH feature in "Wave 1: Foundation Layer" table:
+    IF Status = "[ ]" (not complete):
+      Check if any Wave 3+ feature depends on it
+      IF dependent features found with Status != "[ ]":
+        → CRITICAL: "Wave 3 feature {id} progressing before Wave 1 foundation {id}"
+
+  # Validate Wave 2 prerequisites
+  FOR EACH feature in "Wave 2: Experience Layer" table:
+    IF Status != "[ ]" (in progress or complete):
+      Check Wave 1 features for same epic
+      IF any Wave 1 features still "[ ]":
+        → HIGH: "Wave 2 feature {id} started before Wave 1 complete"
+
+  # Validate Wave 3+ dependencies
+  FOR EACH feature in "Wave 3+: Business Features" table:
+    Parse "Depends On" column
+    FOR EACH dependency:
+      Look up dependency Wave
+      IF dependency Wave >= current feature Wave:
+        → MEDIUM: "Feature {id} depends on same-or-later Wave feature: {dep_id}"
+```
+
+**4. Golden Path Validation**:
+
+```text
+IF "Golden Path" section exists:
+  FOR EACH step in Golden Path table:
+    IF Feature column is empty:
+      → MEDIUM: "Golden Path step {N} has no implementing feature"
+
+    IF Feature references EPIC-xxx.Fxx:
+      Verify feature exists in Feature Hierarchy
+      IF not found:
+        → HIGH: "Golden Path references non-existent feature: {feature_id}"
+
+    IF Wave column value exists:
+      IF Wave value > 2:
+        → LOW: "Golden Path step {N} uses Wave {W} feature (should be Wave 1-2 only)"
+
+  # Check Golden Path Status accuracy
+  Count Wave 1 features with Status = "[x]"
+  Count Wave 2 features with Status = "[x]"
+
+  IF all Wave 1 complete AND all Wave 2 complete:
+    IF Golden Path Status shows "[ ] Not testable":
+      → MEDIUM: "Golden Path should be testable - Wave 1-2 complete"
+  ELSE:
+    IF Golden Path Status shows "[x] Testable":
+      → HIGH: "Golden Path marked testable but Wave 1-2 incomplete"
+
+ELSE:
+  IF UX_FOUNDATION_ACTIVE:
+    → MEDIUM: "UX Foundation Layer present but no Golden Path defined"
+    → Suggest: "Add Golden Path section (J000) covering Wave 1-2 features"
+```
+
+**5. Entry Point Completeness**:
+
+```text
+FOR EACH story in Feature Hierarchy (non-foundation stories):
+  # Foundation detection: check if story is in Wave 1-2 or matches foundation patterns
+  IF story NOT in Wave 1 OR Wave 2 foundations:
+    Search Acceptance Scenarios or story description for:
+    - Entry point (how user navigates here)
+    - Auth context (GUEST | AUTHENTICATED | ADMIN)
+    - Exit point (where user goes next)
+
+    IF entry point not documented:
+      → LOW: "Story {story_id} missing entry point documentation"
+
+    IF auth context not clear:
+      → LOW: "Story {story_id} missing auth context"
+```
+
+**6. Traceability Skeleton Validation**:
+
+```text
+IF "Traceability Skeleton" section exists:
+  FOR EACH row in skeleton table:
+    IF Wave column exists:
+      Verify Wave assignment is consistent with feature's Execution Order placement
+      IF mismatch:
+        → LOW: "Traceability Skeleton Wave mismatch for {concept_id}"
+
+    IF Status = "Not started" AND Spec Created = "[x]":
+      → MEDIUM: "Inconsistent state: spec created but status 'Not started'"
+
+    IF Status = "IMPLEMENTED" AND Tests column is empty:
+      → MEDIUM: "Implemented story {concept_id} has no test results"
+
+  # Progress Rollup accuracy
+  IF "Progress Rollup" section exists:
+    Recount statuses from skeleton table
+    Compare with rollup totals
+    IF counts differ:
+      → LOW: "Progress Rollup counts outdated"
+
+  # Foundation Progress accuracy
+  IF "Foundation Progress" section exists:
+    Recount Wave 1 and Wave 2 implemented counts
+    Compare with Foundation Progress table
+    IF counts differ:
+      → LOW: "Foundation Progress counts outdated"
+```
+
+**7. Orphan Feature Detection**:
+
+```text
+FOR EACH feature in Feature Hierarchy:
+  Search Execution Order section for feature ID
+  IF not found in any Wave table:
+    → MEDIUM: "Feature {feature_id} not assigned to any Wave"
+    → Suggest: "Add feature to appropriate Wave in Execution Order"
+```
+
+**Severity Summary for Pass Y:**
+
+| Condition | Severity |
+|-----------|----------|
+| Wave 3 feature progressing before Wave 1 foundation | CRITICAL |
+| Foundation scenario references non-existent story | HIGH |
+| UXF-xxx has no story definition | HIGH |
+| Wave 2 started before Wave 1 complete | HIGH |
+| Golden Path references non-existent feature | HIGH |
+| Golden Path marked testable but Wave 1-2 incomplete | HIGH |
+| Foundation marked needed but has no stories | HIGH |
+| Foundation references non-existent stories | MEDIUM |
+| Missing required scenario for project type | MEDIUM |
+| Feature depends on same-or-later Wave | MEDIUM |
+| Golden Path step has no implementing feature | MEDIUM |
+| Golden Path should be testable but marked not | MEDIUM |
+| No Golden Path defined | MEDIUM |
+| Inconsistent spec/status state | MEDIUM |
+| Implemented story has no test results | MEDIUM |
+| Feature not assigned to any Wave | MEDIUM |
+| Golden Path uses Wave 3+ feature | LOW |
+| Story missing entry point documentation | LOW |
+| Story missing auth context | LOW |
+| Traceability Skeleton Wave mismatch | LOW |
+| Progress Rollup counts outdated | LOW |
+| Foundation Progress counts outdated | LOW |
+
+---
+
 ### 5. Severity Assignment
 
 Use this heuristic to prioritize findings:

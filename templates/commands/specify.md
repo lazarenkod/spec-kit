@@ -483,6 +483,62 @@ Given that feature description, do this:
 
 5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
 
+5b. **Update Concept Traceability** (if concept.md exists):
+
+   This step ensures the concept document stays in sync with specification progress.
+
+   ```text
+   IF exists("specs/concept.md"):
+     1. Read concept.md
+     2. Find "Traceability Skeleton" section
+
+     3. FOR EACH concept_id in CONCEPT_IDS:
+        FIND row WHERE "Concept ID" == concept_id
+        UPDATE row:
+          - "Spec Created": [x]
+          - "Requirements": comma-separated list of FR-xxx IDs from spec.md
+          - "Status": "SPECIFIED"
+
+     4. Update "Progress Rollup" section:
+        - Decrement "Not started" count
+        - Increment "SPECIFIED" count
+        - Recalculate percentages
+
+     5. Update "Foundation Progress" section (if applicable):
+        FOR EACH concept_id:
+          IF concept_id.wave == 1 OR wave == 2:
+            Update wave progress counts
+
+     6. Set "Last Updated" field:
+        - "[date] by /speckit.specify"
+
+     7. Write updated concept.md
+
+   Report: "Concept traceability updated: {CONCEPT_IDS} → SPECIFIED"
+   ```
+
+   **Example update**:
+   ```markdown
+   ## Traceability Skeleton
+
+   | Concept ID | Wave | Spec Created | Requirements | Tasks | Tests | Status |
+   |------------|------|--------------|--------------|-------|-------|--------|
+   | EPIC-001.F01.S01 | 1 | [x] | FR-001, FR-002, FR-003 | - | - | SPECIFIED |
+   | EPIC-001.F01.S02 | 1 | [x] | FR-004, FR-005 | - | - | SPECIFIED |
+   | EPIC-001.F02.S01 | 1 | [ ] | - | - | - | Not started |
+
+   ### Progress Rollup
+
+   | Status | Count | % |
+   |--------|-------|---|
+   | Not started | 1 | 33% |
+   | SPECIFIED | 2 | 67% |
+   | TASKED | 0 | 0% |
+   | ...
+
+   **Last Updated**: 2025-12-27 by /speckit.specify
+   ```
+
 6. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:
 
    a. **Create Spec Quality Checklist**: Generate a checklist file at `FEATURE_DIR/checklists/requirements.md` using the checklist template structure with these validation items:

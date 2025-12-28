@@ -15,6 +15,138 @@
 
 ---
 
+## UX Foundation Layer
+
+<!--
+  AUTO-POPULATED by /speckit.concept based on project type detection.
+  Foundations are prerequisite scenarios that must be implemented BEFORE
+  business features to ensure testable user journeys.
+
+  Reference: memory/knowledge/frameworks/ux-foundations.md
+-->
+
+**Project Type**: [Web SPA | Web SSR | Mobile | CLI | API | Service | Desktop]
+**Detection Trigger**: [What codebase indicator triggered this classification]
+
+### Required Foundations
+
+| Foundation | Status | Wave | Stories | Notes |
+|------------|--------|------|---------|-------|
+| AUTH | [ ] Needed | 1 | - | Required for user identity |
+| ERROR | [ ] Needed | 1 | - | Required for failure handling |
+| LAYOUT | [ ] Needed | 1 | - | Required for visual consistency |
+| NAV | [ ] Needed | 2 | - | Required for multi-page apps |
+| FTUE | [ ] Needed | 2 | - | Required for user activation |
+| FEEDBACK | [ ] Needed | 2 | - | Required for user confirmation |
+| ADMIN | [ ] Needed | 2 | - | Required for admin capabilities |
+
+### Foundation Scenarios
+
+<!--
+  Maps UXF-xxx scenario IDs from ux-foundations.md to story IDs in this concept.
+  Ensures all required foundation scenarios have corresponding stories.
+-->
+
+#### AUTH Foundation
+
+| UXF ID | Scenario | Defined In | Status |
+|--------|----------|------------|--------|
+| UXF-AUTH-001 | User signs up | [EPIC-001.F01.S01] | [ ] |
+| UXF-AUTH-002 | User signs in | [EPIC-001.F01.S02] | [ ] |
+| UXF-AUTH-003 | User signs out | [EPIC-001.F02.S01] | [ ] |
+
+#### ERROR Foundation
+
+| UXF ID | Scenario | Defined In | Status |
+|--------|----------|------------|--------|
+| UXF-ERR-001 | Network failure | [Infrastructure] | [ ] |
+| UXF-ERR-002 | Validation error | [Infrastructure] | [ ] |
+| UXF-ERR-003 | Server error | [Infrastructure] | [ ] |
+
+#### ADMIN Foundation
+
+| UXF ID | Scenario | Defined In | Status |
+|--------|----------|------------|--------|
+| UXF-ADMIN-001 | Admin accesses dashboard | [EPIC-00X.F01.S01] | [ ] |
+| UXF-ADMIN-002 | Admin lists users | [EPIC-00X.F02.S01] | [ ] |
+| UXF-ADMIN-003 | Admin edits user | [EPIC-00X.F02.S02] | [ ] |
+| UXF-ADMIN-004 | Admin changes user role | [EPIC-00X.F03.S01] | [ ] |
+| UXF-ADMIN-005 | Admin views audit log | [EPIC-00X.F04.S01] | [ ] |
+| UXF-ADMIN-006 | Non-admin denied access | [EPIC-00X.F01.S02] | [ ] |
+
+---
+
+## Execution Order
+
+<!--
+  CRITICAL: This section defines BUILD ORDER, not just priority.
+
+  Wave = when to build (sequence)
+  Priority = how important (business value)
+
+  Wave 1 must complete before Wave 2 can be tested.
+  Wave 2 must complete before Wave 3 user journeys are testable.
+-->
+
+> **Wave vs Priority**: P1a/P1b indicate importance. Wave indicates *when* to build.
+> Features in Wave 3 might be P1a (critical) but still require Wave 1-2 foundations first.
+
+### Wave 1: Foundation Layer
+
+| Feature ID | Name | Priority | Status | Blocks |
+|------------|------|----------|--------|--------|
+| EPIC-001.F01 | User Registration | P1a | [ ] | All user features |
+| EPIC-001.F02 | Authentication | P1a | [ ] | All protected features |
+| [INFRA] | Error Handling | P1a | [ ] | All user interactions |
+| [INFRA] | Layout Shell | P1a | [ ] | All UI features |
+
+**Wave 1 Completion Gate**: All items above must be IMPLEMENTED before proceeding.
+
+### Wave 2: Experience Layer
+
+| Feature ID | Name | Priority | Status | Blocks |
+|------------|------|----------|--------|--------|
+| EPIC-001.F03 | Navigation | P1b | [ ] | Cross-feature navigation |
+| EPIC-001.F04 | Onboarding | P1b | [ ] | User activation |
+| [INFRA] | Feedback System | P1b | [ ] | User confirmation |
+| EPIC-00X.F01 | Admin Interface | P1b | [ ] | Admin management |
+
+**Wave 2 Completion Gate**: Golden Path must be testable.
+
+### Golden Path
+
+<!--
+  The minimum viable user journey that validates Wave 1-2 completion.
+  This journey must be fully testable before Wave 3 begins.
+-->
+
+**Journey**: J000 New User Activation
+
+```text
+[Guest] → Home → Sign Up → Onboard → First Action → Success
+```
+
+| Step | Action | Feature | Wave | Status |
+|------|--------|---------|------|--------|
+| 1 | Views home page | LAYOUT | 1 | [ ] |
+| 2 | Clicks "Sign Up" | NAV | 2 | [ ] |
+| 3 | Registers account | EPIC-001.F01 | 1 | [ ] |
+| 4 | Completes onboarding | EPIC-001.F04 | 2 | [ ] |
+| 5 | Performs first action | [First P1a feature] | 3 | [ ] |
+| 6 | Sees confirmation | FEEDBACK | 2 | [ ] |
+
+**Golden Path Status**: [ ] Not testable (requires Wave 1-2 completion)
+
+### Wave 3+: Business Features
+
+| Feature ID | Name | Priority | Wave | Depends On | Status |
+|------------|------|----------|------|------------|--------|
+| EPIC-002.F01 | [Feature] | P1a | 3 | EPIC-001.F01, F02 | [ ] |
+| EPIC-002.F02 | [Feature] | P1b | 3 | EPIC-002.F01 | [ ] |
+| EPIC-003.F01 | [Feature] | P2a | 4 | EPIC-002.F01 | [ ] |
+
+---
+
 ## Discovery & Research
 
 <!--
@@ -353,15 +485,50 @@ graph TD
 ## Traceability Skeleton
 
 <!--
-  This section will be populated as specs and tasks are created.
-  It provides end-to-end visibility from concept to code.
+  AUTO-UPDATED by downstream commands:
+  - /speckit.specify → Sets "Spec Created" to [x], populates "Requirements"
+  - /speckit.tasks   → Populates "Tasks" column
+  - /speckit.implement → Populates "Tests", updates "Status"
+
+  Status progression:
+  - Not started → SPECIFIED → TASKED → IMPLEMENTING → IMPLEMENTED → VERIFIED
+
+  Do NOT manually edit this section - it is maintained by commands.
 -->
 
-| Concept ID | Spec Created | Spec Requirements | Tasks | Tests | Status |
-|------------|--------------|-------------------|-------|-------|--------|
-| [EPIC-001.F01.S01] | [ ] | - | - | - | Not started |
-| [EPIC-001.F01.S02] | [ ] | - | - | - | Not started |
-| [EPIC-001.F02.S01] | [ ] | - | - | - | Not started |
+| Concept ID | Wave | Spec Created | Requirements | Tasks | Tests | Status |
+|------------|------|--------------|--------------|-------|-------|--------|
+| [EPIC-001.F01.S01] | 1 | [ ] | - | - | - | Not started |
+| [EPIC-001.F01.S02] | 1 | [ ] | - | - | - | Not started |
+| [EPIC-001.F02.S01] | 1 | [ ] | - | - | - | Not started |
+
+### Progress Rollup
+
+<!--
+  Auto-calculated summary of implementation progress.
+  Updated by /speckit.specify, /speckit.tasks, /speckit.implement.
+-->
+
+| Status | Count | % |
+|--------|-------|---|
+| Not started | 3 | 100% |
+| SPECIFIED | 0 | 0% |
+| TASKED | 0 | 0% |
+| IMPLEMENTING | 0 | 0% |
+| IMPLEMENTED | 0 | 0% |
+| VERIFIED | 0 | 0% |
+| **Total** | **3** | |
+
+### Foundation Progress
+
+| Wave | Total | Implemented | Status |
+|------|-------|-------------|--------|
+| Wave 1 | 0 | 0 | [ ] Not started |
+| Wave 2 | 0 | 0 | [ ] Not started |
+| Wave 3+ | 0 | 0 | [ ] Blocked by Wave 1-2 |
+
+**Golden Path**: [ ] Not testable
+**Last Updated**: [date] by [command]
 
 ---
 

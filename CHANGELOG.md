@@ -7,6 +7,35 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.37] - 2025-12-27
+
+### Added
+
+- **Wave-Based Ordering for UX Foundations**
+  - Execution order system ensuring prerequisites are built before business features
+  - **Wave 1 (Core Infrastructure)**: AUTH, ERROR, LAYOUT, CONFIG, HEALTH — blocks all other features
+  - **Wave 2 (User Experience)**: NAV, FTUE, FEEDBACK, HELP, ADMIN — enables testable user journeys
+  - **Wave 3+ (Business Features)**: All product-specific functionality
+  - Auto-detection of required foundations based on project type (Web SPA, Mobile, API, CLI, etc.)
+  - Golden Path generation: minimum viable user journey exercising all Wave 1-2 foundations
+
+- **ADMIN Foundation (Wave 2)**
+  - Administrative interface for all projects with AUTH
+  - 6 scenarios: Admin dashboard, user list, user edit, role management, audit log, access denial
+  - Pattern detection: `admin*`, `dashboard*`, `backoffice*`, `management*`, `panel*`, `console*`
+  - Default Epic mapping: Dashboard → User Management → Role Management → Audit Log
+
+- **Auto-Changelog in `/speckit.implement`**
+  - Changelog automatically updated after each user story passes DoD validation
+  - Entry format includes story ID, acceptance scenarios, and FR traceability
+  - Skip conditions for infrastructure/internal stories (`[NO-CHANGELOG]` marker)
+
+### Fixed
+
+- **`/speckit.implement` Task Completion**: Now mandatory marks tasks as completed immediately after finishing each one
+
+---
+
 ## [0.0.36] - 2025-12-27
 
 ### Added
