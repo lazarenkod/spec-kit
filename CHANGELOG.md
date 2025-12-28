@@ -7,6 +7,40 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.43] - 2025-12-28
+
+### Added
+
+- **Metrics & Success Criteria (7)** — Comprehensive metrics framework for Spec-Driven Development
+  - **Spec Quality Score (SQS)** (`templates/shared/metrics-framework.md`):
+    - Aggregate 0-100 quality score from weighted components
+    - Formula: `SQS = (FR_Coverage × 0.3 + AS_Coverage × 0.3 + Traceability × 0.2 + Constitution_Compliance × 0.2) × 100`
+    - Quality levels: Below MVP (<80), MVP Ready (80-89), Full Feature (90-99), Production Ready (100)
+    - Quality gate: SQS >= 80 required before `/speckit.implement`
+  - **Velocity Metrics** (VEL-001 to VEL-004):
+    - Time to First Working Code: < 10 min target (~5 min lovable)
+    - Time to MVP: < 30 min target (~15 min lovable)
+    - Human Intervention Rate: < 30% target (~15% lovable)
+    - Auto-Fix Success Rate: > 70% target (~80% lovable)
+  - **Cost Metrics**:
+    - Per-phase token and cost tracking
+    - Model pricing: Opus ($0.015/$0.075/1K), Sonnet ($0.003/$0.015/1K), Haiku ($0.00025/$0.00125/1K)
+    - Target: $37 current → $20-25 optimized
+    - Cache efficiency tracking (write/read rates)
+  - **Integration Points**:
+    - `/speckit.analyze`: SQS calculation after Pass Z with component breakdown
+    - `/speckit.implement`: Velocity and Cost metrics in Self-Review Report
+    - Quality gates: Pre-implement (SQS >= 80), Post-implement (intervention < 50%), Cost alert (< 150%)
+  - **Metrics Report Template** (`templates/metrics-report-template.md`):
+    - Executive summary with all metric categories
+    - Detailed component analysis for each SQS factor
+    - Timeline breakdown and intervention analysis
+    - Cost by phase with model efficiency tracking
+    - Trend data support for cross-session comparison
+    - Recommendations engine based on metric gaps
+
+---
+
 ## [0.0.42] - 2025-12-28
 
 ### Added

@@ -25,11 +25,12 @@ handoffs:
       - "Dependency issues require task restructuring"
   - label: Proceed to Implementation
     agent: speckit.implement
-    prompt: Start implementation (only if no CRITICAL issues)
+    prompt: Start implementation (only if no CRITICAL issues and SQS >= 80)
     auto: true
     condition:
       - "Analysis completed successfully (pre-implementation mode)"
       - "All CRITICAL issues resolved"
+      - "SQS >= 80 (MVP threshold met)"
     gates:
       - name: "No Critical Issues Gate"
         check: "CRITICAL issue count == 0"
@@ -39,8 +40,12 @@ handoffs:
         check: "Dependency Graph Status == VALID or WARNINGS"
         block_if: "Dependency Graph Status == INVALID"
         message: "Resolve circular dependencies or invalid references before implementation"
+      - name: "SQS Quality Gate"
+        check: "SQS >= 80"
+        block_if: "SQS < 80"
+        message: "SQS below MVP threshold (80). Improve FR coverage, AS coverage, traceability, or resolve constitution violations before implementation"
     post_actions:
-      - "log: Analysis passed, transitioning to implementation"
+      - "log: Analysis passed (SQS: {SQS}/100), transitioning to implementation"
   - label: Fix QA Issues
     agent: speckit.implement
     prompt: Address issues identified in QA verification report
@@ -2316,6 +2321,46 @@ Triggered: [auto from /speckit.implement | manual request]
 | Medium Issues | N |
 | Low Issues | N |
 
+**Spec Quality Score (SQS):**
+
+```text
+SQS = (FR_Coverage × 0.3 + AS_Coverage × 0.3 + Traceability × 0.2 + Constitution_Compliance × 0.2) × 100
+```
+
+| Component | Score | Weight | Weighted |
+|-----------|-------|--------|----------|
+| FR Coverage | {FR_Coverage}% | 0.3 | {FR_weighted} |
+| AS Coverage | {AS_Coverage}% | 0.3 | {AS_weighted} |
+| Traceability | {Trace_Score}% | 0.2 | {Trace_weighted} |
+| Constitution Compliance | {Const_Score}% | 0.2 | {Const_weighted} |
+| **SQS Total** | | | **{SQS}/100** |
+
+**Quality Level:** {Below MVP | MVP Ready | Full Feature | Production Ready}
+
+```text
+SQS Classification:
+- < 80: Below MVP (blocks /speckit.implement)
+- 80-89: MVP Ready (proceed with warnings)
+- 90-99: Full Feature (proceed)
+- 100: Production Ready (full green light)
+```
+
+**SQS Calculation Notes:**
+
+```text
+FR_Coverage = (FRs with at least 1 task) / (Total FRs) × 100
+  Source: Pass H (Traceability Coverage) → FR gaps
+
+AS_Coverage = (AS with at least 1 test annotation) / (Total AS) × 100
+  Source: Pass W (Test-Spec Traceability) → Test mapping
+
+Traceability_Score = (Files with @speckit annotations) / (Generated files) × 100
+  Source: Pass N (Code Traceability) → Forward coverage
+
+Constitution_Compliance = (Total principles - CRITICAL violations) / (Total principles) × 100
+  Source: Pass D (Constitution Alignment) → CRITICAL issue count
+```
+
 ### 7. Provide Next Actions
 
 At end of report, output a concise Next Actions block:
@@ -2389,6 +2434,7 @@ ELSE:
 |------|-------|-----------------|---------|
 | No Critical Issues Gate | CRITICAL issue count == 0 | CRITICAL > 0 | "Cannot proceed to implementation: resolve all CRITICAL issues first" |
 | Dependency Graph Valid Gate | Dependency Graph Status == VALID or WARNINGS | Status == INVALID | "Resolve circular dependencies or invalid references before implementation" |
+| **SQS Quality Gate** | SQS >= 80 (MVP threshold) | SQS < 80 | "SQS {score}/100 below MVP threshold (80). Improve FR coverage, AS coverage, traceability, or resolve constitution violations" |
 | QA Pass Gate | No CRITICAL or HIGH in R-U categories | CRITICAL > 0 OR HIGH > 0 in R-U | "QA failed - fix blocking issues before proceeding" |
 | Build Pass Gate | Build succeeds (Category R) | Build fails | "Fix build errors before proceeding" |
 | Tests Pass Gate | All tests pass (Category S) | Test failures | "Fix failing tests" |

@@ -1901,6 +1901,34 @@ Generate this report before handoff:
 | Iterations required | 1 |
 | Estimated time saved | ~15 minutes |
 
+### Velocity Metrics
+| Metric | Value | Target | Status |
+|--------|-------|--------|--------|
+| Time to First Code | {{TIME_TO_FIRST_CODE}} min | < 10 min | ✅/❌ |
+| Time to MVP (Wave 1) | {{TIME_TO_MVP}} min | < 30 min | ✅/❌ |
+| Human Intervention Rate | {{HUMAN_INTERVENTION}}% | < 30% | ✅/❌ |
+| Auto-Fix Success Rate | {{AUTOFIX_SUCCESS}}% | > 70% | ✅/❌ |
+
+**Velocity Calculation Notes:**
+- Time to First Code = First passing test timestamp - Session start timestamp
+- Human Intervention = Tasks with manual edits / Total tasks
+- Auto-Fix Success = Auto-fixes successful / Auto-fixes attempted
+
+### Cost Metrics
+| Phase | Model | Tokens | Cost |
+|-------|-------|--------|------|
+| Implement | {{MODEL}} | {{TOKENS}}K | ${{COST}} |
+
+| Token Type | Count | Rate | Subtotal |
+|------------|-------|------|----------|
+| Input | {{INPUT_TOKENS}} | ${{INPUT_RATE}}/1K | ${{INPUT_COST}} |
+| Output | {{OUTPUT_TOKENS}} | ${{OUTPUT_RATE}}/1K | ${{OUTPUT_COST}} |
+| Cache Write | {{CACHE_WRITE}} | ${{CACHE_WRITE_RATE}}/1K | ${{CACHE_WRITE_COST}} |
+| Cache Read | {{CACHE_READ}} | ${{CACHE_READ_RATE}}/1K | ${{CACHE_READ_COST}} |
+| **Total** | | | **${{TOTAL_COST}}** |
+
+**Cost Benchmark:** Target ~$22 for implement phase (50 FRs, 200 tasks reference)
+
 ### Documentation
 | File | Status | Sections |
 |------|--------|----------|
