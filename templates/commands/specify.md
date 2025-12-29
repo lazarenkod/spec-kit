@@ -187,6 +187,51 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Set `CONCEPT_REFERENCE` to "N/A"
    - Use simple priorities (P1, P2, P3) or sub-priorities as needed
 
+### Concept Quality Gate (CQS Check)
+
+**If concept.md exists, validate Concept Quality Score before specification**:
+
+```text
+# Calculate CQS from concept.md sections (see templates/shared/concept-sections/cqs-score.md)
+CQS = calculate_concept_quality_score(concept.md)
+
+# Quality Gate Decision
+IF CQS >= 80:
+  INFO: "✅ CQS {CQS}/100 — Concept fully validated. Proceeding with specification."
+  PROCEED with specification
+
+ELSE IF CQS >= 60:
+  WARN: "⚠️ CQS {CQS}/100 — Concept has gaps. Proceed with caution."
+  WARN: "Missing components: [list components with score < 60]"
+  ASK: "Proceed with specification? Gaps will be flagged in the spec. (Y/N)"
+  IF user confirms:
+    PROCEED with specification
+    FLAG: Add "[CQS GAP]" markers for features lacking validation
+
+ELSE IF CQS < 60:
+  ERROR: "⛔ CQS {CQS}/100 — Concept not ready for specification."
+  ERROR: "Critical gaps: [list components with score < 40]"
+  SUGGEST: "Run `/speckit.concept` to complete discovery before specification."
+  ASK: "Override and proceed anyway? (Not recommended) (Y/N)"
+  IF user explicitly overrides:
+    WARN: "Proceeding without validated concept. High risk of rework."
+    PROCEED with specification
+  ELSE:
+    STOP and recommend `/speckit.concept`
+```
+
+**CQS Component Reference**:
+| Component | Weight | Low Score Indicators |
+|-----------|:------:|---------------------|
+| Market Validation | 25% | Missing TAM/SAM/SOM, no competitive analysis |
+| Persona Depth | 20% | No JTBD, missing willingness-to-pay |
+| Metrics Quality | 15% | No North Star, metrics fail SMART |
+| Feature Completeness | 20% | Incomplete hierarchy, no Golden Path |
+| Risk Assessment | 10% | <3 risks, no pivot criteria |
+| Technical Hints | 10% | No domain entities, no integration assessment |
+
+**Reference**: `templates/shared/concept-sections/cqs-score.md`
+
 **Concept ID Matching Logic**:
 
 ```text

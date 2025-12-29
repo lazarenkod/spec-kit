@@ -7,6 +7,58 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.44] - 2025-12-29
+
+### Added
+
+- **Enhanced Concept Phase — Strategic Product Discovery** — Transform `/speckit.concept` from feature capture into market validation
+  - **Philosophy**: "Validate before you build, quantify before you commit"
+  - **New Modular Templates** (`templates/shared/concept-sections/`):
+    - `market-framework.md`: TAM/SAM/SOM market sizing + competitive positioning matrix + market validation signals
+    - `persona-jtbd.md`: Deep persona framework with Jobs-to-be-Done (functional, emotional, social jobs) + willingness-to-pay assessment
+    - `metrics-smart.md`: SMART validation (Specific, Measurable, Achievable, Relevant, Time-bound) + OKR structure + metrics by wave
+    - `risk-matrix.md`: Execution risks with L×I scoring + dependency failure scenarios + pivot criteria + kill criteria
+    - `technical-hints.md`: Domain entities sketch + API surface estimation + integration complexity + constitution conflicts
+    - `cqs-score.md`: Concept Quality Score calculation with weighted components and quality gate thresholds
+  - **Concept Quality Score (CQS)** — New quality gate analogous to SQS for specifications:
+    - Formula: `CQS = (Market × 0.25 + Persona × 0.20 + Metrics × 0.15 + Features × 0.20 + Risk × 0.10 + Technical × 0.10) × 100`
+    - Quality Gate: CQS ≥ 80 (ready), 60-79 (caution), < 60 (not ready)
+    - Component scoring criteria for each dimension with detailed checklists
+  - **Validation Mode** — Third mode for existing concepts needing market/risk validation:
+    - Triggered when `specs/concept.md` exists but CQS components incomplete
+    - Gap-focused workflow: "Your concept has features but lacks market validation. Let's add that."
+  - **6 Enhancement Layers** in `/speckit.concept`:
+    - Layer 1: Market Opportunity Framework (TAM/SAM/SOM, competitive matrix)
+    - Layer 2: Deep Persona Framework (JTBD-enhanced personas)
+    - Layer 3: Success Metrics Framework (SMART validation + OKRs)
+    - Layer 4: Risk & Contingency Planning (risk matrix, pivot/kill criteria)
+    - Layer 5: Technical Discovery Hints (domain entities, API surface)
+    - Layer 6: CQS calculation in self-review
+  - **New Self-Review Criteria** (SR-CONCEPT-16 through SR-CONCEPT-22):
+    - SR-CONCEPT-16: TAM/SAM/SOM calculated with sources (HIGH)
+    - SR-CONCEPT-17: ≥2 personas with JTBD defined (HIGH)
+    - SR-CONCEPT-18: North Star metric identified (HIGH)
+    - SR-CONCEPT-19: All metrics pass SMART validation (MEDIUM)
+    - SR-CONCEPT-20: ≥3 risks with mitigations documented (MEDIUM)
+    - SR-CONCEPT-21: Pivot criteria defined (MEDIUM)
+    - SR-CONCEPT-22: Domain entities sketched (LOW)
+
+### Changed
+
+- **`/speckit.specify` enhanced with CQS Quality Gate**:
+  - Validates CQS before specification if `specs/concept.md` exists
+  - CQS ≥ 80: INFO and proceed with high confidence
+  - CQS 60-79: WARN and ask confirmation to proceed
+  - CQS < 60: ERROR and recommend running `/speckit.concept` first
+  - Allows override with explicit user confirmation
+
+- **Updated CLAUDE.md workflow documentation**:
+  - `/speckit.concept` now documented as Step 2 in SDD workflow
+  - Added explanation of Concept Phase features and CQS quality gate
+  - Philosophy: "Capture complete product vision before detailed specifications"
+
+---
+
 ## [0.0.43] - 2025-12-28
 
 ### Added

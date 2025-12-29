@@ -100,14 +100,24 @@ See `AGENTS.md` for detailed integration guide.
 The toolkit implements a workflow where AI agents use slash commands:
 
 1. `/speckit.constitution` - Establish project principles
-2. `/speckit.specify` - Create feature specification (what & why, not how)
-3. `/speckit.clarify` - Clarify ambiguous requirements (optional)
-4. `/speckit.plan` - Create technical implementation plan
-5. `/speckit.tasks` - Generate actionable task breakdown
-6. `/speckit.analyze` - Cross-artifact consistency check (optional)
-7. `/speckit.implement` - Execute implementation
+2. `/speckit.concept` - Strategic product discovery & validation (for large projects, 50+ requirements)
+3. `/speckit.specify` - Create feature specification (what & why, not how)
+4. `/speckit.clarify` - Clarify ambiguous requirements (optional)
+5. `/speckit.plan` - Create technical implementation plan
+6. `/speckit.tasks` - Generate actionable task breakdown
+7. `/speckit.analyze` - Cross-artifact consistency check (optional)
+8. `/speckit.implement` - Execute implementation
+
+**Concept Phase (Step 2)**: For larger projects, the concept phase captures the complete product vision with:
+- TAM/SAM/SOM market sizing and competitive positioning
+- JTBD-enhanced personas with willingness-to-pay analysis
+- SMART-validated success metrics with North Star metric
+- Risk assessment matrix with pivot criteria
+- Technical discovery hints (domain entities, API surface)
+- **Concept Quality Score (CQS)**: Quality gate ensuring concept readiness before specification
 
 Templates in `templates/commands/` define these slash command behaviors.
+Modular concept sections in `templates/shared/concept-sections/` provide reusable frameworks.
 
 ## Post-Implementation Workflow
 

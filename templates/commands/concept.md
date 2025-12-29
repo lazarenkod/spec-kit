@@ -72,9 +72,9 @@ This command captures the **complete vision and scope** of a service/product BEF
    - The script creates the file from `templates/concept-template.md`
    - If `specs/concept.md` already exists, the script returns its path (no overwrite)
 
-2. **Mode Detection** (determine Discovery vs Capture mode):
+2. **Mode Detection** (determine Discovery vs Capture vs Validation mode):
 
-   Analyze user input for discovery signals:
+   Analyze user input and existing artifacts for mode signals:
 
    **Discovery Mode triggers** (any match activates):
    - Vague descriptors: "something like", "maybe", "возможно", "не знаю точно", "типа"
@@ -91,8 +91,23 @@ This command captures the **complete vision and scope** of a service/product BEF
    - Clear differentiation articulated
    - Technical requirements specified
 
+   **Validation Mode triggers** (NEW - for existing concepts needing enhancement):
+   - `specs/concept.md` already exists
+   - User explicitly asks to "validate", "improve", or "enhance" concept
+   - Concept exists but missing key sections:
+     - No "Market Opportunity" section (TAM/SAM/SOM missing)
+     - No "Risk Assessment" section
+     - No "Technical Discovery" section
+     - CQS < 60 (if calculable)
+
    ```text
-   IF Discovery Mode triggered:
+   IF specs/concept.md exists:
+     CHECK for missing sections (Market/Risk/Technical/CQS)
+     IF missing sections found OR user asks to validate:
+       → Validation Mode: Focus on adding missing sections
+       → Ask: "Your concept has features but is missing [market validation/risk assessment/technical hints].
+              Would you like to add these now to improve concept quality? (y/n)"
+   ELSE IF Discovery Mode triggered:
      → Execute Phase 0a, 0b, 0c (steps 3-4)
    ELSE IF Capture Mode triggered:
      → Skip to step 5 (Extract Vision)
@@ -170,7 +185,7 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    ### Phase 0b: Market & User Research
 
-   **Goal**: Validate problem with external data using web search.
+   **Goal**: Validate problem with external data and quantify market opportunity.
 
    **Research actions** (use WebSearch tool proactively):
 
@@ -190,11 +205,47 @@ This command captures the **complete vision and scope** of a service/product BEF
       - Search: "[domain] frustrations reddit OR hackernews"
       - Extract: unmet needs, feature requests, workaround patterns
 
+   4. **Market Sizing (TAM/SAM/SOM)** — NEW:
+      - Search: "[industry] market size 2025 report"
+      - Search: "[target segment] number of companies/users"
+      - Search: "[competitor] pricing revenue"
+
+      Calculate and document:
+      ```markdown
+      ## Market Opportunity
+
+      ### TAM/SAM/SOM Analysis
+      | Metric | Value | Calculation | Source |
+      |--------|-------|-------------|--------|
+      | **TAM** | $[X]B | [Total market if everyone bought] | [Source] |
+      | **SAM** | $[X]M | TAM × [segment/geo filters] | [Source] |
+      | **SOM** | $[X]M | SAM × [realistic capture in Y yrs] | [Assumptions] |
+
+      ### Market Validation Signals
+      - [ ] Problem validated by customer research
+      - [ ] Competitors exist (market is real)
+      - [ ] Budget exists (people pay for alternatives)
+      - [ ] Timing is right (enabling trends)
+      ```
+
+   5. **Competitive Positioning Matrix** — NEW:
+      Build comparison against top 3-5 competitors:
+      ```markdown
+      | Capability | Us | Competitor A | Competitor B | Gap |
+      |------------|:--:|:------------:|:------------:|-----|
+      | [Feature 1] | ✓+ | ✓ | ✗ | Differentiation |
+      | [Feature 2] | ✓ | ✓ | ✓ | Table stakes |
+      ```
+      Legend: ✓+ = Better, ✓ = Parity, ✗ = Missing
+
    **Output**:
-   - Populate "Market Research" section in concept.md
-   - Create competitor comparison table
+   - Populate "Market Opportunity" section in concept.md (NEW)
+   - Create TAM/SAM/SOM table with sources
+   - Create competitive positioning matrix
    - Document market gaps and opportunities
    - Include source links for reference
+
+   **Reference template**: `templates/shared/concept-sections/market-framework.md`
 
    ### Phase 0c: Solution Ideation
 
@@ -246,13 +297,77 @@ This command captures the **complete vision and scope** of a service/product BEF
    Parse the user description to identify:
    - **Vision Statement**: What is this? Who is it for? What problem does it solve?
    - **Problem Space**: Specific pain points being addressed
-   - **Target Users**: Personas with their goals and current frustrations
-   - **Success Metrics**: Business KPIs with target values
+   - **Target Users**: Personas with Jobs-to-be-Done (JTBD)
+   - **Success Metrics**: Business KPIs validated against SMART criteria
 
    For each element:
    - If clearly stated in input: Extract directly
    - If implied: Infer from context and document as assumption
    - If unclear: Use reasonable industry defaults (or use Discovery findings if available)
+
+5a. **Deep Persona Framework (JTBD-Enhanced)** — NEW:
+
+   For each identified persona, capture Jobs-to-be-Done:
+
+   ```markdown
+   ### Persona: [Name] — [Role]
+
+   #### Demographics
+   - **Segment**: [B2B SMB / B2B Enterprise / B2C Consumer / B2C Prosumer]
+   - **Tech Comfort**: [Low / Medium / High]
+   - **Frequency of Use**: [Daily / Weekly / Monthly / One-time]
+
+   #### Jobs-to-be-Done
+   | Job Type | When I... | I want to... | So I can... |
+   |----------|-----------|--------------|-------------|
+   | Functional | [situation] | [action] | [outcome] |
+   | Emotional | [situation] | [feel] | [state] |
+   | Social | [situation] | [appear] | [perception] |
+
+   #### Willingness to Pay
+   - **Current spend on alternatives**: $[X]/mo
+   - **Pain severity**: [1-10]
+   - **Switching cost tolerance**: [Low/Med/High]
+
+   #### Success Criteria
+   - **Must have**: [non-negotiable outcomes]
+   - **Nice to have**: [delighters]
+   - **Deal breaker**: [instant churn triggers]
+   ```
+
+   **Minimum requirement**: At least 2 personas with JTBD defined.
+
+   **Reference template**: `templates/shared/concept-sections/persona-jtbd.md`
+
+5aa. **Success Metrics Framework (SMART + OKRs)** — NEW:
+
+   Validate all success metrics against SMART criteria:
+
+   ```markdown
+   ## Success Metrics
+
+   ### North Star Metric
+   **[Metric Name]**: [Definition]
+   - **Why this metric?**: [connects user value to business value]
+   - **Leading indicators**: [predictive metrics]
+   - **Lagging indicators**: [outcome metrics]
+
+   ### Metric Quality Validation
+   | Metric | S | M | A | R | T | Score |
+   |--------|:-:|:-:|:-:|:-:|:-:|:-----:|
+   | [metric] | ✓/✗ | ✓/✗ | ✓/✗ | ✓/✗ | ✓/✗ | X/5 |
+
+   **Legend**: S=Specific, M=Measurable, A=Achievable, R=Relevant, T=Time-bound
+
+   ### OKR Structure (if applicable)
+   **Objective**: [qualitative goal]
+   - **KR1**: [quantitative result] — [baseline → target]
+   - **KR2**: [quantitative result] — [baseline → target]
+   ```
+
+   **Validation rule**: Metrics with score < 4/5 should be refined before specification.
+
+   **Reference template**: `templates/shared/concept-sections/metrics-smart.md`
 
 5b. **Extract UX Foundation Layer**:
 
@@ -289,6 +404,71 @@ This command captures the **complete vision and scope** of a service/product BEF
    - Populate "UX Foundation Layer" section with detected foundations
    - Generate foundation Epic/Features/Stories BEFORE user-defined features
    - Set up "Foundation Scenarios" mapping table
+
+5c. **Risk Assessment Matrix** — NEW:
+
+   Identify and document execution risks before detailed planning:
+
+   ```markdown
+   ## Risk Assessment
+
+   ### Execution Risks
+   | Risk | Likelihood | Impact | L×I | Mitigation | Contingency |
+   |------|:----------:|:------:|:---:|------------|-------------|
+   | [Risk 1] | [1-5] | [1-5] | [X] | [Proactive action] | [If it happens...] |
+   | [Risk 2] | [1-5] | [1-5] | [X] | [Proactive action] | [If it happens...] |
+   | [Risk 3] | [1-5] | [1-5] | [X] | [Proactive action] | [If it happens...] |
+
+   ### Dependency Failure Scenarios
+   | Dependency | If unavailable... | Fallback | Cost of fallback |
+   |------------|-------------------|----------|------------------|
+   | [service/API] | [impact] | [alternative] | [effort/time] |
+
+   ### Pivot Criteria
+   - **Pivot if**: [condition 1], [condition 2]
+   - **Pivot to**: [alternative direction]
+   - **Kill if**: [condition that proves thesis invalid]
+   ```
+
+   **Risk scoring**: Likelihood × Impact. Address risks with score ≥ 12 first.
+
+   **Minimum requirement**: At least 3 risks with mitigations documented.
+
+   **Reference template**: `templates/shared/concept-sections/risk-matrix.md`
+
+5d. **Technical Discovery Hints** — NEW:
+
+   Surface architectural considerations early to reduce surprises during planning:
+
+   ```markdown
+   ## Technical Discovery
+
+   ### Domain Entities (Sketch)
+   | Entity | Key Attributes | Relationships | Persistence |
+   |--------|----------------|---------------|-------------|
+   | User | id, email, role | → Account, → Sessions | PostgreSQL |
+   | [Entity] | [attrs] | [relations] | [store] |
+
+   ### API Surface Estimation
+   | Domain | Operations | Auth Required | External Integration |
+   |--------|------------|:-------------:|---------------------|
+   | Users | CRUD + search | ✓ | SSO providers |
+   | [Domain] | [ops] | ✓/✗ | [integrations] |
+
+   ### Integration Complexity
+   | External System | Protocol | Complexity | Risk |
+   |-----------------|----------|:----------:|------|
+   | [system] | REST/GraphQL | Low/Med/High | [notes] |
+
+   ### Constitution Principle Conflicts
+   | Feature | Principle | Conflict | Resolution |
+   |---------|-----------|----------|------------|
+   | [feature] | [ID] | [what conflicts] | [how to resolve] |
+   ```
+
+   **Purpose**: Identify potential blockers and architectural decisions before specification.
+
+   **Reference template**: `templates/shared/concept-sections/technical-hints.md`
 
 6. **Build Feature Hierarchy**:
 
@@ -638,6 +818,13 @@ Parse to extract hierarchy and validate structure.
 | SR-CONCEPT-13 | Execution Order Valid | Wave assignments complete, no Wave 3 without Wave 1-2 | HIGH |
 | SR-CONCEPT-14 | Golden Path Exists | J000 journey defined covering Wave 1-2 features | CRITICAL |
 | SR-CONCEPT-15 | No Orphan Features | All features assigned to a Wave | MEDIUM |
+| SR-CONCEPT-16 | Market Opportunity | TAM/SAM/SOM analysis present with sources | HIGH |
+| SR-CONCEPT-17 | JTBD Personas | Personas include Jobs-to-be-Done | HIGH |
+| SR-CONCEPT-18 | SMART Metrics | Success metrics validated against SMART criteria | HIGH |
+| SR-CONCEPT-19 | Risk Assessment | ≥3 risks documented with mitigations | MEDIUM |
+| SR-CONCEPT-20 | Technical Hints | Domain entities or API surface estimated | MEDIUM |
+| SR-CONCEPT-21 | CQS Calculated | Concept Quality Score computed and displayed | HIGH |
+| SR-CONCEPT-22 | CQS Quality Gate | CQS ≥ 60 for specification readiness | HIGH |
 
 ### Step 3: Hierarchy Validation
 
@@ -711,6 +898,61 @@ FOR EACH feature in GOLDEN_PATH_FEATURES:
 FOR EACH feature in FEATURES:
   IF feature.wave is undefined:
     WARN: "Feature {id} not assigned to any Wave"
+```
+
+### Step 3c: CQS Calculation — NEW
+
+Calculate Concept Quality Score from 6 components:
+
+```text
+# Component Scoring (see templates/shared/concept-sections/cqs-score.md for full criteria)
+
+MARKET_SCORE = 0
+IF "TAM/SAM/SOM" section present with values: MARKET_SCORE += 55
+IF "Competitive Positioning Matrix" present: MARKET_SCORE += 25
+IF "Market Validation Signals" checklist present: MARKET_SCORE += 20
+
+PERSONA_SCORE = 0
+IF count(personas) >= 2: PERSONA_SCORE += 30
+IF personas have JTBD tables: PERSONA_SCORE += 40
+IF "Willingness to Pay" documented: PERSONA_SCORE += 15
+IF "Success Criteria" documented: PERSONA_SCORE += 15
+
+METRICS_SCORE = 0
+IF "North Star Metric" identified: METRICS_SCORE += 40
+IF SMART validation table present: METRICS_SCORE += 40
+IF leading/lagging indicators defined: METRICS_SCORE += 20
+
+FEATURES_SCORE = 0
+IF Epic/Feature/Story hierarchy valid: FEATURES_SCORE += 40
+IF Wave assignments complete: FEATURES_SCORE += 30
+IF Golden Path (J000) defined: FEATURES_SCORE += 30
+
+RISK_SCORE = 0
+IF count(risks) >= 3: RISK_SCORE += 40
+IF mitigations documented: RISK_SCORE += 30
+IF pivot criteria defined: RISK_SCORE += 30
+
+TECH_SCORE = 0
+IF "Domain Entities" sketched: TECH_SCORE += 40
+IF "API Surface Estimation" present: TECH_SCORE += 30
+IF "Constitution Principle Conflicts" reviewed: TECH_SCORE += 30
+
+# Calculate weighted CQS
+CQS = (MARKET_SCORE × 0.25) + (PERSONA_SCORE × 0.20) + (METRICS_SCORE × 0.15) +
+      (FEATURES_SCORE × 0.20) + (RISK_SCORE × 0.10) + (TECH_SCORE × 0.10)
+
+# SR-CONCEPT-21: CQS Calculated
+STORE CQS for report output
+
+# SR-CONCEPT-22: CQS Quality Gate
+IF CQS < 60:
+  WARN: "CQS {CQS}/100 — Concept not ready for specification"
+  WARN: "Low scoring components: [list components < 60]"
+ELSE IF CQS < 80:
+  INFO: "CQS {CQS}/100 — Proceed with caution, flag gaps during specification"
+ELSE:
+  INFO: "CQS {CQS}/100 — Concept ready for specification"
 ```
 
 ### Step 4: Dependency Validation
@@ -810,6 +1052,27 @@ After passing self-review, output:
 | P1b | {N} |
 | P2 | {N} |
 | P3 | {N} |
+
+### Concept Quality Score (CQS) — NEW
+
+**Formula**: CQS = (Market × 0.25 + Persona × 0.20 + Metrics × 0.15 + Features × 0.20 + Risk × 0.10 + Technical × 0.10) × 100
+
+| Component | Score | Weight | Weighted |
+|-----------|:-----:|:------:|:--------:|
+| Market Validation | {MARKET_SCORE}/100 | 0.25 | {WEIGHTED} |
+| Persona Depth | {PERSONA_SCORE}/100 | 0.20 | {WEIGHTED} |
+| Metrics Quality | {METRICS_SCORE}/100 | 0.15 | {WEIGHTED} |
+| Feature Completeness | {FEATURES_SCORE}/100 | 0.20 | {WEIGHTED} |
+| Risk Assessment | {RISK_SCORE}/100 | 0.10 | {WEIGHTED} |
+| Technical Hints | {TECH_SCORE}/100 | 0.10 | {WEIGHTED} |
+| **CQS Total** | | | **{CQS}/100** |
+
+**Quality Gate**: {CQS_STATUS}
+- CQS ≥ 80: ✅ Ready for specification with high confidence
+- CQS 60-79: ⚠️ Proceed with caution — flag gaps during specification
+- CQS < 60: ⛔ Not ready — complete discovery before specification
+
+**Reference**: `templates/shared/concept-sections/cqs-score.md`
 
 ### Ready for Specification
 
