@@ -106,6 +106,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Health endpoint patterns
     - Graceful shutdown implementations
     - Configuration validation with Zod/Pydantic
+  - **Template-Based Initialization** (`specify init --template`):
+    - CLI `--template` / `-t` flag for production-ready project scaffolding
+    - 8 production templates with pre-configured technology stacks:
+      - `production-saas`: Full-stack SaaS with auth, payments, observability
+      - `production-api`: REST/GraphQL API backend with observability
+      - `mobile-app`: iOS/Android with offline support and analytics
+      - `gaming`: Real-time game with multiplayer and anti-cheat
+      - `fintech`: Regulated financial services (PCI-DSS, SOC2)
+      - `healthcare`: HIPAA/GDPR-compliant health application
+      - `e-commerce`: Online store with payments and inventory
+      - `minimal`: Empty template for advanced users (default)
+    - Interactive template discovery with arrow-key selection and rich descriptions
+    - `REQUIREMENTS_CHECKLIST.md` auto-generation with:
+      - Stack configuration table with constitution principle mappings
+      - Functional requirements checklist (domain-specific)
+      - Non-functional requirements checklist (quality attributes)
+      - Activated constitution principles summary
+      - Next steps workflow guidance
+    - Template YAML schema (`templates/stacks/`) with:
+      - Domain activation (automatically includes relevant domain files)
+      - Category-based stack options with constitution principle mappings
+      - Framework alternatives with URLs and descriptions
+      - Functional and non-functional requirement checklists
+    - Philosophy: "Don't make me think about what I might forget"
 
 - **Quality Gates (5.3)** — Constitution domain extension for quality thresholds at workflow transitions
   - **Quality Gates Domain** (`memory/domains/quality-gates.md`):

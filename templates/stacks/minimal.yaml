@@ -1,0 +1,29 @@
+# Minimal Template
+# Empty template for advanced users who want full control
+
+name: "Minimal"
+description: "Empty template - configure everything yourself"
+domains: []
+
+framework:
+  primary: "Not specified"
+  alternatives: []
+
+categories: {}
+
+checklist:
+  functional:
+    - "Define the core problem this product solves"
+    - "Define target users and their goals"
+    - "Define key user journeys"
+    - "Define success criteria"
+
+  non_functional:
+    - "Consider authentication requirements"
+    - "Consider database and data persistence needs"
+    - "Consider observability (logging, monitoring, tracing)"
+    - "Consider testing strategy (unit, integration, E2E)"
+    - "Consider deployment and CI/CD"
+    - "Consider security requirements"
+    - "Consider performance targets"
+    - "Consider compliance requirements (if any)"

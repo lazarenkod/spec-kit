@@ -1,0 +1,265 @@
+# Production SaaS Template
+# Full-stack SaaS application with authentication, payments, and observability
+
+name: "Production SaaS"
+description: "Full-stack SaaS with auth, payments, analytics, and observability"
+domains:
+  - saas
+  - production
+
+framework:
+  primary: "Next.js + TypeScript"
+  alternatives:
+    - "Remix"
+    - "Nuxt.js"
+    - "SvelteKit"
+
+categories:
+  authentication:
+    required: true
+    prompt: "Choose authentication provider"
+    options:
+      - name: "NextAuth.js"
+        description: "Open-source, flexible authentication"
+        url: "https://next-auth.js.org"
+        constitution:
+          - SEC-001
+          - SEC-002
+      - name: "Clerk"
+        description: "Managed auth with pre-built UI components"
+        url: "https://clerk.com"
+        constitution:
+          - SEC-001
+          - SEC-002
+      - name: "Auth0"
+        description: "Enterprise-grade identity platform"
+        url: "https://auth0.com"
+        constitution:
+          - SEC-001
+          - SEC-002
+      - name: "Supabase Auth"
+        description: "Auth bundled with Supabase backend"
+        url: "https://supabase.com/docs/guides/auth"
+        constitution:
+          - SEC-001
+          - SEC-002
+
+  database:
+    required: true
+    prompt: "Choose database solution"
+    options:
+      - name: "PostgreSQL + Prisma"
+        description: "Type-safe ORM with migrations"
+        url: "https://www.prisma.io"
+        constitution:
+          - REL-001
+          - REL-002
+          - REL-003
+      - name: "Supabase"
+        description: "Postgres with real-time subscriptions + auth"
+        url: "https://supabase.com"
+        constitution:
+          - REL-001
+          - REL-002
+      - name: "PlanetScale"
+        description: "Serverless MySQL with branching"
+        url: "https://planetscale.com"
+        constitution:
+          - REL-001
+          - REL-002
+      - name: "Neon"
+        description: "Serverless Postgres with branching"
+        url: "https://neon.tech"
+        constitution:
+          - REL-001
+          - REL-002
+
+  payments:
+    required: false
+    prompt: "Need payment processing?"
+    options:
+      - name: "Stripe"
+        description: "Industry standard payments + subscriptions"
+        url: "https://stripe.com"
+        constitution:
+          - FIN-001
+          - FIN-002
+      - name: "Paddle"
+        description: "Merchant of record (handles tax)"
+        url: "https://paddle.com"
+        constitution:
+          - FIN-001
+          - FIN-002
+      - name: "LemonSqueezy"
+        description: "Simple payments for digital products"
+        url: "https://lemonsqueezy.com"
+        constitution:
+          - FIN-001
+      - name: "Skip for now"
+        description: "Add payments later"
+        constitution: []
+
+  email:
+    required: false
+    prompt: "Choose email service"
+    options:
+      - name: "Resend"
+        description: "Modern email API for developers"
+        url: "https://resend.com"
+        constitution: []
+      - name: "SendGrid"
+        description: "Reliable transactional email"
+        url: "https://sendgrid.com"
+        constitution: []
+      - name: "Postmark"
+        description: "Fast transactional email delivery"
+        url: "https://postmarkapp.com"
+        constitution: []
+      - name: "Skip for now"
+        description: "Add email later"
+        constitution: []
+
+  analytics:
+    required: false
+    prompt: "Choose analytics platform"
+    options:
+      - name: "PostHog"
+        description: "Open-source product analytics + feature flags"
+        url: "https://posthog.com"
+        constitution: []
+      - name: "Mixpanel"
+        description: "Product analytics with funnels"
+        url: "https://mixpanel.com"
+        constitution: []
+      - name: "Amplitude"
+        description: "Digital analytics platform"
+        url: "https://amplitude.com"
+        constitution: []
+      - name: "Plausible"
+        description: "Privacy-friendly web analytics"
+        url: "https://plausible.io"
+        constitution: []
+      - name: "Skip for now"
+        description: "Add analytics later"
+        constitution: []
+
+  observability:
+    required: true
+    prompt: "Choose monitoring and observability"
+    options:
+      - name: "OpenTelemetry + Grafana"
+        description: "Open-source observability stack"
+        url: "https://opentelemetry.io"
+        constitution:
+          - OBS-001
+          - OBS-002
+          - OBS-003
+          - OBS-004
+      - name: "Sentry"
+        description: "Error tracking + performance monitoring"
+        url: "https://sentry.io"
+        constitution:
+          - OBS-002
+          - OBS-003
+      - name: "Datadog"
+        description: "Full-stack observability platform"
+        url: "https://datadoghq.com"
+        constitution:
+          - OBS-001
+          - OBS-002
+          - OBS-003
+          - OBS-004
+      - name: "New Relic"
+        description: "Application performance monitoring"
+        url: "https://newrelic.com"
+        constitution:
+          - OBS-001
+          - OBS-002
+
+  testing:
+    required: true
+    prompt: "Choose testing framework"
+    options:
+      - name: "Vitest + Playwright"
+        description: "Fast unit tests + E2E browser testing"
+        url: "https://vitest.dev"
+        constitution:
+          - QUA-001
+          - QUA-002
+          - TST-001
+      - name: "Jest + Cypress"
+        description: "Traditional Jest + Cypress E2E"
+        url: "https://jestjs.io"
+        constitution:
+          - QUA-001
+          - QUA-002
+          - TST-001
+      - name: "Vitest only"
+        description: "Unit/integration tests only"
+        url: "https://vitest.dev"
+        constitution:
+          - QUA-001
+          - TST-001
+
+  cicd:
+    required: true
+    prompt: "Choose CI/CD platform"
+    options:
+      - name: "GitHub Actions"
+        description: "Built into GitHub, easy to start"
+        url: "https://github.com/features/actions"
+        constitution:
+          - QUA-003
+          - QUA-004
+      - name: "GitLab CI"
+        description: "Built into GitLab"
+        url: "https://docs.gitlab.com/ee/ci/"
+        constitution:
+          - QUA-003
+          - QUA-004
+      - name: "CircleCI"
+        description: "Fast, flexible CI/CD"
+        url: "https://circleci.com"
+        constitution:
+          - QUA-003
+          - QUA-004
+
+  security:
+    required: true
+    prompt: "Choose security middleware"
+    options:
+      - name: "Helmet.js + rate limiting"
+        description: "Security headers + API protection"
+        url: "https://helmetjs.github.io"
+        constitution:
+          - SEC-005
+          - SEC-006
+          - SEC-007
+          - SEC-008
+      - name: "Arcjet"
+        description: "Security SDK with bot protection"
+        url: "https://arcjet.com"
+        constitution:
+          - SEC-005
+          - SEC-006
+          - SEC-007
+
+checklist:
+  functional:
+    - "Define user authentication flows (signup, login, password reset, email verification)"
+    - "Define subscription plans and pricing tiers"
+    - "Define core SaaS features (what problem does this solve?)"
+    - "Define user roles and permissions (admin, member, guest)"
+    - "Define multi-tenancy model (per-user, per-organization, shared)"
+    - "Define onboarding flow for new users"
+    - "Define billing management (upgrade, downgrade, cancel)"
+
+  non_functional:
+    - "Authentication: MFA requirement? Which social login providers?"
+    - "Payments: Subscription billing model? Trial period? Free tier?"
+    - "Database: Expected data volume? Need multi-region?"
+    - "Observability: Log retention period? Alert thresholds? On-call rotation?"
+    - "Testing: Code coverage target (e.g., 80%)? E2E test scope?"
+    - "Security: Penetration testing schedule? SOC2 compliance needed?"
+    - "Performance: Response time SLA (e.g., P95 < 200ms)? Concurrent users?"
+    - "Availability: Uptime target (e.g., 99.9%)? Disaster recovery plan?"

@@ -1,0 +1,199 @@
+# Mobile App Template
+# Cross-platform or native mobile application
+
+name: "Mobile Application"
+description: "iOS/Android app with offline support and analytics"
+domains:
+  - mobile
+
+framework:
+  primary: "React Native"
+  alternatives:
+    - "Flutter"
+    - "Swift (iOS native)"
+    - "Kotlin (Android native)"
+    - "Expo"
+
+categories:
+  framework:
+    required: true
+    prompt: "Choose mobile framework"
+    options:
+      - name: "React Native"
+        description: "JavaScript cross-platform with native modules"
+        url: "https://reactnative.dev"
+        constitution: []
+      - name: "Flutter"
+        description: "Dart cross-platform with custom rendering"
+        url: "https://flutter.dev"
+        constitution: []
+      - name: "Expo"
+        description: "React Native with managed workflow"
+        url: "https://expo.dev"
+        constitution: []
+      - name: "Swift (iOS) + Kotlin (Android)"
+        description: "Native development for each platform"
+        url: ""
+        constitution: []
+
+  backend:
+    required: true
+    prompt: "Choose backend solution"
+    options:
+      - name: "Firebase"
+        description: "Google's mobile backend with real-time DB"
+        url: "https://firebase.google.com"
+        constitution:
+          - REL-001
+      - name: "Supabase"
+        description: "Open-source Firebase alternative"
+        url: "https://supabase.com"
+        constitution:
+          - REL-001
+          - REL-002
+      - name: "Custom API"
+        description: "Build your own backend"
+        url: ""
+        constitution: []
+      - name: "AWS Amplify"
+        description: "AWS mobile backend"
+        url: "https://aws.amazon.com/amplify/"
+        constitution:
+          - REL-001
+
+  authentication:
+    required: true
+    prompt: "Choose authentication provider"
+    options:
+      - name: "Firebase Auth"
+        description: "Email, social, phone auth"
+        url: "https://firebase.google.com/docs/auth"
+        constitution:
+          - SEC-001
+          - SEC-002
+      - name: "Supabase Auth"
+        description: "Auth with row-level security"
+        url: "https://supabase.com/docs/guides/auth"
+        constitution:
+          - SEC-001
+          - SEC-002
+      - name: "Auth0"
+        description: "Enterprise identity platform"
+        url: "https://auth0.com"
+        constitution:
+          - SEC-001
+          - SEC-002
+
+  analytics:
+    required: true
+    prompt: "Choose analytics platform"
+    options:
+      - name: "Firebase Analytics"
+        description: "Free, built into Firebase"
+        url: "https://firebase.google.com/docs/analytics"
+        constitution: []
+      - name: "Mixpanel"
+        description: "Product analytics with funnels"
+        url: "https://mixpanel.com"
+        constitution: []
+      - name: "Amplitude"
+        description: "Digital analytics platform"
+        url: "https://amplitude.com"
+        constitution: []
+      - name: "PostHog"
+        description: "Open-source product analytics"
+        url: "https://posthog.com"
+        constitution: []
+
+  crash_reporting:
+    required: true
+    prompt: "Choose crash reporting"
+    options:
+      - name: "Sentry"
+        description: "Error tracking + performance"
+        url: "https://sentry.io"
+        constitution:
+          - OBS-002
+      - name: "Firebase Crashlytics"
+        description: "Free crash reporting"
+        url: "https://firebase.google.com/docs/crashlytics"
+        constitution:
+          - OBS-002
+      - name: "Bugsnag"
+        description: "Stability monitoring"
+        url: "https://bugsnag.com"
+        constitution:
+          - OBS-002
+
+  testing:
+    required: true
+    prompt: "Choose testing approach"
+    options:
+      - name: "Jest + Detox"
+        description: "Unit tests + E2E for React Native"
+        url: "https://wix.github.io/Detox/"
+        constitution:
+          - QUA-001
+          - TST-001
+      - name: "Jest + Maestro"
+        description: "Unit tests + Maestro E2E"
+        url: "https://maestro.mobile.dev"
+        constitution:
+          - QUA-001
+          - TST-001
+      - name: "flutter_test + integration_test"
+        description: "Flutter built-in testing"
+        url: "https://docs.flutter.dev/testing"
+        constitution:
+          - QUA-001
+          - TST-001
+      - name: "XCTest + XCUITest"
+        description: "iOS native testing"
+        url: "https://developer.apple.com/documentation/xctest"
+        constitution:
+          - QUA-001
+          - TST-001
+
+  cicd:
+    required: true
+    prompt: "Choose CI/CD for mobile"
+    options:
+      - name: "GitHub Actions + Fastlane"
+        description: "GitHub CI with Fastlane automation"
+        url: "https://fastlane.tools"
+        constitution:
+          - QUA-003
+      - name: "Bitrise"
+        description: "Mobile-first CI/CD"
+        url: "https://bitrise.io"
+        constitution:
+          - QUA-003
+      - name: "Codemagic"
+        description: "Flutter-focused CI/CD"
+        url: "https://codemagic.io"
+        constitution:
+          - QUA-003
+      - name: "EAS Build (Expo)"
+        description: "Expo's build service"
+        url: "https://expo.dev/eas"
+        constitution:
+          - QUA-003
+
+checklist:
+  functional:
+    - "Define core user journeys (happy paths)"
+    - "Define offline behavior (what works without network?)"
+    - "Define push notification triggers and content"
+    - "Define deep linking structure"
+    - "Define user onboarding flow"
+    - "Define data sync strategy (conflict resolution)"
+
+  non_functional:
+    - "Performance: App launch time target? Frame rate target (60fps)?"
+    - "Offline: Which features work offline? Sync strategy?"
+    - "Push Notifications: Real-time or batched? Notification channels?"
+    - "App Size: Target APK/IPA size? Code splitting strategy?"
+    - "Battery: Background task limits? Location update frequency?"
+    - "Accessibility: VoiceOver/TalkBack support? Dynamic text sizes?"
+    - "Localization: Which languages? RTL support?"
+    - "Store Compliance: App Store guidelines? Play Store policies?"

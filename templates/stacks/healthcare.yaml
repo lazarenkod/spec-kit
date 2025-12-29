@@ -1,0 +1,187 @@
+# Healthcare Template
+# HIPAA-compliant healthcare application
+
+name: "Healthcare"
+description: "HIPAA/GDPR-compliant health application with PHI protection"
+domains:
+  - healthcare
+  - production
+
+framework:
+  primary: "Next.js + TypeScript"
+  alternatives:
+    - "React Native (mobile health)"
+    - "NestJS backend + React frontend"
+    - ".NET Core"
+
+categories:
+  compliance:
+    required: true
+    prompt: "Which compliance frameworks apply?"
+    options:
+      - name: "HIPAA"
+        description: "US healthcare privacy (PHI protection)"
+        url: "https://www.hhs.gov/hipaa"
+        constitution:
+          - HC-COMP-001
+          - HC-COMP-002
+      - name: "HIPAA + GDPR"
+        description: "US + EU healthcare privacy"
+        url: ""
+        constitution:
+          - HC-COMP-001
+          - HC-COMP-002
+          - HC-COMP-003
+      - name: "HIPAA + HITRUST"
+        description: "HIPAA with HITRUST certification"
+        url: "https://hitrustalliance.net"
+        constitution:
+          - HC-COMP-001
+          - HC-COMP-002
+          - HC-COMP-004
+
+  authentication:
+    required: true
+    prompt: "Choose authentication approach"
+    options:
+      - name: "MFA + role-based access"
+        description: "RBAC with multi-factor auth"
+        url: ""
+        constitution:
+          - SEC-001
+          - SEC-002
+          - HC-SEC-001
+      - name: "SSO + MFA (enterprise)"
+        description: "SAML/OIDC with organization SSO"
+        url: ""
+        constitution:
+          - SEC-001
+          - SEC-002
+          - HC-SEC-001
+      - name: "Biometric + PIN (mobile)"
+        description: "Face ID/fingerprint for mobile health"
+        url: ""
+        constitution:
+          - SEC-001
+          - HC-SEC-001
+
+  database:
+    required: true
+    prompt: "Choose HIPAA-compliant database"
+    options:
+      - name: "AWS RDS + encryption (BAA)"
+        description: "Managed Postgres with AWS BAA"
+        url: "https://aws.amazon.com/compliance/hipaa-compliance/"
+        constitution:
+          - REL-001
+          - REL-002
+          - HC-SEC-002
+      - name: "Google Cloud SQL + encryption"
+        description: "Managed Postgres with GCP BAA"
+        url: "https://cloud.google.com/security/compliance/hipaa"
+        constitution:
+          - REL-001
+          - REL-002
+          - HC-SEC-002
+      - name: "Azure SQL + encryption"
+        description: "Managed SQL with Azure BAA"
+        url: "https://azure.microsoft.com/compliance/hipaa"
+        constitution:
+          - REL-001
+          - REL-002
+          - HC-SEC-002
+
+  data_format:
+    required: true
+    prompt: "Choose health data standard"
+    options:
+      - name: "HL7 FHIR R4"
+        description: "Modern healthcare interoperability"
+        url: "https://hl7.org/fhir/"
+        constitution:
+          - HC-DATA-001
+      - name: "HL7 FHIR + CDA"
+        description: "FHIR with legacy CDA support"
+        url: ""
+        constitution:
+          - HC-DATA-001
+          - HC-DATA-002
+      - name: "Custom schema"
+        description: "Non-interoperable (internal only)"
+        url: ""
+        constitution: []
+
+  consent:
+    required: true
+    prompt: "Choose consent management"
+    options:
+      - name: "Granular patient consent"
+        description: "Per-purpose consent tracking"
+        url: ""
+        constitution:
+          - HC-PRIV-001
+          - HC-PRIV-002
+      - name: "SMART on FHIR consent"
+        description: "Standards-based consent"
+        url: "https://smarthealthit.org"
+        constitution:
+          - HC-PRIV-001
+      - name: "Simple opt-in/opt-out"
+        description: "Basic consent model"
+        url: ""
+        constitution:
+          - HC-PRIV-001
+
+  audit:
+    required: true
+    prompt: "Choose audit logging"
+    options:
+      - name: "Immutable audit log"
+        description: "Tamper-evident PHI access logs"
+        url: ""
+        constitution:
+          - HC-AUD-001
+          - HC-AUD-002
+      - name: "ATNA (IHE profile)"
+        description: "Healthcare audit standard"
+        url: "https://wiki.ihe.net/index.php/Audit_Trail_and_Node_Authentication"
+        constitution:
+          - HC-AUD-001
+          - HC-AUD-002
+
+  backup:
+    required: true
+    prompt: "Choose backup strategy"
+    options:
+      - name: "Encrypted offsite + geo-redundant"
+        description: "Multi-region encrypted backups"
+        url: ""
+        constitution:
+          - REL-003
+          - HC-SEC-003
+      - name: "Cloud provider snapshots"
+        description: "Managed backup with encryption"
+        url: ""
+        constitution:
+          - REL-003
+          - HC-SEC-003
+
+checklist:
+  functional:
+    - "Define patient registration and identity verification"
+    - "Define clinical data capture workflows"
+    - "Define provider access and permissions"
+    - "Define patient portal features (view records, messaging)"
+    - "Define appointment scheduling and reminders"
+    - "Define prescription and medication tracking"
+    - "Define lab results delivery and notifications"
+
+  non_functional:
+    - "Compliance: HIPAA gap assessment complete? BAA with all vendors?"
+    - "Security: Access logging for all PHI? Minimum necessary principle?"
+    - "Consent: Granular consent per data type? Consent withdrawal process?"
+    - "Audit: Log retention (6 years for HIPAA)? Audit access controls?"
+    - "Encryption: PHI encrypted at rest and in transit? Key management?"
+    - "Availability: Uptime for clinical workflows? Emergency access procedures?"
+    - "Interoperability: Which EHR systems to integrate? API standards (FHIR)?"
+    - "Breach Response: Notification timeline (60 days)? Incident response plan?"

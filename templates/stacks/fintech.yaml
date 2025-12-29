@@ -1,0 +1,205 @@
+# FinTech Template
+# Regulated financial services application
+
+name: "FinTech"
+description: "Regulated financial application with compliance, security, and audit"
+domains:
+  - fintech
+  - production
+
+framework:
+  primary: "Next.js + TypeScript"
+  alternatives:
+    - "NestJS backend + React frontend"
+    - "Go backend + React frontend"
+    - "Java Spring Boot"
+
+categories:
+  compliance:
+    required: true
+    prompt: "Which compliance frameworks apply?"
+    options:
+      - name: "PCI-DSS"
+        description: "Payment card industry compliance"
+        url: "https://www.pcisecuritystandards.org"
+        constitution:
+          - FIN-SEC-001
+          - FIN-COMP-001
+      - name: "SOC2 Type II"
+        description: "Service organization controls"
+        url: "https://www.aicpa.org/soc2"
+        constitution:
+          - FIN-COMP-002
+      - name: "PCI-DSS + SOC2"
+        description: "Both frameworks"
+        url: ""
+        constitution:
+          - FIN-SEC-001
+          - FIN-COMP-001
+          - FIN-COMP-002
+      - name: "Custom regulatory"
+        description: "Define specific requirements"
+        url: ""
+        constitution: []
+
+  authentication:
+    required: true
+    prompt: "Choose authentication approach"
+    options:
+      - name: "MFA + hardware keys (FIDO2)"
+        description: "Strongest auth with WebAuthn"
+        url: "https://fidoalliance.org"
+        constitution:
+          - SEC-001
+          - SEC-002
+          - FIN-SEC-002
+      - name: "MFA (TOTP/SMS)"
+        description: "Two-factor with authenticator apps"
+        url: ""
+        constitution:
+          - SEC-001
+          - SEC-002
+      - name: "Passwordless (magic link + MFA)"
+        description: "Email-based with second factor"
+        url: ""
+        constitution:
+          - SEC-001
+          - SEC-002
+
+  database:
+    required: true
+    prompt: "Choose database with encryption"
+    options:
+      - name: "PostgreSQL + encryption at rest"
+        description: "Encrypted Postgres with audit logging"
+        url: "https://www.postgresql.org"
+        constitution:
+          - REL-001
+          - REL-002
+          - FIN-SEC-003
+      - name: "AWS RDS + encryption"
+        description: "Managed Postgres with AWS KMS"
+        url: "https://aws.amazon.com/rds/"
+        constitution:
+          - REL-001
+          - REL-002
+          - FIN-SEC-003
+      - name: "Google Cloud SQL + CMEK"
+        description: "Managed Postgres with customer keys"
+        url: "https://cloud.google.com/sql"
+        constitution:
+          - REL-001
+          - REL-002
+          - FIN-SEC-003
+
+  audit:
+    required: true
+    prompt: "Choose audit logging approach"
+    options:
+      - name: "Immutable audit log (append-only)"
+        description: "Tamper-evident audit trail"
+        url: ""
+        constitution:
+          - FIN-AUD-001
+          - FIN-AUD-002
+      - name: "Event sourcing"
+        description: "Full event history as source of truth"
+        url: ""
+        constitution:
+          - FIN-AUD-001
+          - FIN-AUD-002
+      - name: "Third-party audit service"
+        description: "Managed compliance logging"
+        url: ""
+        constitution:
+          - FIN-AUD-001
+
+  fraud_detection:
+    required: true
+    prompt: "Choose fraud detection approach"
+    options:
+      - name: "Real-time rule engine"
+        description: "Custom rules for transaction screening"
+        url: ""
+        constitution:
+          - FIN-FRD-001
+      - name: "ML-based detection"
+        description: "Machine learning fraud models"
+        url: ""
+        constitution:
+          - FIN-FRD-001
+          - FIN-FRD-002
+      - name: "Stripe Radar / similar"
+        description: "Third-party fraud prevention"
+        url: "https://stripe.com/radar"
+        constitution:
+          - FIN-FRD-001
+      - name: "Combined approach"
+        description: "Rules + ML + third-party"
+        url: ""
+        constitution:
+          - FIN-FRD-001
+          - FIN-FRD-002
+
+  observability:
+    required: true
+    prompt: "Choose observability (with compliance)"
+    options:
+      - name: "OpenTelemetry + Grafana (self-hosted)"
+        description: "Keep sensitive data in your infra"
+        url: "https://opentelemetry.io"
+        constitution:
+          - OBS-001
+          - OBS-002
+          - FIN-SEC-004
+      - name: "Datadog (SOC2 compliant)"
+        description: "Managed observability with compliance"
+        url: "https://datadoghq.com"
+        constitution:
+          - OBS-001
+          - OBS-002
+      - name: "Splunk"
+        description: "Enterprise security analytics"
+        url: "https://splunk.com"
+        constitution:
+          - OBS-001
+          - OBS-002
+
+  testing:
+    required: true
+    prompt: "Choose security testing approach"
+    options:
+      - name: "Unit + Integration + Penetration testing"
+        description: "Full testing pyramid + security"
+        url: ""
+        constitution:
+          - QUA-001
+          - QUA-002
+          - TST-001
+          - FIN-SEC-005
+      - name: "Automated + annual pentest"
+        description: "CI tests + yearly security audit"
+        url: ""
+        constitution:
+          - QUA-001
+          - TST-001
+          - FIN-SEC-005
+
+checklist:
+  functional:
+    - "Define account types and user roles"
+    - "Define transaction types and limits"
+    - "Define KYC/AML verification flow"
+    - "Define dispute resolution process"
+    - "Define reporting and statements"
+    - "Define notification triggers (transaction alerts)"
+
+  non_functional:
+    - "Compliance: Which regulations (PCI-DSS, SOC2, PSD2, GDPR)?"
+    - "Security: Penetration testing schedule? Bug bounty program?"
+    - "Audit: Retention period for audit logs? Access control for auditors?"
+    - "Fraud: Transaction monitoring thresholds? False positive tolerance?"
+    - "Availability: Uptime SLA (99.99%)? Disaster recovery RTO/RPO?"
+    - "Data Residency: Where must data be stored? Cross-border restrictions?"
+    - "Encryption: Key management strategy? Key rotation schedule?"
+    - "Incident Response: Breach notification timeline? Escalation process?"

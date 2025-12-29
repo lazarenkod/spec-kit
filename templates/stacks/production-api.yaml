@@ -1,0 +1,188 @@
+# Production API Template
+# Backend API service with observability and documentation
+
+name: "Production API"
+description: "REST/GraphQL API backend with observability and auto-documentation"
+domains:
+  - production
+
+framework:
+  primary: "FastAPI (Python)"
+  alternatives:
+    - "NestJS (TypeScript)"
+    - "Express.js (TypeScript)"
+    - "Go + Chi/Gin"
+    - "Rust + Axum"
+
+categories:
+  framework:
+    required: true
+    prompt: "Choose API framework"
+    options:
+      - name: "FastAPI (Python)"
+        description: "Modern Python with auto OpenAPI docs"
+        url: "https://fastapi.tiangolo.com"
+        constitution:
+          - QUA-001
+      - name: "NestJS (TypeScript)"
+        description: "Enterprise Node.js framework"
+        url: "https://nestjs.com"
+        constitution:
+          - QUA-001
+      - name: "Express.js (TypeScript)"
+        description: "Minimal, flexible Node.js"
+        url: "https://expressjs.com"
+        constitution: []
+      - name: "Go + Chi"
+        description: "High-performance Go router"
+        url: "https://go-chi.io"
+        constitution: []
+
+  database:
+    required: true
+    prompt: "Choose database solution"
+    options:
+      - name: "PostgreSQL + SQLAlchemy"
+        description: "Python ORM with migrations"
+        url: "https://www.sqlalchemy.org"
+        constitution:
+          - REL-001
+          - REL-002
+      - name: "PostgreSQL + Prisma"
+        description: "Type-safe ORM (TypeScript)"
+        url: "https://www.prisma.io"
+        constitution:
+          - REL-001
+          - REL-002
+      - name: "PostgreSQL + GORM"
+        description: "Go ORM"
+        url: "https://gorm.io"
+        constitution:
+          - REL-001
+          - REL-002
+      - name: "MongoDB"
+        description: "Document database"
+        url: "https://mongodb.com"
+        constitution:
+          - REL-001
+
+  authentication:
+    required: true
+    prompt: "Choose authentication method"
+    options:
+      - name: "JWT + OAuth2"
+        description: "Standard token-based auth"
+        url: "https://jwt.io"
+        constitution:
+          - SEC-001
+          - SEC-002
+      - name: "API Keys"
+        description: "Simple key-based auth"
+        url: ""
+        constitution:
+          - SEC-001
+      - name: "Auth0 / Clerk (external)"
+        description: "Delegated to external provider"
+        url: "https://auth0.com"
+        constitution:
+          - SEC-001
+          - SEC-002
+
+  observability:
+    required: true
+    prompt: "Choose observability stack"
+    options:
+      - name: "OpenTelemetry + Grafana"
+        description: "Traces, metrics, logs to Grafana"
+        url: "https://opentelemetry.io"
+        constitution:
+          - OBS-001
+          - OBS-002
+          - OBS-003
+          - OBS-004
+      - name: "Datadog"
+        description: "Full APM and logging"
+        url: "https://datadoghq.com"
+        constitution:
+          - OBS-001
+          - OBS-002
+          - OBS-003
+      - name: "AWS X-Ray + CloudWatch"
+        description: "AWS-native observability"
+        url: "https://aws.amazon.com/xray/"
+        constitution:
+          - OBS-001
+          - OBS-002
+
+  documentation:
+    required: true
+    prompt: "Choose API documentation"
+    options:
+      - name: "OpenAPI auto-generation"
+        description: "Auto-generated from code"
+        url: "https://swagger.io/specification/"
+        constitution: []
+      - name: "Swagger UI + Redoc"
+        description: "Interactive API explorer"
+        url: "https://swagger.io/tools/swagger-ui/"
+        constitution: []
+
+  testing:
+    required: true
+    prompt: "Choose testing approach"
+    options:
+      - name: "pytest + TestContainers"
+        description: "Python tests with real dependencies"
+        url: "https://docs.pytest.org"
+        constitution:
+          - QUA-001
+          - QUA-002
+          - TST-001
+      - name: "Jest + TestContainers"
+        description: "TypeScript tests with containers"
+        url: "https://jestjs.io"
+        constitution:
+          - QUA-001
+          - QUA-002
+          - TST-001
+      - name: "Go testing + testcontainers-go"
+        description: "Go tests with containers"
+        url: "https://golang.org/pkg/testing/"
+        constitution:
+          - QUA-001
+          - QUA-002
+
+  cicd:
+    required: true
+    prompt: "Choose CI/CD platform"
+    options:
+      - name: "GitHub Actions"
+        description: "Built into GitHub"
+        url: "https://github.com/features/actions"
+        constitution:
+          - QUA-003
+          - QUA-004
+      - name: "GitLab CI"
+        description: "Built into GitLab"
+        url: "https://docs.gitlab.com/ee/ci/"
+        constitution:
+          - QUA-003
+          - QUA-004
+
+checklist:
+  functional:
+    - "Define API resources and endpoints (CRUD operations)"
+    - "Define authentication and authorization model"
+    - "Define rate limiting and quotas per client"
+    - "Define versioning strategy (URL path, header, query param)"
+    - "Define error response format (RFC 7807 Problem Details?)"
+    - "Define pagination strategy (cursor, offset, keyset)"
+
+  non_functional:
+    - "Performance: Target response times (P50, P95, P99)?"
+    - "Scalability: Expected requests per second? Auto-scaling rules?"
+    - "Availability: Uptime SLA? Multi-region deployment?"
+    - "Rate Limiting: Limits per tier (free, pro, enterprise)?"
+    - "Caching: Which endpoints to cache? TTL values?"
+    - "Documentation: Auto-generated? Manually curated examples?"
+    - "Backwards Compatibility: Breaking change policy? Deprecation timeline?"

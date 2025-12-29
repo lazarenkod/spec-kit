@@ -1,0 +1,206 @@
+# E-Commerce Template
+# Online shopping platform with payments and inventory
+
+name: "E-Commerce"
+description: "Online store with payments, inventory, and analytics"
+domains:
+  - e-commerce
+  - production
+
+framework:
+  primary: "Next.js + TypeScript"
+  alternatives:
+    - "Remix"
+    - "Nuxt.js"
+    - "SvelteKit"
+
+categories:
+  platform:
+    required: true
+    prompt: "Choose e-commerce platform approach"
+    options:
+      - name: "Next.js + Shopify Storefront API"
+        description: "Headless Shopify with custom frontend"
+        url: "https://shopify.dev/docs/storefront-api"
+        constitution:
+          - ECOM-001
+      - name: "Medusa.js"
+        description: "Open-source headless commerce"
+        url: "https://medusajs.com"
+        constitution:
+          - ECOM-001
+      - name: "Saleor"
+        description: "GraphQL-first e-commerce"
+        url: "https://saleor.io"
+        constitution:
+          - ECOM-001
+      - name: "Custom from scratch"
+        description: "Build everything custom"
+        url: ""
+        constitution: []
+
+  payments:
+    required: true
+    prompt: "Choose payment processor"
+    options:
+      - name: "Stripe"
+        description: "Cards, wallets, subscriptions"
+        url: "https://stripe.com"
+        constitution:
+          - FIN-001
+          - FIN-002
+      - name: "Shopify Payments"
+        description: "Built into Shopify (if using)"
+        url: "https://www.shopify.com/payments"
+        constitution:
+          - FIN-001
+      - name: "PayPal + Stripe"
+        description: "Multiple payment options"
+        url: ""
+        constitution:
+          - FIN-001
+          - FIN-002
+
+  inventory:
+    required: true
+    prompt: "Choose inventory management"
+    options:
+      - name: "Shopify inventory"
+        description: "Shopify's built-in inventory"
+        url: "https://help.shopify.com/en/manual/products/inventory"
+        constitution:
+          - ECOM-INV-001
+      - name: "Custom inventory system"
+        description: "Build your own inventory tracking"
+        url: ""
+        constitution:
+          - ECOM-INV-001
+      - name: "Third-party (TradeGecko/Cin7)"
+        description: "External inventory management"
+        url: ""
+        constitution:
+          - ECOM-INV-001
+
+  search:
+    required: true
+    prompt: "Choose product search"
+    options:
+      - name: "Algolia"
+        description: "Fast hosted search with AI"
+        url: "https://algolia.com"
+        constitution:
+          - ECOM-UX-001
+      - name: "Meilisearch"
+        description: "Open-source, self-hosted search"
+        url: "https://meilisearch.com"
+        constitution:
+          - ECOM-UX-001
+      - name: "Typesense"
+        description: "Open-source typo-tolerant search"
+        url: "https://typesense.org"
+        constitution:
+          - ECOM-UX-001
+      - name: "Elasticsearch"
+        description: "Enterprise search platform"
+        url: "https://elastic.co"
+        constitution:
+          - ECOM-UX-001
+
+  analytics:
+    required: true
+    prompt: "Choose analytics platform"
+    options:
+      - name: "Google Analytics 4 + Enhanced Ecommerce"
+        description: "Free with e-commerce tracking"
+        url: "https://support.google.com/analytics/answer/9267735"
+        constitution: []
+      - name: "Mixpanel + GA4"
+        description: "Product analytics + web analytics"
+        url: ""
+        constitution: []
+      - name: "PostHog"
+        description: "Open-source with e-commerce events"
+        url: "https://posthog.com"
+        constitution: []
+
+  email:
+    required: true
+    prompt: "Choose email/marketing platform"
+    options:
+      - name: "Klaviyo"
+        description: "E-commerce focused email marketing"
+        url: "https://klaviyo.com"
+        constitution: []
+      - name: "Resend + custom"
+        description: "Transactional email API"
+        url: "https://resend.com"
+        constitution: []
+      - name: "SendGrid"
+        description: "Transactional + marketing email"
+        url: "https://sendgrid.com"
+        constitution: []
+
+  testing:
+    required: true
+    prompt: "Choose testing approach"
+    options:
+      - name: "Vitest + Playwright (checkout E2E)"
+        description: "Unit tests + checkout flow testing"
+        url: ""
+        constitution:
+          - QUA-001
+          - QUA-002
+          - TST-001
+      - name: "Jest + Cypress"
+        description: "Traditional testing stack"
+        url: ""
+        constitution:
+          - QUA-001
+          - QUA-002
+          - TST-001
+
+  cicd:
+    required: true
+    prompt: "Choose CI/CD and hosting"
+    options:
+      - name: "Vercel + GitHub Actions"
+        description: "Vercel hosting with GitHub CI"
+        url: "https://vercel.com"
+        constitution:
+          - QUA-003
+          - QUA-004
+      - name: "Netlify + GitHub Actions"
+        description: "Netlify hosting with GitHub CI"
+        url: "https://netlify.com"
+        constitution:
+          - QUA-003
+          - QUA-004
+      - name: "AWS (ECS/Lambda) + GitHub Actions"
+        description: "AWS infrastructure"
+        url: ""
+        constitution:
+          - QUA-003
+          - QUA-004
+
+checklist:
+  functional:
+    - "Define product catalog structure (categories, attributes, variants)"
+    - "Define shopping cart behavior (persistence, abandonment recovery)"
+    - "Define checkout flow (guest checkout, multi-step, one-page)"
+    - "Define payment methods (cards, wallets, BNPL)"
+    - "Define shipping options and calculation"
+    - "Define order management workflow"
+    - "Define returns and refund process"
+    - "Define customer accounts and wishlists"
+    - "Define promotions and discount rules"
+
+  non_functional:
+    - "Performance: Page load time target (<3s)? Checkout completion target?"
+    - "Search: Typo tolerance? Faceted filtering? Personalization?"
+    - "Inventory: Real-time sync? Oversell prevention?"
+    - "Payments: Fraud prevention rules? 3D Secure requirement?"
+    - "Tax: Tax calculation service? Multi-jurisdiction support?"
+    - "Shipping: Carrier integrations? Real-time rates?"
+    - "SEO: Structured data (JSON-LD)? Image optimization? URL structure?"
+    - "Scalability: Black Friday traffic expectations? CDN strategy?"
+    - "International: Multi-currency? Multi-language? Localized checkout?"

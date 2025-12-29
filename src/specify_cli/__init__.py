@@ -235,6 +235,18 @@ AGENT_CONFIG = {
 
 SCRIPT_TYPE_CHOICES = {"sh": "POSIX Shell (bash/zsh)", "ps": "PowerShell"}
 
+# Production-First Templates
+TEMPLATE_CHOICES = {
+    "production-saas": "Full-stack SaaS with auth, payments, observability",
+    "production-api": "REST/GraphQL API backend with observability",
+    "mobile-app": "iOS/Android app with offline support and analytics",
+    "gaming": "Real-time game with multiplayer and anti-cheat",
+    "fintech": "Regulated financial services (PCI-DSS, SOC2)",
+    "healthcare": "HIPAA/GDPR-compliant health application",
+    "e-commerce": "Online store with payments and inventory",
+    "minimal": "Empty template - configure everything yourself",
+}
+
 CLAUDE_LOCAL_PATH = Path.home() / ".claude" / "local" / "claude"
 
 # Workspace configuration
@@ -654,6 +666,274 @@ def select_with_arrows(options: dict, prompt_text: str = "Select an option", def
         raise typer.Exit(1)
 
     return selected_key
+
+
+def load_stack_template(template_name: str, templates_path: Path = None) -> Optional[Dict[str, Any]]:
+    """
+    Load a stack template YAML file.
+
+    Args:
+        template_name: Name of the template (e.g., 'production-saas')
+        templates_path: Path to templates directory (defaults to bundled templates)
+
+    Returns:
+        Parsed YAML content or None if not found
+    """
+    if templates_path is None:
+        # Look for templates in the package resources
+        templates_path = Path(__file__).parent.parent.parent / "templates" / "stacks"
+
+    template_file = templates_path / f"{template_name}.yaml"
+    if not template_file.exists():
+        return None
+
+    try:
+        with open(template_file, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f)
+    except Exception:
+        return None
+
+
+def select_template_with_descriptions() -> str:
+    """
+    Interactive template selection with rich descriptions.
+
+    Returns:
+        Selected template key
+    """
+    option_keys = list(TEMPLATE_CHOICES.keys())
+    selected_index = 0
+    selected_key = None
+
+    # Load full descriptions from YAML for richer display
+    template_details = {}
+    templates_path = Path(__file__).parent.parent.parent / "templates" / "stacks"
+    for key in option_keys:
+        template = load_stack_template(key, templates_path)
+        if template:
+            template_details[key] = {
+                "name": template.get("name", key),
+                "description": template.get("description", TEMPLATE_CHOICES[key]),
+                "domains": template.get("domains", []),
+            }
+        else:
+            template_details[key] = {
+                "name": key,
+                "description": TEMPLATE_CHOICES[key],
+                "domains": [],
+            }
+
+    def create_selection_panel():
+        """Create the selection panel with current selection highlighted."""
+        table = Table.grid(padding=(0, 2))
+        table.add_column(style="cyan", justify="left", width=3)
+        table.add_column(style="white", justify="left", width=20)
+        table.add_column(style="dim", justify="left")
+
+        for i, key in enumerate(option_keys):
+            details = template_details[key]
+            domains_str = f" [{', '.join(details['domains'])}]" if details['domains'] else ""
+
+            if i == selected_index:
+                table.add_row(
+                    "▶",
+                    f"[bold cyan]{key}[/bold cyan]",
+                    f"[white]{details['description']}[/white]{domains_str}"
+                )
+            else:
+                table.add_row(
+                    " ",
+                    f"[cyan]{key}[/cyan]",
+                    f"[dim]{details['description']}[/dim]"
+                )
+
+        table.add_row("", "", "")
+        table.add_row("", "", "[dim]Use ↑/↓ to navigate, Enter to select[/dim]")
+
+        return Panel(
+            table,
+            title="[bold]🚀 Choose a production-ready template[/bold]",
+            subtitle="[dim]Templates include pre-configured stacks and requirements checklists[/dim]",
+            border_style="cyan",
+            padding=(1, 2)
+        )
+
+    console.print()
+
+    def run_selection_loop():
+        nonlocal selected_key, selected_index
+        with Live(create_selection_panel(), console=console, transient=True, auto_refresh=False) as live:
+            while True:
+                try:
+                    key = get_key()
+                    if key == 'up':
+                        selected_index = (selected_index - 1) % len(option_keys)
+                    elif key == 'down':
+                        selected_index = (selected_index + 1) % len(option_keys)
+                    elif key == 'enter':
+                        selected_key = option_keys[selected_index]
+                        break
+                    elif key == 'escape':
+                        # Default to minimal on escape
+                        selected_key = "minimal"
+                        break
+
+                    live.update(create_selection_panel(), refresh=True)
+
+                except KeyboardInterrupt:
+                    console.print("\n[yellow]Selection cancelled[/yellow]")
+                    raise typer.Exit(1)
+
+    run_selection_loop()
+
+    if selected_key is None:
+        selected_key = "minimal"
+
+    return selected_key
+
+
+def generate_requirements_checklist(
+    project_path: Path,
+    template_name: str,
+    template_data: Dict[str, Any],
+    stack_selections: Dict[str, str] = None
+) -> Path:
+    """
+    Generate REQUIREMENTS_CHECKLIST.md from template data.
+
+    Args:
+        project_path: Path to project directory
+        template_name: Name of the template
+        template_data: Parsed template YAML data
+        stack_selections: User's selections for each category (optional)
+
+    Returns:
+        Path to generated checklist file
+    """
+    checklist_path = project_path / "REQUIREMENTS_CHECKLIST.md"
+
+    # Build stack table
+    stack_lines = ["| Category | Selected | Constitution Principles |", "|----------|----------|------------------------|"]
+
+    if stack_selections and template_data.get("categories"):
+        for category, selected in stack_selections.items():
+            category_data = template_data.get("categories", {}).get(category, {})
+            options = category_data.get("options", [])
+
+            # Find selected option's constitution principles
+            principles = []
+            for opt in options:
+                if opt.get("name") == selected:
+                    principles = opt.get("constitution", [])
+                    break
+
+            principles_str = ", ".join(principles) if principles else "-"
+            stack_lines.append(f"| {category.title()} | {selected} | {principles_str} |")
+    else:
+        stack_lines.append(f"| - | Using {template_name} defaults | See template |")
+
+    stack_table = "\n".join(stack_lines)
+
+    # Build functional checklist
+    functional_items = template_data.get("checklist", {}).get("functional", [])
+    functional_checklist = "\n".join([f"- [ ] {item}" for item in functional_items]) if functional_items else "- [ ] Define core requirements"
+
+    # Build non-functional checklist
+    non_functional_items = template_data.get("checklist", {}).get("non_functional", [])
+    non_functional_checklist = "\n".join([f"- [ ] {item}" for item in non_functional_items]) if non_functional_items else "- [ ] Define quality attributes"
+
+    # Build constitution principles list
+    all_principles = set()
+    if stack_selections and template_data.get("categories"):
+        for category, selected in stack_selections.items():
+            category_data = template_data.get("categories", {}).get(category, {})
+            for opt in category_data.get("options", []):
+                if opt.get("name") == selected:
+                    all_principles.update(opt.get("constitution", []))
+
+    principles_list = "\n".join([f"- {p}" for p in sorted(all_principles)]) if all_principles else "- (Select stack options to activate principles)"
+
+    # Build domain files list
+    domains = template_data.get("domains", [])
+    domain_files = "\n".join([f"- `memory/domains/{d}.md`" for d in domains]) if domains else "- No domain files activated"
+
+    # Get current date
+    from datetime import datetime
+    current_date = datetime.now().strftime("%Y-%m-%d")
+
+    # Generate the checklist content
+    content = f"""# Requirements Checklist
+
+Generated by Spec Kit for **{template_data.get('name', template_name)}** template.
+
+> **Philosophy**: "Don't make me think about what I might forget"
+>
+> This checklist surfaces critical requirements you might overlook when starting a project.
+> Review each item and mark as done or explicitly skipped.
+
+---
+
+## Stack Configuration
+
+{stack_table}
+
+---
+
+## Functional Requirements
+
+Define these in your feature specifications (`spec.md`):
+
+{functional_checklist}
+
+---
+
+## Non-Functional Requirements
+
+Configure these in your constitution (`constitution.md`) or clarify during `/speckit.clarify`:
+
+{non_functional_checklist}
+
+---
+
+## Constitution Principles Activated
+
+The following constitution principles are automatically active based on your stack choices:
+
+{principles_list}
+
+---
+
+## Domain Files Activated
+
+Based on your template, these domain files will be composed into your constitution:
+
+{domain_files}
+
+---
+
+## Next Steps
+
+1. **Review this checklist** — Mark items as done or explicitly skipped
+2. **Run `/speckit.constitution`** — Configure project principles
+3. **Run `/speckit.specify`** — Create your first feature specification
+4. **Follow the SDD workflow**: specify → clarify → plan → tasks → implement
+
+---
+
+## Template Info
+
+- **Template**: {template_name}
+- **Generated**: {current_date}
+- **Framework**: {template_data.get('framework', {}).get('primary', 'Not specified')}
+
+---
+
+*This file is generated once during `specify init`. You can modify it freely.*
+"""
+
+    checklist_path.write_text(content, encoding="utf-8")
+    return checklist_path
+
 
 console = Console()
 
@@ -1290,6 +1570,7 @@ def ensure_executable_scripts(project_path: Path, tracker: StepTracker | None = 
 def init(
     project_name: str = typer.Argument(None, help="Name for your new project directory (optional if using --here, or use '.' for current directory)"),
     ai_assistant: str = typer.Option(None, "--ai", help="AI assistant to use: claude, gemini, copilot, cursor-agent, qwen, opencode, codex, windsurf, kilocode, auggie, codebuddy, amp, shai, q, bob, or qoder "),
+    template: str = typer.Option(None, "--template", "-t", help="Production-ready template: production-saas, production-api, mobile-app, gaming, fintech, healthcare, e-commerce, minimal"),
     script_type: str = typer.Option(None, "--script", help="Script type to use: sh or ps"),
     ignore_agent_tools: bool = typer.Option(False, "--ignore-agent-tools", help="Skip checks for AI agent tools like Claude Code"),
     no_git: bool = typer.Option(False, "--no-git", help="Skip git repository initialization"),
@@ -1303,26 +1584,35 @@ def init(
 ):
     """
     Initialize a new Specify project from the latest template.
-    
+
     This command will:
     1. Check that required tools are installed (git is optional)
-    2. Let you choose your AI assistant
+    2. Let you choose your AI assistant and production template
     3. Download the appropriate template from GitHub
     4. Extract the template to a new project directory or current directory
-    5. Initialize a fresh git repository (if not --no-git and no existing repo)
-    6. Optionally set up AI assistant commands
-    
+    5. Generate a REQUIREMENTS_CHECKLIST.md based on your template
+    6. Initialize a fresh git repository (if not --no-git and no existing repo)
+
+    Production Templates:
+        --template production-saas   Full-stack SaaS with auth, payments, observability
+        --template production-api    REST/GraphQL API with observability
+        --template mobile-app        iOS/Android with offline support
+        --template gaming            Real-time game with multiplayer
+        --template fintech           Regulated financial services
+        --template healthcare        HIPAA/GDPR-compliant health app
+        --template e-commerce        Online store with payments
+        --template minimal           Empty template (default)
+
     Examples:
         specify init my-project
         specify init my-project --ai claude
+        specify init my-project --ai claude --template production-saas  # SaaS with full stack
+        specify init my-project -t fintech  # Short form for template
         specify init my-project --ai copilot --no-git
         specify init --ignore-agent-tools my-project
         specify init . --ai claude         # Initialize in current directory
-        specify init .                     # Initialize in current directory (interactive AI selection)
+        specify init .                     # Initialize in current directory (interactive selection)
         specify init --here --ai claude    # Alternative syntax for current directory
-        specify init --here --ai codex
-        specify init --here --ai codebuddy
-        specify init --here
         specify init --here --force  # Skip confirmation when current directory not empty
         specify init my-project --ai claude --repo "myuser/spec-kit"  # Use custom fork
         specify init my-project --ai claude --language ru  # Generate artifacts in Russian
@@ -1353,6 +1643,19 @@ def init(
         console.print(f"[red]Error:[/red] Invalid language '[cyan]{language}[/cyan]'")
         console.print(f"Valid options: {', '.join(VALID_LANGUAGES.keys())}")
         raise typer.Exit(1)
+
+    # Validate template if provided
+    if template and template not in TEMPLATE_CHOICES:
+        console.print(f"[red]Error:[/red] Invalid template '[cyan]{template}[/cyan]'")
+        console.print(f"Valid options: {', '.join(TEMPLATE_CHOICES.keys())}")
+        raise typer.Exit(1)
+
+    # Select template interactively if not provided
+    selected_template = template
+    if not selected_template and sys.stdin.isatty():
+        selected_template = select_template_with_descriptions()
+    elif not selected_template:
+        selected_template = "minimal"  # Default for non-interactive mode
 
     if project_name == ".":
         here = True
@@ -1414,6 +1717,11 @@ def init(
         lang_name = VALID_LANGUAGES.get(language, language)
         setup_lines.append(f"{'Language':<15} [magenta]{lang_name}[/magenta] ({language})")
 
+    if selected_template and selected_template != "minimal":
+        template_desc = TEMPLATE_CHOICES.get(selected_template, selected_template)
+        setup_lines.append(f"{'Template':<15} [green]{selected_template}[/green]")
+        setup_lines.append(f"{'             ':<15} [dim]{template_desc}[/dim]")
+
     console.print(Panel("\n".join(setup_lines), border_style="cyan", padding=(1, 2)))
 
     should_init_git = False
@@ -1469,6 +1777,8 @@ def init(
 
     console.print(f"[cyan]Selected AI assistant:[/cyan] {selected_ai}")
     console.print(f"[cyan]Selected script type:[/cyan] {selected_script}")
+    if selected_template != "minimal":
+        console.print(f"[cyan]Selected template:[/cyan] {selected_template}")
 
     tracker = StepTracker("Initialize Specify Project")
 
@@ -1480,7 +1790,7 @@ def init(
     tracker.complete("ai-select", f"{selected_ai}")
     tracker.add("script-select", "Select script type")
     tracker.complete("script-select", selected_script)
-    for key, label in [
+    tracker_steps = [
         ("fetch", "Fetch latest release"),
         ("download", "Download template"),
         ("extract", "Extract template"),
@@ -1488,9 +1798,15 @@ def init(
         ("extracted-summary", "Extraction summary"),
         ("chmod", "Ensure scripts executable"),
         ("cleanup", "Cleanup"),
+    ]
+    # Add checklist step only for non-minimal templates
+    if selected_template != "minimal":
+        tracker_steps.append(("checklist", "Generate requirements checklist"))
+    tracker_steps.extend([
         ("git", "Initialize git repository"),
         ("final", "Finalize")
-    ]:
+    ])
+    for key, label in tracker_steps:
         tracker.add(key, label)
 
     # Track git error message outside Live context so it persists
@@ -1521,6 +1837,24 @@ def init(
                         constitution_path.write_text(updated_content, encoding="utf-8")
                     except Exception:
                         pass  # Silently ignore if update fails
+
+            # Generate requirements checklist for non-minimal templates
+            if selected_template != "minimal":
+                tracker.start("checklist")
+                try:
+                    template_data = load_stack_template(selected_template)
+                    if template_data:
+                        checklist_path = generate_requirements_checklist(
+                            project_path,
+                            selected_template,
+                            template_data,
+                            stack_selections=None  # Could be extended for interactive stack selection
+                        )
+                        tracker.complete("checklist", checklist_path.name)
+                    else:
+                        tracker.skip("checklist", "template not found")
+                except Exception as e:
+                    tracker.error("checklist", str(e))
 
             if not no_git:
                 tracker.start("git")
@@ -1591,6 +1925,28 @@ def init(
         console.print()
         console.print(security_notice)
 
+    # Template requirements reminder for non-minimal templates
+    if selected_template != "minimal":
+        template_data = load_stack_template(selected_template)
+        if template_data:
+            domains = template_data.get("domains", [])
+            domains_str = ", ".join(domains) if domains else "none"
+            checklist_path = project_path / "REQUIREMENTS_CHECKLIST.md"
+
+            template_notice = Panel(
+                f"[bold]Template:[/bold] {template_data.get('name', selected_template)}\n"
+                f"[bold]Domains:[/bold] {domains_str}\n\n"
+                f"Review [cyan]REQUIREMENTS_CHECKLIST.md[/cyan] to ensure you don't forget:\n"
+                f"  • Functional requirements (what to build)\n"
+                f"  • Non-functional requirements (quality attributes)\n"
+                f"  • Constitution principles (automatically activated)",
+                title="[bold green]Template Activated[/bold green]",
+                border_style="green",
+                padding=(1, 2)
+            )
+            console.print()
+            console.print(template_notice)
+
     # Quick start instructions
     quick_start_lines = []
     if not here:
@@ -1599,6 +1955,11 @@ def init(
     else:
         quick_start_lines.append("[bold]1.[/bold] You're already in the project directory!")
         step_num = 2
+
+    # Add template checklist step for non-minimal templates
+    if selected_template != "minimal":
+        quick_start_lines.append(f"[bold]{step_num}.[/bold] Review [cyan]REQUIREMENTS_CHECKLIST.md[/cyan] for your {selected_template} template")
+        step_num += 1
 
     # Add Codex-specific setup step if needed
     if selected_ai == "codex":

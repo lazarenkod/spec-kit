@@ -1,0 +1,183 @@
+# Gaming Template
+# Real-time game with multiplayer and performance focus
+
+name: "Gaming"
+description: "Real-time game with multiplayer, anti-cheat, and analytics"
+domains:
+  - gaming
+
+framework:
+  primary: "Unity"
+  alternatives:
+    - "Unreal Engine"
+    - "Godot"
+    - "Custom engine"
+    - "Phaser (web)"
+
+categories:
+  engine:
+    required: true
+    prompt: "Choose game engine"
+    options:
+      - name: "Unity"
+        description: "C# game engine, huge ecosystem"
+        url: "https://unity.com"
+        constitution: []
+      - name: "Unreal Engine"
+        description: "C++ engine for AAA games"
+        url: "https://unrealengine.com"
+        constitution: []
+      - name: "Godot"
+        description: "Open-source, GDScript/C#"
+        url: "https://godotengine.org"
+        constitution: []
+      - name: "Phaser"
+        description: "JavaScript 2D game framework"
+        url: "https://phaser.io"
+        constitution: []
+      - name: "Custom WebGL/Canvas"
+        description: "Build your own renderer"
+        url: ""
+        constitution: []
+
+  networking:
+    required: false
+    prompt: "Need multiplayer networking?"
+    options:
+      - name: "WebSocket (real-time)"
+        description: "Standard real-time communication"
+        url: ""
+        constitution:
+          - GAM-001
+      - name: "WebRTC (P2P)"
+        description: "Peer-to-peer for low latency"
+        url: "https://webrtc.org"
+        constitution:
+          - GAM-001
+      - name: "Photon"
+        description: "Managed multiplayer service"
+        url: "https://photonengine.com"
+        constitution:
+          - GAM-001
+      - name: "Unity Netcode"
+        description: "Unity's networking solution"
+        url: "https://docs-multiplayer.unity3d.com"
+        constitution:
+          - GAM-001
+      - name: "Single-player only"
+        description: "No multiplayer needed"
+        constitution: []
+
+  database:
+    required: true
+    prompt: "Choose data storage"
+    options:
+      - name: "Redis + PostgreSQL"
+        description: "Redis for real-time, Postgres for persistence"
+        url: "https://redis.io"
+        constitution:
+          - REL-001
+          - GAM-002
+      - name: "Firebase Realtime DB"
+        description: "Real-time sync for casual games"
+        url: "https://firebase.google.com/docs/database"
+        constitution:
+          - REL-001
+      - name: "PlayFab"
+        description: "Microsoft's game backend"
+        url: "https://playfab.com"
+        constitution:
+          - REL-001
+      - name: "Local storage only"
+        description: "Offline single-player"
+        constitution: []
+
+  analytics:
+    required: true
+    prompt: "Choose game analytics"
+    options:
+      - name: "GameAnalytics"
+        description: "Free game-specific analytics"
+        url: "https://gameanalytics.com"
+        constitution: []
+      - name: "Unity Analytics"
+        description: "Built into Unity"
+        url: "https://unity.com/products/analytics"
+        constitution: []
+      - name: "Amplitude"
+        description: "Product analytics (works for games)"
+        url: "https://amplitude.com"
+        constitution: []
+      - name: "Custom telemetry"
+        description: "Build your own"
+        constitution: []
+
+  anti_cheat:
+    required: false
+    prompt: "Need anti-cheat measures?"
+    options:
+      - name: "Server-authoritative state"
+        description: "Server validates all actions"
+        url: ""
+        constitution:
+          - GAM-003
+          - SEC-001
+      - name: "Easy Anti-Cheat"
+        description: "Epic's anti-cheat service"
+        url: "https://easy.ac"
+        constitution:
+          - GAM-003
+      - name: "BattlEye"
+        description: "Commercial anti-cheat"
+        url: "https://battleye.com"
+        constitution:
+          - GAM-003
+      - name: "Not needed"
+        description: "Single-player or casual"
+        constitution: []
+
+  monetization:
+    required: false
+    prompt: "Choose monetization model"
+    options:
+      - name: "Premium (pay once)"
+        description: "One-time purchase"
+        url: ""
+        constitution: []
+      - name: "Free-to-play + IAP"
+        description: "In-app purchases"
+        url: ""
+        constitution:
+          - FIN-001
+      - name: "Subscription"
+        description: "Recurring payment"
+        url: ""
+        constitution:
+          - FIN-001
+          - FIN-002
+      - name: "Ads (AdMob/Unity Ads)"
+        description: "Ad-supported"
+        url: "https://admob.google.com"
+        constitution: []
+      - name: "Not decided yet"
+        description: "Figure out later"
+        constitution: []
+
+checklist:
+  functional:
+    - "Define core game loop (what does player do repeatedly?)"
+    - "Define player progression system (levels, unlocks, achievements)"
+    - "Define multiplayer mechanics (if applicable)"
+    - "Define save/load system (local, cloud, or both?)"
+    - "Define in-game economy (if applicable)"
+    - "Define matchmaking rules (skill-based, region-based?)"
+
+  non_functional:
+    - "Performance: Target frame rate (30/60/120 FPS)? Target platforms?"
+    - "Latency: Acceptable input-to-screen delay (<50ms, <100ms)?"
+    - "Networking: Server tick rate? Client-side prediction?"
+    - "Anti-Cheat: Server-authoritative? Client validation?"
+    - "Scalability: Max concurrent players per server? Global regions?"
+    - "Fairness: Matchmaking balance? Skill rating system?"
+    - "Monetization: Ethical boundaries? Loot box regulations?"
+    - "Accessibility: Colorblind modes? Difficulty options? Remappable controls?"
