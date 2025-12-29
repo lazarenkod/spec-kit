@@ -39,6 +39,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Trend data support for cross-session comparison
     - Recommendations engine based on metric gaps
 
+- **Mobile Applications Domain** (`memory/domains/mobile.md`) — Constitution extension for mobile app development
+  - Platform context: App Store Guidelines (Apple), Play Store Policies (Google), GDPR, COPPA
+  - Strengthened base principles: PERF-001, SEC-002, ERR-001, API-003 elevated to MUST
+  - New principles (MOB-001 to MOB-008):
+    - MOB-001: Offline Capability (MUST) — core features work without network
+    - MOB-002: Platform Compliance (MUST) — Apple HIG / Material Design adherence
+    - MOB-003: Battery Efficiency (MUST) — minimize background processing
+    - MOB-004: Responsive Touch (MUST) — < 100ms touch feedback
+    - MOB-005: Secure Storage (MUST) — Keychain/Keystore for credentials
+    - MOB-006: Deep Linking (SHOULD) — Universal Links / App Links support
+    - MOB-007: Accessibility (MUST) — VoiceOver/TalkBack support
+    - MOB-008: Graceful Updates (SHOULD) — forced update mechanism
+  - Platform-specific tables for iOS and Android requirements
+  - Performance thresholds: cold start < 2s, touch response < 100ms, 60fps target
+
+- **Gaming Domain** (`memory/domains/gaming.md`) — Constitution extension for game development
+  - Platform context: PEGI/ESRB ratings, COPPA, loot box regulations, platform TOS (Sony TRC, Microsoft TCR)
+  - Strengthened base principles: PERF-001, PERF-002, LOG-001, SEC-003 elevated to MUST
+  - New principles (GAM-001 to GAM-009):
+    - GAM-001: Frame Rate Stability (MUST) — maintain 30/60/120 FPS target
+    - GAM-002: Input Latency (MUST) — < 50ms input-to-response
+    - GAM-003: State Persistence (MUST) — reliable progress saving
+    - GAM-004: Fair Monetization (MUST) — clear pricing, no deceptive patterns
+    - GAM-005: Age-Appropriate Content (MUST) — accurate age ratings
+    - GAM-006: Multiplayer Integrity (MUST) — anti-cheat, server-authoritative state
+    - GAM-007: Network Resilience (MUST) — graceful disconnect handling
+    - GAM-008: Asset Loading (SHOULD) — async loading with progress
+    - GAM-009: Platform Certification (MUST) — TRC/TCR/Lotcheck compliance
+  - Game type considerations: real-time multiplayer, turn-based, live service
+  - Performance thresholds by platform: mobile, PC, console
+
 ---
 
 ## [0.0.42] - 2025-12-28
