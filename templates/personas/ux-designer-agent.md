@@ -188,6 +188,172 @@ What this agent MUST provide to Developer Agent:
    - Reduced motion alternative for confetti"
 ```
 
+## Visual Wireframe Generation
+
+This persona generates **visual HTML wireframes** from ASCII specifications, enabling design preview without external design tools.
+
+### Wireframe Generation Workflow
+
+```text
+1. Define ASCII wireframe in design.md
+   ┌─────────────────────────────────────┐
+   │ [Logo]            [Nav] [Nav] [🔔]  │
+   ├─────────────────────────────────────┤
+   │                                     │
+   │   Welcome back, {user}              │
+   │                                     │
+   │   ┌─────────┐ ┌─────────┐          │
+   │   │ [Card]  │ │ [Card]  │          │
+   │   │ Metric  │ │ Metric  │          │
+   │   └─────────┘ └─────────┘          │
+   │                                     │
+   │   [Button: Get Started]             │
+   │                                     │
+   └─────────────────────────────────────┘
+
+2. Invoke wireframe-preview skill
+   READ templates/skills/wireframe-preview.md
+
+3. Generate visual HTML wireframe
+   - Parse ASCII structure
+   - Map components to HTML elements
+   - Apply design tokens from constitution.md
+   - Output to .preview/wireframes/
+
+4. Capture screenshot for validation
+   - Playwright renders HTML
+   - Screenshot saved for visual review
+   - Claude Vision validates layout
+```
+
+### Visual Wireframe Output
+
+```text
+.preview/wireframes/
+├── dashboard/
+│   ├── dashboard.html       # Visual wireframe
+│   ├── dashboard.css        # Design token styles
+│   ├── dashboard.png        # Screenshot capture
+│   └── dashboard.meta.json  # Component mapping
+├── onboarding/
+│   └── ...
+└── index.html               # Gallery of all wireframes
+```
+
+### ASCII to Visual Mapping
+
+| ASCII Pattern | Visual Output | HTML Element |
+|--------------|---------------|--------------|
+| `[Button]` | Styled button | `<button class="btn">` |
+| `[Input...]` | Text input | `<input type="text">` |
+| `[Card]...` | Card container | `<div class="card">` |
+| `┌───┐` | Border box | `border: 1px solid` |
+| `{variable}` | Data placeholder | `<span class="placeholder">` |
+| `[🔔]` | Icon button | `<button><Icon /></button>` |
+| `[Nav]` | Navigation link | `<a class="nav-link">` |
+
+### Interactive Wireframe Upgrade
+
+When more fidelity needed, upgrade ASCII wireframe to interactive component:
+
+```text
+FUNCTION upgrade_to_interactive(wireframe_name):
+
+  # 1. Load ASCII wireframe
+  ascii = read(f"design.md#{wireframe_name}")
+
+  # 2. Check complexity
+  complexity = assess_wireframe_complexity(ascii)
+
+  IF complexity == "simple":
+    # Use template-based HTML generation
+    READ templates/skills/wireframe-preview.md
+    html = wireframe_preview_pipeline(wireframe_name)
+
+  ELIF complexity == "moderate":
+    # Use v0.dev for richer components
+    READ templates/skills/v0-generation.md
+    prompt = build_v0_wireframe_prompt(ascii)
+    html = generate_via_v0(prompt, "manual")
+
+  ELSE:  # complex
+    # Full component generation
+    LOG "Complex wireframe - generating full components"
+    FOR component IN extract_components(ascii):
+      v0_generation_pipeline(component.name)
+
+  # 3. Output
+  write(f".preview/wireframes/{wireframe_name}/interactive.html", html)
+```
+
+### Wireframe Validation with Claude Vision
+
+```text
+FUNCTION validate_wireframe(wireframe_path):
+
+  # 1. Capture screenshot
+  screenshot = playwright_capture(wireframe_path)
+
+  # 2. Load ASCII original
+  ascii_spec = extract_wireframe_from_design(wireframe_path)
+
+  # 3. Vision validation
+  prompt = f"""
+  Compare this wireframe screenshot against the ASCII specification.
+
+  ASCII Spec:
+  {ascii_spec}
+
+  Validate:
+  1. All components from ASCII are present in visual
+  2. Layout hierarchy matches (header, main, footer)
+  3. Component spacing is consistent
+  4. Visual hierarchy preserved
+
+  Return:
+  - match_score: 0-100
+  - missing_elements: []
+  - layout_issues: []
+  - suggestions: []
+  """
+
+  result = claude_vision_analyze(screenshot, prompt)
+
+  IF result.match_score < 80:
+    WARN "Wireframe mismatch detected"
+    LOG result.missing_elements
+    LOG result.layout_issues
+
+  RETURN result
+```
+
+### Responsive Wireframe Generation
+
+Generate wireframes for multiple breakpoints:
+
+```text
+BREAKPOINTS:
+  mobile:  375px
+  tablet:  768px
+  desktop: 1280px
+
+FOR EACH breakpoint:
+  1. Apply responsive layout rules
+  2. Adjust component arrangement
+  3. Generate HTML with media query
+  4. Capture screenshot at breakpoint width
+
+Output:
+.preview/wireframes/{screen}/
+├── mobile.html
+├── mobile.png
+├── tablet.html
+├── tablet.png
+├── desktop.html
+├── desktop.png
+└── responsive-comparison.png  # Side-by-side
+```
+
 ## Available Skills
 
 Skills are instruction sets this persona uses. They are invoked via commands, not directly.
@@ -197,10 +363,34 @@ Skills are instruction sets this persona uses. They are invoked via commands, no
 | **ux-audit** | `/speckit.design`, `/speckit.specify` | Validate designs against UXQ principles |
 | **interaction-design** | `/speckit.design` | Define component behaviors and states |
 | **wireframe-spec** | `/speckit.design` | Create annotated wireframe specifications |
+| **wireframe-preview** | `/speckit.design`, `/speckit.preview` | Generate visual HTML from ASCII wireframes |
 | **accessibility-audit** | `/speckit.design` | Validate WCAG compliance |
 
 ### Skill Integration Points
 
 - **During `/speckit.specify`**: UX requirements captured via ux-audit skill
-- **During `/speckit.design`**: All UX skills active (interaction-design, wireframe-spec, accessibility-audit)
+- **During `/speckit.design`**: All UX skills active (interaction-design, wireframe-spec, wireframe-preview, accessibility-audit)
+- **During `/speckit.preview`**: wireframe-preview skill generates visual HTML
 - **Before implementation**: Design artifacts ready for Developer Agent handoff
+
+### Visual Preview Pipeline
+
+```text
+/speckit.design
+    │
+    ├── Step 1-8: UX Analysis & Specification
+    │
+    ├── Step 9: Write design.md with ASCII wireframes
+    │   │
+    │   └── FOR EACH screen in design.md:
+    │       │
+    │       ├── Parse ASCII wireframe
+    │       │
+    │       ├── Invoke wireframe-preview skill
+    │       │
+    │       ├── Generate .preview/wireframes/{screen}/
+    │       │
+    │       └── Capture screenshot for validation
+    │
+    └── Output: Visual wireframes + screenshots
+```

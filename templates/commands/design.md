@@ -1,11 +1,26 @@
 ---
-description: Create visual specifications and design system for UI-heavy features. Use AFTER /speckit.specify when the feature requires significant user interface work.
+description: Create visual specifications and design system for UI-heavy features. Orchestrates UX, Product, and Motion Designer agents to replace human designers. Use AFTER /speckit.specify when the feature requires significant user interface work.
 persona: ux-designer-agent
+orchestration:
+  agents:
+    - ux-designer-agent       # User flows, wireframes, interactions
+    - product-designer-agent  # Visual language, code generation
+    - motion-designer-agent   # Animation system
+  optional_agents:
+    - promo-designer-agent    # Landing pages, marketing (when --promo flag)
+  flow: sequential            # Execute in order
+  code_generation:
+    enabled: true
+    provider: v0.dev          # or "template" for fallback
+    auto_generate: false      # Require user confirmation
 handoffs:
+  - label: Generate Preview
+    agent: speckit.preview
+    prompt: Generate interactive previews from design specifications
+    send: true
   - label: Build Technical Plan
     agent: speckit.plan
     prompt: Create technical plan with design system integration
-    send: true
   - label: Create Tasks
     agent: speckit.tasks
     prompt: Generate tasks including design foundation phase
@@ -18,6 +33,12 @@ handoffs:
     auto: false
     condition:
       - "UXQ domain is active in constitution"
+  - label: Generate Promo Materials
+    agent: speckit.design-promo
+    prompt: Create landing page and marketing materials
+    auto: false
+    condition:
+      - "--promo flag passed"
 claude_code:
   model: opus
   reasoning_mode: extended
@@ -30,12 +51,24 @@ skills:
   - name: wireframe-spec
     trigger: "When creating layout specifications"
     usage: "Read templates/skills/wireframe-spec.md for annotated wireframes"
+  - name: wireframe-preview
+    trigger: "When converting ASCII wireframes to visual HTML"
+    usage: "Read templates/skills/wireframe-preview.md for conversion rules"
   - name: accessibility-audit
     trigger: "When validating WCAG compliance"
     usage: "Read templates/skills/accessibility-audit.md for comprehensive a11y review"
   - name: ux-audit
     trigger: "When validating UXQ domain compliance"
     usage: "Read templates/skills/ux-audit.md to check UXQ principles"
+  - name: v0-generation
+    trigger: "When generating React components from specs"
+    usage: "Read templates/skills/v0-generation.md for v0.dev integration"
+  - name: component-codegen
+    trigger: "When generating components via templates"
+    usage: "Read templates/skills/component-codegen.md for template-based generation"
+  - name: motion-generation
+    trigger: "When generating animation code"
+    usage: "Read templates/skills/motion-generation.md for CSS/Framer Motion output"
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-spec
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireSpec
@@ -483,7 +516,7 @@ This command creates **visual and interaction specifications** for UI-heavy feat
    - Content priority (what hides/shows)
    ```
 
-9. **Write design.md**:
+9. **Write design.md** (UX Designer Agent Output):
 
    Use `templates/design-template.md` structure, populate with:
    - Visual Language tokens
@@ -493,6 +526,230 @@ This command creates **visual and interaction specifications** for UI-heavy feat
    - Accessibility checklist
    - Responsive breakpoint definitions
    - Traceability: link to spec.md AS and FR IDs
+
+---
+
+## Phase 2: Product Designer Agent
+
+10. **Visual Language Refinement** (Product Designer):
+
+    ```text
+    SWITCH to persona: product-designer-agent
+    READ templates/personas/product-designer-agent.md
+
+    Input: design.md from UX Designer (Step 9)
+
+    Tasks:
+    1. Refine design tokens for production:
+       - Validate color palette completeness
+       - Ensure typography scale is CSS-variable-ready
+       - Add missing semantic tokens
+
+    2. Component specification depth:
+       - Add variant matrix for each component
+       - Specify compound variants (e.g., variant + size combinations)
+       - Document component anatomy with sub-elements
+
+    3. Design system codification:
+       - Generate CSS custom properties
+       - Create Tailwind config snippet (if Tailwind detected)
+       - Output component API definitions
+
+    4. Code generation preparation:
+       - Mark components ready for code generation
+       - Assess complexity (simple/moderate/complex)
+       - Recommend v0.dev vs template generation
+
+    Output: Updated design.md with:
+    - ## Design Tokens (CSS Variables) section
+    - ## Component Code Specs section
+    - complexity_assessment for each component
+    ```
+
+11. **Component Code Generation** (Optional - if enabled):
+
+    ```text
+    IF orchestration.code_generation.enabled:
+
+      FOR EACH component IN design.md WHERE ready_for_codegen:
+
+        complexity = component.complexity_assessment
+
+        IF complexity == "complex" OR user_prefers_v0:
+          # Use v0.dev generation
+          READ templates/skills/v0-generation.md
+          result = v0_generation_pipeline(component.name)
+
+        ELSE:
+          # Use template-based generation
+          READ templates/skills/component-codegen.md
+          result = component_codegen_pipeline(component.name)
+
+        IF result.validation.passed:
+          LOG "✓ Generated {component.name}: {result.files.component}"
+        ELSE:
+          WARN "⚠️ {component.name} has validation issues: {result.validation.issues}"
+
+      Output files:
+      - .preview/components/{component-name}/{Component}.tsx
+      - .preview/components/{component-name}/index.ts
+      - .preview/components/{component-name}/{Component}.stories.tsx
+
+    ELSE:
+      LOG "ℹ️ Code generation disabled. Use /speckit.preview to generate later."
+    ```
+
+---
+
+## Phase 3: Motion Designer Agent
+
+12. **Animation System Definition** (Motion Designer):
+
+    ```text
+    SWITCH to persona: motion-designer-agent
+    READ templates/personas/motion-designer-agent.md
+
+    Input: design.md with component specs
+
+    Tasks:
+    1. Define animation tokens:
+       - Duration scale (instant → dramatic)
+       - Easing functions (ease-out, spring, bounce)
+       - Delay patterns for staggered animations
+
+    2. Component micro-interactions:
+       - Button press feedback
+       - Form field focus transitions
+       - Loading state animations
+       - Success/error feedback
+
+    3. Page transitions:
+       - Screen-to-screen transitions
+       - Modal/drawer entry/exit
+       - Toast notifications
+
+    4. Reduced motion alternatives:
+       - prefers-reduced-motion variants
+       - Static fallbacks for all animations
+
+    5. Generate animation code:
+       READ templates/skills/motion-generation.md
+       result = motion_generation_pipeline()
+
+    Output: Updated design.md with:
+    - ## Motion System section
+    - Animation token definitions
+    - Component animation specs
+    - Reduced motion alternatives
+
+    Generated files:
+    - .preview/animations/tokens.css
+    - .preview/animations/framer-variants.ts
+    - .preview/animations/tailwind-keyframes.js
+    ```
+
+13. **Load Animation Presets** (if applicable):
+
+    ```text
+    IF constitution.design_system.motion.presets:
+
+      FOR EACH preset IN motion.presets:
+        READ templates/shared/animation-presets/{preset}.md
+
+        MERGE preset animations into design.md Motion System:
+        - Add preset tokens to duration/easing scales
+        - Add preset component animations
+        - Include preset reduced-motion alternatives
+
+      LOG "✓ Loaded animation presets: {presets}"
+    ```
+
+---
+
+## Phase 4: Quality Validation
+
+14. **Design Quality Score (DQS) Calculation**:
+
+    ```text
+    DQS = Design Quality Score (0-100)
+
+    CALCULATE scores:
+
+    # Visual Quality (40 points)
+    visual_score = 0
+    visual_score += 10 IF all_colors_have_contrast_ratios
+    visual_score += 10 IF typography_scale_complete
+    visual_score += 10 IF spacing_system_consistent
+    visual_score += 10 IF color_palette_has_semantic_tokens
+
+    # Accessibility (30 points)
+    a11y_score = 0
+    a11y_score += 10 IF wcag_level_met (A=5, AA=10, AAA=10)
+    a11y_score += 10 IF all_components_have_aria_roles
+    a11y_score += 10 IF keyboard_nav_documented
+
+    # Consistency (20 points)
+    consistency_score = 0
+    consistency_score += 10 IF no_hardcoded_colors
+    consistency_score += 5 IF no_hardcoded_fonts
+    consistency_score += 5 IF component_library_used
+
+    # Implementation Readiness (10 points)
+    impl_score = 0
+    impl_score += 5 IF css_variables_defined
+    impl_score += 5 IF component_code_generated
+
+    DQS = visual_score + a11y_score + consistency_score + impl_score
+
+    # Interpret score
+    IF DQS >= 90:
+      STATUS = "✓ Production Ready"
+    ELIF DQS >= 80:
+      STATUS = "⚠️ Minor Polish Needed"
+    ELSE:
+      STATUS = "✗ Requires Iteration"
+      TRIGGER self-correction loop
+    ```
+
+15. **DQS Report Generation**:
+
+    ```text
+    OUTPUT:
+    ┌─────────────────────────────────────────────────────────────┐
+    │ Design Quality Score (DQS)                                   │
+    ├─────────────────────────────────────────────────────────────┤
+    │                                                             │
+    │   ████████████████████████████░░░░  {DQS}/100              │
+    │                                                             │
+    │   Visual Quality:      {visual_score}/40                    │
+    │   Accessibility:       {a11y_score}/30                      │
+    │   Consistency:         {consistency_score}/20               │
+    │   Implementation:      {impl_score}/10                      │
+    │                                                             │
+    │   Status: {STATUS}                                          │
+    │                                                             │
+    └─────────────────────────────────────────────────────────────┘
+
+    Breakdown:
+    | Category | Points | Details |
+    |----------|--------|---------|
+    | Visual Quality | {visual_score}/40 | {details} |
+    | Accessibility | {a11y_score}/30 | WCAG {level}, {issues} |
+    | Consistency | {consistency_score}/20 | {token_usage}% token usage |
+    | Implementation | {impl_score}/10 | {components_generated} components |
+
+    IF DQS < 80:
+      ## Improvement Required
+
+      Priority fixes:
+      1. {highest_impact_fix}
+      2. {second_fix}
+      3. {third_fix}
+
+      Re-running design validation after fixes...
+    ```
+
+---
 
 ## Validation Gates
 
@@ -574,19 +831,85 @@ Make it accessible
 
 After completion:
 
-1. `specs/[NNN-feature]/design.md` with complete visual specifications
-2. Report summary:
-   - N design tokens defined
-   - M components specified
-   - K screens mapped
-   - Accessibility level: [A/AA/AAA]
-   - Responsive breakpoints: [list]
-3. Traceability:
-   - FR-xxx → Component [name]
-   - AS-xxx → Screen [name]
-4. Recommended next steps:
-   - Run `/speckit.plan` to create technical plan with design system
-   - Or update existing plan.md with Design System section
+### Primary Artifacts
+
+1. **`specs/[NNN-feature]/design.md`** - Complete visual specifications including:
+   - Visual Language tokens (colors, typography, spacing)
+   - Component specifications with all states
+   - Screen flows with Mermaid diagrams
+   - Motion system (animation tokens, micro-interactions)
+   - Accessibility checklist (WCAG compliance)
+   - Design Quality Score (DQS)
+
+### Generated Code (if code_generation.enabled)
+
+2. **`.preview/components/`** - React/Vue/Svelte components:
+   ```
+   .preview/components/
+   ├── button/
+   │   ├── Button.tsx
+   │   ├── Button.stories.tsx
+   │   └── index.ts
+   ├── input/
+   │   ├── Input.tsx
+   │   ├── Input.stories.tsx
+   │   └── index.ts
+   └── [component-name]/
+       └── ...
+   ```
+
+3. **`.preview/animations/`** - Animation code:
+   ```
+   .preview/animations/
+   ├── tokens.css           # CSS custom properties for timing
+   ├── framer-variants.ts   # Framer Motion variant objects
+   ├── tailwind-keyframes.js # Tailwind animation config
+   └── preview.html          # Animation preview page
+   ```
+
+### Report Summary
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ /speckit.design Complete                                     │
+├─────────────────────────────────────────────────────────────┤
+│ Artifact: specs/[NNN-feature]/design.md                      │
+│                                                             │
+│ Agents Executed:                                            │
+│   ✓ UX Designer Agent      - Flows, wireframes, components  │
+│   ✓ Product Designer Agent - Visual language, code specs    │
+│   ✓ Motion Designer Agent  - Animation system               │
+│                                                             │
+│ Design Tokens: {N} defined                                  │
+│ Components: {M} specified, {K} code-generated               │
+│ Screens: {S} mapped                                         │
+│ Animations: {A} defined                                     │
+│                                                             │
+│ Design Quality Score: {DQS}/100 - {STATUS}                  │
+│ Accessibility: WCAG {level}                                 │
+│                                                             │
+│ Generated Files:                                            │
+│   - .preview/components/ ({K} components)                   │
+│   - .preview/animations/ (tokens, variants)                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Traceability
+
+| Spec Reference | Design Artifact |
+|----------------|-----------------|
+| FR-xxx | Component [name] |
+| AS-xxx | Screen [name] |
+| NFR-xxx | Accessibility checklist item |
+
+### Recommended Next Steps
+
+| Action | Command | When |
+|--------|---------|------|
+| Generate interactive preview | `/speckit.preview` | Validate before implementation |
+| Create technical plan | `/speckit.plan` | Ready to implement |
+| Run UX audit | `/speckit.analyze --ux` | If UXQ domain active |
+| Generate promo materials | `/speckit.design --promo` | If landing page needed |
 
 ---
 

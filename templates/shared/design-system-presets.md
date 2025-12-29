@@ -107,6 +107,26 @@ design_system:
       md: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
       lg: "0 10px 15px -3px rgb(0 0 0 / 0.1)"
 
+    # Motion tokens for animations
+    motion:
+      duration:
+        instant: "0ms"
+        fast: "100ms"
+        normal: "200ms"
+        slow: "300ms"
+        deliberate: "500ms"
+      easing:
+        ease-out: "cubic-bezier(0, 0, 0.2, 1)"
+        ease-in: "cubic-bezier(0.4, 0, 1, 1)"
+        ease-in-out: "cubic-bezier(0.4, 0, 0.2, 1)"
+        spring: "cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+      keyframes:
+        fade-in: "{ from { opacity: 0 } to { opacity: 1 } }"
+        fade-out: "{ from { opacity: 1 } to { opacity: 0 } }"
+        slide-up: "{ from { transform: translateY(10px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }"
+        slide-down: "{ from { transform: translateY(-10px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }"
+        scale-in: "{ from { transform: scale(0.95); opacity: 0 } to { transform: scale(1); opacity: 1 } }"
+
   component_library_url: "https://ui.shadcn.com/docs"
   enforcement_level: "warn"
 
@@ -234,6 +254,26 @@ design_system:
       8: "0px 5px 5px -3px rgba(0,0,0,0.2)"
       16: "0px 8px 10px -5px rgba(0,0,0,0.2)"
       24: "0px 11px 15px -7px rgba(0,0,0,0.2)"
+
+    # Motion tokens (MUI transitions)
+    motion:
+      duration:
+        shortest: "150ms"
+        shorter: "200ms"
+        short: "250ms"
+        standard: "300ms"
+        complex: "375ms"
+        enteringScreen: "225ms"
+        leavingScreen: "195ms"
+      easing:
+        easeInOut: "cubic-bezier(0.4, 0, 0.2, 1)"
+        easeOut: "cubic-bezier(0.0, 0, 0.2, 1)"
+        easeIn: "cubic-bezier(0.4, 0, 1, 1)"
+        sharp: "cubic-bezier(0.4, 0, 0.6, 1)"
+      # MUI uses transition helpers, not raw keyframes
+      transitions:
+        create: "all {duration} {easing}"
+        getAutoHeightDuration: "min({height} / 36 * 10, 300)ms"
 
   component_library_url: "https://mui.com/material-ui/getting-started/"
   enforcement_level: "warn"
@@ -387,6 +427,33 @@ design_system:
       xl: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)"
       2xl: "0 25px 50px -12px rgb(0 0 0 / 0.25)"
 
+    # Motion tokens (Tailwind animation utilities)
+    motion:
+      duration:
+        75: "75ms"
+        100: "100ms"
+        150: "150ms"
+        200: "200ms"
+        300: "300ms"
+        500: "500ms"
+        700: "700ms"
+        1000: "1000ms"
+      easing:
+        linear: "linear"
+        in: "cubic-bezier(0.4, 0, 1, 1)"
+        out: "cubic-bezier(0, 0, 0.2, 1)"
+        in-out: "cubic-bezier(0.4, 0, 0.2, 1)"
+      keyframes:
+        spin: "{ to { transform: rotate(360deg) } }"
+        ping: "{ 75%, 100% { transform: scale(2); opacity: 0 } }"
+        pulse: "{ 50% { opacity: 0.5 } }"
+        bounce: "{ 0%, 100% { transform: translateY(-25%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1) } 50% { transform: none; animation-timing-function: cubic-bezier(0, 0, 0.2, 1) } }"
+      animation:
+        spin: "spin 1s linear infinite"
+        ping: "ping 1s cubic-bezier(0, 0, 0.2, 1) infinite"
+        pulse: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite"
+        bounce: "bounce 1s infinite"
+
   component_library_url: "https://tailwindcss.com/docs"
   enforcement_level: "warn"
 
@@ -461,6 +528,28 @@ design_system:
       lg: "8px"
       xl: "24px"
       pill: "9999px"
+
+    # Motion tokens (Vuetify transitions)
+    motion:
+      duration:
+        fast: "150ms"
+        normal: "250ms"
+        slow: "350ms"
+      easing:
+        standard: "cubic-bezier(0.4, 0, 0.2, 1)"
+        decelerate: "cubic-bezier(0.0, 0, 0.2, 1)"
+        accelerate: "cubic-bezier(0.4, 0, 1, 1)"
+      transitions:
+        # Vuetify built-in transition names
+        fade: "v-fade-transition"
+        scale: "v-scale-transition"
+        slide-x: "v-slide-x-transition"
+        slide-x-reverse: "v-slide-x-reverse-transition"
+        slide-y: "v-slide-y-transition"
+        slide-y-reverse: "v-slide-y-reverse-transition"
+        scroll-x: "v-scroll-x-transition"
+        scroll-y: "v-scroll-y-transition"
+        expand: "v-expand-transition"
 
   component_library_url: "https://vuetifyjs.com/en/components/all/"
   enforcement_level: "warn"
@@ -560,6 +649,28 @@ design_system:
       xl: "1rem"           # 16px
       pill: "50rem"
 
+    # Motion tokens (Bootstrap transitions)
+    motion:
+      duration:
+        base: "150ms"       # $transition-base
+        fade: "150ms"       # $transition-fade
+        collapse: "350ms"   # $transition-collapse
+      easing:
+        base: "ease-in-out"
+        collapse: "ease"
+      transitions:
+        # Bootstrap CSS transition values
+        base: "all 0.15s ease-in-out"
+        fade: "opacity 0.15s linear"
+        collapse: "height 0.35s ease"
+        transform: "transform 0.15s ease-in-out"
+      keyframes:
+        # Bootstrap keyframe animations
+        spinner-border: "{ to { transform: rotate(360deg) } }"
+        spinner-grow: "{ 0% { transform: scale(0) } 50% { opacity: 1; transform: none } }"
+        placeholder-glow: "{ 50% { opacity: 0.2 } }"
+        placeholder-wave: "{ 100% { mask-position: -200% 0% } }"
+
   component_library_url: "https://getbootstrap.com/docs/5.3/components/"
   enforcement_level: "warn"
 
@@ -603,6 +714,24 @@ design_system:
       foreground: "#1A1A1A"
       # ... additional brand tokens
 
+    motion:
+      # ACME brand motion values
+      duration:
+        instant: "0ms"
+        fast: "120ms"          # Slightly snappier than default
+        normal: "200ms"
+        slow: "350ms"
+        dramatic: "600ms"      # For hero transitions
+      easing:
+        # ACME custom easing curves
+        ease-out: "cubic-bezier(0.22, 1, 0.36, 1)"   # Smooth deceleration
+        ease-in: "cubic-bezier(0.64, 0, 0.78, 0)"   # Gradual acceleration
+        spring: "cubic-bezier(0.34, 1.56, 0.64, 1)" # Bouncy ACME feel
+        bounce: "cubic-bezier(0.68, -0.55, 0.27, 1.55)"
+      keyframes:
+        acme-pop: "{ 0% { transform: scale(0.9); opacity: 0 } 70% { transform: scale(1.05) } 100% { transform: scale(1); opacity: 1 } }"
+        acme-slide-up: "{ from { transform: translateY(20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }"
+
   component_library_url: "https://design.acme.com/components"
   enforcement_level: "strict"  # ACME requires strict compliance
 
@@ -610,3 +739,34 @@ design_system:
     button: "@acme/ui/Button"
     # ... additional component mappings
 ```
+
+---
+
+## Motion Token Reference
+
+All presets include standardized motion tokens for consistency across animation generation:
+
+| Category | Purpose | Typical Values |
+|----------|---------|---------------|
+| `duration` | Animation timing | instant (0ms), fast (100-150ms), normal (200-300ms), slow (350-500ms) |
+| `easing` | Acceleration curves | ease-out, ease-in, ease-in-out, spring, bounce |
+| `keyframes` | Reusable animations | fade-in, slide-up, scale-in, spin, pulse |
+| `transitions` | Combined shorthand | "all 200ms ease-out" |
+
+### Reduced Motion Support
+
+All motion tokens should have `prefers-reduced-motion` alternatives:
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+```
+
+See `templates/shared/animation-presets/` for detailed animation implementations with reduced-motion alternatives.

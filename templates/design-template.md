@@ -326,6 +326,249 @@ graph LR
 
 ---
 
+## Motion System
+
+<!--
+  Define animation tokens and motion design language.
+  Ensures consistent, accessible, and performant animations.
+  All animations must have reduced motion alternatives.
+-->
+
+### Duration Tokens
+
+| Token | CSS Variable | Value | Usage |
+|-------|--------------|-------|-------|
+| Instant | --duration-instant | 0ms | Immediate state changes |
+| Fast | --duration-fast | 100ms | Micro-interactions, button feedback |
+| Normal | --duration-normal | 200ms | Standard transitions |
+| Slow | --duration-slow | 300ms | Modal open/close, page transitions |
+| Deliberate | --duration-deliberate | 500ms | Complex animations, onboarding |
+| Dramatic | --duration-dramatic | 800ms | Celebration effects, hero animations |
+
+### Easing Functions
+
+| Token | CSS Variable | Value | Usage |
+|-------|--------------|-------|-------|
+| Ease Out | --ease-out | cubic-bezier(0, 0, 0.2, 1) | Enter animations, things appearing |
+| Ease In | --ease-in | cubic-bezier(0.4, 0, 1, 1) | Exit animations, things leaving |
+| Ease In Out | --ease-in-out | cubic-bezier(0.4, 0, 0.2, 1) | Continuous motion, repositioning |
+| Spring | --ease-spring | cubic-bezier(0.175, 0.885, 0.32, 1.275) | Bouncy, playful interactions |
+| Bounce | --ease-bounce | cubic-bezier(0.68, -0.55, 0.265, 1.55) | Success celebrations, attention |
+| Linear | --ease-linear | linear | Progress bars, continuous loops |
+
+### Animation Presets
+
+#### Micro-Interactions
+
+| Animation | Trigger | Properties | Duration/Easing |
+|-----------|---------|------------|-----------------|
+| Button Press | mousedown | scale: 0.98 | 100ms / ease-out |
+| Button Release | mouseup | scale: 1.0 | 100ms / ease-out |
+| Hover Lift | mouseenter | translateY: -2px, shadow increase | 150ms / ease-out |
+| Focus Ring | focus | ring opacity: 1, ring scale: 1 | 100ms / ease-out |
+| Toggle Switch | click | translateX: 100%, bg color change | 200ms / spring |
+| Checkbox Check | click | scale: 0→1.1→1, opacity: 0→1 | 200ms / spring |
+| Input Focus | focus | border-color, label translateY | 150ms / ease-out |
+| Ripple Effect | click | scale: 0→2, opacity: 0.3→0 | 400ms / ease-out |
+
+#### Page Transitions
+
+| Transition | From → To | Animation | Duration |
+|------------|-----------|-----------|----------|
+| Fade | Page A → Page B | opacity: 0→1 | 200ms |
+| Slide Left | List → Detail | translateX: 100%→0 | 300ms |
+| Slide Right | Detail → List | translateX: -100%→0 | 300ms |
+| Scale Up | Card → Modal | scale: 0.95→1, opacity: 0→1 | 250ms |
+| Shared Element | Card image → Full view | position morph | 300ms |
+
+#### Loading States
+
+| State | Animation | Loop | Reduced Motion |
+|-------|-----------|------|----------------|
+| Spinner | rotate: 0→360deg | infinite | Static icon |
+| Skeleton | shimmer gradient sweep | infinite, 1.5s | Solid gray |
+| Progress Bar | width: 0→100% | once | Percentage text |
+| Dots | opacity pulse (staggered) | infinite | Ellipsis text |
+| Skeleton Pulse | opacity: 0.5→1→0.5 | infinite, 2s | Solid gray |
+
+#### Celebration Effects
+
+| Effect | Trigger | Animation | Reduced Motion |
+|--------|---------|-----------|----------------|
+| Confetti | Success | Particle burst | Static checkmark |
+| Checkmark | Task complete | Draw SVG path + scale bounce | Static checkmark |
+| Fireworks | Major milestone | Multi-burst particles | Text "Congratulations!" |
+| Counter Up | Score increase | Number increment + scale | Final number only |
+
+### CSS Keyframes
+
+```css
+/* Fade animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Slide animations */
+@keyframes slideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideLeft {
+  from { transform: translateX(16px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideRight {
+  from { transform: translateX(-16px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Scale animations */
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes scaleBounce {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Loading animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Attention animations */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-3px); }
+  40%, 80% { transform: translateX(3px); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+```
+
+### Framer Motion Variants (If Applicable)
+
+```typescript
+// Motion configuration for React projects using Framer Motion
+
+export const fadeVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.2, ease: [0, 0, 0.2, 1] } },
+  exit: { opacity: 0, transition: { duration: 0.15, ease: [0.4, 0, 1, 1] } }
+}
+
+export const slideUpVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0, 0, 0.2, 1] } },
+  exit: { opacity: 0, y: -16, transition: { duration: 0.2, ease: [0.4, 0, 1, 1] } }
+}
+
+export const scaleVariants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.25, ease: [0.175, 0.885, 0.32, 1.275] } },
+  exit: { opacity: 0, scale: 0.95, transition: { duration: 0.15, ease: [0.4, 0, 1, 1] } }
+}
+
+export const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05, delayChildren: 0.1 }
+  }
+}
+
+export const staggerItem = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0 }
+}
+```
+
+### Reduced Motion Support
+
+All animations must respect `prefers-reduced-motion`:
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+```
+
+| Original Animation | Reduced Motion Alternative |
+|-------------------|---------------------------|
+| Slide transition | Instant show/hide |
+| Bounce/spring | Direct state change |
+| Confetti celebration | Static success icon |
+| Loading spinner | "Loading..." text |
+| Progress animation | Static percentage |
+| Skeleton shimmer | Solid placeholder color |
+
+### Motion Tokens Export
+
+```css
+:root {
+  /* Duration tokens */
+  --duration-instant: 0ms;
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-deliberate: 500ms;
+  --duration-dramatic: 800ms;
+
+  /* Easing tokens */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-linear: linear;
+
+  /* Composite transition shortcuts */
+  --transition-fast: var(--duration-fast) var(--ease-out);
+  --transition-normal: var(--duration-normal) var(--ease-out);
+  --transition-slow: var(--duration-slow) var(--ease-out);
+  --transition-spring: var(--duration-normal) var(--ease-spring);
+}
+```
+
+---
+
 ## Accessibility Checklist
 
 <!--

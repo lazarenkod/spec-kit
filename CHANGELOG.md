@@ -7,6 +7,92 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.47] - 2025-12-29
+
+### Added
+
+- **AI Designer Replacement System** — Full replacement of UX, Product, Motion, and Promo designer roles with AI agents
+  - **New Designer Agent Personas** (`templates/personas/`):
+    - `product-designer-agent.md`: Visual design, code generation, design system maintenance
+    - `motion-designer-agent.md`: Animation tokens, micro-interactions, CSS/Framer Motion code
+    - `promo-designer-agent.md`: Landing pages, marketing assets, social graphics specs
+  - **Enhanced UX Designer Agent** with visual wireframe generation:
+    - ASCII to HTML conversion workflow
+    - `upgrade_to_interactive()` function for complexity-based generation
+    - `validate_wireframe()` function for Claude Vision validation
+    - Responsive wireframe generation for multiple breakpoints (mobile, tablet, desktop)
+  - **New `/speckit.preview` Command** (`templates/commands/preview.md`):
+    - Generate interactive previews from design specifications
+    - Wireframe, component, animation, and flow preview generation
+    - Playwright screenshot capture for all viewports
+    - Storybook story auto-generation
+    - Design Quality Score (DQS) validation
+  - **Design Generation Skills** (`templates/skills/`):
+    - `v0-generation.md`: v0.dev API integration for React component generation
+    - `component-codegen.md`: Template-based fallback for simple/moderate components
+    - `motion-generation.md`: Animation code generation (CSS keyframes, Framer Motion)
+    - `wireframe-preview.md`: ASCII wireframe to visual HTML conversion
+  - **Animation Presets Library** (`templates/shared/animation-presets/`):
+    - `micro-interactions.md`: Button, form, feedback animations
+    - `page-transitions.md`: Route transitions, shared element morphs
+    - `loading-states.md`: Skeleton, spinner, progress animations
+  - **Preview Pipeline** (`templates/shared/preview-pipeline.md`):
+    - 6-stage architecture: Parse → Wireframes → Components → Animations → Flows → Server
+    - Screenshot capture via Playwright (multi-viewport, multi-state)
+    - Storybook integration with auto-story generation
+    - Claude Vision validation for layout verification
+  - **Visual Regression Testing** (`templates/shared/visual-regression.md`):
+    - Multi-mode comparison: pixel, perceptual (SSIM), layout, anti-alias
+    - Baseline management with versioning and backup
+    - Diff image generation with highlight overlay
+    - CI/CD integration (GitHub Actions, GitLab CI)
+    - Threshold configuration per path/component type
+  - **v0.dev Integration Guide** (`templates/shared/v0-integration.md`):
+    - API and manual workflow documentation
+    - Design token injection into prompts
+    - Component caching with TTL
+    - Validation and auto-correction of generated code
+
+### Changed
+
+- **`/speckit.design` enhanced with Designer Agent Orchestration**:
+  - Phase 2: Product Designer Agent (visual language, component specs)
+  - Phase 3: Motion Designer Agent (animation tokens, micro-interactions)
+  - Phase 4: Quality Validation with Design Quality Score (DQS)
+  - Steps 10-15 for sequential agent orchestration
+  - Output structure includes `.preview/components/` and `.preview/animations/`
+- **Motion tokens added to all design system presets** (`templates/shared/design-system-presets.md`):
+  - Duration scale (instant → dramatic)
+  - Easing functions (ease-out, spring, bounce)
+  - CSS keyframes and Framer Motion variants
+  - Reduced motion support (`prefers-reduced-motion`)
+  - Presets updated: shadcn/ui, MUI, Tailwind, Vuetify, Bootstrap, custom
+- **`design-template.md` enhanced with Motion System section**:
+  - Duration tokens (6 levels: 0ms → 800ms)
+  - Easing functions (6 types including spring and bounce)
+  - Animation presets organized by category
+  - CSS keyframes ready for copy-paste
+  - Framer Motion variants for React projects
+  - Reduced motion alternatives table
+  - Motion tokens export in CSS variables
+
+### Technical Details
+
+- **Design Quality Score (DQS)** — 100-point automated quality scoring:
+  - Visual Quality: 40 points (contrast, typography, spacing, color)
+  - Accessibility: 30 points (WCAG AA, keyboard, screen reader)
+  - Consistency: 20 points (token usage, component reuse)
+  - Implementation: 10 points (TypeScript, tests)
+  - Quality Gate: DQS ≥ 80 (production ready), 60-79 (minor polish), <60 (requires iteration)
+
+- **Preview Server** runs at `localhost:3456` with routes:
+  - `/wireframes/*` — Wireframe previews
+  - `/components/*` — Component previews
+  - `/animations` — Animation showcase
+  - `/flows/*` — User flow previews
+
+---
+
 ## [0.0.46] - 2025-12-29
 
 ### Added
