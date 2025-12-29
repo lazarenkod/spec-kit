@@ -124,16 +124,16 @@
 
 | State | Mobile | Tablet | Desktop |
 |-------|--------|--------|---------|
-| default | ![](screenshots/screen1_mobile_default.png) | ![](screenshots/screen1_tablet_default.png) | ![](screenshots/screen1_desktop_default.png) |
-| error | ![](screenshots/screen1_mobile_error.png) | ![](screenshots/screen1_tablet_error.png) | ![](screenshots/screen1_desktop_error.png) |
+| default | ![Screen 1 mobile default](screenshots/screen1_mobile_default.png) | ![Screen 1 tablet default](screenshots/screen1_tablet_default.png) | ![Screen 1 desktop default](screenshots/screen1_desktop_default.png) |
+| error | ![Screen 1 mobile error](screenshots/screen1_mobile_error.png) | ![Screen 1 tablet error](screenshots/screen1_tablet_error.png) | ![Screen 1 desktop error](screenshots/screen1_desktop_error.png) |
 
 #### [Screen 2 Name]
 
 | State | Mobile | Tablet | Desktop |
 |-------|--------|--------|---------|
-| default | ![](screenshots/screen2_mobile_default.png) | ![](screenshots/screen2_tablet_default.png) | ![](screenshots/screen2_desktop_default.png) |
-| loading | ![](screenshots/screen2_mobile_loading.png) | ![](screenshots/screen2_tablet_loading.png) | ![](screenshots/screen2_desktop_loading.png) |
-| empty | ![](screenshots/screen2_mobile_empty.png) | ![](screenshots/screen2_tablet_empty.png) | ![](screenshots/screen2_desktop_empty.png) |
+| default | ![Screen 2 mobile default](screenshots/screen2_mobile_default.png) | ![Screen 2 tablet default](screenshots/screen2_tablet_default.png) | ![Screen 2 desktop default](screenshots/screen2_desktop_default.png) |
+| loading | ![Screen 2 mobile loading](screenshots/screen2_mobile_loading.png) | ![Screen 2 tablet loading](screenshots/screen2_tablet_loading.png) | ![Screen 2 desktop loading](screenshots/screen2_desktop_loading.png) |
+| empty | ![Screen 2 mobile empty](screenshots/screen2_mobile_empty.png) | ![Screen 2 tablet empty](screenshots/screen2_tablet_empty.png) | ![Screen 2 desktop empty](screenshots/screen2_desktop_empty.png) |
 
 </details>
 

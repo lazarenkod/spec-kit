@@ -70,6 +70,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Game type considerations: real-time multiplayer, turn-based, live service
   - Performance thresholds by platform: mobile, PC, console
 
+- **Production-First Templates (5.2)** — Constitution domain and self-hosted observability stack
+  - **Production Domain** (`memory/domains/production.md`):
+    - Philosophy: "If it's not observable, it's not production-ready"
+    - Strengthened base principles: OBS-003, OBS-004 elevated to MUST; OBS-001/002 enhanced with trace context
+    - New principles (PRD-001 to PRD-010):
+      - PRD-001: OpenTelemetry-First Architecture (MUST) — vendor-neutral instrumentation
+      - PRD-002: Structured Logging with Correlation (MUST) — JSON logs with traceId/spanId
+      - PRD-003: Health Endpoints (MUST) — `/health` and `/ready` endpoints
+      - PRD-004: Prometheus Metrics Export (MUST) — `/metrics` endpoint
+      - PRD-005: Graceful Shutdown (MUST) — SIGTERM handling with connection draining
+      - PRD-006: Error Tracking with Context (MUST) — exceptions to span and GlitchTip
+      - PRD-007: Distributed Tracing (MUST) — W3C Trace Context propagation
+      - PRD-008: Configuration Validation (MUST) — fail fast on startup
+      - PRD-009: Self-Hosted Observability (SHOULD) — data sovereignty
+      - PRD-010: Dashboard as Code (SHOULD) — Grafana provisioning
+  - **Open Source Stack** (no paid SaaS dependencies):
+    - GlitchTip (replaces Sentry) — Sentry-compatible error tracking
+    - VictoriaMetrics (replaces Datadog/Prometheus) — 10x more efficient storage
+    - Jaeger v2 — OpenTelemetry-native distributed tracing
+    - Loki + Grafana — log aggregation and unified dashboards
+    - Umami (replaces PostHog) — privacy-first analytics
+    - Pino/structlog — high-performance structured logging
+  - **Observability Stack Template** (`templates/shared/observability-stack.md`):
+    - Complete Docker Compose for full stack
+    - OpenTelemetry Collector configuration
+    - VictoriaMetrics with 90-day retention
+    - Grafana datasource provisioning
+    - Resource requirements: ~2.5 vCPU, ~5.5GB RAM
+    - Cost savings: $0/mo vs $200-600/mo for SaaS equivalents
+  - **OpenTelemetry Integration Guide** (`templates/shared/otel-integration.md`):
+    - Node.js/TypeScript setup with Pino
+    - Python setup with structlog
+    - Go setup with zerolog
+    - Health endpoint patterns
+    - Graceful shutdown implementations
+    - Configuration validation with Zod/Pydantic
+
 ---
 
 ## [0.0.42] - 2025-12-28
