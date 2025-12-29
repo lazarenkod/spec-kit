@@ -1,5 +1,5 @@
 ---
-description: Perform a non-destructive cross-artifact consistency, traceability, dependency, and system spec analysis across concept.md, spec.md, plan.md, tasks.md, and system specs. In QA mode (post-implementation), validates build, tests, coverage, and security.
+description: Perform a non-destructive cross-artifact consistency, traceability, dependency, and system spec analysis across concept.md, spec.md, plan.md, tasks.md, and system specs. In QA mode (post-implementation), validates build, tests, coverage, and security. Automatically detects validation profile from context (caller command or artifact state). Supports Quality Gates (QG-001 to QG-012). Use `--profile <name>` to override auto-detection. See `memory/domains/quality-gates.md` for gate definitions.
 persona: qa-agent
 handoffs:
   - label: Fix Spec Issues
@@ -154,6 +154,72 @@ validation_profiles:
         severity: HIGH
     timeout_seconds: 30
     output_mode: compact
+  sqs:
+    description: "Spec Quality Score validation (pre-implement gate QG-001)"
+    passes: [E, H, D, Z]
+    gates:
+      sqs_threshold:
+        pass: Z
+        threshold: 80
+        severity: CRITICAL
+        message: "SQS below 80 - improve FR/AS coverage or resolve constitution violations"
+      fr_coverage:
+        pass: H
+        threshold: 0
+        severity: HIGH
+      constitution_violations:
+        pass: D
+        threshold: 0
+        severity: CRITICAL
+    timeout_seconds: 60
+    output_mode: compact
+  quality_gates:
+    description: "Full quality gates validation (all QG-001 to QG-012)"
+    passes: [D, E, G, H, R, S, T, U, Z]
+    gates:
+      sqs_threshold:
+        pass: Z
+        threshold: 80
+        severity: CRITICAL
+      test_coverage:
+        pass: R
+        threshold: 80
+        severity: CRITICAL
+      type_coverage:
+        pass: S
+        threshold: 95
+        severity: HIGH
+      lint_errors:
+        pass: T
+        threshold: 0
+        severity: HIGH
+      security_vulnerabilities:
+        pass: U
+        threshold: 0
+        severity: CRITICAL
+    timeout_seconds: 300
+    output_mode: detailed
+  pre_deploy:
+    description: "Pre-deployment gates validation (QG-010 to QG-012)"
+    passes: [R, T, U]
+    gates:
+      all_tests_pass:
+        pass: R
+        threshold: 0
+        severity: CRITICAL
+        message: "All tests must pass before deployment"
+      no_debug_artifacts:
+        pass: T
+        threshold: 0
+        severity: HIGH
+        message: "Remove all console.log/debugger statements before deployment"
+      security_clean:
+        pass: U
+        threshold: 0
+        severity: CRITICAL
+        message: "Resolve all security vulnerabilities before deployment"
+    timeout_seconds: 120
+    output_mode: compact
   full:
     description: "Complete pre-implementation analysis"
     passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q, Z]
@@ -200,22 +266,85 @@ When invoked with `--profile <name>`, analyze runs a lightweight subset of passe
 
 ### Profile Detection
 
-Parse `$ARGUMENTS` for profile mode:
+Parse `$ARGUMENTS` for profile mode, or auto-detect from context:
 
 ```text
 IF $ARGUMENTS contains "--profile <name>":
+  # Explicit profile override - always wins
   PROFILE_MODE = true
   ACTIVE_PROFILE = validation_profiles[<name>]
   IF ACTIVE_PROFILE is undefined:
-    ERROR: "Unknown profile: <name>. Available: spec_validate, plan_validate, tasks_validate, full, qa"
+    ERROR: "Unknown profile: <name>. Available: spec_validate, plan_validate, tasks_validate, sqs, quality_gates, pre_deploy, full, qa"
   ACTIVE_PASSES = ACTIVE_PROFILE.passes
   OUTPUT_MODE = ACTIVE_PROFILE.output_mode (default: compact)
   TIMEOUT = ACTIVE_PROFILE.timeout_seconds
+
 ELSE:
-  PROFILE_MODE = false
-  ACTIVE_PASSES = [A-Y] (all passes)
-  OUTPUT_MODE = detailed
+  # Auto-detect profile from context
+  DETECTED_PROFILE = auto_detect_profile()
+  IF DETECTED_PROFILE is defined:
+    PROFILE_MODE = true
+    ACTIVE_PROFILE = validation_profiles[DETECTED_PROFILE]
+    ACTIVE_PASSES = ACTIVE_PROFILE.passes
+    OUTPUT_MODE = ACTIVE_PROFILE.output_mode (default: compact)
+    TIMEOUT = ACTIVE_PROFILE.timeout_seconds
+    LOG: "Auto-detected profile: {DETECTED_PROFILE}"
+  ELSE:
+    # Fallback to full analysis
+    PROFILE_MODE = false
+    ACTIVE_PASSES = [A-Y] (all passes)
+    OUTPUT_MODE = detailed
 ```
+
+### Automatic Context Detection
+
+When invoked WITHOUT `--profile`, analyze auto-detects the appropriate profile based on:
+1. **Caller context** - which command invoked analyze via pre_handoff_action
+2. **Artifact existence** - which spec artifacts are present in project
+3. **Fallback** - full analysis if context unclear
+
+```text
+FUNCTION auto_detect_profile():
+  # 1. Caller-based detection (from pre_handoff_action metadata)
+  CALLER = get_invoking_command()  # e.g., "specify", "plan", "implement"
+
+  IF CALLER == "specify" OR CALLER == "clarify":
+    RETURN "spec_validate"
+
+  IF CALLER == "plan":
+    RETURN "plan_validate"
+
+  IF CALLER == "tasks":
+    RETURN "tasks_validate"
+
+  IF CALLER == "implement":
+    # Check phase within implement workflow
+    IF implementation_phase == "pre":
+      RETURN "sqs"
+    IF implementation_phase == "post":
+      RETURN "quality_gates"
+
+  # 2. Artifact-based fallback detection
+  IF exists("*.impl.md") OR has_recent_src_changes():
+    RETURN "quality_gates"  # Post-implementation
+
+  IF exists("*.tasks.md"):
+    RETURN "tasks_validate"
+
+  IF exists("*.plan.md"):
+    RETURN "plan_validate"
+
+  IF exists("*.spec.md"):
+    RETURN "spec_validate"
+
+  # 3. No context detected - return undefined for full analysis
+  RETURN undefined
+```
+
+**Benefits**:
+- No need to remember profile names
+- Context-aware validation reduces cognitive load
+- `--profile` override remains available for power users
 
 ### Profile Execution Flow
 
@@ -275,6 +404,9 @@ When `OUTPUT_MODE = compact`, generate a condensed validation summary:
 | `spec_validate` | B, D | Pre-plan spec validation | 30s |
 | `plan_validate` | D, F, V | Pre-tasks plan validation | 45s |
 | `tasks_validate` | G, H, J | Pre-implement task validation | 30s |
+| `sqs` | E, H, D, Z | SQS validation (QG-001 pre-implement) | 60s |
+| `quality_gates` | D, E, G, H, R, S, T, U, Z | Full quality gates (QG-001 to QG-012) | 300s |
+| `pre_deploy` | R, T, U | Pre-deployment gates (QG-010 to QG-012) | 120s |
 | `full` | A-Q, Z | Complete pre-implementation analysis | 300s |
 | `qa` | A-Z | Post-implementation QA verification | 600s |
 

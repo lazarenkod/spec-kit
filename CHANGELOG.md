@@ -107,6 +107,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Graceful shutdown implementations
     - Configuration validation with Zod/Pydantic
 
+- **Quality Gates (5.3)** — Constitution domain extension for quality thresholds at workflow transitions
+  - **Quality Gates Domain** (`memory/domains/quality-gates.md`):
+    - Philosophy: "Quality is not a phase, it's a gate at every transition"
+    - 12 QG-XXX principles across three checkpoint phases
+    - Strengthened base principles: QUA-001, QUA-003, QUA-004, TST-001, SEC-001 elevated
+  - **Pre-Implement Gates** (QG-001 to QG-003):
+    - QG-001: SQS Quality Gate (MUST) — Spec Quality Score >= 80 before implementation
+    - QG-002: Security Scan Pass (MUST) — 0 critical/high vulnerabilities
+    - QG-003: Dependency Freshness (SHOULD) — no deps > 2 major versions behind
+  - **Post-Implement Gates** (QG-004 to QG-009):
+    - QG-004: Test Coverage (MUST) — >= 80% line coverage
+    - QG-005: Type Coverage (MUST) — >= 95% type annotations
+    - QG-006: Lint Cleanliness (MUST) — 0 errors, < 10 warnings
+    - QG-007: Performance Baseline (SHOULD) — Lighthouse >= 90
+    - QG-008: Accessibility Compliance (SHOULD) — WCAG 2.1 AA
+    - QG-009: Documentation Coverage (SHOULD) — 100% public APIs documented
+  - **Pre-Deploy Gates** (QG-010 to QG-012):
+    - QG-010: All Tests Pass (MUST) — 100% test pass rate
+    - QG-011: No Debug Artifacts (MUST) — no console.log/debugger statements
+    - QG-012: Environment Documentation (MUST) — all env vars in .env.example
+  - **CI/CD Templates** (`templates/shared/ci-templates.md`):
+    - GitHub Actions workflow with all 12 quality gates
+    - GitLab CI pipeline equivalent
+    - Pre-commit hooks for local gate validation
+    - Lighthouse CI, axe-core, and type-coverage configurations
+    - Environment coverage check script
+  - **Command Integration**:
+    - `/speckit.analyze --profile sqs` — SQS validation (QG-001)
+    - `/speckit.analyze --profile quality_gates` — full quality gate validation
+    - `/speckit.analyze --profile pre_deploy` — pre-deployment gates (QG-010 to QG-012)
+    - `/speckit.implement` — pre-gates for SQS >= 80, post-gates for coverage/lint
+
+### Changed
+
+- **Auto-Context Profile Detection** — `/speckit.analyze` now auto-detects validation profile from context
+  - **Caller-based detection**: Automatically selects profile based on invoking command
+    - From `/speckit.specify` or `/speckit.clarify` → `spec_validate`
+    - From `/speckit.plan` → `plan_validate`
+    - From `/speckit.tasks` → `tasks_validate`
+    - From `/speckit.implement` → `sqs` (pre) or `quality_gates` (post)
+  - **Artifact-based fallback**: If no caller context, detects from project artifacts
+    - `*.impl.md` or `src/` changes → `quality_gates`
+    - `*.tasks.md` exists → `tasks_validate`
+    - `*.plan.md` exists → `plan_validate`
+    - `*.spec.md` exists → `spec_validate`
+  - **Simplified command invocations** (no explicit `--profile` needed):
+    - Before: `/speckit.analyze --profile spec_validate --quiet`
+    - After: `/speckit.analyze --quiet`
+  - **Backward compatible**: `--profile <name>` override still works for power users
+  - Philosophy: "Convention over Configuration" — tool understands context automatically
+
 ---
 
 ## [0.0.42] - 2025-12-28

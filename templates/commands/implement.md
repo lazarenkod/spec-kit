@@ -1,5 +1,5 @@
 ---
-description: Execute the implementation plan, generate documentation (RUNNING.md, README.md), and validate with self-review
+description: Execute the implementation plan, generate documentation (RUNNING.md, README.md), and validate with self-review. Enforces Quality Gates (QG-001 pre-implement gate, QG-004 to QG-009 post-implement gates). See `memory/domains/quality-gates.md` for gate definitions.
 persona: developer-agent
 handoff:
   requires: handoffs/tasks-to-implement.md
@@ -13,6 +13,16 @@ handoffs:
       - Check code traceability (@speckit annotations)
       - Validate security (dependency audit, secret detection)
       - Generate QA Verification Report with verdict
+
+      Validates Quality Gates QG-004 to QG-009 (post-implement gates):
+      - QG-004: Test Coverage >= 80%
+      - QG-005: Type Coverage >= 95%
+      - QG-006: Lint Cleanliness (0 errors)
+      - QG-007: Performance Baseline (Lighthouse >= 90)
+      - QG-008: Accessibility Compliance (WCAG 2.1 AA)
+      - QG-009: Documentation Coverage (100% public APIs)
+
+      See memory/domains/quality-gates.md for gate details.
     auto: true
     condition:
       - "All P1 tasks marked [X] in tasks.md"
@@ -26,6 +36,21 @@ handoffs:
         check: "Implementation produced runnable code"
         block_if: "No source files created or modified"
         message: "No implementation detected - verify tasks were executed"
+      - name: "QG-004: Test Coverage Gate"
+        check: "Test coverage >= 80%"
+        block_if: "Coverage < 80%"
+        message: "Test coverage below 80% threshold"
+        domain_ref: "QG-004"
+      - name: "QG-005: Type Coverage Gate"
+        check: "Type coverage >= 95%"
+        block_if: "Type coverage < 95%"
+        message: "Type coverage below 95% threshold"
+        domain_ref: "QG-005"
+      - name: "QG-006: Lint Gate"
+        check: "Lint errors == 0"
+        block_if: "Lint errors > 0"
+        message: "Lint errors must be resolved"
+        domain_ref: "QG-006"
     post_actions:
       - "log: Implementation complete, running QA verification"
   - label: Fix QA Issues
@@ -67,6 +92,11 @@ pre_gates:
     check: "If analyze was run, CRITICAL == 0"
     block_if: "CRITICAL issues exist from prior analysis"
     message: "Resolve CRITICAL issues before starting implementation"
+  - name: "QG-001: SQS Quality Gate"
+    check: "Run /speckit.analyze; SQS >= 80"  # Profile auto-detected from caller context
+    block_if: "SQS < 80"
+    message: "SQS below MVP threshold (80). Improve FR coverage, AS coverage, or resolve constitution violations before implementation. See memory/domains/quality-gates.md"
+    domain_ref: "QG-001"
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks

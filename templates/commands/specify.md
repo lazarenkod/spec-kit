@@ -15,7 +15,7 @@ handoffs:
     pre_handoff_action:
       name: "Spec Validation"
       invoke: speckit.analyze
-      args: "--profile spec_validate --quiet"
+      args: "--quiet"  # Profile auto-detected from caller context
       skip_flag: "--skip-validate"
       timeout: 30s
       gates:

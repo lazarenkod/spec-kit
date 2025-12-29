@@ -373,7 +373,7 @@ When `AUTO_INVOKED = true`:
 4. Execute sequential questioning loop (Step 4) with injected questions
 
 5. After all questions answered, trigger re-validation:
-   - Invoke: /speckit.analyze --profile spec_validate --quiet
+   - Invoke: /speckit.analyze --quiet  # Profile auto-detected
    - If gates pass → Resume handoff to /speckit.plan
    - If gates fail → Report remaining issues (max 3 iterations)
 ```
@@ -412,7 +412,7 @@ After clarification completes, automatically re-run validation:
 
 ```text
 1. Clarify completes with all questions answered
-2. Invoke: /speckit.analyze --profile spec_validate --quiet
+2. Invoke: /speckit.analyze --quiet  # Profile auto-detected
 3. Check gate results:
 
 IF all gates PASS:
