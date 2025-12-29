@@ -92,7 +92,7 @@ See `AGENTS.md` for detailed integration guide.
 ## Version Management
 
 - CLI version: `pyproject.toml` → `project.version`
-- Any changes to `__init__.py` require version bump in `pyproject.toml` and `CHANGELOG.md` entry
+- Any changes to `__init__.py` or templaets require version bump in `pyproject.toml` and `CHANGELOG.md` entry
 - Release assets are auto-generated via GitHub Actions on tag push
 
 ## Spec-Driven Development Workflow

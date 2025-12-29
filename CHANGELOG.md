@@ -7,6 +7,81 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.45] - 2025-12-29
+
+### Added
+
+- **DRY Architecture with Shared Modules** — Eliminate ~480 lines of duplication across command templates
+  - **Core Modules** (`templates/shared/core/`):
+    - `language-loading.md`: Unified language detection from constitution.md
+    - `manifest-update.md`: Centralized manifest status transitions with validation
+    - `brownfield-detection.md`: Confidence-weighted project type detection (6 signals, thresholds at 60%/30%)
+    - `workspace-detection.md`: Multi-repo workspace detection for monorepos
+  - **Adaptive Intelligence** (`templates/shared/`):
+    - `complexity-scoring.md`: 4-tier system (TRIVIAL/SIMPLE/MODERATE/COMPLEX) with 5 scoring categories
+    - `semantic-detection.md`: Intent classification (ADD/MODIFY/REMOVE) with confidence thresholds
+  - **Quality & Speed** (`templates/shared/`):
+    - `self-review/framework.md`: Unified self-review with severity levels (CRITICAL/HIGH/MEDIUM/LOW), verdict logic, 3-iteration loop
+    - `validation/checkpoints.md`: Streaming validation during generation with early-fail on CRITICAL issues
+  - **Bi-directional Traceability** (`templates/shared/traceability/`):
+    - `artifact-registry.md`: YAML-based version tracking (`.artifact-registry.yaml`) with checksums and parent versions
+    - `cascade-detection.md`: Change impact analysis with BREAKING/SIGNIFICANT/MINOR/METADATA classification
+  - **Progressive Output** (`templates/shared/output/`):
+    - `progressive-modes.md`: COMPACT/STANDARD/DETAILED output modes based on complexity tier
+
+- **Summary-First Pattern** — All commands now output Quick Summary before detailed content
+  - Feature name, complexity tier, key metrics at a glance
+  - Status badges (✅ Ready, ⚠️ Warnings, ❌ Blocked, 🔄 Stale)
+  - Clear next step recommendation
+  - Collapsible details for verbose content in COMPACT mode
+
+- **Artifact Version Registry** — Automatic version and lineage tracking
+  - Parent version tracking (spec → plan → tasks chain)
+  - SHA-256 checksum calculation for change detection
+  - Staleness detection when upstream artifacts change
+  - Cascade update recommendations
+
+### Changed
+
+- **`/speckit.specify`** updated with shared modules:
+  - Uses `complexity-scoring.md` for adaptive workflow
+  - Uses `semantic-detection.md` for intent classification
+  - Uses `self-review/framework.md` for quality gates
+  - Added Output Phase with progressive modes and registry update
+
+- **`/speckit.plan`** updated with shared modules:
+  - Uses `language-loading.md`, `complexity-scoring.md`, `brownfield-detection.md`
+  - Uses `manifest-update.md` for status transitions
+  - Uses `self-review/framework.md` with tier-adaptive criteria
+  - Added Output Phase with Quick Summary template
+
+- **`/speckit.tasks`** updated with shared modules:
+  - Uses shared core modules for initialization
+  - Uses `validation/checkpoints.md` for streaming validation
+  - Uses `self-review/framework.md` with complexity-adaptive criteria
+  - Added Output Phase with traceability chain visualization
+
+### Technical Details
+
+- **Complexity Tiers** adapt workflow depth:
+  - TRIVIAL (0-25): Minimal workflow, 3 self-review criteria
+  - SIMPLE (26-50): Standard workflow, 6 criteria
+  - MODERATE (51-75): Full workflow, all 10 criteria, CQS ≥ 60
+  - COMPLEX (76-100): Full + concept validation, CQS ≥ 80
+
+- **Streaming Validation** catches issues early:
+  - Checkpoints after each major section
+  - Early-fail on CRITICAL issues (don't wait until end)
+  - Parallel validation groups for performance (~33% faster)
+
+- **Backward Compatibility** preserved:
+  - Existing artifacts work unchanged
+  - Registry auto-initializes on first command run
+  - `--legacy` flag for raw output
+  - Graceful degradation if modules not found
+
+---
+
 ## [0.0.44] - 2025-12-29
 
 ### Added

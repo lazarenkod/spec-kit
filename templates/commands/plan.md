@@ -102,22 +102,24 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
-0. **Load project language setting**:
+0. **Load project context**:
 
-   Read `/memory/constitution.md` and extract the `language` value from the Project Settings table.
+   Read and apply shared modules for initialization:
 
    ```text
-   IF Project Settings section exists AND language row found:
-     ARTIFACT_LANGUAGE = extracted value (e.g., "ru", "en", "de")
-   ELSE:
-     ARTIFACT_LANGUAGE = "en" (default)
+   Read `templates/shared/core/language-loading.md` and apply.
+   Read `templates/shared/complexity-scoring.md` and apply.
+   Read `templates/shared/core/brownfield-detection.md` and apply.
 
-   Apply language rules from templates/shared/language-context.md:
-   - Generate all prose content in ARTIFACT_LANGUAGE
-   - Keep IDs, technical terms (API, JWT), and code in English
+   EXECUTE language-loading.md → ARTIFACT_LANGUAGE
+   EXECUTE complexity-scoring.md → COMPLEXITY_TIER, COMPLEXITY_SCORE
+   EXECUTE brownfield-detection.md → BROWNFIELD_MODE
+
+   REPORT: "Generating plan in {LANGUAGE_NAME} ({ARTIFACT_LANGUAGE})..."
+   REPORT: "Complexity: {COMPLEXITY_TIER} ({COMPLEXITY_SCORE}/100)"
    ```
 
-   Report: "Generating plan in {LANGUAGE_NAME} ({ARTIFACT_LANGUAGE})..."
+   Adapt workflow based on COMPLEXITY_TIER (see complexity-scoring.md for tier-specific guidelines).
 
 1. **Setup**: Run `{SCRIPT}` from repo root and parse JSON for FEATURE_SPEC, IMPL_PLAN, SPECS_DIR, BRANCH. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
@@ -135,13 +137,12 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 4. **Update Feature Manifest**: After plan artifacts are generated:
    ```text
-   MANIFEST_FILE = specs/features/.manifest.md
-   FEATURE_ID = extract from BRANCH (first 3 digits)
+   Read `templates/shared/core/manifest-update.md` and apply with:
+   - NEW_STATUS = "PLANNED"
+   - CALLER_COMMAND = "plan"
 
-   IF exists(MANIFEST_FILE):
-     Find row where ID = FEATURE_ID
-     Update Status column: SPEC_COMPLETE → PLANNED
-     Update "Last Updated" column: today's date
+   EXECUTE manifest-update.md algorithm
+   LOG: "Feature manifest updated: SPEC_COMPLETE → PLANNED"
    ```
 
 4.5. **Generate API Contracts** (Optional):
@@ -366,6 +367,19 @@ Users can always choose to:
 
 **Before declaring plan.md complete, you MUST perform self-review.**
 
+Read `templates/shared/self-review/framework.md` for the complete self-review algorithm.
+Read `templates/shared/validation/checkpoints.md` for checkpoint definitions.
+
+```text
+SELF_REVIEW_INPUT:
+  ARTIFACTS = [plan.md, research.md, data-model.md, contracts/*]
+  COMPLEXITY_TIER = from step 0
+  CRITERIA_SET = SR-PLAN-01 to SR-PLAN-10
+
+EXECUTE self-review framework with up to 3 iterations
+GENERATE Self-Review Report
+```
+
 This ensures the implementation plan is complete, verified, and ready for task generation.
 
 ### Step 1: Re-read Generated Artifacts
@@ -515,3 +529,93 @@ All quality gates passed. Auto-transitioning to `/speckit.tasks`.
 | Missing research.md | NEEDS CLARIFICATION was present but no research.md | Generate research.md with findings |
 | Deprecated package | Context7 shows deprecation | Find replacement, document migration |
 | Version mismatch | Specified version doesn't exist | Use latest stable or document constraint |
+
+---
+
+## Output Phase
+
+Read `templates/shared/output/progressive-modes.md` and apply.
+Read `templates/shared/traceability/artifact-registry.md` and apply.
+
+### Determine Output Mode
+
+```text
+MODE = SELECT_OUTPUT_MODE(COMPLEXITY_TIER, user_flags)
+
+# COMPACT for TRIVIAL/SIMPLE
+# STANDARD for MODERATE (default)
+# DETAILED for COMPLEX or --verbose
+```
+
+### Generate Quick Summary
+
+Always output the Quick Summary first, regardless of mode:
+
+```markdown
+# Implementation Plan Complete
+
+## Quick Summary
+
+| Aspect | Value |
+|--------|-------|
+| **Feature** | {feature_name} |
+| **Complexity** | {COMPLEXITY_TIER} ({complexity_score}/100) |
+| **Phases** | {phase_count} implementation phases |
+| **Dependencies** | {dep_count} external, {internal_count} internal |
+| **Files to Modify** | ~{file_count} files |
+| **Status** | {status_badge} |
+| **Next Step** | {next_step} |
+
+### Implementation Phases
+
+1. **Phase 1**: {phase_1_name} ({file_count} files)
+2. **Phase 2**: {phase_2_name} ({file_count} files)
+3. **Phase 3**: {phase_3_name} ({file_count} files)
+
+### Key Dependencies
+
+| Package | Version | Verified |
+|---------|---------|----------|
+| {package_1} | {version} | ✓ |
+| {package_2} | {version} | ✓ |
+```
+
+### Format Full Content
+
+```text
+IF MODE == COMPACT:
+  OUTPUT: Quick Summary (above)
+  OUTPUT: <details><summary>📄 View Full Plan</summary>
+  OUTPUT: {full_plan_content}
+  OUTPUT: </details>
+
+ELIF MODE == STANDARD:
+  OUTPUT: Quick Summary (above)
+  OUTPUT: ---
+  OUTPUT: {full_plan_content with collapsible verbose sections}
+
+ELIF MODE == DETAILED:
+  OUTPUT: Quick Summary (above)
+  OUTPUT: ---
+  OUTPUT: {full_plan_content all sections expanded}
+  OUTPUT: ---
+  OUTPUT: {self_review_report}
+  OUTPUT: {dependency_verification_details}
+```
+
+### Update Artifact Registry
+
+```text
+Read `templates/shared/traceability/artifact-registry.md` and apply:
+
+UPDATE_REGISTRY("plan", "FEATURE_DIR/plan.md", {
+  parent_spec_version: registry.artifacts.spec.version,
+  phase_count: {phase_count}
+})
+
+# Check cascade impact
+IF registry was updated:
+  staleness = CHECK_STALENESS(registry)
+  IF staleness.tasks_stale:
+    OUTPUT: "Note: tasks.md may need refresh after plan changes."
+```

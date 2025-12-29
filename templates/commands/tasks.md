@@ -110,22 +110,28 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
-0. **Load project language setting**:
+0. **Load project context**:
 
-   Read `/memory/constitution.md` and extract the `language` value from the Project Settings table.
+   Read and apply shared modules for initialization:
 
    ```text
-   IF Project Settings section exists AND language row found:
-     ARTIFACT_LANGUAGE = extracted value (e.g., "ru", "en", "de")
-   ELSE:
-     ARTIFACT_LANGUAGE = "en" (default)
+   Read `templates/shared/core/language-loading.md` and apply.
+   Read `templates/shared/complexity-scoring.md` and apply.
+   Read `templates/shared/core/brownfield-detection.md` and apply.
 
-   Apply language rules from templates/shared/language-context.md:
-   - Generate all prose content in ARTIFACT_LANGUAGE
-   - Keep IDs (T1, FR-001, AS-001), technical terms, and code in English
+   EXECUTE language-loading.md → ARTIFACT_LANGUAGE
+   EXECUTE complexity-scoring.md → COMPLEXITY_TIER, COMPLEXITY_SCORE
+   EXECUTE brownfield-detection.md → BROWNFIELD_MODE
+
+   REPORT: "Generating tasks in {LANGUAGE_NAME} ({ARTIFACT_LANGUAGE})..."
+   REPORT: "Complexity: {COMPLEXITY_TIER} ({COMPLEXITY_SCORE}/100)"
    ```
 
-   Report: "Generating tasks in {LANGUAGE_NAME} ({ARTIFACT_LANGUAGE})..."
+   Adapt task generation based on COMPLEXITY_TIER:
+   - **TRIVIAL**: Compact task list (max 5 tasks), skip RTM
+   - **SIMPLE**: Standard breakdown, include RTM if FR count > 3
+   - **MODERATE**: Full breakdown with RTM and regression considerations
+   - **COMPLEX**: Full breakdown with dependency graph, [CRITICAL] markers, rollback tasks
 
 1. **Setup**: Run `{SCRIPT}` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
@@ -239,15 +245,13 @@ You **MUST** consider the user input before proceeding (if not empty).
    ```
 
 9. **Update Feature Manifest**: After tasks.md is generated:
-   ```text
-   MANIFEST_FILE = specs/features/.manifest.md
-   FEATURE_ID = extract from current branch/feature (first 3 digits)
 
-   IF exists(MANIFEST_FILE):
-     Find row where ID = FEATURE_ID
-     Update Status column: PLANNED → TASKED
-     Update "Last Updated" column: today's date
-   ```
+   Read `templates/shared/core/manifest-update.md` and apply with:
+   - `CALLER` = "tasks"
+   - `NEW_STATUS` = "TASKED"
+   - `REQUIRED_CURRENT_STATUS` = "PLANNED"
+
+   This updates the feature manifest to reflect task generation completion.
 
 10. **Update Concept Traceability** (if concept.md exists):
 
@@ -509,7 +513,19 @@ Users can always choose to:
 
 **Before declaring tasks.md complete, you MUST perform self-review.**
 
+Read `templates/shared/self-review/framework.md` for the unified self-review system.
+Read `templates/shared/validation/checkpoints.md` for streaming validation during generation.
+
 This ensures the generated tasks are valid, traceable, and ready for implementation.
+
+### Framework Integration
+
+Apply the self-review framework with:
+- `COMMAND` = "tasks"
+- `ARTIFACT` = `FEATURE_DIR/tasks.md`
+- `CRITERIA_FILE` = criteria below (SR-TASK-01 to SR-TASK-10)
+- `COMPLEXITY_TIER` = from complexity-scoring.md (determined in Step 0)
+- `MAX_ITERATIONS` = 3
 
 ### Step 1: Re-read Generated Artifact
 
@@ -525,7 +541,16 @@ Parse the file to extract:
 
 ### Step 2: Quality Criteria
 
-Answer each question by validating against the artifact:
+Apply criteria based on complexity tier (from framework.md):
+
+| Tier | Active Criteria |
+|------|-----------------|
+| TRIVIAL | SR-TASK-01, SR-TASK-07, SR-TASK-08 only |
+| SIMPLE | SR-TASK-01 to SR-TASK-06 |
+| MODERATE | All SR-TASK-01 to SR-TASK-10 |
+| COMPLEX | All + cross-artifact validation |
+
+**Full Criteria (for MODERATE/COMPLEX):**
 
 | ID | Criterion | Check | Severity |
 |----|-----------|-------|----------|
@@ -592,14 +617,23 @@ FOR EACH as in AS_LIST:
 
 ### Step 5: Verdict
 
-Based on validation results:
+Apply verdict logic from `templates/shared/self-review/framework.md`:
 
-- **PASS**: All CRITICAL criteria pass, no circular dependencies, FR coverage complete → proceed to handoff
+```text
+CALCULATE_VERDICT(check_results):
+  - CRITICAL failures → FAIL (must fix)
+  - 2+ HIGH failures → WARN
+  - 4+ MEDIUM failures → WARN
+  - Quality score >= 80% → PASS
+```
+
+**Task-specific fix guidance:**
 - **FAIL**: Any CRITICAL issue → self-correct and re-check (max 3 iterations)
   - Missing FR coverage → add missing [FR:] markers to appropriate tasks
   - Invalid DEP references → fix task IDs or add missing tasks
   - Circular dependency → break the cycle by removing weakest dependency
 - **WARN**: Only MEDIUM issues (missing story labels, incomplete RTM) → show warnings, proceed
+- **PASS**: All CRITICAL criteria pass, no circular dependencies, FR coverage complete → proceed to handoff
 
 ### Step 6: Self-Correction Loop
 
@@ -668,3 +702,110 @@ All quality gates passed. Auto-transitioning to `/speckit.implement`.
 | Cycle detected | Topological sort fails | Remove one edge to break cycle |
 | Missing file path | Implementation task has no path | Add target file path to description |
 | Wrong story label | [US5] but only 3 user stories | Fix to match spec.md story numbers |
+
+---
+
+## Output Phase
+
+Read `templates/shared/output/progressive-modes.md` and apply.
+Read `templates/shared/traceability/artifact-registry.md` and apply.
+
+### Determine Output Mode
+
+```text
+MODE = SELECT_OUTPUT_MODE(COMPLEXITY_TIER, user_flags)
+
+# COMPACT for TRIVIAL/SIMPLE
+# STANDARD for MODERATE (default)
+# DETAILED for COMPLEX or --verbose
+```
+
+### Generate Quick Summary
+
+Always output the Quick Summary first, regardless of mode:
+
+```markdown
+# Task Breakdown Complete
+
+## Quick Summary
+
+| Aspect | Value |
+|--------|-------|
+| **Feature** | {feature_name} |
+| **Complexity** | {COMPLEXITY_TIER} ({complexity_score}/100) |
+| **Total Tasks** | {task_count} tasks |
+| **By Story** | {story_1}: {n} tasks, {story_2}: {m} tasks |
+| **Parallel Opportunities** | {parallel_count} tasks can run in parallel |
+| **FR Coverage** | {fr_covered}/{fr_total} ({fr_pct}%) |
+| **AS Coverage** | {as_covered}/{as_total} ({as_pct}%) |
+| **Status** | {status_badge} |
+| **Next Step** | {next_step} |
+
+### Task Distribution
+
+| Story | Tasks | Priority Range |
+|-------|-------|----------------|
+| US1: {story_name} | {count} | P1-P2 |
+| US2: {story_name} | {count} | P2-P3 |
+
+### MVP Scope (Story 1)
+
+- T001: {brief_description}
+- T002: {brief_description}
+- T003: {brief_description}
+```
+
+### Format Full Content
+
+```text
+IF MODE == COMPACT:
+  OUTPUT: Quick Summary (above)
+  OUTPUT: <details><summary>📄 View Full Task List</summary>
+  OUTPUT: {full_tasks_content}
+  OUTPUT: </details>
+
+ELIF MODE == STANDARD:
+  OUTPUT: Quick Summary (above)
+  OUTPUT: ---
+  OUTPUT: {full_tasks_content with collapsible RTM}
+
+ELIF MODE == DETAILED:
+  OUTPUT: Quick Summary (above)
+  OUTPUT: ---
+  OUTPUT: {full_tasks_content all sections expanded}
+  OUTPUT: ---
+  OUTPUT: {self_review_report}
+  OUTPUT: {dependency_graph_visualization}
+```
+
+### Update Artifact Registry
+
+```text
+Read `templates/shared/traceability/artifact-registry.md` and apply:
+
+UPDATE_REGISTRY("tasks", "FEATURE_DIR/tasks.md", {
+  parent_plan_version: registry.artifacts.plan.version,
+  parent_spec_version: registry.artifacts.spec.version,
+  task_count: {task_count},
+  fr_coverage: {covered: fr_covered, total: fr_total, percentage: fr_pct},
+  as_coverage: {covered: as_covered, total: as_total, percentage: as_pct}
+})
+
+OUTPUT: "Artifact registry updated. Full traceability chain established."
+```
+
+### Traceability Chain Complete
+
+When tasks.md is generated, the full traceability chain is established:
+
+```text
+concept.md (if exists)
+    └── spec.md (v{spec_version})
+        └── plan.md (v{plan_version})
+            └── tasks.md (v{tasks_version})
+
+Registry Status:
+- All parent versions recorded
+- Checksums calculated
+- Staleness detection enabled
+```
