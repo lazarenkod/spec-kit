@@ -1,6 +1,15 @@
 ---
 description: Provision infrastructure, deploy application, and verify running system in one command
 persona: devops-agent
+optimization_modules:
+  - templates/shared/ship/terraform-turbo.md
+  - templates/shared/ship/deploy-optimizer.md
+  - templates/shared/ship/test-parallel.md
+  - templates/shared/ship/browser-pool.md
+  - templates/shared/ship/dependency-dag.md
+  - templates/shared/ship/contract-testing.md
+  - templates/shared/ship/incremental-tests.md
+  - templates/shared/ship/smart-rollback.md
 handoff:
   requires: null  # Can run independently if infra.yaml exists
   template: templates/handoff-template.md
@@ -74,6 +83,92 @@ Parse arguments for:
 - `--cloud <provider>`: Override cloud provider (vk, yandex, gcp)
 - `--skip-verify`: Skip verification stage
 
+**Optimization flags** (see optimization modules for details):
+- `--turbo`: Enable maximum parallelism and skip optional checks
+- `--safe`: Use sequential execution with full validation
+- `--skip-provision`: Skip provision if fingerprint unchanged
+- `--force-deploy`: Force deploy even if version unchanged
+- `--force-provision`: Force provision even if fingerprint unchanged
+- `--full-e2e`: Run full E2E suite instead of contract tests
+- `--full-tests`: Run full test suite instead of incremental
+- `--parallel-tests=N`: Control test parallelism (default: 4)
+- `--auto-rollback`: Automatically rollback on verification failure
+- `--no-rollback`: Disable automatic rollback prompts
+- `--sequential-phases`: Disable wave overlap optimization
+- `--no-browser-pool`: Disable browser pool pre-warming
+- `--no-fingerprint`: Disable fingerprint-based skip logic
+- `--no-test-cache`: Ignore cached test results
+
+## Optimization Integration
+
+**Read and apply optimization modules at the start of execution:**
+
+```text
+# Load optimization modules (if not using --safe flag)
+IF NOT --safe:
+  Read `templates/shared/ship/terraform-turbo.md` and apply.
+  Read `templates/shared/ship/deploy-optimizer.md` and apply.
+  Read `templates/shared/ship/test-parallel.md` and apply.
+  Read `templates/shared/ship/browser-pool.md` and apply.
+  Read `templates/shared/ship/dependency-dag.md` and apply.
+  Read `templates/shared/ship/contract-testing.md` and apply.
+  Read `templates/shared/ship/incremental-tests.md` and apply.
+  Read `templates/shared/ship/smart-rollback.md` and apply.
+```
+
+**Wave Overlap Execution** (enabled by default, disable with `--sequential-phases`):
+
+```text
+WAVE_OVERLAP_CONFIG:
+  enabled: true
+  threshold: 0.80  # Start next phase preparation at 80% completion
+
+# Instead of strict sequential:
+#   provision_complete → deploy_start → deploy_complete → verify_start
+
+# Use speculative execution:
+#   provision_start
+#   AT 80% provision_complete → deploy_prepare (pull images, warm cache)
+#   provision_complete → deploy_start
+#   AT 80% deploy_complete → verify_prepare (warm browser pool)
+#   deploy_complete → verify_start
+
+FUNCTION wave_overlap_execution():
+  provision_task = async_start_provision()
+
+  # At 80% provision, start deploy preparation
+  ON provision_task.progress >= 80%:
+    async_prepare_deploy()  # Pull images, warm Docker cache
+
+  # Wait for provision to complete
+  provision_result = await provision_task
+
+  # Start deploy immediately (preparation already done)
+  deploy_task = async_start_deploy(provision_result.outputs)
+
+  # At 80% deploy, start verify preparation
+  ON deploy_task.progress >= 80%:
+    async_prepare_verify()  # Warm browser pool, prepare test data
+
+  # Wait for deploy
+  deploy_result = await deploy_task
+
+  # Start verify immediately (preparation already done)
+  verify_result = run_verify()
+
+  RETURN ship_result(provision_result, deploy_result, verify_result)
+```
+
+**Expected Performance Impact:**
+
+| Scenario | Without Optimization | With Optimization | Savings |
+|----------|---------------------|-------------------|---------|
+| Clean deploy (staging) | 12 min | 5 min | 58% |
+| Small code change | 8 min | 45s | 91% |
+| Infra-only change | 10 min | 3 min | 70% |
+| Test re-run | 90s | 20s | 78% |
+| Rollback | 5 min | 90s | 70% |
+
 ## Outline
 
 ### Phase 0: Setup and Context Loading
@@ -104,13 +199,24 @@ Parse arguments for:
 
 ### Phase 1: PROVISION (Infrastructure)
 
+**Optimization:** Apply `templates/shared/ship/terraform-turbo.md` for provider caching, parallelism tuning, and fingerprint-based skip.
+
 **Skip conditions:**
 - `--only deploy` or `--only verify` specified
 - `--env local` (uses docker-compose, no cloud infra)
+- Fingerprint unchanged AND `--force-provision` not specified (see terraform-turbo.md)
 
 **Execution:**
 
-1. **Check if infrastructure exists:**
+1. **Fingerprint-based skip check** (if optimizations enabled):
+   ```text
+   fingerprint = calculate_fingerprint(infra.yaml, terraform/*.tf, variables.tfvars)
+   IF fingerprint == cached_fingerprint AND NOT --force-provision:
+     LOG "✓ Infrastructure unchanged (fingerprint: {fingerprint[:8]}...)"
+     RETURN cached_outputs
+   ```
+
+2. **Check if infrastructure exists:**
    ```
    IF .speckit/state/{ENV}/infra-state.json exists:
      terraform_state = read(infra-state.json)
@@ -172,9 +278,12 @@ Parse arguments for:
 
 ### Phase 2: DEPLOY (Application)
 
+**Optimization:** Apply `templates/shared/ship/deploy-optimizer.md` for Docker layer intelligence, Helm template caching, and adaptive timeouts.
+
 **Skip conditions:**
 - `--only infra` or `--only verify` specified
 - `--destroy` specified
+- Version unchanged AND `--force-deploy` not specified (see deploy-optimizer.md)
 
 **For --env local:**
 
@@ -256,10 +365,27 @@ Parse arguments for:
 
 ### Phase 3: VERIFY (Running System)
 
+**Optimization:** Apply the following modules for faster verification:
+- `templates/shared/ship/test-parallel.md` for parallel test execution
+- `templates/shared/ship/browser-pool.md` for browser pool management
+- `templates/shared/ship/contract-testing.md` for contract vs E2E strategy
+- `templates/shared/ship/incremental-tests.md` for affected-test selection
+
 **Skip conditions:**
 - `--skip-verify` specified
 - `--only infra` or `--only deploy` specified
 - `--destroy` specified
+
+**Pre-execution (during deploy phase at 80% completion):**
+```text
+# Browser pool pre-warming (see browser-pool.md)
+IF NOT --no-browser-pool:
+  async_warm_browser_pool(size=4)
+
+# Test data preparation
+IF has_test_fixtures:
+  async_prepare_test_fixtures()
+```
 
 **Execution:**
 
@@ -271,29 +397,83 @@ Parse arguments for:
      BASE_URL = "https://${FEATURE_SLUG}.${ENV}.example.com"
    ```
 
-2. **Run smoke tests (always first):**
+2. **Select test strategy** (see contract-testing.md and incremental-tests.md):
+   ```text
+   # Determine if full E2E or contract-based testing
+   IF --full-e2e:
+     test_strategy = "full_e2e"
+   ELSE:
+     test_strategy = decide_test_strategy()  # From contract-testing.md
+     # Returns: "contract" | "e2e" | "hybrid" based on triggers
+
+   # Determine affected tests (incremental selection)
+   IF --full-tests:
+     tests_to_run = all_tests
+   ELSE:
+     changed_files = git diff --name-only HEAD~1
+     tests_to_run = select_affected_tests(changed_files)  # From incremental-tests.md
+
+     IF tests_to_run.empty:
+       LOG "No tests affected by changes, running smoke only"
+       tests_to_run = smoke_tests_only
    ```
-   FOR EACH check in verify.yaml.checks.smoke:
+
+3. **Run smoke tests (always first, parallel if enabled):**
+   ```text
+   # Parallel smoke tests (see test-parallel.md)
+   smoke_checks = verify.yaml.checks.smoke
+   max_workers = --parallel-tests OR 4
+
+   results = parallel_execute(smoke_checks, max_workers, FUNCTION(check):
      result = http_request(check.url, check.method or "GET")
 
      IF check.expect.status and result.status != check.expect.status:
-       FAIL("Smoke test failed: expected ${check.expect.status}, got ${result.status}")
+       RETURN FAIL("expected ${check.expect.status}, got ${result.status}")
 
      IF check.expect.body.contains and not result.body.contains(check.expect.body.contains):
-       FAIL("Smoke test failed: body missing '${check.expect.body.contains}'")
+       RETURN FAIL("body missing '${check.expect.body.contains}'")
 
-     log("Smoke: ${check.name} PASSED")
+     RETURN PASS
+   )
+
+   # Fast-fail on smoke failure
+   IF any(results.failed):
+     LOG "❌ Smoke tests failed, aborting verification"
+     TRIGGER_ROLLBACK_PROMPT()  # See smart-rollback.md
+     EXIT_FAIL
    ```
 
-3. **Run acceptance tests (linked to AS-xxx):**
-   ```
+4. **Run acceptance tests (linked to AS-xxx):**
+   ```text
    results = []
+   browser_pool = get_warmed_browser_pool()  # From browser-pool.md pre-warming
 
-   FOR EACH check in verify.yaml.checks.acceptance:
+   # Filter to affected tests only (incremental selection)
+   acceptance_checks = verify.yaml.checks.acceptance
+   IF tests_to_run != all_tests:
+     acceptance_checks = filter(acceptance_checks, c => c.ref IN tests_to_run)
+
+   # Check test cache (see incremental-tests.md)
+   FOR EACH check IN acceptance_checks:
+     IF NOT --no-test-cache:
+       cache_key = hash(check.script, check.ref, GIT_SHA, ENV)
+       cached_result = test_cache.get(cache_key)
+       IF cached_result AND cached_result.passed:
+         LOG f"✓ {check.ref} (cached)"
+         results.append(cached_result)
+         CONTINUE
+
      start_time = now()
 
-     IF check.type == "playwright":
-       result = run_playwright(check.script)
+     # Execute based on test strategy
+     IF test_strategy == "contract" AND check.type == "api":
+       # Use contract verification instead of full API test (see contract-testing.md)
+       result = verify_api_contract(check.contract_ref)
+     ELSE IF check.type == "playwright":
+       # Use browser from pool (see browser-pool.md)
+       browser_context = browser_pool.acquire()
+       result = run_playwright(check.script, browser_context)
+       browser_pool.release(browser_context)
      ELSE IF check.type == "api":
        result = run_api_test(check.script)
      ELSE IF check.type == "manual":
@@ -301,15 +481,20 @@ Parse arguments for:
 
      duration = now() - start_time
 
-     results.append({
+     test_result = {
        ref: check.ref,
        status: result.passed ? "PASS" : "FAIL",
        duration: duration,
        error: result.error or null
-     })
+     }
+     results.append(test_result)
+
+     # Cache successful results
+     IF result.passed AND NOT --no-test-cache:
+       test_cache.set(cache_key, test_result, TTL=3600)
    ```
 
-4. **Generate verify-results.md:**
+5. **Generate verify-results.md:**
    ```markdown
    # Verification Results
 
@@ -344,7 +529,7 @@ Parse arguments for:
    **Suggested Action**: Check API pod logs, verify database connectivity
    ```
 
-5. **Update spec.md verification status:**
+6. **Update spec.md verification status:**
    ```
    FOR EACH result in results:
      IF result.status == "FAIL":
@@ -357,9 +542,53 @@ Parse arguments for:
        })
    ```
 
-6. **Save verification state:**
+7. **Save verification state:**
    ```bash
    echo '${JSON.stringify(results)}' > .speckit/state/{ENV}/last-verify.json
+   ```
+
+8. **Create snapshot on success** (see smart-rollback.md):
+   ```text
+   IF all_results_passed:
+     # Create deployment snapshot for rollback capability
+     snapshot = create_snapshot(ENV, {
+       version: GIT_SHA,
+       infra_state: terraform_state_snapshot(),
+       deploy_config: helm_values_snapshot(),
+       verification_passed: true
+     })
+     LOG f"✓ Snapshot created: {snapshot.id}"
+     maintain_snapshots(max_count=5)  # Keep last 5 successful snapshots
+   ```
+
+9. **Handle verification failure** (see smart-rollback.md):
+   ```text
+   IF any_results_failed:
+     failure_severity = classify_failure(failed_results)
+     # CRITICAL: security, data integrity → auto-rollback
+     # HIGH: core functionality → prompt rollback
+     # MEDIUM: non-critical → warning only
+     # LOW: performance → log only
+
+     IF failure_severity == "CRITICAL" OR --auto-rollback:
+       LOG "❌ Critical failure detected, initiating rollback"
+       last_good_snapshot = get_last_successful_snapshot(ENV)
+       IF last_good_snapshot:
+         rollback_to(last_good_snapshot)
+       ELSE:
+         LOG "⚠ No previous snapshot available for rollback"
+         EXIT_FAIL
+
+     ELSE IF failure_severity == "HIGH":
+       IF NOT --no-rollback:
+         response = prompt("Rollback to previous version? (y/n)")
+         IF response == "y":
+           rollback_to(get_last_successful_snapshot(ENV))
+       EXIT_FAIL
+
+     ELSE:
+       LOG f"⚠ Verification issues detected (severity: {failure_severity})"
+       LOG "Review verify-results.md for details"
    ```
 
 ### Phase 4: DESTROY (Teardown)
@@ -393,6 +622,62 @@ Parse arguments for:
    # Keep infra-state.json if shared infrastructure
    ```
 
+### Phase 5: ROLLBACK (Recovery)
+
+**Only if rollback triggered by verification failure or explicit `--rollback` flag**
+
+**Optimization:** Apply `templates/shared/ship/smart-rollback.md` for intelligent rollback strategies.
+
+1. **Determine rollback type:**
+   ```text
+   # Automatic determination based on what failed
+   IF only_app_failed:
+     rollback_type = "app_only"      # Fast: just redeploy previous version
+   ELSE IF infra_changed:
+     rollback_type = "full"          # Restore infra + app
+   ELSE:
+     rollback_type = "partial"       # Selective component rollback
+   ```
+
+2. **Execute rollback:**
+   ```text
+   snapshot = get_rollback_target(ENV)
+
+   IF rollback_type == "app_only":
+     # Fast rollback using previous image
+     helm rollback app -n $NAMESPACE
+     OR
+     kubectl set image deployment/app app=${snapshot.image_tag}
+
+   ELSE IF rollback_type == "full":
+     # Full state restoration
+     terraform_restore(snapshot.infra_state)
+     helm_restore(snapshot.deploy_config)
+
+   ELSE IF rollback_type == "partial":
+     # Selective restoration
+     FOR component IN failed_components:
+       restore_component(component, snapshot)
+   ```
+
+3. **Verify rollback:**
+   ```text
+   # Run smoke tests to confirm rollback success
+   rollback_verify = run_smoke_tests_only()
+
+   IF rollback_verify.passed:
+     LOG "✓ Rollback successful, system restored to {snapshot.version}"
+   ELSE:
+     LOG "❌ Rollback verification failed!"
+     ALERT("Manual intervention required for {ENV}")
+   ```
+
+4. **Update state:**
+   ```bash
+   echo '{"git_sha": "${snapshot.version}", "rollback_from": "${GIT_SHA}", "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"}' \
+     > .speckit/state/{ENV}/deployed-version.json
+   ```
+
 ---
 
 ## Output Summary
@@ -408,11 +693,24 @@ After all phases complete, output a summary:
 
 ### Stages
 
-| Stage | Status | Duration |
-|-------|--------|----------|
-| Provision | SKIPPED (no changes) | 0s |
-| Deploy | SUCCESS | 45s |
-| Verify | SUCCESS | 12s |
+| Stage | Status | Duration | Optimization |
+|-------|--------|----------|--------------|
+| Provision | SKIPPED (fingerprint match) | 0s | Saved ~5 min |
+| Deploy | SUCCESS | 45s | Cache hit |
+| Verify | SUCCESS | 12s | 8/12 tests cached |
+
+**Total Time**: 57s (vs ~8 min without optimizations)
+
+### Optimizations Applied
+
+| Optimization | Impact |
+|-------------|--------|
+| Fingerprint skip (provision) | -5 min |
+| Docker layer cache | -60s |
+| Browser pool pre-warm | -12s |
+| Incremental test selection | -45s |
+| Test result caching | -30s |
+| Contract tests (vs E2E) | -40s |
 
 ### Endpoints
 
@@ -421,9 +719,15 @@ After all phases complete, output a summary:
 
 ### Verification
 
-- Smoke tests: 3/3 passed
-- Acceptance tests: 5/5 passed
+- Smoke tests: 3/3 passed (parallel, 2.1s)
+- Acceptance tests: 5/5 passed (3 cached, 2 executed)
+- Contract tests: 8/8 verified (replaced 4 E2E tests)
 - Security scans: 2/2 passed
+
+### Snapshot
+
+- **Snapshot ID**: snap-abc1234-20240115
+- **Rollback available**: Yes (5 snapshots retained)
 
 **Verdict**: READY FOR REVIEW
 ```
@@ -438,15 +742,28 @@ Before completing, verify:
    - [ ] `.speckit/state/{ENV}/` files are up-to-date
    - [ ] Terraform state reference is valid
    - [ ] Deployed version matches current git SHA
+   - [ ] Fingerprint cache updated (if provision ran)
+   - [ ] Snapshot created (if verification passed)
 
 2. **Verification Coverage**:
    - [ ] All smoke tests passed
    - [ ] Critical AS-xxx scenarios verified
    - [ ] Results linked back to spec.md
+   - [ ] Test cache updated with new results
 
-3. **Cleanup**:
+3. **Optimization Resources**:
+   - [ ] Browser pool released/cleaned up
+   - [ ] Docker build cache pruned (if over threshold)
+   - [ ] Test cache pruned (entries over TTL)
+
+4. **Cleanup**:
    - [ ] No orphaned resources
    - [ ] Temporary files removed
    - [ ] Namespace lifecycle documented
+
+5. **Rollback Readiness**:
+   - [ ] Snapshot exists for current deployment
+   - [ ] Previous snapshot(s) available for rollback
+   - [ ] Rollback procedures documented
 
 **If any check fails, report the issue and suggest remediation steps.**

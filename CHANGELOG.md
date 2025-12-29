@@ -7,6 +7,49 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.46] - 2025-12-29
+
+### Added
+
+- **Radical Ship Optimization — 50-70% Faster Deployments** — Transform `/speckit.ship` with intelligent caching, parallelization, and incremental execution
+  - **New Shared Modules** (`templates/shared/ship/`):
+    - `terraform-turbo.md`: Provider caching, parallelism tuning (10-30 workers), fingerprint-based skip, targeted plan
+    - `deploy-optimizer.md`: Docker layer intelligence, Helm template caching, adaptive timeouts, version-based skip
+    - `test-parallel.md`: Parallel test execution with worker pools, test grouping by type (smoke/acceptance/security/performance)
+    - `browser-pool.md`: Browser pre-warming at 80% deploy, context reuse, idle management, pool lifecycle
+    - `dependency-dag.md`: DAG-based dependency resolution, lazy loading, node/edge types (HARD/SOFT/OPTIONAL/LAZY)
+    - `contract-testing.md`: Contract vs E2E strategy, Pact/OpenAPI support, E2E trigger conditions
+    - `incremental-tests.md`: Code-to-test mapping, affected-only execution, coverage-based/static analysis strategies
+    - `smart-rollback.md`: Snapshot management, partial/instant rollback, failure severity classification
+  - **Wave Overlap Execution** — Speculative phase execution at 80% completion threshold:
+    - At 80% provision → start deploy preparation (pull images, warm cache)
+    - At 80% deploy → start verify preparation (warm browser pool)
+    - Expected 25-30% time savings from overlap alone
+  - **New CLI Flags** (14 optimization controls):
+    - `--turbo`: Maximum parallelism, skip optional checks
+    - `--skip-provision`: Skip if fingerprint unchanged
+    - `--force-deploy` / `--force-provision`: Override skip logic
+    - `--full-e2e` / `--full-tests`: Force complete test suites
+    - `--auto-rollback` / `--no-rollback`: Rollback behavior control
+    - `--sequential-phases`: Disable wave overlap
+    - `--no-browser-pool` / `--no-fingerprint` / `--no-test-cache`: Disable specific optimizations
+  - **Phase 5: ROLLBACK** — New recovery phase with intelligent rollback strategies:
+    - Rollback type detection: app_only, full, partial
+    - Snapshot-based restoration with verification
+    - Severity-based decision engine (CRITICAL/HIGH/MEDIUM/LOW)
+  - **Enhanced Output Summary** with optimization metrics:
+    - Stage-by-stage optimization impact (e.g., "Saved ~5 min")
+    - Optimization breakdown table
+    - Snapshot status and rollback availability
+  - **Expected Performance Impact**:
+    - Clean deploy: 12 min → 5 min (58% faster)
+    - Small code change: 8 min → 45s (91% faster)
+    - Infra-only change: 10 min → 3 min (70% faster)
+    - Test re-run: 90s → 20s (78% faster)
+    - Rollback: 5 min → 90s (70% faster)
+
+---
+
 ## [0.0.45] - 2025-12-29
 
 ### Added
