@@ -147,6 +147,13 @@ All database queries MUST use parameterized queries or prepared statements. Stri
 
 ## OBS: Observability
 
+<!--
+  For production deployments, these principles can be strengthened
+  by applying the Production domain extension (memory/domains/production.md)
+  which adds trace context requirements, health endpoints, metrics,
+  and OpenTelemetry-first architecture principles.
+-->
+
 ### OBS-001: Structured Logging
 
 **Level**: MUST
@@ -1008,8 +1015,18 @@ Text styling SHOULD use typography tokens from the design system (font-family, f
 
 To customize for your project:
 
-1. **Select domain** (optional): Copy `domains/fintech.md` to `constitution.domain.md` if applicable
-2. **Add project overrides**: Edit `constitution.md` to strengthen or add principles
-3. **Run validation**: Use `/speckit.analyze` to check compliance
+1. **Select domain** (optional): Copy a domain extension to `constitution.domain.md`:
+   - `domains/saas.md` - Multi-tenant SaaS applications
+   - `domains/fintech.md` - Financial services
+   - `domains/healthcare.md` - Healthcare/HIPAA compliance
+   - `domains/mobile.md` - Mobile applications
+   - `domains/gaming.md` - Games and game servers
+   - `domains/production.md` - Production readiness, observability, self-hosted monitoring
+2. **Combine domains** (optional): Concatenate multiple domains for hybrid projects:
+   ```bash
+   cat domains/saas.md domains/production.md > constitution.domain.md
+   ```
+3. **Add project overrides**: Edit `constitution.md` to strengthen or add principles
+4. **Run validation**: Use `/speckit.analyze` to check compliance
 
 See `constitution.md` for project-specific customization.
