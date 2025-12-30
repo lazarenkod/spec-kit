@@ -2,14 +2,52 @@
 
 > Browser automation module for generating high-fidelity visual mockups from wireframes using Google Stitch (stitch.withgoogle.com).
 
+## Module Metadata
+
+```yaml
+version: 3.0.0
+last_updated: 2025-01-01
+status: active
+anti_detection: enabled
+modes: [cdp, stealth, turbo, assisted]
+```
+
 ## Overview
 
-Google Stitch is an AI-powered design tool from Google Labs that generates UI designs from text prompts using Gemini 2.5 Pro/Flash. Since Stitch has no public API, this module uses Playwright browser automation to:
+Google Stitch is an AI-powered design tool from Google Labs that generates UI designs from text prompts using Gemini 2.5 Pro/Flash. Since Stitch has no public API, this module uses Playwright browser automation with **multi-mode anti-detection** to:
 
 1. Navigate to stitch.withgoogle.com
 2. Authenticate via Google OAuth (persistent session)
 3. Generate UI mockups from wireframe-derived prompts
 4. Export results in multiple formats (HTML, PNG, Figma)
+
+### Anti-Detection Strategy (v3)
+
+Google detects browser automation through multiple vectors. This module implements a **hybrid multi-mode strategy** with automatic fallback:
+
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│  MODE PRIORITY (Auto-fallback)                                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  1. CDP MODE (Best)                                                 │
+│     Connect to user's existing Chrome via --remote-debugging-port   │
+│     → Real fingerprint, real profile, zero detection                │
+│                                                                     │
+│  2. STEALTH MODE (Good)                                             │
+│     Patchright + Humanization + Persistent Profile                  │
+│     → Patched CDP, Bezier mouse, random delays                      │
+│                                                                     │
+│  3. TURBO MODE (Risky)                                              │
+│     Standard Playwright + enhanced stealth args                     │
+│     → Fast but may trigger detection                                │
+│                                                                     │
+│  4. ASSISTED MODE (Fallback)                                        │
+│     Human-Assisted workflow (prepare → manual → collect)            │
+│     → 100% reliable when automation blocked                         │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 ## Prerequisites
 
@@ -19,9 +57,35 @@ Google Stitch is an AI-powered design tool from Google Labs that generates UI de
 # Check Playwright installation
 npm ls playwright || npm install playwright
 
+# (Optional) Install Patchright for enhanced stealth mode
+npm install patchright
+
 # Install browser if needed
 npx playwright install chromium
 ```
+
+### CDP Mode Setup (Recommended)
+
+For best anti-detection results, connect to your existing Chrome browser:
+
+```bash
+# Launch Chrome with debugging port (do this once)
+# macOS:
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --remote-debugging-port=9222 \
+  --user-data-dir="$HOME/.speckit/chrome-profile"
+
+# Windows:
+"C:\Program Files\Google\Chrome\Application\chrome.exe" ^
+  --remote-debugging-port=9222 ^
+  --user-data-dir="%USERPROFILE%\.speckit\chrome-profile"
+
+# Linux:
+google-chrome --remote-debugging-port=9222 \
+  --user-data-dir="$HOME/.speckit/chrome-profile"
+```
+
+Then sign in to Google manually and run `/speckit.stitch --mode cdp`.
 
 ### Directory Structure
 
@@ -30,6 +94,8 @@ npx playwright install chromium
 ├── session/                    # Playwright persistent context (browser profile)
 │   └── Default/                # Chromium profile data
 ├── usage.json                  # Rate limit tracking
+├── mode-history.json           # Mode success/failure tracking
+├── fingerprint.json            # Cached browser fingerprint
 └── prompts-cache/              # Saved prompts for retry/manual mode
     ├── {feature}/
     │   └── {screen-name}.txt
@@ -47,12 +113,30 @@ npx playwright install chromium
 └── index.html                  # Master gallery
 ```
 
----
-
-## Phase 0: Preflight Check
+### Module Imports
 
 ```text
-FUNCTION stitch_preflight_check():
+# Load anti-detection functions from shared module
+IMPORT * FROM templates/shared/stitch-anti-detection.md:
+  - gaussian_random, random_int, random_float, random_choice
+  - ease_in_out_cubic, lerp, bezier_curve, fitts_time, distance
+  - humanize_typing, move_and_click, random_wait
+  - scroll_to_element, smooth_viewport_resize
+  - generate_fingerprint, STEALTH_ARGS, build_stealth_context_options
+  - connect_via_cdp, select_stitch_mode, track_mode_result
+  - detect_captcha, handle_captcha, detect_rate_limit, handle_rate_limit
+  - validate_session, reset_session
+
+# Load selectors from versioned file
+IMPORT SELECTORS FROM templates/shared/stitch-selectors.md
+```
+
+---
+
+## Phase 0: Preflight Check & Mode Selection
+
+```text
+FUNCTION stitch_preflight_check(options):
 
   1. CHECK Playwright installation:
      RUN: npm ls playwright --json
@@ -86,44 +170,175 @@ FUNCTION stitch_preflight_check():
 
        IF usage.standard.used >= 350:
          WARN "Standard mode rate limit reached (350/month)"
-         SUGGEST "Use --manual mode or wait for next month"
+         SUGGEST "Use --mode assisted or wait for next month"
 
        IF usage.standard.used >= 300:
          WARN "Approaching rate limit: {used}/350 generations this month"
 
-  5. RETURN {
+  5. SELECT automation mode:
+     mode_result = stitch_select_mode(options)
+
+     LOG """
+     ┌─────────────────────────────────────────────┐
+     │  Mode: {mode_result.mode.toUpperCase()}     │
+     │  {mode_description(mode_result.mode)}       │
+     └─────────────────────────────────────────────┘
+     """
+
+  6. RETURN {
        playwright_ready: true,
        browser_ready: true,
        needs_auth: needs_auth,
-       rate_limit_ok: usage.standard.used < 350
+       rate_limit_ok: usage.standard.used < 350,
+       mode: mode_result
      }
+
+
+FUNCTION stitch_select_mode(options):
+  """
+  Select best available automation mode.
+  Priority: CDP → Stealth → Turbo → Assisted
+  """
+
+  requested_mode = options.mode OR 'auto'
+
+  # User explicitly requested a mode
+  IF requested_mode !== 'auto':
+    LOG "Using explicitly requested mode: {requested_mode}"
+    RETURN { mode: requested_mode }
+
+  # Auto-selection: try modes in priority order
+
+  # 1. Try CDP connection (best - uses real browser)
+  IF NOT options.skip_cdp:
+    TRY:
+      cdp_result = await connect_via_cdp('http://localhost:9222')
+      IF cdp_result:
+        LOG "✅ CDP connection successful - using real browser"
+        RETURN { mode: 'cdp', ...cdp_result }
+    CATCH:
+      LOG "ℹ️ CDP not available (Chrome not running with --remote-debugging-port)"
+
+  # 2. Check if Patchright is available (stealth mode)
+  TRY:
+    patchright = require('patchright')
+    LOG "✅ Patchright available - using stealth mode"
+    RETURN { mode: 'stealth', launcher: patchright }
+  CATCH:
+    LOG "ℹ️ Patchright not installed - using standard Playwright"
+
+  # 3. Fall back to standard Playwright (turbo mode)
+  playwright = require('playwright')
+  LOG "⚠️ Using turbo mode (higher detection risk)"
+  RETURN { mode: 'turbo', launcher: playwright }
+
+
+FUNCTION mode_description(mode):
+  descriptions = {
+    cdp: "Connected to your Chrome browser - zero detection risk",
+    stealth: "Patchright + humanization - low detection risk",
+    turbo: "Standard Playwright - faster but higher detection risk",
+    assisted: "Human-assisted workflow - prompts only, no automation"
+  }
+  RETURN descriptions[mode] OR "Unknown mode"
 ```
 
 ---
 
 ## Phase 1: Authentication
 
-### Persistent Browser Context
+### Multi-Mode Browser Context Creation
 
 ```text
-FUNCTION stitch_create_browser_context():
+FUNCTION stitch_create_browser_context(mode_result, options):
+  """
+  Create browser context based on selected mode.
+  Each mode has different anti-detection characteristics.
+  """
 
-  # Playwright persistent context preserves:
-  # - Cookies (Google OAuth session)
-  # - Local storage
-  # - IndexedDB
+  # Generate or load fingerprint for consistency
+  fingerprint = stitch_get_or_create_fingerprint()
 
-  context = playwright.chromium.launchPersistentContext(
-    userDataDir: ".speckit/stitch/session/",
-    headless: false,  # Must be visible for OAuth
-    viewport: { width: 1440, height: 900 },
-    args: [
-      "--disable-blink-features=AutomationControlled",
-      "--no-first-run"
-    ]
-  )
+  SWITCH mode_result.mode:
 
-  RETURN context
+    CASE 'cdp':
+      # Already connected via CDP in mode selection
+      browser = mode_result.browser
+      context = mode_result.context OR browser.contexts()[0]
+
+      IF NOT context:
+        context = await browser.newContext({
+          viewport: fingerprint.viewport
+        })
+
+      LOG "Using CDP-connected browser context"
+      RETURN { context, browser, mode: 'cdp' }
+
+    CASE 'stealth':
+      # Use Patchright with full stealth configuration
+      patchright = mode_result.launcher
+
+      context_options = build_stealth_context_options(fingerprint)
+
+      context = await patchright.chromium.launchPersistentContext(
+        ".speckit/stitch/session/",
+        context_options
+      )
+
+      LOG "Launched stealth browser with Patchright"
+      RETURN { context, mode: 'stealth' }
+
+    CASE 'turbo':
+      # Standard Playwright with enhanced stealth args
+      playwright = mode_result.launcher
+
+      context = await playwright.chromium.launchPersistentContext(
+        ".speckit/stitch/session/",
+        {
+          headless: false,
+          viewport: fingerprint.viewport,
+          timezoneId: fingerprint.timezoneId,
+          locale: fingerprint.locale,
+          args: STEALTH_ARGS,
+          ignoreDefaultArgs: ['--enable-automation']
+        }
+      )
+
+      LOG "Launched turbo browser (standard Playwright + stealth args)"
+      RETURN { context, mode: 'turbo' }
+
+    CASE 'assisted':
+      # No browser needed for assisted mode
+      LOG "Assisted mode - no browser automation"
+      RETURN { context: null, mode: 'assisted' }
+
+    DEFAULT:
+      ERROR "Unknown mode: {mode_result.mode}"
+
+
+FUNCTION stitch_get_or_create_fingerprint():
+  """
+  Get cached fingerprint or generate new one.
+  Fingerprint is cached per session for consistency.
+  """
+
+  fingerprint_file = ".speckit/stitch/fingerprint.json"
+
+  IF EXISTS fingerprint_file:
+    fingerprint = LOAD fingerprint_file
+    # Check if fingerprint is recent (< 7 days)
+    IF fingerprint.created_at > Date.now() - 7 * 24 * 60 * 60 * 1000:
+      LOG "Using cached fingerprint"
+      RETURN fingerprint
+
+  # Generate new fingerprint
+  fingerprint = generate_fingerprint()
+  fingerprint.created_at = Date.now()
+
+  SAVE fingerprint TO fingerprint_file
+  LOG "Generated new browser fingerprint"
+
+  RETURN fingerprint
 ```
 
 ### Authentication Flow
@@ -447,10 +662,24 @@ SELECTORS = {
 }
 ```
 
-### Generate Single Mockup
+### Generate Single Mockup (Humanized)
 
 ```text
-FUNCTION stitch_generate_mockup(page, prompt, output_dir):
+FUNCTION stitch_generate_mockup(page, prompt, output_dir, options = {}):
+  """
+  Generate a single mockup with human-like behavior.
+  Uses Bezier mouse movements, Gaussian typing delays, and random waits.
+  """
+
+  speed = options.speed OR 'normal'  # slow, normal, fast
+
+  # Speed multipliers for humanization
+  SPEED_MULTIPLIERS = {
+    slow: 1.5,     # More human-like, safer
+    normal: 1.0,   # Balanced
+    fast: 0.5      # Faster but riskier
+  }
+  speed_mult = SPEED_MULTIPLIERS[speed]
 
   TRY:
     1. ENSURE on Stitch page:
@@ -458,24 +687,62 @@ FUNCTION stitch_generate_mockup(page, prompt, output_dir):
        IF NOT current_url.includes("stitch.withgoogle.com"):
          await page.goto("https://stitch.withgoogle.com")
          await page.waitForLoadState("networkidle")
+         # Human-like page load pause
+         await random_wait(1500 * speed_mult, 3000 * speed_mult)
 
-    2. CLEAR previous prompt:
+    2. CHECK for CAPTCHA/blocks:
+       captcha = await detect_captcha(page)
+       IF captcha.detected:
+         LOG "⚠️ CAPTCHA detected before input"
+         await handle_captcha(page, { action: 'prompt' })
+
+    3. FIND and interact with prompt input:
        input = await page.waitForSelector(SELECTORS.promptInput, { timeout: 10000 })
-       await input.click({ clickCount: 3 })  # Select all
-       await input.press("Backspace")
 
-    3. TYPE new prompt:
-       # Type with human-like delays to avoid detection
-       await input.type(prompt, { delay: 50 })
+       # Scroll to input if needed
+       await scroll_to_element(page, input)
 
-    4. CLICK generate:
+       # Human-like click on input (Bezier mouse movement)
+       await move_and_click(page, input, {
+         hover_time: { mean: 150 * speed_mult, std: 50 }
+       })
+
+       # Small pause after clicking (human reacts)
+       await random_wait(200 * speed_mult, 500 * speed_mult)
+
+    4. CLEAR previous prompt:
+       # Select all with keyboard (more natural than triple-click)
+       await page.keyboard.press('Meta+a')  # Cmd+A on Mac
+       await random_wait(100 * speed_mult, 300 * speed_mult)
+       await page.keyboard.press('Backspace')
+       await random_wait(200 * speed_mult, 400 * speed_mult)
+
+    5. TYPE new prompt with humanization:
+       # Use humanize_typing for natural keystroke timing
+       await humanize_typing(input, prompt, {
+         mean_delay: 70 * speed_mult,
+         std_delay: 30,
+         typo_rate: speed === 'slow' ? 0.02 : 0.01  # More typos in slow mode
+       })
+
+       # Pause after typing (human reviews what they typed)
+       await random_wait(500 * speed_mult, 1500 * speed_mult)
+
+    6. CLICK generate button:
        generate_btn = await page.waitForSelector(SELECTORS.generateButton)
-       await generate_btn.click()
 
-    5. WAIT for generation:
-       # Wait for loading to start
+       # Scroll to button if needed
+       await scroll_to_element(page, generate_btn)
+
+       # Human-like click with Bezier movement
+       await move_and_click(page, generate_btn, {
+         hover_time: { mean: 200 * speed_mult, std: 80 }
+       })
+
+    7. WAIT for generation:
+       # Wait for loading to start (may miss if fast)
        await page.waitForSelector(SELECTORS.loadingSpinner, { timeout: 5000 })
-         .catch(() => {})  # OK if we miss the spinner
+         .catch(() => {})
 
        # Wait for loading to complete
        await page.waitForSelector(SELECTORS.loadingComplete, {
@@ -483,26 +750,48 @@ FUNCTION stitch_generate_mockup(page, prompt, output_dir):
          state: "visible"
        })
 
-       # Additional wait for render
-       await page.waitForTimeout(2000)
+       # Human-like wait after generation (reviewing result)
+       await random_wait(2000 * speed_mult, 4000 * speed_mult)
 
-    6. CHECK for errors:
+    8. CHECK for errors and blocks:
+       # Check for CAPTCHA that appeared during generation
+       captcha = await detect_captcha(page)
+       IF captcha.detected:
+         LOG "⚠️ CAPTCHA detected after generation"
+         await handle_captcha(page, { action: 'prompt' })
+
+       # Check for rate limit
+       rate_limit = await detect_rate_limit(page)
+       IF rate_limit.detected:
+         THROW { code: 'RATE_LIMIT', message: "Rate limit detected" }
+
+       # Check for error messages
        error = await page.$(SELECTORS.errorMessage)
        IF error:
          error_text = await error.textContent()
          THROW Error("Generation failed: " + error_text)
 
-    7. UPDATE usage tracking:
-       usage = LOAD .speckit/stitch/usage.json
+    9. UPDATE usage tracking:
+       usage = LOAD .speckit/stitch/usage.json OR { standard: { used: 0 }, month: DATE.format("YYYY-MM") }
        usage.standard.used += 1
        usage.last_generation = new Date().toISOString()
        SAVE usage TO .speckit/stitch/usage.json
 
-    8. RETURN success:
-       RETURN { success: true, page: page }
+    10. RETURN success:
+        track_mode_result(options.mode, true)
+        RETURN { success: true, page: page }
 
   CATCH error:
-    LOG error.message
+    LOG "Generation error: {error.message}"
+    track_mode_result(options.mode, false, error)
+
+    # Handle specific errors
+    IF error.code === 'RATE_LIMIT':
+      RETURN { success: false, error: 'RATE_LIMIT', fallback: 'assisted' }
+
+    IF error.code === 'CAPTCHA_DETECTED':
+      RETURN { success: false, error: 'CAPTCHA', fallback: error.switch_mode }
+
     RETURN { success: false, error: error.message }
 ```
 
@@ -510,32 +799,47 @@ FUNCTION stitch_generate_mockup(page, prompt, output_dir):
 
 ## Phase 5: Export Pipeline
 
-### Export HTML/CSS
+### Export HTML/CSS (Humanized)
 
 ```text
-FUNCTION stitch_export_html(page, output_dir):
+FUNCTION stitch_export_html(page, output_dir, options = {}):
+  """
+  Export generated mockup as HTML/CSS with human-like interaction.
+  """
+
+  speed_mult = options.speed_mult OR 1.0
 
   TRY:
     1. OPEN export panel:
        export_btn = await page.waitForSelector(SELECTORS.exportButton, { timeout: 5000 })
-       await export_btn.click()
-       await page.waitForTimeout(500)
+
+       # Human-like click to open export
+       await move_and_click(page, export_btn, {
+         hover_time: { mean: 150 * speed_mult, std: 50 }
+       })
+
+       # Wait for panel to open
+       await random_wait(400 * speed_mult, 800 * speed_mult)
 
     2. SELECT HTML format:
        # Try Tailwind first (preferred), fallback to plain HTML
        tailwind_option = await page.$(SELECTORS.tailwindOption)
        IF tailwind_option:
-         await tailwind_option.click()
+         await move_and_click(page, tailwind_option)
        ELSE:
          html_option = await page.$(SELECTORS.htmlOption)
          IF html_option:
-           await html_option.click()
+           await move_and_click(page, html_option)
 
-       await page.waitForTimeout(500)
+       # Wait for format to load
+       await random_wait(300 * speed_mult, 600 * speed_mult)
 
     3. COPY code:
        copy_btn = await page.waitForSelector(SELECTORS.copyButton)
-       await copy_btn.click()
+       await move_and_click(page, copy_btn)
+
+       # Human pause after clicking copy
+       await random_wait(200 * speed_mult, 500 * speed_mult)
 
        # Get code from clipboard or code output element
        code = await page.evaluate(() => navigator.clipboard.readText())
@@ -563,7 +867,9 @@ FUNCTION stitch_export_html(page, output_dir):
          WRITE css TO {output_dir}/stitch-output.css
 
     5. CLOSE export panel:
+       await random_wait(200 * speed_mult, 400 * speed_mult)
        await page.keyboard.press("Escape")
+       await random_wait(300 * speed_mult, 600 * speed_mult)
 
     RETURN { success: true, files: ["stitch-output.html", "stitch-output.css"] }
 
@@ -572,10 +878,17 @@ FUNCTION stitch_export_html(page, output_dir):
     RETURN { success: false, error: error.message }
 ```
 
-### Export Screenshots
+### Export Screenshots (Humanized)
 
 ```text
-FUNCTION stitch_export_screenshots(page, output_dir):
+FUNCTION stitch_export_screenshots(page, output_dir, options = {}):
+  """
+  Capture screenshots at different viewport sizes with smooth resizing.
+  Uses smooth_viewport_resize to avoid detection.
+  """
+
+  speed_mult = options.speed_mult OR 1.0
+  fingerprint = options.fingerprint OR { viewport: { width: 1440, height: 900 } }
 
   TRY:
     1. FIND preview element:
@@ -588,8 +901,11 @@ FUNCTION stitch_export_screenshots(page, output_dir):
          preview = await frame.$("body")
 
     2. CAPTURE desktop screenshot (1440px):
-       await page.setViewportSize({ width: 1440, height: 900 })
-       await page.waitForTimeout(500)
+       # Smooth resize to desktop viewport
+       await smooth_viewport_resize(page, 1440, 900)
+
+       # Wait for content to stabilize
+       await random_wait(400 * speed_mult, 800 * speed_mult)
 
        await preview.screenshot({
          path: "{output_dir}/screenshot-desktop.png",
@@ -598,8 +914,11 @@ FUNCTION stitch_export_screenshots(page, output_dir):
        LOG "Saved desktop screenshot"
 
     3. CAPTURE mobile screenshot (375px):
-       await page.setViewportSize({ width: 375, height: 812 })
-       await page.waitForTimeout(500)
+       # Smooth resize to mobile viewport
+       await smooth_viewport_resize(page, 375, 812)
+
+       # Wait for responsive layout to adjust
+       await random_wait(600 * speed_mult, 1200 * speed_mult)
 
        await preview.screenshot({
          path: "{output_dir}/screenshot-mobile.png",
@@ -608,7 +927,12 @@ FUNCTION stitch_export_screenshots(page, output_dir):
        LOG "Saved mobile screenshot"
 
     4. RESTORE viewport:
-       await page.setViewportSize({ width: 1440, height: 900 })
+       # Smooth resize back to original fingerprint viewport
+       await smooth_viewport_resize(
+         page,
+         fingerprint.viewport.width,
+         fingerprint.viewport.height
+       )
 
     RETURN { success: true, files: ["screenshot-desktop.png", "screenshot-mobile.png"] }
 
@@ -617,10 +941,15 @@ FUNCTION stitch_export_screenshots(page, output_dir):
     RETURN { success: false, error: error.message }
 ```
 
-### Export to Figma
+### Export to Figma (Humanized)
 
 ```text
-FUNCTION stitch_export_figma(page, output_dir):
+FUNCTION stitch_export_figma(page, output_dir, options = {}):
+  """
+  Export design to Figma clipboard format with human-like interaction.
+  """
+
+  speed_mult = options.speed_mult OR 1.0
 
   TRY:
     1. FIND Figma export button:
@@ -631,8 +960,13 @@ FUNCTION stitch_export_figma(page, output_dir):
          RETURN { success: false, error: "Figma export not available" }
 
     2. CLICK Figma export:
-       await figma_btn.click()
-       await page.waitForTimeout(1000)
+       # Human-like click
+       await move_and_click(page, figma_btn, {
+         hover_time: { mean: 150 * speed_mult, std: 50 }
+       })
+
+       # Wait for clipboard operation
+       await random_wait(800 * speed_mult, 1500 * speed_mult)
 
     3. CAPTURE clipboard data:
        # Figma uses clipboard for transfer
@@ -1016,28 +1350,109 @@ FUNCTION stitch_generate_report(results):
 ```text
 FUNCTION stitch_main(options):
 
-  LOG "Starting Google Stitch mockup generation..."
+  LOG "Starting Google Stitch mockup generation (v3 - Anti-Detection)..."
 
-  # Phase 0: Preflight
-  preflight = stitch_preflight_check()
-  IF NOT preflight.playwright_ready OR NOT preflight.browser_ready:
-    ERROR "Preflight check failed"
+  # Determine speed multiplier from --speed option
+  speed_mult = SWITCH options.speed:
+    CASE 'slow': 2.0      # Maximum humanization, safest
+    CASE 'fast': 0.5      # Minimal delays, riskier
+    DEFAULT: 1.0          # Normal humanization
+
+  # Handle --setup-cdp helper command
+  IF options.setup_cdp:
+    LOG """
+    ┌─────────────────────────────────────────────────────────────────────┐
+    │  CDP MODE SETUP                                                     │
+    ├─────────────────────────────────────────────────────────────────────┤
+    │                                                                     │
+    │  Run this command to start Chrome with debugging enabled:           │
+    │                                                                     │
+    │  macOS/Linux:                                                       │
+    │    /Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome │
+    │      --remote-debugging-port=9222                                   │
+    │      --user-data-dir="$HOME/.speckit/chrome-profile"                │
+    │                                                                     │
+    │  Windows:                                                           │
+    │    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"     │
+    │      --remote-debugging-port=9222                                   │
+    │      --user-data-dir="%USERPROFILE%\\.speckit\\chrome-profile"      │
+    │                                                                     │
+    │  Then run: /speckit.stitch --mode cdp                               │
+    └─────────────────────────────────────────────────────────────────────┘
+    """
     RETURN
 
+  # Handle --prepare (assisted mode - prompts only)
+  IF options.prepare:
+    LOG "Assisted Mode: Generating prompts only (no browser automation)"
+    wireframes = stitch_discover_wireframes(options)
+    design_context = stitch_load_design_context()
+    stitch_fallback_manual(wireframes, design_context)
+    RETURN { mode: 'assisted', phase: 'prepare' }
+
+  # Handle --collect (assisted mode - collect exports)
+  IF options.collect:
+    LOG "Assisted Mode: Collecting exports from .speckit/stitch/exports/"
+    results = stitch_collect_manual_exports()
+    stitch_generate_master_gallery(results)
+    RETURN { mode: 'assisted', phase: 'collect', results }
+
+  # Phase 0: Preflight with mode selection
+  preflight = stitch_preflight_check()
+  IF NOT preflight.playwright_ready OR NOT preflight.browser_ready:
+    IF options.mode != 'assisted':
+      WARN "Playwright not ready, falling back to assisted mode"
+      options.mode = 'assisted'
+
+  # Rate limit check
   IF NOT preflight.rate_limit_ok:
     IF options.force:
       WARN "Proceeding despite rate limit (--force)"
     ELSE:
-      LOG "Rate limit reached. Use --manual mode."
-      stitch_fallback_manual([])
-      RETURN
+      LOG "Rate limit reached. Switching to assisted mode."
+      wireframes = stitch_discover_wireframes(options)
+      design_context = stitch_load_design_context()
+      stitch_fallback_manual(wireframes, design_context)
+      RETURN { mode: 'assisted', reason: 'rate_limit' }
 
-  # Phase 1: Authentication
-  context = stitch_create_browser_context()
-  auth_result = stitch_authenticate(context)
+  # Select automation mode (CDP → Stealth → Turbo → Assisted)
+  mode_result = stitch_select_mode({
+    preferred: options.mode,      # User's explicit choice if any
+    speed: options.speed
+  })
+
+  LOG "Selected mode: {mode_result.mode} ({mode_result.reason})"
+
+  # If assisted mode selected, use manual workflow
+  IF mode_result.mode == 'assisted':
+    wireframes = stitch_discover_wireframes(options)
+    design_context = stitch_load_design_context()
+    stitch_fallback_manual(wireframes, design_context)
+    RETURN { mode: 'assisted', reason: mode_result.reason }
+
+  # Phase 1: Create browser context with anti-detection
+  context_result = stitch_create_browser_context(mode_result, {
+    speed: options.speed,
+    headless: false  # Always visible for Stitch
+  })
+
+  IF NOT context_result.success:
+    WARN "Browser context creation failed: {context_result.error}"
+    WARN "Falling back to assisted mode"
+    wireframes = stitch_discover_wireframes(options)
+    design_context = stitch_load_design_context()
+    stitch_fallback_manual(wireframes, design_context)
+    RETURN { mode: 'assisted', reason: 'browser_failed' }
+
+  context = context_result.context
+  active_mode = mode_result.mode
+
+  # Phase 1b: Authentication with humanization
+  auth_result = stitch_authenticate(context, { speed_mult })
   IF NOT auth_result.authenticated:
-    ERROR "Authentication failed"
-    RETURN
+    ERROR "Authentication failed: {auth_result.error}"
+    await context.close()
+    RETURN { mode: active_mode, error: 'auth_failed' }
 
   page = auth_result.page
 
@@ -1051,16 +1466,19 @@ FUNCTION stitch_main(options):
 
   IF wireframes.length == 0:
     WARN "No wireframes found. Run /speckit.design first."
-    RETURN
+    await context.close()
+    RETURN { mode: active_mode, error: 'no_wireframes' }
 
   # Phase 3: Load design context
   design_context = stitch_load_design_context()
 
-  # Phase 4-5: Generate and export each
+  # Phase 4-5: Generate and export each (with anti-detection)
   results = []
+  captcha_count = 0
+  MAX_CAPTCHA_BEFORE_FALLBACK = 2
 
-  FOR each wireframe IN wireframes:
-    LOG "Processing: {wireframe.screen_name}"
+  FOR each wireframe, index IN wireframes:
+    LOG "Processing [{index + 1}/{wireframes.length}]: {wireframe.screen_name}"
 
     # Create output directory
     output_dir = ".preview/stitch-mockups/{wireframe.feature}/{wireframe.screen_name}"
@@ -1070,14 +1488,62 @@ FUNCTION stitch_main(options):
     prompt = stitch_generate_prompt(wireframe, design_context)
     WRITE prompt TO {output_dir}/prompt.txt
 
-    # Generate mockup
-    gen_result = stitch_generate_mockup(page, prompt, output_dir)
+    # Generate mockup with humanization
+    gen_result = stitch_generate_mockup(page, prompt, output_dir, {
+      speed_mult: speed_mult,
+      mode: active_mode
+    })
+
+    # Handle CAPTCHA detection - trigger fallback
+    IF gen_result.captcha_detected:
+      captcha_count++
+      LOG "⚠️  CAPTCHA detected ({captcha_count}/{MAX_CAPTCHA_BEFORE_FALLBACK})"
+
+      IF captcha_count >= MAX_CAPTCHA_BEFORE_FALLBACK:
+        WARN "Multiple CAPTCHAs detected. Google may be blocking automation."
+        WARN "Switching to assisted mode for remaining screens."
+
+        # Close browser and generate manual prompts for remaining
+        await context.close()
+        remaining = wireframes.slice(index)
+        stitch_fallback_manual(remaining, design_context)
+
+        # Update mode stats
+        stitch_update_mode_stats(active_mode, {
+          attempts: index,
+          successes: results.filter(r => r.success).length,
+          failures: results.filter(r => !r.success).length,
+          captcha_triggered: true
+        })
+
+        RETURN {
+          mode: active_mode,
+          fallback: 'assisted',
+          reason: 'captcha_detected',
+          results: results,
+          remaining: remaining.length
+        }
+
+      # Try to handle CAPTCHA (pause for user)
+      handled = handle_captcha_detection(page)
+      IF NOT handled:
+        results.push({
+          screen_name: wireframe.screen_name,
+          feature: wireframe.feature,
+          success: false,
+          error: 'captcha_not_resolved'
+        })
+        CONTINUE
 
     IF gen_result.success:
-      # Export all formats
-      html_result = stitch_export_html(page, output_dir)
-      screenshot_result = stitch_export_screenshots(page, output_dir)
-      figma_result = stitch_export_figma(page, output_dir)
+      # Export all formats with humanization
+      html_result = stitch_export_html(page, output_dir, { speed_mult })
+      screenshot_result = stitch_export_screenshots(page, output_dir, { speed_mult })
+
+      # Figma export optional
+      figma_result = { success: false }
+      IF NOT options.no_figma:
+        figma_result = stitch_export_figma(page, output_dir, { speed_mult })
 
       results.push({
         screen_name: wireframe.screen_name,
@@ -1090,6 +1556,11 @@ FUNCTION stitch_main(options):
           figma: figma_result.success
         }
       })
+
+      # Random delay between screens (humanization)
+      IF index < wireframes.length - 1:
+        await random_wait(2000 * speed_mult, 5000 * speed_mult)
+
     ELSE:
       results.push({
         screen_name: wireframe.screen_name,
@@ -1104,20 +1575,39 @@ FUNCTION stitch_main(options):
     stitch_generate_feature_gallery(feature.name, feature.screens)
   stitch_generate_master_gallery(features)
 
-  # Phase 8: Generate report
+  # Phase 7: Update usage tracking
+  stitch_update_usage(results.filter(r => r.success).length)
+
+  # Phase 8: Update mode statistics
+  stitch_update_mode_stats(active_mode, {
+    attempts: wireframes.length,
+    successes: results.filter(r => r.success).length,
+    failures: results.filter(r => !r.success).length,
+    captcha_triggered: captcha_count > 0
+  })
+
+  # Phase 9: Generate report
   report = stitch_generate_report(results)
 
   # Close browser
   await context.close()
 
-  # Output summary
+  # Calculate success stats
+  success_count = results.filter(r => r.success).length
+  partial_count = results.filter(r => r.success && !r.exports.figma).length
+  failed_count = results.filter(r => !r.success).length
+
+  # Output summary with mode info
   LOG """
   ┌─────────────────────────────────────────────────────────────────────┐
-  │  STITCH MOCKUP GENERATION COMPLETE                                  │
+  │  🎨 STITCH MOCKUP GENERATION COMPLETE (v3)                          │
   ├─────────────────────────────────────────────────────────────────────┤
   │                                                                     │
-  │  Generated: {report.generated}/{report.total} mockups               │
-  │  Success rate: {report.success_rate}%                               │
+  │  Mode: {active_mode.toUpperCase()}                                  │
+  │  Speed: {options.speed OR 'normal'}                                 │
+  │                                                                     │
+  │  Screens: {success_count}/{wireframes.length}                       │
+  │  Success: {success_count}  Partial: {partial_count}  Failed: {failed_count}
   │                                                                     │
   │  Exports:                                                           │
   │    HTML/CSS: {report.exports.html}                                  │
@@ -1126,12 +1616,89 @@ FUNCTION stitch_main(options):
   │                                                                     │
   │  Rate limit: {report.usage.standard.used}/350 this month            │
   │                                                                     │
-  │  Output: .preview/stitch-mockups/                                   │
-  │  Report: .preview/stitch-mockups/mockup-report.md                   │
+  │  📁 Output: .preview/stitch-mockups/                                │
+  │  📊 Gallery: .preview/stitch-mockups/index.html                     │
   │                                                                     │
-  │  Next: Open index.html to preview all mockups                       │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  Next Steps:                                                        │
+  │   → open .preview/stitch-mockups/index.html                         │
+  │   → /speckit.preview (serve gallery)                                │
   └─────────────────────────────────────────────────────────────────────┘
   """
 
-  RETURN report
+  RETURN { mode: active_mode, report, results }
+
+
+/**
+ * Collect manual exports from assisted mode
+ */
+FUNCTION stitch_collect_manual_exports():
+  exports_dir = ".speckit/stitch/exports/"
+
+  IF NOT EXISTS(exports_dir):
+    ERROR "No exports directory found. Place your exports in {exports_dir}"
+    RETURN []
+
+  results = []
+
+  # Scan for exported files
+  FOR each screen_dir IN list_dirs(exports_dir):
+    screen_name = basename(screen_dir)
+
+    # Check what files exist
+    has_html = EXISTS("{screen_dir}/code.html")
+    has_png = EXISTS("{screen_dir}/mockup.png")
+    has_figma = EXISTS("{screen_dir}/figma.json")
+
+    IF has_html OR has_png:
+      # Move to output directory
+      output_dir = ".preview/stitch-mockups/manual/{screen_name}"
+      MKDIR output_dir
+
+      IF has_html:
+        COPY "{screen_dir}/code.html" TO "{output_dir}/code.html"
+      IF has_png:
+        COPY "{screen_dir}/mockup.png" TO "{output_dir}/screenshot-desktop.png"
+      IF has_figma:
+        COPY "{screen_dir}/figma.json" TO "{output_dir}/figma-clipboard.json"
+
+      results.push({
+        screen_name: screen_name,
+        feature: 'manual',
+        success: true,
+        exports: {
+          html: has_html,
+          desktop: has_png,
+          mobile: false,
+          figma: has_figma
+        }
+      })
+
+  LOG "Collected {results.length} manual exports"
+  RETURN results
+
+
+/**
+ * Update mode statistics for tracking success rates
+ */
+FUNCTION stitch_update_mode_stats(mode, stats):
+  stats_file = ".speckit/stitch/usage.json"
+  usage = READ_JSON(stats_file) OR { mode_stats: {} }
+
+  IF NOT usage.mode_stats[mode]:
+    usage.mode_stats[mode] = {
+      attempts: 0,
+      successes: 0,
+      failures: 0,
+      captcha_triggered: 0
+    }
+
+  usage.mode_stats[mode].attempts += stats.attempts
+  usage.mode_stats[mode].successes += stats.successes
+  usage.mode_stats[mode].failures += stats.failures
+  IF stats.captcha_triggered:
+    usage.mode_stats[mode].captcha_triggered++
+
+  WRITE_JSON(stats_file, usage)
+  LOG "Updated mode stats for {mode}"
 ```

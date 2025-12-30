@@ -73,8 +73,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Interactive mode when run without arguments
   - Quality validation for generated outputs
 
+- **Stitch Anti-Detection v3** — Bypass Google's Automation Detection
+  - **Problem Solved**: Google started blocking Playwright automation with CAPTCHA challenges
+  - **4-Mode Hybrid Strategy** with auto-fallback:
+    - `CDP Mode` — Connect to user's existing Chrome via `--remote-debugging-port=9222` (zero detection)
+    - `Stealth Mode` — Patchright + humanization + persistent profile (low detection)
+    - `Turbo Mode` — Standard Playwright + stealth args (fast but risky)
+    - `Assisted Mode` — Human-assisted workflow with prompt generation + collection
+  - **Humanization Engine**:
+    - Bezier curve mouse movements (Fitts's Law timing)
+    - Gaussian-distributed typing delays with 2% typo rate
+    - Random wait intervals with exponential distribution
+    - Scroll simulation before clicking below-fold elements
+    - Smooth viewport resize with easing functions
+  - **New CLI Flags**:
+    - `--mode cdp|stealth|turbo|assisted` — Explicit mode selection
+    - `--setup-cdp` — Print Chrome launch command for CDP mode
+    - `--speed slow|normal|fast` — Humanization intensity (2x, 1x, 0.5x delays)
+    - `--prepare` — Generate prompts only (assisted mode phase 1)
+    - `--collect` — Collect manual exports (assisted mode phase 3)
+  - **CAPTCHA Detection & Fallback**: After 2 CAPTCHAs, auto-switch to assisted mode
+  - **Mode Statistics Tracking**: Success/failure rates per mode in `usage.json`
+
 - **New Shared Modules** (`templates/shared/`):
-  - `stitch-integration.md` — Core Stitch automation module (8 workflow phases)
+  - `stitch-integration.md` — Core Stitch automation module (8 workflow phases, v3.0.0 with multi-mode)
+  - `stitch-anti-detection.md` — **NEW**: Humanization functions, Bezier curves, Fitts's Law, stealth browser config
   - `stitch-prompts.md` — Prompt templates for different screen types (dashboard, auth, form, list, detail, settings, empty, error, loading)
   - `stitch-selectors.md` — Versioned DOM selectors for Stitch UI (v1.0.0 with fallbacks)
 
