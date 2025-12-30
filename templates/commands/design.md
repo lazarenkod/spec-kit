@@ -8,6 +8,12 @@ modes:
   design_system:
     trigger: "--design-system flag OR no spec file"
     purpose: "Generate complete design system from brand inputs"
+  concept_design:
+    trigger: "--concept flag AND concept.md exists"
+    purpose: "Generate app-wide design from complete concept"
+    output_dir: "specs/app-design/"
+    waves: true
+    journeys: true
 orchestration:
   agents:
     - ux-designer-agent       # User flows, wireframes, interactions
@@ -46,6 +52,34 @@ handoffs:
     auto: false
     condition:
       - "--promo flag passed"
+  # Concept Design Mode handoffs
+  - label: Generate App Preview
+    agent: speckit.preview
+    prompt: Generate interactive preview for entire application from app-design specs
+    send: true
+    condition:
+      - "MODE == concept_design"
+  - label: Continue Next Wave
+    agent: speckit.design
+    prompt: "Run /speckit.design --concept --wave {WAVE+1} to design next wave"
+    auto: false
+    condition:
+      - "MODE == concept_design"
+      - "WAVE < total_waves"
+  - label: Plan Wave 1 Implementation
+    agent: speckit.plan
+    prompt: Create technical plan for Wave 1 foundation features based on app-design specs
+    condition:
+      - "MODE == concept_design"
+      - "Wave 1 complete"
+  - label: Design All Waves
+    agent: speckit.design
+    prompt: "Run /speckit.design --concept --all to design all waves in one pass"
+    auto: false
+    condition:
+      - "MODE == concept_design"
+      - "WAVE == 1"
+      - "total_features <= 15"
 claude_code:
   model: opus
   reasoning_mode: extended
@@ -161,7 +195,22 @@ This command creates **visual and interaction specifications** for UI-heavy feat
 ## Mode Selection
 
 ```text
-IF --design-system flag passed OR spec file does not exist:
+IF --concept flag passed:
+  IF concept.md exists (specs/concept.md OR ./concept.md):
+    MODE = "concept_design"
+    LOG "🌐 Application-Wide Design Mode (from concept.md)"
+
+    # Parse wave argument
+    IF --wave N specified:
+      WAVE = N
+    ELIF --all specified:
+      WAVE = "all"
+    ELSE:
+      WAVE = 1  # Default to Wave 1 (Foundations)
+  ELSE:
+    ERROR "❌ No concept.md found. Run /speckit.concept first."
+    EXIT
+ELIF --design-system flag passed OR spec file does not exist:
   MODE = "design_system_generation"
   LOG "📐 Design System Generation Mode"
 ELSE:
@@ -592,6 +641,476 @@ IF MODE == "design_system_generation":
   │   2. Import to Figma: See design-tokens/README.md           │
   │   3. Start building: npm run dev                            │
   └─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Concept Design Mode
+
+When `--concept` flag is passed AND concept.md exists, generate comprehensive application-wide design covering ALL features, UX flows, and user journeys from the concept document.
+
+### Output Structure
+
+```text
+specs/app-design/
+├── index.md                    # Overview + traceability matrix + App-DQS
+├── design-system.md            # Global tokens (colors, typography, spacing)
+├── navigation.md               # App-wide nav patterns, sitemap, route map
+├── foundations/
+│   ├── auth-design.md          # UXF-AUTH-xxx scenarios
+│   ├── error-design.md         # UXF-ERR-xxx scenarios
+│   ├── layout-design.md        # UXF-LAYOUT-xxx scenarios
+│   ├── nav-design.md           # UXF-NAV-xxx scenarios
+│   ├── ftue-design.md          # UXF-FTUE-xxx scenarios
+│   ├── feedback-design.md      # UXF-FEED-xxx scenarios
+│   └── admin-design.md         # UXF-ADMIN-xxx scenarios
+├── waves/
+│   ├── wave-1/                 # Foundation features
+│   │   └── EPIC-001.F01-design.md
+│   ├── wave-2/                 # Experience features
+│   └── wave-3/                 # Business features
+├── journeys/
+│   ├── J000-golden-path.md     # Golden path flow
+│   └── J001-*.md               # Additional journeys
+├── motion/
+│   ├── motion-system.md        # Animation tokens
+│   └── transitions.md          # Page transitions
+└── components/
+    ├── inventory.md            # Master component list
+    └── shared/                 # Shared component specs
+```
+
+### Phase 0: Validation & Concept Parsing
+
+```text
+IF MODE == "concept_design":
+
+  1. LOCATE concept file:
+     - CHECK specs/concept.md
+     - FALLBACK ./concept.md
+     - ERROR if not found
+
+  2. PARSE concept.md:
+     EXTRACT:
+       - cqs_score: Concept Quality Score (warn if < 60)
+       - feature_hierarchy: EPIC-NNN.FNN.SNN tree
+       - user_journeys: J000, J001, ... with steps
+       - personas: JTBD, pain points, device preferences
+       - ux_foundations: AUTH, ERROR, LAYOUT, NAV, FTUE, FEEDBACK, ADMIN
+       - execution_order: Wave 1, Wave 2, Wave 3+
+       - technical_hints: Domain entities, API surface
+       - glossary: UI labels, form field names
+
+  3. QUALITY GATE:
+     IF cqs_score >= 80:
+       LOG "✅ Production-quality concept (CQS: {cqs_score})"
+       PROCEED with full generation
+     ELIF cqs_score >= 60:
+       LOG "⚠️ Concept has gaps (CQS: {cqs_score}). Proceeding with warnings."
+       PROCEED with warnings enabled
+     ELSE:
+       LOG "⚠️ Concept Quality Score below threshold (CQS: {cqs_score})"
+       PROMPT "Continue anyway? [y/N]"
+       IF user declines: EXIT
+```
+
+### Phase 1: Design System (Product Designer Agent)
+
+```text
+IF WAVE == 1 OR WAVE == "all":
+
+  1. READ constitution.md → design_system block
+     EXTRACT brand inputs (colors, typography, style keywords)
+
+  2. IF design-system.md already exists:
+       LOG "📐 Design system found. Validating..."
+       VALIDATE tokens against concept requirements
+     ELSE:
+       GENERATE design-system.md using Design System Generation Mode workflow
+       (Reuse existing agents: Product Designer)
+
+  3. OUTPUT: specs/app-design/design-system.md
+```
+
+### Phase 2: Foundation Designs (UX Designer Agent)
+
+```text
+IF WAVE == 1 OR WAVE == "all":
+
+  FOR each foundation IN [AUTH, ERROR, LAYOUT, NAV, FTUE, FEEDBACK, ADMIN]:
+
+    1. EXTRACT foundation scenarios from concept.md:
+       - UXF-{foundation}-001, UXF-{foundation}-002, ...
+       - Map to user journey touchpoints
+
+    2. GENERATE foundation-design.md:
+
+       INCLUDE:
+         - Scenario inventory table
+         - Screen wireframes (ASCII or Mermaid)
+         - State diagrams (loading, success, error, empty)
+         - Component specs with accessibility requirements
+         - Responsive breakpoints
+
+       TRACEABILITY header:
+         | Source | Reference |
+         |--------|-----------|
+         | UX Foundation | UXF-{foundation} |
+         | Journeys | J000 (step N), J002 (step M) |
+
+    3. OUTPUT: specs/app-design/foundations/{foundation}-design.md
+```
+
+### Phase 3: Navigation Architecture (UX Designer Agent)
+
+```text
+IF WAVE == 1 OR WAVE == "all":
+
+  1. ANALYZE feature_hierarchy:
+     - Map EPICs to top-level navigation
+     - Map Features to sub-navigation
+     - Map Stories to individual routes/screens
+
+  2. GENERATE navigation.md:
+
+     INCLUDE:
+       ## Sitemap
+       ```mermaid
+       graph TD
+         A[Landing] --> B[Dashboard]
+         B --> C[Feature 1]
+         ...
+       ```
+
+       ## Route Map
+       | Route | Feature | Guard | Layout |
+       |-------|---------|-------|--------|
+       | /dashboard | EPIC-001.F01 | auth | main |
+       | /settings | EPIC-002.F01 | auth | settings |
+
+       ## Navigation Patterns
+       - Primary: Tab bar / Sidebar / Header
+       - Secondary: Breadcrumbs, Back buttons
+       - Mobile: Bottom nav, Hamburger menu
+
+       ## Journey → Route Mapping
+       | Journey | Steps | Routes |
+       |---------|-------|--------|
+       | J000 Golden Path | 1-5 | /, /signup, /onboarding, /dashboard |
+
+  3. OUTPUT: specs/app-design/navigation.md
+```
+
+### Phase 4: Journey Flows (UX Designer Agent)
+
+```text
+IF WAVE == 1 OR WAVE == "all":
+
+  FOR each journey IN user_journeys:
+
+    1. PARSE journey steps from concept.md
+
+    2. GENERATE journey-design.md:
+
+       INCLUDE:
+         ## Journey: {journey_name}
+         **ID**: {journey_id}
+         **Persona**: {primary_persona}
+         **Trigger**: {entry_point}
+         **Outcome**: {success_state}
+
+         ## Flow Diagram
+         ```mermaid
+         sequenceDiagram
+           participant User
+           participant System
+           User->>System: Step 1 action
+           System-->>User: Response
+           ...
+         ```
+
+         ## Step-by-Step Design
+
+         ### Step 1: {step_name}
+         - **Screen**: {screen_reference}
+         - **User Action**: {action}
+         - **System Response**: {response}
+         - **Edge Cases**: {error_states}
+         - **Component**: {component_list}
+
+         ## Exit Points
+         | Exit Type | Condition | Handling |
+         |-----------|-----------|----------|
+         | Success | Task completed | Celebration + redirect |
+         | Abort | User cancels | Confirmation + cleanup |
+         | Error | System failure | Retry + support link |
+
+         ## Traceability
+         | Source | Reference |
+         |--------|-----------|
+         | Concept Journey | {journey_id} |
+         | Features | EPIC-001.F01, EPIC-002.F02 |
+         | Foundations | AUTH, NAV |
+
+    3. OUTPUT: specs/app-design/journeys/{journey_id}-{journey_name_slug}.md
+```
+
+### Phase 5: Wave-by-Wave Feature Design
+
+```text
+# Wave selection determines which features to design
+
+IF WAVE == 1:
+  FEATURES = features from "Wave 1: Foundation" in execution_order
+ELIF WAVE == 2:
+  FEATURES = features from "Wave 2: Experience" in execution_order
+ELIF WAVE == 3:
+  FEATURES = features from "Wave 3+: Business" in execution_order
+ELIF WAVE == "all":
+  FEATURES = all features from execution_order
+
+FOR each feature IN FEATURES:
+
+  1. EXTRACT from concept.md:
+     - feature_id: EPIC-NNN.FNN
+     - stories: S01, S02, ...
+     - acceptance_criteria
+     - related_journeys
+
+  2. MAP stories to screens:
+
+     FOR each story:
+       IDENTIFY:
+         - Primary screen(s)
+         - Modal/overlay needs
+         - State variations (empty, loading, error, success)
+
+  3. GENERATE feature-design.md:
+
+     INCLUDE:
+       ## Feature: {feature_name}
+       **ID**: {feature_id}
+       **Wave**: {wave_number}
+       **Priority**: {priority}
+
+       ## Screen Inventory
+       | Screen | Story | States | Route |
+       |--------|-------|--------|-------|
+       | Dashboard | S01 | default, empty, loading | /dashboard |
+
+       ## Wireframes
+
+       ### Screen: {screen_name}
+       ```
+       ┌─────────────────────────────────────┐
+       │ Header                              │
+       ├─────────────────────────────────────┤
+       │                                     │
+       │  [Component A]    [Component B]     │
+       │                                     │
+       │  ┌─────────────────────────────┐    │
+       │  │ Main Content Area           │    │
+       │  │                             │    │
+       │  └─────────────────────────────┘    │
+       │                                     │
+       ├─────────────────────────────────────┤
+       │ Footer / Action Bar                 │
+       └─────────────────────────────────────┘
+       ```
+
+       ## Component Specifications
+       [Use Feature Design Mode component spec format]
+
+       ## Traceability
+       | Source | Reference |
+       |--------|-----------|
+       | Concept Feature | {feature_id} |
+       | Wave | {wave_number} |
+       | Journeys | J000 (step 3), J002 (step 1) |
+       | Stories | S01, S02, S03 |
+
+  4. OUTPUT: specs/app-design/waves/wave-{N}/{feature_id}-design.md
+```
+
+### Phase 6: Motion System (Motion Designer Agent)
+
+```text
+IF WAVE == 1 OR WAVE == "all":
+
+  1. ANALYZE journeys for transition needs:
+     - Page-to-page transitions
+     - Modal/overlay animations
+     - Loading state animations
+
+  2. GENERATE motion-system.md:
+
+     INCLUDE:
+       ## Animation Tokens
+       | Token | Value | Usage |
+       |-------|-------|-------|
+       | duration-fast | 150ms | Micro-interactions |
+       | duration-normal | 300ms | Page transitions |
+       | easing-standard | cubic-bezier(0.4, 0, 0.2, 1) | Default |
+
+       ## Page Transitions
+       | From | To | Animation |
+       |------|-----|-----------|
+       | / | /dashboard | Slide left + fade |
+       | any | modal | Scale up + backdrop |
+
+       ## Micro-Interactions
+       [Reference templates/shared/animation-presets/micro-interactions.md]
+
+  3. OUTPUT: specs/app-design/motion/motion-system.md
+
+  4. GENERATE transitions.md:
+
+     INCLUDE:
+       ## Journey Transitions
+       FOR each journey:
+         Document step-to-step transitions
+         Map to page transition patterns
+
+  5. OUTPUT: specs/app-design/motion/transitions.md
+```
+
+### Phase 7: Component Inventory
+
+```text
+IF WAVE == 1 OR WAVE == "all":
+
+  1. AGGREGATE components from all design files:
+     - Foundations → base components
+     - Journeys → flow components
+     - Features → feature-specific components
+
+  2. DEDUPLICATE and categorize:
+     - Primitives (Button, Input, Text, Icon)
+     - Layout (Card, Container, Grid, Stack)
+     - Navigation (NavBar, Tabs, Breadcrumb)
+     - Feedback (Toast, Alert, Modal, Progress)
+     - Data Display (Table, List, Chart)
+     - Forms (Form, FormField, Select, Checkbox)
+     - Feature-specific (unique to this app)
+
+  3. GENERATE inventory.md:
+
+     INCLUDE:
+       ## Component Inventory
+       | Component | Category | Usage Count | Sources |
+       |-----------|----------|-------------|---------|
+       | Button | Primitive | 47 | All foundations, all features |
+       | DataTable | Data Display | 12 | EPIC-001.F02, EPIC-003.F01 |
+
+       ## Shared Component Needs
+       Components used 3+ times → candidate for shared spec
+
+       ## Implementation Priority
+       1. Primitives (Week 1)
+       2. Layout + Navigation (Week 2)
+       3. Forms + Feedback (Week 3)
+       4. Feature-specific (Per wave)
+
+  4. OUTPUT: specs/app-design/components/inventory.md
+```
+
+### Phase 8: Quality Validation & Index Generation
+
+```text
+ALWAYS (after any wave completion):
+
+  1. CALCULATE App-DQS (Design Quality Score):
+
+     AGGREGATE scores from:
+       - Design system completeness
+       - Foundation coverage
+       - Journey flow completeness
+       - Feature wireframe quality
+       - Traceability coverage
+
+     FORMULA:
+       App-DQS = (
+         design_system_score * 0.15 +
+         foundations_score * 0.20 +
+         journeys_score * 0.20 +
+         features_score * 0.30 +
+         traceability_score * 0.15
+       )
+
+  2. VALIDATE traceability:
+
+     CHECK:
+       - Every concept feature has design file
+       - Every journey step has screen reference
+       - Every UXF scenario has design coverage
+
+     REPORT gaps if any
+
+  3. GENERATE/UPDATE index.md:
+
+     INCLUDE:
+       ## Application Design Overview
+
+       **Concept**: {concept_name}
+       **CQS**: {cqs_score}
+       **App-DQS**: {app_dqs_score}
+       **Generated**: {timestamp}
+       **Wave**: {current_wave} of {total_waves}
+
+       ## Design Artifacts
+
+       | Artifact | Status | DQS | Link |
+       |----------|--------|-----|------|
+       | Design System | ✅ Complete | 92 | [design-system.md](design-system.md) |
+       | Navigation | ✅ Complete | 88 | [navigation.md](navigation.md) |
+       | Foundations | ✅ Complete | 85 | [foundations/](foundations/) |
+       | Wave 1 Features | ✅ Complete | 90 | [waves/wave-1/](waves/wave-1/) |
+       | Wave 2 Features | ⏳ Pending | - | - |
+
+       ## Traceability Matrix
+
+       | Concept ID | Design Artifact | Coverage |
+       |------------|-----------------|----------|
+       | EPIC-001.F01 | waves/wave-1/EPIC-001.F01-design.md | 100% |
+       | J000 | journeys/J000-golden-path.md | 100% |
+       | UXF-AUTH | foundations/auth-design.md | 100% |
+
+       ## Next Steps
+       - [ ] Run /speckit.preview to generate interactive preview
+       - [ ] Review with stakeholders
+       - [ ] Run /speckit.design --concept --wave 2 for next wave
+
+  4. OUTPUT: specs/app-design/index.md
+```
+
+### Wave Completion Output
+
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│  🌐 CONCEPT DESIGN COMPLETE — WAVE {N}                              │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Concept: {concept_name}                                            │
+│  CQS: {cqs_score} → App-DQS: {app_dqs_score}                        │
+│                                                                     │
+│  ✅ Design System: Complete                                         │
+│  ✅ Foundations: {N}/{total} scenarios designed                     │
+│  ✅ Navigation: Sitemap + route map generated                       │
+│  ✅ Journeys: {N}/{total} flows designed                            │
+│  ✅ Wave {N} Features: {N}/{total} features designed                │
+│  ✅ Motion System: Animation tokens + transitions                   │
+│  ✅ Component Inventory: {N} components catalogued                  │
+│                                                                     │
+│  📁 Output: specs/app-design/                                       │
+│  📋 Index: specs/app-design/index.md                                │
+│                                                                     │
+├─────────────────────────────────────────────────────────────────────┤
+│  Next Steps:                                                        │
+│   1. Review: Open index.md for artifact overview                    │
+│   2. Preview: Run /speckit.preview for interactive preview          │
+│   3. Continue: Run /speckit.design --concept --wave {N+1}           │
+│   4. Plan: Run /speckit.plan to create technical implementation     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---

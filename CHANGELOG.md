@@ -9,6 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.0.49] - 2025-12-30
 
+### Added
+
+- **`/speckit.design --concept` Mode** — Application-Wide Design from Concept
+  - **New Mode**: Generate comprehensive app-wide design from `concept.md` covering ALL features and UX flows
+  - **Wave-by-Wave Generation Strategy**:
+    - `--concept` → Wave 1 (Foundations)
+    - `--concept --wave 2` → Wave 2 (Experience)
+    - `--concept --wave 3` → Wave 3+ (Business)
+    - `--concept --all` → All waves in one pass
+  - **8-Phase Workflow**:
+    1. Validation & Concept Parsing (CQS quality gate)
+    2. Design System Generation (reuses existing agents)
+    3. Foundation Designs (AUTH, ERROR, LAYOUT, NAV, FTUE, FEEDBACK, ADMIN)
+    4. Navigation Architecture (sitemap, route map, journey mapping)
+    5. Journey Flows (step-by-step with edge cases)
+    6. Wave-by-Wave Feature Design (story → screen mapping)
+    7. Motion System (animation tokens, page transitions)
+    8. Quality Validation & Index Generation (App-DQS scoring)
+  - **Output Structure**: `specs/app-design/` with subdirectories for foundations, waves, journeys, motion, components
+  - **Traceability**: Every design artifact linked to concept IDs (EPIC-NNN.FNN, J000, UXF-xxx)
+  - **Quality Gates**: CQS >= 80 (production), 60-79 (warnings), <60 (prompt continue)
+  - **App-DQS Scoring**: Aggregate quality score from design_system + foundations + journeys + features + traceability
+
+- **New Templates**:
+  - `templates/app-design-template.md` — Index/overview template for app-design directory
+  - `templates/foundation-design-template.md` — UXF scenario design template with state variations
+  - `templates/journey-design-template.md` — User journey flow template with transitions
+
+- **New Shared Modules** (`templates/shared/concept-design-sections/`):
+  - `feature-to-screens.md` — Algorithm for mapping stories to screen inventory
+  - `persona-to-patterns.md` — JTBD-to-interaction-patterns mapping
+  - `wave-design-strategy.md` — Quality bars and focus areas per wave
+
+- **New Handoffs** (for concept design mode):
+  - "Generate App Preview" → speckit.preview for full application
+  - "Continue Next Wave" → speckit.design --concept --wave N+1
+  - "Plan Wave 1 Implementation" → speckit.plan for foundation features
+  - "Design All Waves" → speckit.design --concept --all (for small concepts)
+
 ### Changed
 
 - **Premium Smoke Test Landing Page** — Complete redesign of `/speckit.discover` landing page template
