@@ -834,12 +834,85 @@ Users can always choose to:
 
 ---
 
+## Pre-Review Quality Pass (NEW)
+
+**Before formal self-review, apply quality filters to catch common issues.**
+
+**Quality Imports**:
+```text
+IMPORT: templates/shared/quality/anti-slop.md
+IMPORT: templates/shared/quality/reader-testing.md
+```
+
+### Step 1: Anti-Slop Scan
+
+Scan all prose content against forbidden phrases:
+
+```text
+ANTI_SLOP_SCAN:
+  SCAN spec.md FOR FORBIDDEN_OPENINGS + FORBIDDEN_CONCLUSIONS + HEDGE_PHRASES
+
+  IF matches found:
+    FOR EACH match:
+      IF auto_fixable:
+        REWRITE with specific, concrete language
+      ELSE:
+        FLAG for manual review
+
+  BUZZWORD_CHECK:
+    FOR EACH paragraph:
+      IF buzzword_count > 2:
+        REWRITE with specific technical terms
+
+  SPECIFICITY_CHECK:
+    FLAG uses of generic terms: ["users", "system", "process", "data"]
+    SUGGEST replacements with concrete nouns
+```
+
+### Step 2: Reader Testing
+
+Run fresh reader simulation:
+
+```text
+READER_TEST:
+  PERSPECTIVE: "New team member reading this spec for the first time"
+
+  COMPREHENSION_CHECK:
+    - Can they understand WHAT is being built in <30 seconds?
+    - Is the core problem stated with specific examples?
+    - Are all acronyms defined on first use?
+
+  ACTIONABILITY_CHECK:
+    - Would a developer know where to start coding?
+    - Would QA know what to test?
+    - Are edge cases explicit?
+
+  AMBIGUITY_SCAN:
+    - List sentences with vague pronouns ("it", "this", "that")
+    - List comparisons without baselines ("faster", "better", "easier")
+    - List conditionals without criteria ("if needed", "when appropriate")
+
+  IF issues found:
+    FIX in-place before formal self-review
+```
+
+### Step 3: Proceed to Self-Review
+
+Only proceed when:
+- Zero forbidden phrases remain
+- Buzzword density < 2 per paragraph
+- No flagged ambiguities
+
+---
+
 ## Self-Review Phase (MANDATORY)
 
 **Before declaring the specification complete, you MUST perform self-review.**
 
 Read `templates/shared/self-review/framework.md` for the complete self-review algorithm.
 Read `templates/shared/validation/checkpoints.md` for checkpoint definitions.
+
+**Note**: Universal quality checks (SR-SLOP-*, SR-READ-*) are now included in the self-review framework.
 
 ```text
 SELF_REVIEW_INPUT:

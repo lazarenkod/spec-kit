@@ -2247,6 +2247,77 @@ After completion:
 
 ---
 
+## Design Writing Quality Rules
+
+**Quality Imports**:
+```text
+IMPORT: templates/shared/quality/anti-slop.md
+```
+
+### Design-Specific Forbidden Phrases
+
+Beyond the general anti-slop rules, avoid these design clichés:
+
+```text
+FORBIDDEN_DESIGN_PHRASES = [
+  # Generic descriptions
+  "modern look and feel",
+  "clean aesthetic",
+  "user-friendly interface",
+  "intuitive design",
+  "sleek and professional",
+  "visually appealing",
+  "seamless experience",
+  "elegant solution",
+
+  # Vague color descriptions
+  "nice color palette",
+  "good contrast",
+  "pleasant colors",
+
+  # Non-specific UX claims
+  "improved usability",
+  "better user experience",
+  "enhanced accessibility"
+]
+```
+
+### Design Writing Rules
+
+```text
+DESIGN_QUALITY_RULES = [
+  # Specificity
+  "Name actual colors: '#3B82F6 (Blue 500)' not 'a nice blue'",
+  "Specify exact values: '16px' not 'appropriate spacing'",
+  "Reference tokens: 'color.primary.500' not 'the primary color'",
+
+  # Boldness
+  "Commit to an aesthetic direction: 'Brutalist typography' not 'modern fonts'",
+  "Make opinionated choices: 'Sharp 2px corners' not 'subtle rounding'",
+  "Take a stance: 'Bold 700 weight for CTAs' not 'prominent buttons'",
+
+  # Rationale
+  "Explain WHY, not just WHAT: 'Large touch targets (48px) for mobile users with motor impairments'",
+  "Connect to user needs: 'High contrast (7:1) for outdoor visibility'",
+  "Reference principles: 'Following Gestalt proximity for form grouping'"
+]
+```
+
+### Pre-Generation Check
+
+Before generating design artifacts, verify:
+
+```text
+DESIGN_QUALITY_GATE:
+  1. All colors use HEX or design tokens (no "blue", "red" without values)
+  2. All spacing uses explicit values (no "some padding", "good margin")
+  3. All typography specifies weight, size, line-height (no "larger text")
+  4. All rationale explains user benefit (no "looks better")
+  5. All accessibility claims include WCAG level and technique
+```
+
+---
+
 ## Self-Review Phase (MANDATORY)
 
 **Before declaring design.md complete, you MUST perform self-review.**

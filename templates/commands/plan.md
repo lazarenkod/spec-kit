@@ -217,7 +217,70 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Phases
 
+### Quality Imports for Architecture Decisions
+
+```text
+IMPORT: templates/shared/quality/brainstorm-curate.md
+IMPORT: templates/shared/quality/anti-slop.md
+
+FOR architecture_decision IN [database, caching, auth, deployment, framework]:
+  IF decision is non-trivial:
+    APPLY brainstorm_curate_protocol
+    DOCUMENT chosen approach with reasoning in research.md
+```
+
 ### Phase 0: Outline & Research
+
+**Architecture Decision Protocol** (NEW):
+
+For each technology decision in Technical Context:
+
+1. **Identify if Brainstorm-Curate applies**:
+   ```text
+   APPLY_BRAINSTORM_CURATE = [
+     "database selection",
+     "caching strategy",
+     "authentication approach",
+     "deployment architecture",
+     "API design pattern",
+     "state management",
+     "message queue selection",
+     "framework/library selection",
+     "build vs buy decisions"
+   ]
+
+   SKIP_WHEN = [
+     "Decision trivial (single obvious answer)",
+     "User already specified the technology",
+     "Following established project patterns",
+     "Industry standard with no real alternatives"
+   ]
+   ```
+
+2. **For non-trivial decisions**:
+   - Generate 3-5 genuinely different options
+   - Include: Conventional, Minimal, Unconventional
+   - Score against: Team expertise, Maintenance cost, Scalability, Time to implement
+   - Document decision and alternatives in research.md
+
+3. **Decision Documentation Format**:
+   ```markdown
+   ## [Decision Area]: [Choice]
+
+   **Recommendation**: [Chosen technology/approach]
+
+   **Why this approach**:
+   1. [Reason tied to project requirements]
+   2. [Reason tied to team capabilities]
+   3. [Reason tied to constraints]
+
+   **Alternatives considered**:
+   - Option A: [Why not — specific disqualifier]
+   - Option B: [Why not — specific disqualifier]
+
+   **Reversibility**: [High/Medium/Low]
+   **Lock-in risk**: [What's committed vs changeable]
+   ```
 
 1. **Extract unknowns from Technical Context** above:
    - For each NEEDS CLARIFICATION → research task

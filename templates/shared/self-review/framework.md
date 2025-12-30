@@ -181,6 +181,215 @@ See `templates/shared/self-review/criteria-tasks.md`
 | SR-CONC-09 | No Placeholders | No TODO, TBD, FIXME markers | HIGH |
 | SR-CONC-10 | Traceability Skeleton | Skeleton has spec/plan/tasks placeholders | LOW |
 
+---
+
+## Universal Quality Checks
+
+These checks apply to ALL artifacts. Import quality modules from `templates/shared/quality/`.
+
+### Anti-Slop Checks (SR-SLOP-01 to SR-SLOP-05)
+
+Reference: `templates/shared/quality/anti-slop.md`
+
+| ID | Name | Description | Severity | Auto-Fix |
+|----|------|-------------|----------|----------|
+| SR-SLOP-01 | Forbidden Phrases | No cliché AI phrases (e.g., "In today's fast-paced world...") | MEDIUM | ✅ |
+| SR-SLOP-02 | Hedge Phrase Density | Less than 2 hedge phrases per section | LOW | ✅ |
+| SR-SLOP-03 | Specificity Check | Concrete nouns instead of generic ("users" → persona name) | HIGH | ❌ |
+| SR-SLOP-04 | Buzzword Density | Maximum 2 buzzwords per paragraph | MEDIUM | ❌ |
+| SR-SLOP-05 | Recommendation Present | Decision sections include clear recommendation | HIGH | ❌ |
+
+```text
+ANTI_SLOP_CHECKS = [
+  {
+    id: "SR-SLOP-01",
+    name: "Forbidden Phrases",
+    severity: MEDIUM,
+    auto_fixable: true,
+    check_fn: FUNCTION(artifact):
+      LOAD FORBIDDEN_OPENINGS, FORBIDDEN_CONCLUSIONS from anti-slop.md
+      matches = SCAN_FOR(artifact.content, FORBIDDEN_OPENINGS + FORBIDDEN_CONCLUSIONS)
+      IF matches.length > 0:
+        RETURN {status: FAIL, details: "Found: " + matches.join(", ")}
+      RETURN {status: PASS}
+    fix_fn: FUNCTION(artifact, issue):
+      FOR EACH phrase IN issue.matches:
+        artifact.content = REMOVE_OR_REWRITE(artifact.content, phrase)
+      RETURN artifact
+  },
+
+  {
+    id: "SR-SLOP-02",
+    name: "Hedge Phrase Density",
+    severity: LOW,
+    auto_fixable: true,
+    check_fn: FUNCTION(artifact):
+      LOAD HEDGE_PHRASES from anti-slop.md
+      sections = SPLIT_BY_SECTIONS(artifact.content)
+      FOR EACH section IN sections:
+        hedge_count = COUNT_MATCHES(section, HEDGE_PHRASES)
+        IF hedge_count >= 2:
+          RETURN {status: FAIL, details: "Section '{section.title}' has {hedge_count} hedge phrases"}
+      RETURN {status: PASS}
+    fix_fn: FUNCTION(artifact, issue):
+      # Replace hedge phrases with direct statements or remove
+      RETURN REWRITE_HEDGES(artifact)
+  },
+
+  {
+    id: "SR-SLOP-03",
+    name: "Specificity Check",
+    severity: HIGH,
+    auto_fixable: false,
+    check_fn: FUNCTION(artifact):
+      GENERIC_TERMS = ["users", "system", "process", "data", "stakeholders", "platform"]
+      matches = FIND_GENERIC_USAGE(artifact.content, GENERIC_TERMS)
+      IF matches.length > 3:  # Threshold: max 3 generic terms allowed
+        RETURN {status: FAIL, details: "Replace generic terms: " + matches.join(", ")}
+      RETURN {status: PASS}
+  },
+
+  {
+    id: "SR-SLOP-04",
+    name: "Buzzword Density",
+    severity: MEDIUM,
+    auto_fixable: false,
+    check_fn: FUNCTION(artifact):
+      LOAD BUZZWORDS from anti-slop.md
+      paragraphs = SPLIT_BY_PARAGRAPHS(artifact.content)
+      FOR EACH para IN paragraphs:
+        buzz_count = COUNT_MATCHES(para, BUZZWORDS)
+        IF buzz_count > 2:
+          RETURN {status: FAIL, details: "Paragraph has {buzz_count} buzzwords (max 2)"}
+      RETURN {status: PASS}
+  },
+
+  {
+    id: "SR-SLOP-05",
+    name: "Recommendation Present",
+    severity: HIGH,
+    auto_fixable: false,
+    check_fn: FUNCTION(artifact):
+      decision_sections = FIND_SECTIONS(artifact, ["Decision", "Approach", "Selection", "Choice"])
+      FOR EACH section IN decision_sections:
+        IF NOT CONTAINS_RECOMMENDATION(section):
+          RETURN {status: FAIL, details: "Section '{section.title}' lists options without recommendation"}
+      RETURN {status: PASS}
+  }
+]
+```
+
+### Reader Testing Checks (SR-READ-01 to SR-READ-05)
+
+Reference: `templates/shared/quality/reader-testing.md`
+
+| ID | Name | Description | Severity | Auto-Fix |
+|----|------|-------------|----------|----------|
+| SR-READ-01 | Fresh Reader Comprehension | New team member can understand in 30 seconds | HIGH | ❌ |
+| SR-READ-02 | Role Actionability | Clear next steps for PM, Dev, Designer, QA | MEDIUM | ❌ |
+| SR-READ-03 | Ambiguity Detection | No sentence interpretable 2+ ways | HIGH | ❌ |
+| SR-READ-04 | Acronym Definitions | All acronyms defined on first use | LOW | ✅ |
+| SR-READ-05 | Assumptions Stated | Implicit assumptions made explicit | MEDIUM | ❌ |
+
+```text
+READER_TEST_CHECKS = [
+  {
+    id: "SR-READ-01",
+    name: "Fresh Reader Comprehension",
+    severity: HIGH,
+    auto_fixable: false,
+    check_fn: FUNCTION(artifact):
+      # Run comprehension check from reader-testing.md
+      LOAD COMPREHENSION_QUESTIONS from reader-testing.md
+      score = EVALUATE_COMPREHENSION(artifact, COMPREHENSION_QUESTIONS)
+      IF score < 0.80:  # 80% threshold
+        RETURN {status: FAIL, details: "Comprehension score {score*100}% (need 80%)"}
+      RETURN {status: PASS, details: "Comprehension score {score*100}%"}
+  },
+
+  {
+    id: "SR-READ-02",
+    name: "Role Actionability",
+    severity: MEDIUM,
+    auto_fixable: false,
+    check_fn: FUNCTION(artifact):
+      LOAD ROLE_CONFIDENCE_CHECKS from reader-testing.md
+      relevant_roles = DETERMINE_RELEVANT_ROLES(artifact.type)
+      FOR EACH role IN relevant_roles:
+        IF NOT ROLE_HAS_CLEAR_NEXT_STEPS(artifact, role):
+          RETURN {status: FAIL, details: "{role} cannot determine next steps from this artifact"}
+      RETURN {status: PASS}
+  },
+
+  {
+    id: "SR-READ-03",
+    name: "Ambiguity Detection",
+    severity: HIGH,
+    auto_fixable: false,
+    check_fn: FUNCTION(artifact):
+      LOAD AMBIGUITY_TRIGGERS from reader-testing.md
+      ambiguous = []
+      FOR EACH sentence IN artifact.sentences:
+        IF CONTAINS_AMBIGUITY(sentence, AMBIGUITY_TRIGGERS):
+          ambiguous.push({sentence, trigger: IDENTIFY_TRIGGER(sentence)})
+      IF ambiguous.length > 0:
+        RETURN {status: FAIL, details: "Found {ambiguous.length} ambiguous statements", issues: ambiguous}
+      RETURN {status: PASS}
+  },
+
+  {
+    id: "SR-READ-04",
+    name: "Acronym Definitions",
+    severity: LOW,
+    auto_fixable: true,
+    check_fn: FUNCTION(artifact):
+      acronyms = FIND_ALL_ACRONYMS(artifact.content)
+      undefined = []
+      FOR EACH acronym IN acronyms:
+        IF NOT DEFINED_BEFORE_USE(artifact, acronym):
+          undefined.push(acronym)
+      IF undefined.length > 0:
+        RETURN {status: FAIL, details: "Undefined acronyms: " + undefined.join(", ")}
+      RETURN {status: PASS}
+    fix_fn: FUNCTION(artifact, issue):
+      FOR EACH acronym IN issue.undefined:
+        definition = LOOKUP_DEFINITION(acronym)
+        artifact = INSERT_DEFINITION(artifact, acronym, definition)
+      RETURN artifact
+  },
+
+  {
+    id: "SR-READ-05",
+    name: "Assumptions Stated",
+    severity: MEDIUM,
+    auto_fixable: false,
+    check_fn: FUNCTION(artifact):
+      implicit_assumptions = DETECT_IMPLICIT_ASSUMPTIONS(artifact)
+      IF implicit_assumptions.length > 2:  # Allow 1-2 minor assumptions
+        RETURN {status: FAIL, details: "Implicit assumptions not stated: " + implicit_assumptions.join(", ")}
+      # Check if Assumptions section exists when needed
+      IF implicit_assumptions.length > 0 AND NOT HAS_SECTION(artifact, "Assumptions"):
+        RETURN {status: FAIL, details: "Add Assumptions section to document: " + implicit_assumptions.join(", ")}
+      RETURN {status: PASS}
+  }
+]
+```
+
+### Applying Universal Checks
+
+```text
+UNIVERSAL_CHECKS = ANTI_SLOP_CHECKS + READER_TEST_CHECKS
+
+# These checks run AFTER command-specific checks
+# They apply to ALL artifact types
+
+RUN_SELF_REVIEW(artifact, command_criteria):
+  command_results = RUN_CHECKS(artifact, command_criteria)
+  universal_results = RUN_CHECKS(artifact, UNIVERSAL_CHECKS)
+  all_results = command_results + universal_results
+  RETURN CALCULATE_VERDICT(all_results)
+```
+
 ## Adaptive Criteria by Complexity
 
 Based on `templates/shared/complexity-scoring.md` tier:

@@ -7,6 +7,37 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.50] - 2025-12-30
+
+### Added
+
+- **Artifact Quality System** — Anti-Slop, Reader Testing, and Brainstorm-Curate protocols
+  - **New Quality Modules** (`templates/shared/quality/`):
+    - `anti-slop.md` — Explicit rules against generic AI content (forbidden phrases, hedge phrase limits, buzzword density, specificity checks)
+    - `reader-testing.md` — Fresh reader perspective simulation for catching blind spots, implicit assumptions, and ambiguities
+    - `brainstorm-curate.md` — Two-phase decision protocol: generate 3-5 options before committing, with weighted evaluation matrix
+
+  - **Self-Review Framework Enhancement**:
+    - New Universal Quality Checks: SR-SLOP-01 to SR-SLOP-05 (anti-slop), SR-READ-01 to SR-READ-05 (reader testing)
+    - Integrated into all artifact-generating commands
+
+  - **`/speckit.concept` Enhancements**:
+    - **Phase 0b-2: Multi-Perspective Problem Analysis** — Validates problems from End User, Business, Technical, and Competitive perspectives
+    - **Phase 0c Enhanced**: Solution Ideation now uses Brainstorm-Curate protocol with weighted scoring
+    - **Step 4b: Clarification Gate** — Proactive clarifying questions when input is vague (specific pass/fail examples for target user, core problem, differentiation, measurable success)
+
+  - **`/speckit.specify` Enhancements**:
+    - New "Pre-Review Quality Pass" section with Anti-Slop Scan and Reader Testing before formal Self-Review
+
+  - **`/speckit.plan` Enhancements**:
+    - "Quality Imports for Architecture Decisions" section with Brainstorm-Curate for database, caching, auth, deployment, and framework decisions
+    - Architecture Decision Protocol with skip conditions and documentation format
+
+  - **`/speckit.design` Enhancements**:
+    - "Design Writing Quality Rules" with design-specific anti-slop rules
+    - Forbidden design phrases (e.g., "modern look and feel", "clean aesthetic") with concrete replacement requirements
+    - Bold > Safe, Specific > Generic, Why > What rules for design rationale
+
 ## [0.0.49] - 2025-12-30
 
 ### Added

@@ -247,11 +247,132 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Reference template**: `templates/shared/concept-sections/market-framework.md`
 
-   ### Phase 0c: Solution Ideation
+   ### Phase 0b-2: Multi-Perspective Problem Analysis (NEW)
+
+   **Goal**: Validate problem from multiple stakeholder angles to prevent blind spots.
+
+   **Quality Import**:
+   ```text
+   IMPORT: templates/shared/quality/brainstorm-curate.md
+   APPLY brainstorm-curate to solution approaches in Phase 0c
+   ```
+
+   **Perspectives to explore** (for each, document findings):
+
+   1. **End User Perspective**:
+      - What's their emotional state when facing this problem?
+      - What workarounds have they tried? (list specific behaviors)
+      - What would "perfect" look like to them? (ideal outcome)
+      - Search: "[user role] workflow frustrations 2025"
+      - Search: "[problem] user complaints reddit"
+
+   2. **Business Perspective**:
+      - What's the revenue/cost impact of the problem?
+      - Who pays for solutions today? (budget holder ≠ user)
+      - What's the buying process? (self-serve vs sales-led)
+      - Search: "[domain] software ROI case study"
+      - Search: "[problem] business impact statistics"
+
+   3. **Technical Perspective**:
+      - Why hasn't this been solved before? (historical blockers)
+      - What technical barriers exist? (integration challenges)
+      - What recent tech enables new solutions? (AI, APIs, platforms)
+      - Search: "[problem domain] API integrations 2025"
+      - Search: "[technology] breakthrough [domain]"
+
+   4. **Competitive Perspective**:
+      - Who else is working on this? (startups, incumbents)
+      - What's their approach? (positioning, features)
+      - What gaps remain? (underserved segments, missing features)
+      - Search: "[competitor] roadmap announcements"
+      - Search: "[domain] startup funding 2025"
+
+   **Output**:
+   ```markdown
+   ## Problem Validation Matrix
+
+   | Perspective | Key Finding | Confidence | Source |
+   |-------------|-------------|:----------:|--------|
+   | End User | [insight] | High/Med/Low | [source] |
+   | Business | [insight] | High/Med/Low | [source] |
+   | Technical | [insight] | High/Med/Low | [source] |
+   | Competitive | [insight] | High/Med/Low | [source] |
+
+   ### Validated Problem Statement
+   [Refined problem statement incorporating all perspectives]
+
+   ### Blind Spots Identified
+   - [area needing more research]
+   - [assumption to validate with users]
+   ```
+
+   **Minimum requirement**: At least 3 of 4 perspectives explored with High/Med confidence.
+
+   ### Phase 0c: Solution Ideation (Enhanced)
 
    **Goal**: Generate feature ideas based on discovered problems and market gaps.
 
-   **Structured brainstorming**:
+   **Quality Import**:
+   ```text
+   IMPORT: templates/shared/quality/brainstorm-curate.md
+   IMPORT: templates/shared/quality/anti-slop.md
+
+   APPLY brainstorm-curate to each major feature area
+   APPLY anti-slop rules to all prose content
+   ```
+
+   **Structured brainstorming** (using Brainstorm-Curate Protocol):
+
+   FOR EACH major problem/gap identified in Phase 0b-2:
+
+   1. **BRAINSTORM Phase** (no evaluation yet):
+      Generate 3-5 genuinely different solution approaches:
+
+      - **Option 1 (Conventional)**: What would competitors/industry do?
+      - **Option 2 (Minimal)**: Simplest possible solution (80/20)
+      - **Option 3 (Unconventional)**: What if we did the opposite?
+      - **Option 4 (Premium)**: Best-in-class, no constraints
+      - **Option 5 (Lazy/Clever)**: What shortcut might actually work?
+
+      Use unconventional prompts:
+      - "What would [innovative company] do here?"
+      - "What if we had zero budget? Unlimited budget?"
+      - "What would make users say 'wow, that's clever'?"
+
+   2. **CURATE Phase** (evaluate and select):
+      For each solution option, score against:
+
+      | Criterion | Weight | Description |
+      |-----------|:------:|-------------|
+      | User Delight | 3x | How delighted would users be? (0-10) |
+      | Time to Value | 3x | How quickly do users see benefit? (0-10) |
+      | Feasibility | 2x | Can our team build this? (0-10) |
+      | Differentiation | 2x | Does this set us apart? (0-10) |
+
+      Calculate weighted score. Select highest-scoring approach.
+
+   3. **HYBRID Check**:
+      Before committing, ask: "Can we combine the best parts of multiple options?"
+      - Example: Option 1's UX + Option 3's architecture
+
+   4. **Document Decision**:
+      ```markdown
+      ### Solution: [Feature Area]
+
+      **Recommendation**: [Chosen approach name]
+
+      **Why this approach**:
+      - [Specific reason tied to user needs]
+      - [Specific reason tied to differentiation]
+
+      **Alternatives considered**:
+      - Option X: [Why not — specific disqualifier]
+      - Option Y: [Why not — specific disqualifier]
+
+      **Reversibility**: [High/Medium/Low] — [what's locked in vs changeable]
+      ```
+
+   **Legacy compatibility** (enhanced, not replaced):
 
    1. **Value Proposition Canvas**:
       - Pain relievers: Which discovered pains can we address?
@@ -266,11 +387,13 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    3. **Feature Candidates**:
       - Group "What If" scenarios into potential features
+      - Apply Brainstorm-Curate for non-trivial features
       - Rate each: Impact (High/Medium/Low) × Effort (High/Medium/Low)
       - Mark high-impact, reasonable-effort ideas as winners
 
    **Output**:
-   - Populate "Solution Ideation" section
+   - Populate "Solution Ideation" section with decision reasoning
+   - Document alternatives considered (why not)
    - Feed winning ideas into Feature Hierarchy (step 6)
    - Move lower-priority ideas to Ideas Backlog
 
@@ -290,7 +413,93 @@ This command captures the **complete vision and scope** of a service/product BEF
    3. **User confirmation**:
       "Does this capture your intent? Any adjustments before we structure the full concept?"
 
-   4. After confirmation, proceed to step 5.
+   4. After confirmation, proceed to Clarification Gate.
+
+4b. **Clarification Gate** (NEW — before proceeding to Capture):
+
+   **Goal**: Ensure sufficient clarity before writing concept. Prevents wasted effort on vague inputs.
+
+   **Quality Import**:
+   ```text
+   IMPORT: templates/shared/quality/anti-slop.md
+   APPLY specificity checks to all answers
+   ```
+
+   **Clarity Checklist** (must pass before proceeding):
+
+   ```text
+   CLARITY_CHECK = {
+     target_user: {
+       check: "Is target user specific? (persona ≠ 'users')",
+       pass_examples: ["Marketing Manager at 50-200 employee B2B SaaS", "Solo indie hackers"],
+       fail_examples: ["users", "businesses", "people who need X"]
+     },
+     core_problem: {
+       check: "Is core problem specific? (not generic 'improve efficiency')",
+       pass_examples: ["Spend 4+ hours/week copying data between tools", "Can't find relevant docs in 50K+ file repos"],
+       fail_examples: ["inefficient processes", "need better workflow", "improve productivity"]
+     },
+     differentiation: {
+       check: "Is differentiation articulated? (not 'better than competitors')",
+       pass_examples: ["Only tool with native Figma integration", "10x faster via local-first architecture"],
+       fail_examples: ["better UX", "more features", "easier to use"]
+     },
+     success_measurable: {
+       check: "Is success measurable? (has concrete metrics)",
+       pass_examples: ["Reduce time-to-first-report from 2 hours to 10 minutes", "Achieve 40% weekly active usage"],
+       fail_examples: ["users are happy", "adoption increases", "efficiency improves"]
+     }
+   }
+
+   FAILED_CHECKS = []
+   FOR EACH check IN CLARITY_CHECK:
+     IF check fails:
+       FAILED_CHECKS.append(check)
+   ```
+
+   **If any check fails**, ask clarifying questions BEFORE proceeding:
+
+   ```text
+   MAX_QUESTIONS_PER_ROUND = 3  # Avoid overwhelming user
+
+   CLARIFYING_QUESTION_TEMPLATES = {
+     target_user: [
+       "You mentioned '[vague term]' — can you be more specific?",
+       "What's their job title? Company size? Industry?",
+       "What does a typical day look like for this person?"
+     ],
+     core_problem: [
+       "The problem is '[vague description]' — which specific process?",
+       "What's the cost of this problem? (time/money/frustration)",
+       "How do they solve this today? What's wrong with that approach?"
+     ],
+     differentiation: [
+       "How is this different from [competitor]?",
+       "What's the one thing competitors do wrong that you'll fix?",
+       "Why would someone switch from their current solution?"
+     ],
+     success_measurable: [
+       "How would you measure if this succeeds?",
+       "What number would need to change for this to be worth it?",
+       "What would users be able to do that they can't do today?"
+     ]
+   }
+
+   # Select up to 3 most critical questions
+   FOR i IN range(min(3, len(FAILED_CHECKS))):
+     ASK question from CLARIFYING_QUESTION_TEMPLATES[FAILED_CHECKS[i]]
+
+   WAIT for answers before proceeding
+   UPDATE concept with clarified information
+   RE-RUN clarity check
+   ```
+
+   **Gate Decision**:
+   - **PASS (all checks green)**: Proceed to step 5 (Extract Vision)
+   - **PARTIAL (1-2 checks fail)**: Ask clarifying questions, then proceed
+   - **FAIL (3+ checks fail)**: Return to Discovery Mode (Phase 0a)
+
+   **Output**: Document clarifications in "Assumptions & Clarifications" section.
 
 5. **Extract Vision and Business Context** from user input:
 
