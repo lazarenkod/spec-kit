@@ -1,6 +1,13 @@
 ---
-description: Create visual specifications and design system for UI-heavy features. Orchestrates UX, Product, and Motion Designer agents to replace human designers. Use AFTER /speckit.specify when the feature requires significant user interface work.
+description: Create visual specifications and complete design systems from brand inputs. Orchestrates UX, Product, and Motion Designer agents. Supports design system generation, component library presets, Storybook auto-generation, and Figma token export. Use AFTER /speckit.specify for UI-heavy features OR standalone for design system bootstrapping.
 persona: ux-designer-agent
+modes:
+  feature_design:
+    trigger: "Spec file exists (default)"
+    purpose: "Create visual specs for a specific feature"
+  design_system:
+    trigger: "--design-system flag OR no spec file"
+    purpose: "Generate complete design system from brand inputs"
 orchestration:
   agents:
     - ux-designer-agent       # User flows, wireframes, interactions
@@ -69,6 +76,35 @@ skills:
   - name: motion-generation
     trigger: "When generating animation code"
     usage: "Read templates/skills/motion-generation.md for CSS/Framer Motion output"
+design_system_generation:
+  enabled: true
+  trigger: "--design-system OR no spec file exists"
+  brand_inputs:
+    required:
+      - brand_name
+      - primary_color
+      - product_type  # saas | marketing | mobile | admin
+    optional:
+      - logo_file
+      - secondary_colors
+      - font_preference
+      - style_keywords  # modern, playful, professional, minimal
+  presets:
+    source: "templates/shared/design-system-presets.md"
+    types:
+      - saas        # Data-dense, productivity focused
+      - marketing   # Bold, conversion optimized
+      - mobile      # Touch-first, native feel
+      - admin       # Dense, efficient, tables
+  storybook:
+    enabled: true
+    auto_generate: true
+    output: ".storybook/"
+    components_dir: "src/components/"
+  figma_export:
+    enabled: true
+    output: "design-tokens/figma-tokens.json"
+    format: "figma-tokens-studio"
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-spec
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireSpec
@@ -119,6 +155,450 @@ This command creates **visual and interaction specifications** for UI-heavy feat
 - CLI tools
 - Background services
 - Simple CRUD with minimal UI
+
+---
+
+## Mode Selection
+
+```text
+IF --design-system flag passed OR spec file does not exist:
+  MODE = "design_system_generation"
+  LOG "📐 Design System Generation Mode"
+ELSE:
+  MODE = "feature_design"
+  LOG "🎨 Feature Design Mode"
+```
+
+---
+
+## Design System Generation Mode
+
+When `--design-system` flag is passed OR no spec file exists, generate a complete design system from brand inputs.
+
+### Brand Input Collection
+
+```text
+IF MODE == "design_system_generation":
+
+  1. COLLECT brand inputs (interactive or from constitution.md):
+
+     Required:
+     - brand_name: "Your company/product name"
+     - primary_color: "#hex or color name"
+     - product_type: saas | marketing | mobile | admin
+
+     Optional:
+     - logo_file: "path/to/logo.svg"
+     - secondary_colors: ["#hex1", "#hex2"]
+     - font_preference: "sans-serif" | "serif" | "mono" | specific font
+     - style_keywords: ["modern", "playful", "professional", "minimal", "bold"]
+
+  2. IF brand inputs not provided interactively:
+     READ constitution.md → design_system block
+     EXTRACT brand values
+```
+
+### Product Type Presets
+
+```yaml
+product_type_presets:
+  saas:
+    description: "Data-dense SaaS applications"
+    characteristics:
+      - "Information-rich layouts"
+      - "Compact spacing for efficiency"
+      - "Neutral palette with action colors"
+      - "Tables, charts, dashboards"
+    defaults:
+      spacing_scale: "compact"  # 4px base
+      border_radius: "md"       # 6px
+      shadow_depth: "subtle"
+      density: "comfortable"
+    components:
+      - DataTable
+      - Dashboard
+      - Sidebar
+      - CommandPalette
+      - Charts
+
+  marketing:
+    description: "Marketing and landing pages"
+    characteristics:
+      - "Bold, attention-grabbing"
+      - "Generous whitespace"
+      - "High-contrast CTAs"
+      - "Hero sections, testimonials"
+    defaults:
+      spacing_scale: "generous"  # 8px base
+      border_radius: "lg"        # 12px
+      shadow_depth: "dramatic"
+      density: "spacious"
+    components:
+      - Hero
+      - FeatureGrid
+      - Testimonials
+      - PricingTable
+      - CTABanner
+
+  mobile:
+    description: "Mobile-first applications"
+    characteristics:
+      - "Touch-optimized (44px+ targets)"
+      - "Bottom navigation"
+      - "Gesture-based interactions"
+      - "Native platform feel"
+    defaults:
+      spacing_scale: "touch"    # 8px base, larger touch targets
+      border_radius: "xl"       # 16px (iOS-style)
+      shadow_depth: "elevation"
+      density: "comfortable"
+    components:
+      - BottomNav
+      - SwipeCard
+      - BottomSheet
+      - PullToRefresh
+      - FAB
+
+  admin:
+    description: "Admin panels and back-office"
+    characteristics:
+      - "Dense data display"
+      - "Efficient workflows"
+      - "Minimal decoration"
+      - "Form-heavy interfaces"
+    defaults:
+      spacing_scale: "compact"  # 4px base
+      border_radius: "sm"       # 4px
+      shadow_depth: "flat"
+      density: "dense"
+    components:
+      - DataGrid
+      - TreeView
+      - FormBuilder
+      - Breadcrumbs
+      - StatusIndicator
+```
+
+### Design System Generation Workflow
+
+```text
+IF MODE == "design_system_generation":
+
+  Step DS-1: Load Preset
+  ─────────────────────
+  1. READ templates/shared/design-system-presets.md
+  2. FIND preset matching product_type
+  3. APPLY preset defaults as base
+
+  Step DS-2: Generate Color Palette
+  ─────────────────────────────────
+  FROM primary_color:
+  1. Generate color scale (50-950):
+     - 50-100: Tints (for backgrounds)
+     - 200-400: Light variants
+     - 500: Primary (input)
+     - 600-800: Dark variants
+     - 900-950: Shades (for text)
+
+  2. Generate semantic colors:
+     - primary: input color
+     - secondary: complementary or neutral
+     - accent: analogous or triadic
+     - success: green family (#22C55E default)
+     - warning: amber family (#F59E0B default)
+     - error: red family (#EF4444 default)
+     - info: blue family (#3B82F6 default)
+
+  3. Generate neutral palette:
+     - Tinted neutrals based on primary undertone
+     - Or pure gray if style_keywords includes "minimal"
+
+  4. Validate contrast ratios (WCAG AA minimum)
+
+  Step DS-3: Generate Typography
+  ──────────────────────────────
+  FROM font_preference OR preset:
+  1. SELECT font pairing:
+     - sans-serif: Inter, system-ui
+     - serif: Georgia, Merriweather
+     - mono: JetBrains Mono, Fira Code
+     - custom: user-specified
+
+  2. GENERATE type scale (1.25 ratio):
+     - display: 3rem / 700
+     - h1: 2.25rem / 700
+     - h2: 1.875rem / 600
+     - h3: 1.5rem / 600
+     - h4: 1.25rem / 600
+     - body: 1rem / 400
+     - small: 0.875rem / 400
+     - caption: 0.75rem / 400
+
+  Step DS-4: Generate Spacing & Layout
+  ────────────────────────────────────
+  FROM preset.spacing_scale:
+  1. GENERATE spacing tokens:
+     - 0: 0
+     - px: 1px
+     - 0.5: 2px
+     - 1: 4px (base)
+     - 2: 8px
+     - 3: 12px
+     - 4: 16px
+     - 5: 20px
+     - 6: 24px
+     - 8: 32px
+     - 10: 40px
+     - 12: 48px
+     - 16: 64px
+
+  2. GENERATE layout tokens:
+     - container widths
+     - breakpoints
+     - grid columns
+
+  Step DS-5: Generate Component Library
+  ─────────────────────────────────────
+  FROM preset.components + core components:
+  1. FOR EACH component:
+     - Generate specification
+     - Define variants
+     - Set default styling
+     - Configure for preset type
+
+  2. PRIORITY order:
+     - Core: Button, Input, Select, Checkbox, Radio
+     - Layout: Card, Modal, Drawer, Tabs
+     - Feedback: Toast, Alert, Badge, Progress
+     - Preset-specific: from preset.components
+
+  Step DS-6: Generate Output Files
+  ────────────────────────────────
+  OUTPUT:
+  - design-system/tokens.css      # CSS custom properties
+  - design-system/tokens.json     # JSON format
+  - design-system/tailwind.config.js  # Tailwind theme
+  - design-system/theme.ts        # TypeScript theme object
+  - design-system/README.md       # Usage documentation
+```
+
+### Storybook Auto-Generation
+
+```text
+IF storybook.auto_generate:
+
+  Step SB-1: Generate Storybook Configuration
+  ───────────────────────────────────────────
+  CREATE .storybook/main.ts:
+  - Framework: @storybook/react-vite (or detected framework)
+  - Addons: essentials, a11y, interactions
+  - Stories glob pattern
+
+  CREATE .storybook/preview.ts:
+  - Import design tokens CSS
+  - Configure viewports (mobile, tablet, desktop)
+  - Configure dark mode toggle
+  - Set default background
+
+  Step SB-2: Generate Component Stories
+  ─────────────────────────────────────
+  FOR EACH component in design-system:
+
+    CREATE stories/{Component}.stories.tsx:
+
+    ```typescript
+    import type { Meta, StoryObj } from '@storybook/react';
+    import { {Component} } from '../components/{component}';
+
+    const meta: Meta<typeof {Component}> = {
+      title: 'Components/{Component}',
+      component: {Component},
+      tags: ['autodocs'],
+      argTypes: {
+        // Generated from component variants
+      },
+    };
+
+    export default meta;
+    type Story = StoryObj<typeof meta>;
+
+    // Default story
+    export const Default: Story = {
+      args: {
+        // Default props
+      },
+    };
+
+    // Variant stories
+    export const {Variant}: Story = {
+      args: {
+        variant: '{variant}',
+      },
+    };
+
+    // State stories
+    export const Disabled: Story = {
+      args: {
+        disabled: true,
+      },
+    };
+    ```
+
+  Step SB-3: Generate Documentation
+  ─────────────────────────────────
+  CREATE stories/Introduction.mdx:
+  - Design system overview
+  - Token usage guide
+  - Component inventory
+  - Accessibility guidelines
+
+  CREATE stories/Colors.mdx:
+  - Color palette visualization
+  - Contrast ratio table
+  - Usage guidelines
+
+  CREATE stories/Typography.mdx:
+  - Type scale visualization
+  - Font specimens
+  - Usage examples
+```
+
+### Figma Token Export
+
+```text
+IF figma_export.enabled:
+
+  Step FT-1: Convert to Figma Tokens Studio Format
+  ────────────────────────────────────────────────
+  TRANSFORM design tokens to:
+
+  {
+    "global": {
+      "colors": {
+        "primary": {
+          "50": { "value": "#eff6ff", "type": "color" },
+          "500": { "value": "#3b82f6", "type": "color" },
+          "900": { "value": "#1e3a8a", "type": "color" }
+        },
+        "semantic": {
+          "success": { "value": "{colors.green.500}", "type": "color" },
+          "error": { "value": "{colors.red.500}", "type": "color" }
+        }
+      },
+      "typography": {
+        "fontFamilies": {
+          "heading": { "value": "Inter", "type": "fontFamilies" },
+          "body": { "value": "Inter", "type": "fontFamilies" }
+        },
+        "fontSizes": {
+          "sm": { "value": "14", "type": "fontSizes" },
+          "base": { "value": "16", "type": "fontSizes" },
+          "lg": { "value": "18", "type": "fontSizes" }
+        }
+      },
+      "spacing": {
+        "xs": { "value": "4", "type": "spacing" },
+        "sm": { "value": "8", "type": "spacing" },
+        "md": { "value": "16", "type": "spacing" }
+      },
+      "borderRadius": {
+        "sm": { "value": "4", "type": "borderRadius" },
+        "md": { "value": "8", "type": "borderRadius" }
+      }
+    },
+    "light": {
+      "background": { "value": "{colors.neutral.50}", "type": "color" },
+      "foreground": { "value": "{colors.neutral.900}", "type": "color" }
+    },
+    "dark": {
+      "background": { "value": "{colors.neutral.900}", "type": "color" },
+      "foreground": { "value": "{colors.neutral.50}", "type": "color" }
+    }
+  }
+
+  Step FT-2: Export Files
+  ───────────────────────
+  OUTPUT:
+  - design-tokens/figma-tokens.json      # Main token file
+  - design-tokens/$themes.json           # Theme configuration
+  - design-tokens/$metadata.json         # Token metadata
+  - design-tokens/README.md              # Import instructions
+
+  Step FT-3: Generate Import Instructions
+  ───────────────────────────────────────
+  CREATE design-tokens/README.md:
+
+  ## Importing to Figma
+
+  1. Install "Tokens Studio for Figma" plugin
+  2. Open plugin → Settings → Add new sync provider
+  3. Choose "Local" or connect to Git
+  4. Import figma-tokens.json
+  5. Apply tokens to your Figma file
+
+  ## Token Structure
+
+  - global: Base tokens (colors, typography, spacing)
+  - light: Light theme semantic tokens
+  - dark: Dark theme semantic tokens
+
+  ## Keeping in Sync
+
+  After code changes:
+  1. Run `/speckit.design --export-figma`
+  2. Pull tokens in Figma plugin
+```
+
+### Design System Output Summary
+
+```text
+IF MODE == "design_system_generation":
+
+  OUTPUT:
+  ┌─────────────────────────────────────────────────────────────┐
+  │ /speckit.design --design-system Complete                     │
+  ├─────────────────────────────────────────────────────────────┤
+  │ Brand: {brand_name}                                          │
+  │ Product Type: {product_type}                                 │
+  │ Primary Color: {primary_color}                               │
+  │                                                             │
+  │ Generated Files:                                            │
+  │                                                             │
+  │   design-system/                                            │
+  │   ├── tokens.css          # CSS custom properties           │
+  │   ├── tokens.json         # JSON format                     │
+  │   ├── tailwind.config.js  # Tailwind theme extension        │
+  │   ├── theme.ts            # TypeScript theme object         │
+  │   └── README.md           # Usage documentation             │
+  │                                                             │
+  │   design-tokens/          (if Figma export enabled)         │
+  │   ├── figma-tokens.json   # Figma Tokens Studio format      │
+  │   ├── $themes.json        # Theme configuration             │
+  │   └── README.md           # Import instructions             │
+  │                                                             │
+  │   .storybook/             (if Storybook enabled)            │
+  │   ├── main.ts             # Storybook config                │
+  │   ├── preview.ts          # Preview config                  │
+  │   └── stories/            # Auto-generated stories          │
+  │                                                             │
+  │ Tokens Generated:                                           │
+  │   Colors: {N} semantic + {M} palette                        │
+  │   Typography: {T} levels                                    │
+  │   Spacing: {S} values                                       │
+  │   Components: {C} specified                                 │
+  │                                                             │
+  │ Next Steps:                                                 │
+  │   1. Review tokens in Storybook: npm run storybook          │
+  │   2. Import to Figma: See design-tokens/README.md           │
+  │   3. Start building: npm run dev                            │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Feature Design Mode
+
+When spec file exists (default mode), create visual specs for the feature.
 
 ## Outline
 

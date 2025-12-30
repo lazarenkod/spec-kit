@@ -7,6 +7,106 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.48] - 2025-12-29
+
+### Added
+
+- **New Commands from Section 2.2** — 5 new/enhanced commands for complete product lifecycle automation
+  - **`/speckit.discover`** — Customer Discovery Automation
+    - Validate problem-solution fit before building
+    - Interview script generation with ICP validation
+    - Survey templates for quantitative validation
+    - Smoke test landing page generation for demand testing
+    - Go/No-Go recommendation with signal strength analysis
+    - Success criteria: 10+ interviews OR 50+ survey responses OR >5% landing conversion
+  - **`/speckit.monitor`** — Observability Pipeline Setup
+    - Auto-detect stack type (Node/Python/Go/Java)
+    - OpenTelemetry instrumentation generation
+    - Docker Compose observability stack (Prometheus, Grafana, Loki, Jaeger)
+    - Grafana dashboard templates for API, infrastructure, and business metrics
+    - Alerting rules with severity classification (critical/warning/info)
+    - Runbook generation for incident response
+  - **`/speckit.integrate`** — Third-Party Integration Wizard
+    - Service catalog: Auth (Clerk, Auth0, Supabase), Payments (Stripe, Paddle), Email (Resend, SendGrid), Analytics (PostHog, Mixpanel), Storage (S3, R2), Database (Supabase, PlanetScale), Search (Algolia, Meilisearch), AI (OpenAI, Anthropic)
+    - SDK wrapper generation with error handling
+    - Integration smoke tests
+    - Environment variable management
+  - **`/speckit.launch`** — Go-to-Market Automation
+    - Pre-launch readiness audit (12 categories)
+    - Press kit generation (fact sheet, screenshots, founder bios)
+    - SEO configuration (meta tags, sitemap, robots.txt)
+    - Social media content templates
+    - Product Hunt submission preparation
+    - Launch day checklist with timeline
+
+- **New Agent Personas** (`templates/personas/`)
+  - `marketing-agent.md` — GTM specialist for launch strategy, content marketing, press relations, analytics
+  - `devops-agent.md` — Infrastructure specialist for observability, CI/CD, IaC, incident response
+
+- **New Skills** (`templates/skills/`)
+  - `customer-interview.md` — Interview script generation and response analysis
+  - `landing-generator.md` — Smoke test landing page creation
+  - `observability-setup.md` — Monitoring stack configuration
+  - `integration-wizard.md` — Third-party service integration
+  - `launch-prep.md` — Launch preparation and GTM execution
+
+- **New Shared Modules** (10 files)
+  - `templates/shared/discover/` — Interview scripts, survey templates, smoke test landing
+  - `templates/shared/monitor/` — Alerting rules, dashboard templates, runbooks
+  - `templates/shared/integrate/` — Integration catalog with 8 service categories
+  - `templates/shared/launch/` — GTM checklist, press kit, SEO setup
+
+- **Role-Based Templates** (`templates/roles/`) — 12 new role-specific templates
+  - **Developer** (`templates/roles/developer/`)
+    - `code-review-checklist.md` — Comprehensive review checklist with severity levels
+    - `pr-template.md` — Pull request template with testing checklist
+    - `debugging-guide.md` — Systematic debugging methodology
+  - **Product Manager** (`templates/roles/product-manager/`)
+    - `prd-template.md` — Product Requirements Document template
+    - `roadmap-template.md` — Quarterly/annual roadmap planning
+    - `prioritization-framework.md` — RICE, MoSCoW, Kano frameworks
+  - **Marketing** (`templates/roles/marketing/`)
+    - `launch-checklist.md` — 50+ item launch checklist
+    - `content-calendar.md` — Editorial planning template
+    - `seo-guide.md` — Technical and content SEO guide
+  - **Legal** (`templates/roles/legal/`)
+    - `privacy-policy-template.md` — GDPR/CCPA compliant privacy policy
+    - `terms-of-service-template.md` — ToS with special clauses for API, AI, marketplace
+    - `gdpr-compliance-checklist.md` — 8-section GDPR compliance checklist
+
+### Changed
+
+- **`/speckit.design` enhanced with Design System Generation**
+  - Dual-mode support: `feature_design` (existing) and `design_system` (new)
+  - Brand input collection workflow (name, colors, product type)
+  - Product type presets: SaaS (data-dense), Marketing (bold/conversion), Mobile (touch-first), Admin (efficient/tables)
+  - Design System Generation Workflow (6 steps): Load Preset → Generate Color Palette → Generate Typography → Generate Spacing & Layout → Generate Component Library → Generate Output Files
+  - Storybook auto-generation with component stories and documentation
+  - Figma Token Export in Tokens Studio format
+  - WCAG accessibility validation with contrast ratio checking
+
+### Technical Details
+
+- **Command Workflow Integration**
+  ```
+  /speckit.concept
+      ├── /speckit.discover (validation)
+      ▼
+  /speckit.specify → /speckit.design (enhanced) → /speckit.plan
+      ▼
+  /speckit.implement
+      ├── /speckit.integrate (during)
+      ▼
+  /speckit.ship
+      ├── /speckit.monitor (post-deploy)
+      ▼
+  /speckit.launch (go-to-market)
+  ```
+
+- **File Count**: 33 new files + 1 modified file
+
+---
+
 ## [0.0.47] - 2025-12-29
 
 ### Added
