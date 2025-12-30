@@ -14,6 +14,12 @@ modes:
     output_dir: "specs/app-design/"
     waves: true
     journeys: true
+  mockup_generation:
+    trigger: "--mockup flag AND design artifacts exist"
+    purpose: "Generate high-fidelity visual mockups from wireframes via Google Stitch"
+    output_dir: ".preview/stitch-mockups/"
+    requires: ["playwright", "chromium"]
+    automation: true
 orchestration:
   agents:
     - ux-designer-agent       # User flows, wireframes, interactions
@@ -80,6 +86,33 @@ handoffs:
       - "MODE == concept_design"
       - "WAVE == 1"
       - "total_features <= 15"
+  # Mockup Generation Mode handoffs
+  - label: Preview Mockups
+    agent: speckit.preview
+    prompt: Launch preview server with Stitch mockups gallery at .preview/stitch-mockups/
+    send: true
+    condition:
+      - "MODE == mockup_generation"
+      - "mockups generated successfully"
+  - label: Retry Failed Screens
+    agent: speckit.design
+    prompt: "Run /speckit.design --mockup --screens \"{failed_screens}\" to retry generation for failed screens"
+    auto: false
+    condition:
+      - "MODE == mockup_generation"
+      - "failed_count > 0"
+  - label: Manual Generation Guide
+    command: open .speckit/stitch/manual-generation-guide.md
+    condition:
+      - "MODE == mockup_generation"
+      - "automation_failed OR MOCKUP_MODE == manual"
+  - label: Generate More Mockups
+    agent: speckit.design
+    prompt: "Run /speckit.design --mockup --all to generate mockups for entire application"
+    auto: false
+    condition:
+      - "MODE == mockup_generation"
+      - "MOCKUP_SCOPE == feature"
 claude_code:
   model: opus
   reasoning_mode: extended
@@ -110,6 +143,9 @@ skills:
   - name: motion-generation
     trigger: "When generating animation code"
     usage: "Read templates/skills/motion-generation.md for CSS/Framer Motion output"
+  - name: stitch-generation
+    trigger: "When generating visual mockups from wireframes via Google Stitch"
+    usage: "Read templates/skills/stitch-generation.md for standalone mockup generation"
 design_system_generation:
   enabled: true
   trigger: "--design-system OR no spec file exists"
@@ -210,6 +246,42 @@ IF --concept flag passed:
   ELSE:
     ERROR "❌ No concept.md found. Run /speckit.concept first."
     EXIT
+
+ELIF --mockup flag passed:
+  # Check for design artifacts
+  design_artifacts_exist = (
+    FILE_EXISTS("specs/app-design/") OR
+    FILE_EXISTS("specs/*/design.md") OR
+    FILE_EXISTS("specs/*-design.md")
+  )
+
+  IF design_artifacts_exist:
+    MODE = "mockup_generation"
+    LOG "🎨 Visual Mockup Generation Mode (via Google Stitch)"
+
+    # Parse mockup options
+    IF --manual flag also passed:
+      MOCKUP_MODE = "manual"
+      LOG "📝 Manual mode: generating prompts only"
+    ELIF --reauth flag passed:
+      MOCKUP_MODE = "reauth"
+      LOG "🔑 Re-authentication mode"
+    ELSE:
+      MOCKUP_MODE = "auto"
+
+    IF --screens specified:
+      MOCKUP_SCREENS = parse_csv(--screens value)
+    ELSE:
+      MOCKUP_SCREENS = "all"
+
+    IF --all flag passed:
+      MOCKUP_SCOPE = "app"  # Generate for entire app
+    ELSE:
+      MOCKUP_SCOPE = "feature"  # Current feature only
+  ELSE:
+    ERROR "❌ No design artifacts found. Run /speckit.design first."
+    EXIT
+
 ELIF --design-system flag passed OR spec file does not exist:
   MODE = "design_system_generation"
   LOG "📐 Design System Generation Mode"
@@ -1111,6 +1183,269 @@ ALWAYS (after any wave completion):
 │   3. Continue: Run /speckit.design --concept --wave {N+1}           │
 │   4. Plan: Run /speckit.plan to create technical implementation     │
 └─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Mockup Generation Mode
+
+When `--mockup` flag is passed AND design artifacts exist, generate high-fidelity visual mockups from ASCII wireframes using Google Stitch browser automation.
+
+### Prerequisites
+
+```text
+REQUIRE:
+  - Design artifacts exist (specs/app-design/ OR specs/*/design.md)
+  - Playwright installed (npm install playwright)
+  - Chromium browser (npx playwright install chromium)
+  - Google account (for Stitch authentication)
+```
+
+### Output Structure
+
+```text
+.preview/stitch-mockups/
+├── {feature}/
+│   ├── {screen-name}/
+│   │   ├── stitch-output.html      # Raw Stitch HTML
+│   │   ├── stitch-output.css       # Styles
+│   │   ├── screenshot-desktop.png  # 1440px
+│   │   ├── screenshot-mobile.png   # 375px
+│   │   ├── figma-clipboard.json    # For Figma paste
+│   │   └── prompt.txt              # Generation prompt
+│   └── index.html                  # Gallery for feature
+└── index.html                      # Master gallery
+
+.speckit/stitch/
+├── session/                        # Playwright persistent context
+├── usage.json                      # Rate limit tracking
+└── prompts-cache/                  # Cached prompts for retry
+```
+
+### Mockup Generation Workflow
+
+```text
+IF MODE == "mockup_generation":
+
+  # Load automation modules
+  READ templates/shared/stitch-integration.md
+  READ templates/shared/stitch-prompts.md
+  READ templates/shared/stitch-selectors.md
+
+  # Execute workflow phases
+  CALL stitch_main():
+
+    Phase 0: Preflight Check
+    ────────────────────────
+    - Verify Playwright installation
+    - Check Chromium browser available
+    - Validate session directory
+    - Check rate limits (350/month standard, 50/month experimental)
+
+    Phase 1: Authentication
+    ───────────────────────
+    IF MOCKUP_MODE == "reauth" OR no valid session:
+      - Launch Playwright with persistent context
+      - Navigate to stitch.withgoogle.com
+      - Prompt user: "Please sign in to Google in the browser window"
+      - Wait for successful authentication
+      - Save session to .speckit/stitch/session/
+    ELSE:
+      - Load existing session
+      - Verify session validity
+
+    Phase 2: Wireframe Discovery
+    ────────────────────────────
+    SCAN design artifacts based on MOCKUP_SCOPE:
+      IF MOCKUP_SCOPE == "app":
+        - specs/app-design/foundations/*.md
+        - specs/app-design/waves/**/*-design.md
+        - specs/app-design/journeys/*.md
+      ELIF MOCKUP_SCOPE == "feature":
+        - Current feature design.md
+
+    FOR each wireframe:
+      EXTRACT:
+        - ASCII art block
+        - Screen name
+        - Component list
+        - Design system tokens
+
+    IF MOCKUP_SCREENS != "all":
+      FILTER wireframes to specified screens
+
+    Phase 3: Prompt Generation
+    ──────────────────────────
+    FOR each wireframe:
+      READ templates/shared/stitch-prompts.md
+      CALL stitch_generate_prompt(wireframe):
+        - Detect screen type (login, dashboard, form, etc.)
+        - Load appropriate template
+        - Enrich with design system context
+        - Apply persona preferences
+        - Save prompt to .speckit/stitch/prompts-cache/
+
+    IF MOCKUP_MODE == "manual":
+      GENERATE manual-generation-guide.md
+      LOG "📝 Prompts generated. See manual guide for instructions."
+      EXIT
+
+    Phase 4: Stitch Generation Pipeline
+    ────────────────────────────────────
+    FOR each prompt:
+      CALL stitch_generate_mockup(prompt):
+        - Navigate to Stitch
+        - Locate and fill prompt input
+        - Click generate button
+        - Wait for generation (timeout: 60s)
+        - Handle errors (retry once, then skip)
+
+    Phase 5: Export Pipeline
+    ────────────────────────
+    FOR each successful generation:
+      CALL stitch_export_html():
+        - Click Export button
+        - Select HTML/Tailwind format
+        - Copy code output
+        - Save to stitch-output.html/css
+
+      CALL stitch_export_screenshots():
+        - Capture canvas at 1440px (desktop)
+        - Resize to 375px
+        - Capture mobile view
+        - Save PNGs
+
+      CALL stitch_export_figma():
+        - Click "Copy to Figma" if available
+        - Save clipboard content to figma-clipboard.json
+
+    Phase 6: Gallery Generation
+    ───────────────────────────
+    - Generate per-feature index.html galleries
+    - Generate master index.html
+    - Include side-by-side wireframe vs mockup
+
+    Phase 7: Quality Report
+    ───────────────────────
+    CALL stitch_generate_report():
+      - Summary table (status, exports, prompt match)
+      - Rate limit remaining
+      - Failed screens list
+      - Manual fallback guide if needed
+```
+
+### CLI Usage
+
+```bash
+# Generate mockups for current feature
+/speckit.design --mockup
+
+# Generate for entire app (from concept design)
+/speckit.design --mockup --all
+
+# Manual mode (prompts only, no automation)
+/speckit.design --mockup --manual
+
+# Specific screens only
+/speckit.design --mockup --screens "login,dashboard,settings"
+
+# Re-authenticate (if session expired)
+/speckit.design --mockup --reauth
+```
+
+### Error Handling
+
+| Error | Detection | Recovery |
+|-------|-----------|----------|
+| Session expired | Redirect to login | Re-auth flow |
+| Rate limit | 429 or quota message | Switch to manual mode |
+| CAPTCHA | reCAPTCHA iframe | Pause, prompt user |
+| Generation timeout | 60s no response | Retry once, then skip |
+| Export failed | No code in clipboard | Screenshot fallback |
+
+### Rate Limit Tracking
+
+```json
+// .speckit/stitch/usage.json
+{
+  "month": "2025-01",
+  "standard": {
+    "used": 45,
+    "limit": 350
+  },
+  "experimental": {
+    "used": 3,
+    "limit": 50
+  },
+  "last_generation": "2025-01-15T10:30:00Z"
+}
+```
+
+### Mockup Generation Output
+
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│  🎨 MOCKUP GENERATION COMPLETE                                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Scope: {feature_name OR "Full Application"}                        │
+│  Screens Processed: {N}/{total}                                     │
+│                                                                     │
+│  ✅ Generated: {success_count}                                       │
+│  ⚠️  Skipped: {skip_count}                                           │
+│  ❌ Failed: {fail_count}                                             │
+│                                                                     │
+│  Exports:                                                           │
+│    HTML/CSS: {html_count} files                                     │
+│    Screenshots: {screenshot_count} (desktop + mobile)               │
+│    Figma: {figma_count} clipboard files                             │
+│                                                                     │
+│  📁 Output: .preview/stitch-mockups/                                │
+│  📊 Gallery: .preview/stitch-mockups/index.html                     │
+│                                                                     │
+│  Rate Limit: {used}/{limit} ({remaining} remaining)                 │
+│                                                                     │
+├─────────────────────────────────────────────────────────────────────┤
+│  Next Steps:                                                        │
+│   1. Preview: Open .preview/stitch-mockups/index.html               │
+│   2. Figma: Paste from figma-clipboard.json files                   │
+│   3. Retry: /speckit.design --mockup --screens "{failed}"           │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Manual Fallback Guide
+
+When automation fails (CAPTCHA, rate limit, session issues), a manual guide is generated:
+
+```text
+IF automation fails:
+
+  GENERATE .speckit/stitch/manual-generation-guide.md:
+
+  ## Manual Mockup Generation Guide
+
+  Automation encountered issues. Follow these steps:
+
+  1. Open https://stitch.withgoogle.com
+  2. Sign in with your Google account
+  3. For each screen below, copy-paste the prompt and export results
+
+  ### Pending Screens
+
+  #### {screen_name}
+  **Prompt file**: `.speckit/stitch/prompts-cache/{screen}.txt`
+  **Output to**: `.preview/stitch-mockups/{feature}/{screen}/`
+
+  ```
+  {prompt_content}
+  ```
+
+  After generating, export:
+  - [ ] HTML code → stitch-output.html
+  - [ ] Screenshot → screenshot-desktop.png
+  - [ ] Mobile view → screenshot-mobile.png
+
+  ... (repeat for each pending screen)
 ```
 
 ---

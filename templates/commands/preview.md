@@ -68,6 +68,7 @@ This command generates **interactive visual previews** from design specification
 | Component | Component spec in design.md | Interactive React component | State/variant testing |
 | Flow | Screen flow in design.md | Multi-page navigation demo | User journey validation |
 | Animation | Motion spec in design.md | Animated preview | Timing/easing review |
+| Mockup | Stitch-generated mockups | Gallery with side-by-side comparison | High-fidelity visual validation |
 
 ## Outline
 
@@ -215,6 +216,112 @@ FOR EACH animation IN design.md Motion Specifications:
 
   4. Output:
      .preview/animations/{animation_name}.html
+```
+
+### 4.5. Stitch Mockup Gallery
+
+```text
+IF EXISTS(.preview/stitch-mockups/):
+
+  1. Scan mockup directory:
+     mockups = []
+     FOR EACH feature_dir IN .preview/stitch-mockups/*/:
+       FOR EACH screen_dir IN feature_dir/*/:
+         mockup = {
+           feature: feature_dir.name,
+           screen: screen_dir.name,
+           html: screen_dir/stitch-output.html,
+           css: screen_dir/stitch-output.css,
+           desktop: screen_dir/screenshot-desktop.png,
+           mobile: screen_dir/screenshot-mobile.png,
+           figma: screen_dir/figma-clipboard.json,
+           prompt: screen_dir/prompt.txt
+         }
+         mockups.append(mockup)
+
+  2. Generate mockup comparison pages:
+     FOR EACH mockup IN mockups:
+
+       # Find corresponding wireframe
+       wireframe = find_wireframe(mockup.feature, mockup.screen)
+
+       # Create side-by-side comparison page
+       comparison_page = """
+       <div class="mockup-comparison">
+         <div class="comparison-header">
+           <h2>{mockup.screen}</h2>
+           <span class="feature-badge">{mockup.feature}</span>
+         </div>
+
+         <div class="comparison-grid">
+           <div class="wireframe-panel">
+             <h3>Wireframe</h3>
+             <iframe src="{wireframe.html}"></iframe>
+           </div>
+
+           <div class="mockup-panel">
+             <h3>Visual Mockup</h3>
+             <iframe src="{mockup.html}"></iframe>
+           </div>
+         </div>
+
+         <div class="mockup-assets">
+           <a href="{mockup.desktop}" download>Desktop PNG</a>
+           <a href="{mockup.mobile}" download>Mobile PNG</a>
+           <button onclick="copyFigma('{mockup.figma}')">Copy to Figma</button>
+           <a href="{mockup.html}" target="_blank">Open Full Screen</a>
+         </div>
+
+         <details class="prompt-details">
+           <summary>Generation Prompt</summary>
+           <pre>{read(mockup.prompt)}</pre>
+         </details>
+       </div>
+       """
+
+       OUTPUT: .preview/mockup-comparisons/{feature}/{screen}.html
+
+  3. Generate mockup gallery index:
+     gallery_index = """
+     <h1>Visual Mockups Gallery</h1>
+
+     <div class="gallery-stats">
+       <span>Total Mockups: {mockups.length}</span>
+       <span>Features: {unique_features.length}</span>
+     </div>
+
+     <div class="gallery-filters">
+       <select id="feature-filter">
+         <option value="all">All Features</option>
+         {FOR feature IN unique_features: <option>{feature}</option>}
+       </select>
+       <button onclick="toggleView('grid')">Grid</button>
+       <button onclick="toggleView('list')">List</button>
+     </div>
+
+     <div class="mockup-grid">
+       {FOR mockup IN mockups:
+         <div class="mockup-card" data-feature="{mockup.feature}">
+           <img src="{mockup.desktop}" alt="{mockup.screen}">
+           <div class="card-info">
+             <h3>{mockup.screen}</h3>
+             <span class="feature">{mockup.feature}</span>
+           </div>
+           <div class="card-actions">
+             <a href="mockup-comparisons/{mockup.feature}/{mockup.screen}.html">
+               Compare
+             </a>
+           </div>
+         </div>
+       }
+     </div>
+     """
+
+     OUTPUT: .preview/stitch-mockups/gallery.html
+
+  4. Include in main preview index:
+     ADD link to .preview/stitch-mockups/gallery.html
+     ADD mockup count to stats
 ```
 
 ### 5. Screenshot Capture
@@ -383,8 +490,10 @@ FUNCTION start_preview_server():
      - Links to all components
      - Links to all flows
      - Links to all animations
+     - Links to Stitch mockups gallery (if exists)
      - DQS score badge
      - Screenshot gallery
+     - Mockup comparison quick access (if mockups exist)
 
   4. Open browser (if auto_open enabled):
      open http://localhost:{port}
@@ -400,6 +509,8 @@ Before completing, verify:
 - [ ] All components have preview files
 - [ ] All component states captured in screenshots
 - [ ] Screenshots taken for all viewports
+- [ ] Stitch mockups gallery generated (if mockups exist)
+- [ ] Mockup comparison pages created (if mockups exist)
 - [ ] DQS score calculated
 - [ ] Storybook stories generated (if enabled)
 - [ ] Preview server accessible
@@ -421,6 +532,7 @@ After completion:
 | Components | {N} | .preview/components/ |
 | Flows | {N} | .preview/flows/ |
 | Animations | {N} | .preview/animations/ |
+| Mockups | {N} | .preview/stitch-mockups/ |
 | Screenshots | {N} | .preview/screenshots/ |
 | Stories | {N} | .preview/components/*/*.stories.tsx |
 
@@ -448,6 +560,7 @@ After completion:
 - Wireframes: http://localhost:{port}/wireframes/
 - Components: http://localhost:{port}/components/
 - Flows: http://localhost:{port}/flows/
+- Mockups: http://localhost:{port}/stitch-mockups/gallery.html
 - Screenshots: http://localhost:{port}/screenshots/
 
 ### Recommended Next Steps
@@ -494,6 +607,15 @@ speckit preview --theme dark
 
 # Specific viewport only
 speckit preview --viewport mobile
+
+# Serve Stitch mockups gallery only
+speckit preview --mockups
+
+# Serve mockups with comparison view
+speckit preview --mockups --compare
+
+# Filter mockups by feature
+speckit preview --mockups --feature onboarding
 ```
 
 ## Example

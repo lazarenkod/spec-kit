@@ -48,6 +48,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - "Plan Wave 1 Implementation" → speckit.plan for foundation features
   - "Design All Waves" → speckit.design --concept --all (for small concepts)
 
+- **`/speckit.design --mockup` Mode** — Visual Mockup Generation via Google Stitch
+  - **New Mode**: Generate high-fidelity visual mockups from ASCII wireframes using Google Stitch AI
+  - **Browser Automation**: Playwright-based automation with persistent browser context for session management
+  - **8-Phase Workflow**:
+    1. Preflight Check (Playwright, Chromium, design artifacts)
+    2. Authentication (Google OAuth with session persistence)
+    3. Wireframe Discovery (scan specs/app-design/ for ASCII wireframes)
+    4. Prompt Generation (convert wireframes to natural language prompts)
+    5. Stitch Generation Pipeline (submit prompts, wait for generation)
+    6. Export Pipeline (HTML, Tailwind, Screenshots, Figma clipboard)
+    7. Gallery Generation (per-feature indexes, master gallery)
+    8. Fallback Handling (manual mode if automation fails)
+  - **Output Structure**: `.preview/stitch-mockups/` with HTML, CSS, screenshots (desktop/mobile), Figma JSON
+  - **Rate Limit Tracking**: `.speckit/stitch/usage.json` tracks 350/month standard, 50/month experimental
+  - **Manual Mode**: `--manual` flag generates prompts only without automation
+  - **Re-authentication**: `--reauth` flag forces new Google OAuth flow
+  - **Screen Selection**: `--screens "login,dashboard"` for specific screens only
+  - **Error Recovery**: Auto-retry, session refresh, graceful fallback to manual mode
+
+- **New Skill: `/speckit.stitch`** — Standalone Mockup Generation
+  - Direct access to Stitch mockup generation without full design workflow
+  - Supports `--all`, `--screens`, `--manual`, `--reauth`, `--prompt` flags
+  - Interactive mode when run without arguments
+  - Quality validation for generated outputs
+
+- **New Shared Modules** (`templates/shared/`):
+  - `stitch-integration.md` — Core Stitch automation module (8 workflow phases)
+  - `stitch-prompts.md` — Prompt templates for different screen types (dashboard, auth, form, list, detail, settings, empty, error, loading)
+  - `stitch-selectors.md` — Versioned DOM selectors for Stitch UI (v1.0.0 with fallbacks)
+
+- **Preview Command Enhancements**:
+  - New preview type: Mockup (Stitch-generated mockups with side-by-side comparison)
+  - Mockup gallery at `.preview/stitch-mockups/gallery.html`
+  - Mockup comparison pages showing wireframe vs visual mockup
+  - CLI flags: `--mockups`, `--mockups --compare`, `--mockups --feature {name}`
+
+- **New Handoffs** (for mockup generation mode):
+  - "Preview Mockups" → speckit.preview with Stitch gallery
+  - "Retry Failed Screens" → speckit.design --mockup --screens "{failed}"
+
 ### Changed
 
 - **Premium Smoke Test Landing Page** — Complete redesign of `/speckit.discover` landing page template
