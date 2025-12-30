@@ -99,7 +99,6 @@ Requirements:
     user: user_prompt
   }
 
-
 FUNCTION build_component_prompt(component):
 
   prompt = f"""
