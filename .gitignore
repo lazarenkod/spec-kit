@@ -44,3 +44,12 @@ env/
 .genreleases/
 *.zip
 sdd-*/
+
+# Local development commands (generated from templates/commands/)
+# Run: for f in templates/commands/*.md; do cp "$f" ".claude/commands/speckit.$(basename $f)"; done
+.claude/commands/
+.gemini/
+.cursor/
+.qwen/
+.opencode/
+.windsurf/

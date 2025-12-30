@@ -7,6 +7,43 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.49] - 2025-12-30
+
+### Changed
+
+- **Premium Smoke Test Landing Page** — Complete redesign of `/speckit.discover` landing page template
+  - **Modern Visual Design**
+    - Animated gradient orbs with `filter: blur(80px)` and floating animation
+    - Grid pattern overlay with radial gradient mask for premium texture
+    - Glassmorphism signup card with `backdrop-filter: blur(20px)`
+    - Full-bleed hero section replacing minimal 640px container
+  - **Micro-Interactions & Animations**
+    - CTA button with hover lift, press scale, and shine sweep effect
+    - Input focus ring animation with smooth transitions
+    - Feature cards with staggered entrance animation
+    - Card hover lift with shadow enhancement
+  - **Success State with Confetti**
+    - Checkmark SVG with `stroke-dashoffset` draw animation
+    - Confetti burst celebration (50 particles, 5 colors)
+    - Spring scale animation for success card
+  - **Light/Dark Mode Support**
+    - Automatic theme via `@media (prefers-color-scheme)`
+    - CSS Variables system for complete theming
+    - Optimized colors for both modes
+  - **Accessibility Enhancements**
+    - Full `prefers-reduced-motion` support (disables confetti and reduces animations)
+    - ARIA attributes for form and interactive elements
+    - Semantic HTML structure
+    - 44px minimum touch targets
+  - **New Template Variables**
+    - `{{PRIMARY_COLOR_RGB}}` for rgba() usage in gradients
+    - `{{YEAR}}` for copyright footer
+    - `{{PRIVACY_URL}}`, `{{TERMS_URL}}` for legal links
+  - **New Sections**
+    - Features grid with gradient icon backgrounds
+    - Trust indicators (SSL, GDPR, No Spam badges)
+    - Minimalist footer with legal links
+
 ## [0.0.48] - 2025-12-29
 
 ### Added
