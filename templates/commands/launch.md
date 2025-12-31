@@ -27,12 +27,20 @@ inputs:
     required: false
     default: false
     description: Whether to prepare press kit and outreach
+  growth_focus:
+    type: enum
+    options: [community, directories, viral, partnerships, all]
+    required: false
+    default: all
+    description: Zero-budget growth strategies to focus on
 outputs:
   - docs/launch/launch-plan.md
   - docs/launch/readiness-report.md
   - docs/press-kit/ (if press_outreach)
   - docs/launch/social-content.md
   - docs/launch/email-templates.md
+  - docs/launch/growth-playbook.md
+  - docs/launch/directory-tracker.md
   - public/og-images/
 quality_gates:
   - name: readiness_score
@@ -310,6 +318,926 @@ channel_prep:
       - "Schedule distribution"
 ```
 
+### Step 3.5: Zero-Budget Growth Strategies
+
+> **Philosophy**: Launch day is just the beginning. Sustainable growth requires consistent effort over 6-12 months. Time investment > money investment. Authenticity wins over promotion.
+
+```yaml
+zero_budget_growth:
+  mindset:
+    principles:
+      - "Compound effects take 6-12 months"
+      - "Be genuinely helpful first, promotional second"
+      - "Build relationships, not just links"
+      - "Consistency > intensity"
+
+    time_allocation:
+      daily: "30-60 min community engagement"
+      weekly: "2-3 hours content creation"
+      monthly: "Directory submissions, partnership outreach"
+```
+
+#### 3.5.1 Community Growth Playbook
+
+```yaml
+community_growth:
+  reddit:
+    philosophy: "95/5 rule - 95% value, 5% product mention"
+
+    preparation:
+      timeline: "2-3 months before launch"
+      actions:
+        - "Create personal account (NOT corporate)"
+        - "Build karma organically with helpful comments"
+        - "Become known in relevant communities"
+        - "NEVER use new accounts for promotion"
+
+    target_subreddits:
+      general:
+        - r/SaaS
+        - r/startups
+        - r/Entrepreneur
+        - r/smallbusiness
+        - r/InternetIsBeautiful
+        - r/SideProject
+
+      tech_specific:
+        - r/webdev
+        - r/programming
+        - r/devops
+        - r/selfhosted
+        - r/opensource
+
+      industry_specific:
+        - "r/[your_industry]"
+        - "Find via redditlist.com"
+
+    content_strategy:
+      allowed:
+        - "Share journey/story posts"
+        - "Ask for feedback genuinely"
+        - "Answer questions in your domain"
+        - "Comment with expertise first"
+
+      forbidden:
+        - "Direct product links in posts"
+        - "Self-promotion without context"
+        - "New accounts posting"
+        - "Multiple posts same day"
+        - "Asking for upvotes"
+
+    example_post: |
+      Title: "I built [X] after struggling with [Problem] - feedback?"
+      Body: Story about problem, why existing solutions failed,
+            what you built, specific questions for community.
+            Link in comments if asked.
+
+  indie_hackers:
+    why: "23% conversion rate vs Product Hunt 3%"
+
+    content_types:
+      high_performing:
+        - "Revenue milestone posts ($100 MRR, $1K MRR)"
+        - "Challenge/failure posts with lessons"
+        - "Building in public updates"
+        - "Detailed launch retrospectives"
+
+      avoid:
+        - "Pure promotional posts"
+        - "Vague updates without numbers"
+
+    engagement:
+      - "Comment on 5-10 posts daily"
+      - "Share genuine insights from experience"
+      - "Build relationships with other founders"
+      - "Respond to every comment on your posts"
+
+    product_listing:
+      - "Add to IH Products directory"
+      - "Update weekly with progress"
+      - "Respond to all questions"
+
+  discord_slack_communities:
+    approach: "Join → Help → Beta test → Mention"
+
+    target_communities:
+      - "Industry-specific Discords"
+      - "Tool-specific communities (Figma, Notion, etc.)"
+      - "Slack groups (OnDeck, Lenny's, etc.)"
+      - "Founder communities"
+
+    engagement_playbook:
+      week_1_4: "Observe and help"
+      week_5_8: "Share expertise, answer questions"
+      week_9_12: "Soft mention when relevant"
+      ongoing: "Genuine community member"
+
+    rules:
+      - "Read community rules FIRST"
+      - "Never DM spam"
+      - "Contribute before asking"
+      - "Offer beta access, not sales pitches"
+
+  hacker_news:
+    # Beyond Show HN
+    strategies:
+      show_hn:
+        - "Technical focus, not marketing"
+        - "Answer every question"
+        - "Be humble about limitations"
+
+      organic:
+        - "Comment with genuine expertise"
+        - "Share technical blog posts"
+        - "Engage in relevant discussions"
+
+    timing:
+      best: ["9-10 AM ET", "1-2 PM ET"]
+      avoid: ["Weekends", "Major news days"]
+```
+
+#### 3.5.2 Directory & Listing Submissions
+
+```yaml
+directory_listings:
+  strategy:
+    batch_size: "10-20 per week"
+    priority: "Start with Tier 1, work down"
+    track_in: "docs/launch/directory-tracker.md"
+
+  tier_1_essential:
+    description: "High traffic, high authority - submit first"
+    sites:
+      - name: "G2"
+        url: "g2.com"
+        type: "B2B reviews"
+        free: true
+        priority: "critical"
+        notes: "Target 100+ reviews for visibility"
+
+      - name: "Capterra"
+        url: "capterra.com"
+        type: "Software reviews"
+        free: true
+        priority: "critical"
+        notes: "Huge SMB traffic, owned by Gartner"
+
+      - name: "TrustRadius"
+        url: "trustradius.com"
+        type: "B2B reviews"
+        free: true
+        priority: "high"
+        notes: "Enterprise focus"
+
+      - name: "AlternativeTo"
+        url: "alternativeto.net"
+        type: "Alternative finder"
+        free: true
+        priority: "critical"
+        notes: "Position against competitors"
+
+      - name: "GetApp"
+        url: "getapp.com"
+        type: "Comparison"
+        free: true
+        priority: "high"
+        notes: "Side-by-side comparison"
+
+      - name: "Product Hunt"
+        url: "producthunt.com"
+        type: "Launch platform"
+        free: true
+        priority: "critical"
+        notes: "Covered in main launch"
+
+      - name: "Software Advice"
+        url: "softwareadvice.com"
+        type: "B2B reviews"
+        free: true
+        priority: "high"
+        notes: "Gartner network"
+
+  tier_2_saas_directories:
+    description: "SaaS-specific directories"
+    sites:
+      - name: "SaaSHub"
+        url: "saashub.com"
+        notes: "Large SaaS directory"
+
+      - name: "SaaSworthy"
+        url: "saasworthy.com"
+        notes: "75K+ software listed"
+
+      - name: "SoftwareSuggest"
+        url: "softwaresuggest.com"
+        notes: "India-focused, global reach"
+
+      - name: "SourceForge"
+        url: "sourceforge.net"
+        notes: "Dev tools, open source"
+
+      - name: "Crozdesk"
+        url: "crozdesk.com"
+        notes: "B2B software"
+
+      - name: "Serchen"
+        url: "serchen.com"
+        notes: "Cloud services"
+
+      - name: "Slashdot"
+        url: "slashdot.org"
+        notes: "Tech news, software"
+
+      - name: "FileHippo"
+        url: "filehippo.com"
+        notes: "Software downloads"
+
+      - name: "Softpedia"
+        url: "softpedia.com"
+        notes: "Software reviews"
+
+      - name: "CNET Downloads"
+        url: "download.cnet.com"
+        notes: "Large audience"
+
+  tier_3_startup_launch_sites:
+    description: "Startup launch and discovery"
+    sites:
+      - name: "BetaList"
+        url: "betalist.com"
+        notes: "Pre-launch, $129 for instant"
+
+      - name: "Launching Next"
+        url: "launchingnext.com"
+        notes: "Startup launches"
+
+      - name: "BetaPage"
+        url: "betapage.co"
+        notes: "Beta testing community"
+
+      - name: "StartupLift"
+        url: "startuplift.com"
+        notes: "Startup feedback"
+
+      - name: "StartupBuffer"
+        url: "startupbuffer.com"
+        notes: "Startup promotion"
+
+      - name: "Startup Ranking"
+        url: "startupranking.com"
+        notes: "Startup leaderboard"
+
+      - name: "KillerStartups"
+        url: "killerstartups.com"
+        notes: "Startup reviews"
+
+      - name: "Land-book"
+        url: "land-book.com"
+        notes: "Design-focused"
+
+      - name: "StartupStash"
+        url: "startupstash.com"
+        notes: "Startup resources"
+
+      - name: "SideProjectors"
+        url: "sideprojectors.com"
+        notes: "Side project marketplace"
+
+      - name: "Launched"
+        url: "launched.io"
+        notes: "Launch showcase"
+
+      - name: "10words"
+        url: "10words.io"
+        notes: "Describe in 10 words"
+
+      - name: "Startup Collections"
+        url: "startupcollections.com"
+        notes: "Curated lists"
+
+  tier_4_business_directories:
+    description: "Business and startup databases"
+    sites:
+      - name: "Crunchbase"
+        url: "crunchbase.com"
+        priority: "high"
+        notes: "Startup database, VC visibility"
+
+      - name: "AngelList"
+        url: "angel.co"
+        notes: "Startup jobs, funding"
+
+      - name: "F6S"
+        url: "f6s.com"
+        notes: "Startup programs"
+
+      - name: "Gust"
+        url: "gust.com"
+        notes: "Investor connections"
+
+      - name: "StartupBlink"
+        url: "startupblink.com"
+        notes: "Startup ecosystem"
+
+      - name: "Wellfound"
+        url: "wellfound.com"
+        notes: "Jobs and funding"
+
+      - name: "LinkedIn Company Page"
+        url: "linkedin.com"
+        priority: "high"
+        notes: "Professional network"
+
+  tier_5_niche_specific:
+    dev_tools:
+      - name: "GitHub Marketplace"
+        url: "github.com/marketplace"
+        notes: "Developer tools"
+
+      - name: "VS Code Marketplace"
+        url: "marketplace.visualstudio.com"
+        notes: "VS Code extensions"
+
+      - name: "JetBrains Marketplace"
+        url: "plugins.jetbrains.com"
+        notes: "IDE plugins"
+
+      - name: "npm"
+        url: "npmjs.com"
+        notes: "Node packages"
+
+      - name: "PyPI"
+        url: "pypi.org"
+        notes: "Python packages"
+
+      - name: "DevHunt"
+        url: "devhunt.org"
+        notes: "Developer tools"
+
+      - name: "Console.dev"
+        url: "console.dev"
+        notes: "Dev tool newsletter"
+
+      - name: "StackShare"
+        url: "stackshare.io"
+        notes: "Tech stack sharing"
+
+      - name: "LibHunt"
+        url: "libhunt.com"
+        notes: "Library discovery"
+
+      - name: "Awesome Lists"
+        url: "awesome.re"
+        notes: "GitHub awesome lists"
+
+    ai_ml:
+      - name: "There's An AI For That"
+        url: "theresanaiforthat.com"
+        notes: "AI tool directory"
+
+      - name: "AI Tool Hunt"
+        url: "aitoolhunt.com"
+        notes: "AI tool discovery"
+
+      - name: "Futurepedia"
+        url: "futurepedia.io"
+        notes: "AI tool directory"
+
+      - name: "TopAI.tools"
+        url: "topai.tools"
+        notes: "AI rankings"
+
+      - name: "AI Valley"
+        url: "aivalley.ai"
+        notes: "AI tools"
+
+      - name: "Future Tools"
+        url: "futuretools.io"
+        notes: "AI resources"
+
+      - name: "AI Scout"
+        url: "aiscout.net"
+        notes: "AI discovery"
+
+      - name: "Hugging Face"
+        url: "huggingface.co"
+        notes: "ML models, spaces"
+
+    no_code:
+      - name: "NoCode.tech"
+        url: "nocode.tech"
+        notes: "No-code tools"
+
+      - name: "Makerpad"
+        url: "makerpad.co"
+        notes: "No-code community"
+
+      - name: "Zapier App Directory"
+        url: "zapier.com/apps"
+        notes: "Integration listing"
+
+      - name: "Notion Integrations"
+        url: "notion.so/integrations"
+        notes: "Notion ecosystem"
+
+      - name: "Airtable Marketplace"
+        url: "airtable.com/marketplace"
+        notes: "Airtable apps"
+
+    design:
+      - name: "Dribbble"
+        url: "dribbble.com"
+        notes: "Design community"
+
+      - name: "Behance"
+        url: "behance.net"
+        notes: "Portfolio showcase"
+
+      - name: "Figma Community"
+        url: "figma.com/community"
+        notes: "Figma resources"
+
+      - name: "UI8"
+        url: "ui8.net"
+        notes: "Design resources"
+
+    marketing:
+      - name: "GrowthHackers"
+        url: "growthhackers.com"
+        notes: "Growth community"
+
+      - name: "Indiehackers Products"
+        url: "indiehackers.com/products"
+        notes: "IH product listings"
+
+    productivity:
+      - name: "Slant"
+        url: "slant.co"
+        notes: "Product recommendations"
+
+      - name: "AppSumo Marketplace"
+        url: "appsumo.com"
+        notes: "Lifetime deals"
+
+      - name: "SetApp"
+        url: "setapp.com"
+        notes: "Mac app bundle"
+
+  tier_6_regional:
+    description: "Region-specific directories"
+    sites:
+      europe:
+        - "EU-Startups.com"
+        - "Tech.eu"
+        - "Sifted.eu"
+
+      asia:
+        - "TechInAsia.com"
+        - "e27.co"
+        - "KrASIA.com"
+
+      latam:
+        - "Contxto.com"
+        - "LatamList.com"
+
+      india:
+        - "YourStory.com"
+        - "Inc42.com"
+
+      russia_cis:
+        - "vc.ru"
+        - "Spark.ru"
+        - "Rusbase.com"
+
+  tier_7_aggregators:
+    description: "Meta-directories and aggregators"
+    sites:
+      - name: "BuiltWith"
+        url: "builtwith.com"
+        notes: "Tech detection"
+
+      - name: "SimilarWeb"
+        url: "similarweb.com"
+        notes: "Traffic analysis"
+
+      - name: "Wappalyzer"
+        url: "wappalyzer.com"
+        notes: "Tech profiler"
+
+  submission_checklist:
+    per_directory:
+      - "Complete profile with logo"
+      - "Compelling description (unique per site)"
+      - "High-quality screenshots"
+      - "Video demo if supported"
+      - "Accurate categorization"
+      - "Links to documentation"
+
+    ongoing:
+      - "Request reviews from happy customers"
+      - "Respond to ALL reviews (positive & negative)"
+      - "Update quarterly with new features"
+      - "Track rankings and traffic"
+```
+
+#### 3.5.3 Viral & Referral Loops
+
+```yaml
+viral_loops:
+  types:
+    inherent_virality:
+      description: "Product usage naturally involves others"
+      examples:
+        - "Calendly - share scheduling link"
+        - "Zoom - invite to meeting"
+        - "Figma - collaborate on design"
+        - "Notion - share workspace"
+
+      implementation:
+        - "'Powered by [Product]' on outputs"
+        - "Share/invite as core action"
+        - "Collaboration as value prop"
+
+    incentivized_referrals:
+      description: "Rewards for bringing new users"
+      structures:
+        one_sided:
+          - "Give $X credit per referral"
+          - "Unlock features at milestones"
+
+        two_sided:
+          - "Both referrer and referred get reward"
+          - "Higher conversion, higher cost"
+
+      examples:
+        - "Dropbox: 500MB per referral"
+        - "Uber: Free rides both sides"
+        - "Notion: $5 credit per referral"
+
+    waitlist_virality:
+      description: "Move up queue by referring"
+      mechanics:
+        - "Show position in queue"
+        - "Refer to jump ahead"
+        - "Gamify with leaderboard"
+
+      tools:
+        - "Viral Loops"
+        - "KickoffLabs"
+        - "Custom build"
+
+  implementation_checklist:
+    - "Identify natural share moments"
+    - "Make sharing 1-click frictionless"
+    - "Provide shareable assets (images, links)"
+    - "Track attribution (UTMs, referral codes)"
+    - "Thank referrers publicly"
+    - "A/B test incentive structures"
+
+  metrics:
+    k_factor:
+      formula: "invites_per_user × conversion_rate"
+      target: "> 1 for viral growth"
+
+    referral_rate:
+      formula: "referred_users / total_users"
+      benchmark: "10-30% is strong"
+```
+
+#### 3.5.4 Partnership & Integration Marketing
+
+```yaml
+partnership_growth:
+  why: "Partners drive ~38% of SaaS revenue on average"
+
+  integration_marketplaces:
+    tier_1_must_have:
+      - name: "Zapier"
+        url: "zapier.com/platform"
+        reach: "6M+ users"
+        effort: "Medium"
+        notes: "Highest ROI for most SaaS"
+
+      - name: "Slack App Directory"
+        url: "slack.com/apps"
+        reach: "Millions daily active"
+        effort: "Medium-High"
+        notes: "Great for B2B tools"
+
+      - name: "Chrome Web Store"
+        url: "chrome.google.com/webstore"
+        reach: "Billions of users"
+        effort: "Low-Medium"
+        notes: "Extensions, browser tools"
+
+    tier_2_category_specific:
+      - name: "Shopify App Store"
+        category: "E-commerce"
+        notes: "If relevant to merchants"
+
+      - name: "HubSpot Marketplace"
+        category: "Marketing/Sales"
+        notes: "CRM ecosystem"
+
+      - name: "Salesforce AppExchange"
+        category: "Enterprise"
+        notes: "Large enterprise reach"
+
+      - name: "WordPress Plugin Directory"
+        category: "Web/Content"
+        notes: "Massive install base"
+
+      - name: "Atlassian Marketplace"
+        category: "Dev/Project Mgmt"
+        notes: "Jira, Confluence users"
+
+  co_marketing_playbook:
+    types:
+      joint_webinars:
+        effort: "Medium"
+        reach: "Combined audiences"
+        template: |
+          "How [Your Tool] + [Their Tool] helps [Audience] achieve [Outcome]"
+
+      guest_content:
+        effort: "Low-Medium"
+        options:
+          - "Guest post on partner blog"
+          - "Podcast appearance"
+          - "Case study feature"
+
+      mutual_promotion:
+        effort: "Low"
+        options:
+          - "Newsletter swap"
+          - "Social media cross-promotion"
+          - "Integration announcement"
+
+  outreach_template: |
+    Subject: Integration idea: {{your_product}} × {{their_product}}
+
+    Hi {{name}},
+
+    I'm {{your_name}}, founder of {{your_product}}. We help {{value_prop}}.
+
+    I noticed many of our users also use {{their_product}}, and I think
+    there's a natural integration opportunity:
+
+    {{specific_integration_idea}}
+
+    This could help both our users {{benefit}}.
+
+    Would you be open to a quick call to explore this?
+
+    Best,
+    {{your_name}}
+
+  partnership_tiers:
+    tier_1_integration:
+      commitment: "Build integration"
+      ask: "Marketplace listing, co-announcement"
+
+    tier_2_referral:
+      commitment: "Mutual recommendation"
+      ask: "Affiliate/referral arrangement"
+
+    tier_3_content:
+      commitment: "Co-create content"
+      ask: "Guest posts, webinars, case studies"
+```
+
+#### 3.5.5 Build in Public Strategy
+
+```yaml
+build_in_public:
+  philosophy: |
+    Share your journey authentically. Revenue numbers, challenges, failures.
+    Build audience while building product. Turn followers into customers.
+
+  platforms:
+    twitter_x:
+      why: "Fastest growth, tech-savvy audience"
+      content_mix:
+        40_percent: "Insights and lessons"
+        30_percent: "Behind the scenes"
+        20_percent: "Milestones and numbers"
+        10_percent: "Product updates"
+
+      content_ideas:
+        - "Revenue milestones ($100 MRR, $1K MRR)"
+        - "User milestones (100 users, 1000 users)"
+        - "Feature shipping announcements"
+        - "Challenges and how you solved them"
+        - "Decisions and reasoning"
+        - "Tech stack insights"
+        - "Customer feedback highlights"
+
+      cadence: "1-3 posts per day"
+      engagement: "Reply to every comment"
+
+    linkedin:
+      why: "B2B audience, longer content"
+      content_types:
+        - "Founder journey posts"
+        - "Business lessons"
+        - "Hiring/team updates"
+        - "Industry insights"
+
+      cadence: "3-5 posts per week"
+      format: "Story-driven, personal"
+
+    indie_hackers:
+      why: "Founder community, high engagement"
+      content: "Detailed journey posts with numbers"
+      cadence: "Weekly or biweekly updates"
+
+  content_rules:
+    do:
+      - "Share real numbers"
+      - "Admit failures and mistakes"
+      - "Show the messy process"
+      - "Engage with commenters"
+      - "Be consistent"
+      - "Give more than you ask"
+
+    dont:
+      - "Only share wins"
+      - "Be promotional every post"
+      - "Ignore negative feedback"
+      - "Post inconsistently"
+      - "Fake numbers or vanity metrics"
+
+  milestone_templates:
+    revenue: |
+      🎉 Just hit ${{X}} MRR with {{product}}!
+
+      Here's what got us here:
+      - {{key_action_1}}
+      - {{key_action_2}}
+      - {{key_action_3}}
+
+      Biggest lesson: {{lesson}}
+
+      What should we focus on next?
+
+    users: |
+      📈 {{product}} just crossed {{X}} users!
+
+      The journey:
+      - Month 1: {{early_numbers}}
+      - Month 3: {{mid_numbers}}
+      - Today: {{current}}
+
+      What worked: {{insight}}
+
+      Thanks to everyone who believed early! 🙏
+```
+
+#### 3.5.6 Cold Outreach Playbook
+
+```yaml
+cold_outreach:
+  prerequisites:
+    - "Clear ICP (Ideal Customer Profile)"
+    - "5+ testimonials or case studies"
+    - "Proven product-market fit signals"
+    - "Email deliverability verified"
+
+  finding_prospects:
+    tools:
+      - "LinkedIn Sales Navigator"
+      - "Apollo.io (free tier)"
+      - "Hunter.io"
+      - "Clearbit"
+
+    sources:
+      - "Competitor reviews (G2, Capterra)"
+      - "LinkedIn posts about pain point"
+      - "Twitter conversations"
+      - "Industry events attendees"
+      - "Job postings mentioning problem"
+
+  email_sequence:
+    email_1_value_first:
+      timing: "Day 1"
+      goal: "Provide value, ask question"
+      template: |
+        Subject: Quick question about {{their_challenge}}
+
+        Hi {{name}},
+
+        I noticed {{personalized_observation}}.
+
+        We've helped {{similar_company}} solve {{problem}} and
+        achieve {{result}}.
+
+        I put together a quick {{resource}} that might help:
+        {{value_link}}
+
+        Curious - how are you currently handling {{challenge}}?
+
+        Best,
+        {{your_name}}
+
+    email_2_case_study:
+      timing: "Day 3-4"
+      goal: "Social proof"
+      template: |
+        Subject: How {{similar_company}} solved {{problem}}
+
+        Hi {{name}},
+
+        Following up on my last note.
+
+        Wanted to share how {{similar_company}} used {{product}}
+        to {{specific_result}}.
+
+        {{brief_case_study_summary}}
+
+        Worth a 15-min chat to see if this applies to {{their_company}}?
+
+        {{your_name}}
+
+    email_3_breakup:
+      timing: "Day 10-14"
+      goal: "Final attempt, respect time"
+      template: |
+        Subject: Should I close your file?
+
+        Hi {{name}},
+
+        I've reached out a couple times about {{topic}}.
+
+        I don't want to be a pest, so this will be my last email.
+
+        If {{problem}} becomes a priority, I'm here to help.
+
+        All the best,
+        {{your_name}}
+
+  rules:
+    - "Personalize every email (no mass blast)"
+    - "Max 3 emails per prospect"
+    - "Provide value in first touch"
+    - "Respect 'not interested' immediately"
+    - "Track opens/replies, iterate"
+
+  metrics:
+    benchmarks:
+      open_rate: "40-60% (cold)"
+      reply_rate: "5-15%"
+      meeting_rate: "1-5%"
+```
+
+#### 3.5.7 Growth Timeline
+
+```yaml
+growth_timeline:
+  month_1_2:
+    focus: "Foundation"
+    activities:
+      - "Set up all Tier 1 directory listings"
+      - "Build Reddit/community karma"
+      - "Start Build in Public content"
+      - "Join 5-10 relevant communities"
+
+    time_per_week: "5-8 hours"
+
+  month_3_4:
+    focus: "Expansion"
+    activities:
+      - "Complete Tier 2-3 directory submissions"
+      - "Launch first integration (Zapier)"
+      - "Start partnership outreach"
+      - "Implement referral program"
+
+    time_per_week: "8-10 hours"
+
+  month_5_6:
+    focus: "Scale"
+    activities:
+      - "Tier 4-5 directories"
+      - "First co-marketing partnership"
+      - "Cold outreach to ideal customers"
+      - "Optimize based on data"
+
+    time_per_week: "6-8 hours"
+
+  month_7_12:
+    focus: "Compound"
+    activities:
+      - "Double down on what works"
+      - "Cut what doesn't"
+      - "Automate where possible"
+      - "Build on relationships"
+
+    expected_results:
+      - "Consistent organic traffic"
+      - "Word-of-mouth referrals"
+      - "Partnership pipeline"
+      - "Community recognition"
+```
+
 ### Step 4: Launch Day Coordination
 
 ```yaml
@@ -391,6 +1319,8 @@ docs/
 │   ├── readiness-report.md      # Pre-launch checklist results
 │   ├── social-content.md        # All social posts
 │   ├── email-templates.md       # Email copy
+│   ├── growth-playbook.md       # Zero-budget tactics summary
+│   ├── directory-tracker.md     # Listing submission tracker
 │   └── retrospective.md         # Post-launch analysis
 │
 ├── press-kit/                   # If press_outreach enabled
@@ -507,6 +1437,13 @@ speckit launch "ProductName" --date 2024-02-15 --channels twitter,email
 
 # Check readiness only
 speckit launch "ProductName" --readiness-check-only
+
+# Focus on specific zero-budget growth strategies
+speckit launch "ProductName" --date 2024-02-15 --growth-focus directories
+speckit launch "ProductName" --date 2024-02-15 --growth-focus community
+
+# Full zero-budget growth playbook
+speckit launch "ProductName" --date 2024-02-15 --growth-focus all
 ```
 
 ## Success Metrics

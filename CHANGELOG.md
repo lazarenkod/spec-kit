@@ -7,6 +7,56 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.51] - 2025-12-30
+
+### Added
+
+- **Zero-Budget Growth Strategies for `/speckit.launch`** — Comprehensive sustainable growth tactics
+  - **Community Growth Playbook**:
+    - Reddit strategy (95/5 rule, karma building, subreddit targeting)
+    - Indie Hackers engagement (23% conversion rate tactics, milestone posts)
+    - Discord/Slack community approach (Join → Help → Beta test → Mention)
+    - Hacker News beyond Show HN (organic engagement strategies)
+
+  - **Directory Listings (100+ directories organized by tier)**:
+    - Tier 1 Essential: G2, Capterra, TrustRadius, AlternativeTo, GetApp, Software Advice
+    - Tier 2 SaaS Directories: SaaSHub, SaaSworthy, SoftwareSuggest, SourceForge, Crozdesk
+    - Tier 3 Startup Launch Sites: BetaList, Launching Next, BetaPage, StartupBuffer, KillerStartups
+    - Tier 4 Business Directories: Crunchbase, AngelList, F6S, Gust, StartupBlink
+    - Tier 5 Niche-Specific: Dev Tools (GitHub/VS Code/JetBrains Marketplaces), AI/ML (Futurepedia, TopAI.tools), No-Code, Design, Marketing
+    - Tier 6 Regional: Europe, Asia, LatAm, India, Russia/CIS directories
+    - Tier 7 Aggregators: BuiltWith, SimilarWeb, Wappalyzer
+    - Submission checklist and tracking template
+
+  - **Viral & Referral Loops**:
+    - Inherent virality patterns (Calendly, Zoom, Figma examples)
+    - Incentivized referral structures (one-sided, two-sided)
+    - Waitlist virality mechanics
+    - K-factor and referral rate benchmarks
+
+  - **Partnership & Integration Marketing**:
+    - Integration marketplace guide (Zapier, Slack, Chrome, Shopify, HubSpot, Salesforce)
+    - Co-marketing playbook (webinars, guest content, mutual promotion)
+    - Partnership outreach templates
+    - Partnership tier framework
+
+  - **Build in Public Strategy**:
+    - Platform-specific guides (Twitter/X, LinkedIn, Indie Hackers)
+    - Content mix recommendations (40% insights, 30% BTS, 20% milestones, 10% product)
+    - Milestone post templates
+    - Content rules (do's and don'ts)
+
+  - **Cold Outreach Playbook**:
+    - Prospect finding sources and tools
+    - 3-email sequence templates (Value First, Case Study, Breakup)
+    - Personalization requirements
+    - Benchmark metrics (40-60% open rate, 5-15% reply rate)
+
+  - **Growth Timeline** — 12-month roadmap with weekly time allocation
+
+  - **New Input Parameter**: `growth_focus` (community, directories, viral, partnerships, all)
+  - **New Output Files**: `docs/launch/growth-playbook.md`, `docs/launch/directory-tracker.md`
+
 ## [0.0.50] - 2025-12-30
 
 ### Added
