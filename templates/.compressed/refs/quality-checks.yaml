@@ -1,0 +1,147 @@
+# Quality Checks Reference
+# Used by: [REF:QI-001], [REF:AS-001], [REF:RT-001]
+# Replaces: anti-slop.md and reader-testing.md inline references
+
+QI-001:
+  name: Quality Imports
+  description: Standard quality check bundle
+  includes:
+    - AS-001  # Anti-Slop checks
+    - RT-001  # Reader Testing checks
+  apply_to: ALL artifacts
+  when: Self-review phase
+
+AS-001:
+  name: Anti-Slop Checks
+  description: Prevent generic AI-generated filler content
+  source: templates/shared/quality/anti-slop.md
+  checks:
+    - id: SR-SLOP-01
+      name: Forbidden Phrases
+      severity: MEDIUM
+      auto_fixable: true
+      forbidden_openings:
+        - "In today's fast-paced"
+        - "In the ever-evolving"
+        - "It's important to note"
+        - "Let's dive in"
+        - "Without further ado"
+        - "At the end of the day"
+      forbidden_conclusions:
+        - "In conclusion"
+        - "To sum up"
+        - "All in all"
+        - "Moving forward"
+
+    - id: SR-SLOP-02
+      name: Hedge Phrase Density
+      severity: LOW
+      auto_fixable: true
+      threshold: 2 per section
+      hedge_phrases:
+        - "might be"
+        - "could potentially"
+        - "it seems"
+        - "perhaps"
+        - "arguably"
+        - "to some extent"
+
+    - id: SR-SLOP-03
+      name: Specificity Check
+      severity: HIGH
+      auto_fixable: false
+      threshold: max 3 generic terms
+      generic_terms:
+        - "users" → use persona name
+        - "system" → use component name
+        - "process" → use specific workflow
+        - "data" → use entity name
+        - "stakeholders" → use role names
+
+    - id: SR-SLOP-04
+      name: Buzzword Density
+      severity: MEDIUM
+      auto_fixable: false
+      threshold: max 2 per paragraph
+      buzzwords:
+        - "leverage"
+        - "synergy"
+        - "paradigm"
+        - "holistic"
+        - "cutting-edge"
+        - "game-changing"
+        - "best-in-class"
+
+    - id: SR-SLOP-05
+      name: Recommendation Present
+      severity: HIGH
+      auto_fixable: false
+      rule: Decision sections must include clear recommendation
+      decision_indicators:
+        - "Decision"
+        - "Approach"
+        - "Selection"
+        - "Choice"
+        - "Option"
+
+RT-001:
+  name: Reader Testing Checks
+  description: Ensure artifacts are actionable by target audience
+  source: templates/shared/quality/reader-testing.md
+  checks:
+    - id: SR-READ-01
+      name: Fresh Reader Comprehension
+      severity: HIGH
+      rule: New team member can understand in 30 seconds
+      test: |
+        Can reader answer:
+        - What is being built?
+        - Who is it for?
+        - What is the scope?
+
+    - id: SR-READ-02
+      name: Role Actionability
+      severity: MEDIUM
+      rule: Clear next steps for PM, Dev, Designer, QA
+      test: Each role can identify their immediate action
+
+    - id: SR-READ-03
+      name: Ambiguity Detection
+      severity: HIGH
+      rule: No sentence interpretable 2+ ways
+      triggers:
+        - "appropriate"
+        - "as needed"
+        - "etc."
+        - "and so on"
+        - "similar"
+        - "may include"
+
+    - id: SR-READ-04
+      name: Acronym Definitions
+      severity: LOW
+      auto_fixable: true
+      rule: All acronyms defined on first use
+      format: "JWT (JSON Web Token)"
+
+    - id: SR-READ-05
+      name: Assumptions Stated
+      severity: MEDIUM
+      rule: Implicit assumptions made explicit
+      threshold: max 2 unstated assumptions
+
+# Brainstorm-Then-Curate Pattern
+BTC-001:
+  name: Brainstorm-Then-Curate
+  description: Generate options, then select with rationale
+  source: templates/shared/quality/brainstorm-curate.md
+  algorithm: |
+    1. BRAINSTORM: Generate 3-5 options
+    2. EVALUATE: Score each on relevant criteria
+    3. CURATE: Select top 1-2 with explicit rationale
+    4. PRESENT: Show selection + brief alternatives
+  apply_to:
+    - Architecture decisions
+    - Technology choices
+    - Design patterns
+    - Implementation approaches

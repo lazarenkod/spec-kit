@@ -1,0 +1,106 @@
+# Initialization Modules Reference
+# Used by: [REF:INIT-001]
+# Replaces: ~500 lines of repeated initialization code across templates
+
+INIT-001:
+  name: Standard Initialization
+  description: Load project language, assess complexity, detect brownfield mode
+
+  modules:
+    - id: language-loading
+      source: templates/shared/core/language-loading.md
+      output: ARTIFACT_LANGUAGE
+      steps:
+        - Read /memory/constitution.md
+        - Extract "language" from Project Settings table
+        - Default to "en" if not found
+        - Resolve language name (en→English, ru→Russian, etc.)
+      rules:
+        translate:
+          - Section headers
+          - Requirement descriptions
+          - User stories, acceptance criteria
+          - Comments, notes, validation messages
+        keep_english:
+          - IDs (FR-001, AS-001, T001)
+          - Technical terms (API, REST, JWT, CRUD)
+          - Code snippets, variable names
+          - File paths, URLs
+          - RFC 2119 keywords (MUST, SHOULD, MAY)
+
+    - id: complexity-scoring
+      source: templates/shared/complexity-scoring.md
+      outputs:
+        - COMPLEXITY_TIER
+        - COMPLEXITY_SCORE
+      tiers:
+        TRIVIAL: 0-25    # Minimal workflow, 3 sections, skip CQS
+        SIMPLE: 26-50    # Standard workflow, 5-6 sections
+        MODERATE: 51-75  # Enhanced workflow, full sections, CQS >= 60
+        COMPLEX: 76-100  # Full workflow + concept.md required, CQS >= 80
+      signals:
+        - category: scope
+          weight: 0-25
+          keywords_high: [system-wide, platform, architecture, infrastructure]
+          keywords_low: [single, simple, quick, minor]
+        - category: stakeholders
+          weight: 0-20
+          rule: count distinct user types/roles
+        - category: tech_complexity
+          weight: 0-25
+          keywords_high: [real-time, distributed, ML, AI, blockchain]
+          keywords_low: [CRUD, form, page, list, table]
+        - category: integration
+          weight: 0-15
+          keywords: [API, third-party, webhook, OAuth, SSO]
+        - category: codebase
+          weight: 0-15
+          rule: Only if BROWNFIELD_MODE, based on commit count
+
+    - id: brownfield-detection
+      source: templates/shared/core/brownfield-detection.md
+      outputs:
+        - BROWNFIELD_MODE
+        - BROWNFIELD_CONFIDENCE
+      signals:
+        - signal: git_history
+          weight: 30
+          condition: git_commits > 50
+        - signal: codebase_exists
+          weight: 25
+          condition: has_src AND file_count > 20
+        - signal: baseline_exists
+          weight: 35
+          condition: exists(FEATURE_DIR/baseline.md)
+          definitive: true
+        - signal: package_manager
+          weight: 15
+          condition: exists(package.json|requirements.txt|go.mod|Cargo.toml)
+        - signal: intent_keywords
+          weight: 10
+          keywords: [existing, modify, extend, refactor, migrate, fix, legacy]
+        - signal: migrations_exist
+          weight: 10
+          condition: exists(migrations/|db/migrate/|alembic/)
+      thresholds:
+        greenfield: 0-29%
+        ask_user: 30-59%
+        brownfield: 60-100%
+
+  execution:
+    order: [language-loading, complexity-scoring, brownfield-detection]
+    report_format: |
+      Generating {ARTIFACT_TYPE} in {LANGUAGE_NAME} ({ARTIFACT_LANGUAGE})...
+      Complexity: {COMPLEXITY_TIER} ({COMPLEXITY_SCORE}/100)
+      Brownfield mode: {BROWNFIELD_MODE} (confidence: {BROWNFIELD_CONFIDENCE}%)
+
+INIT-002:
+  name: Minimal Initialization
+  description: Language only, skip complexity and brownfield
+  modules:
+    - id: language-loading
+      source: templates/shared/core/language-loading.md
+      output: ARTIFACT_LANGUAGE
+  use_for:
+    - analyze.md (validation only)
+    - merge.md (system spec update)

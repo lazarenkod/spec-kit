@@ -42,6 +42,8 @@ generate_commands() {
   mkdir -p "$output_dir"
   for template in templates/commands/*.md; do
     [[ -f "$template" ]] || continue
+    # Skip compressed variants (they're included separately as references)
+    [[ "$template" == *.COMPRESSED.md ]] && continue
     local name description script_command agent_script_command body
     name=$(basename "$template" .md)
     
@@ -152,7 +154,18 @@ build_variant() {
   fi
   
   [[ -d templates ]] && { mkdir -p "$SPEC_DIR/templates"; find templates -type f -not -path "templates/commands/*" -not -name "vscode-settings.json" -exec cp --parents {} "$SPEC_DIR"/ \; ; echo "Copied templates -> .specify/templates"; }
-  
+
+  # Copy compressed templates and reference system for token-efficient usage
+  if [[ -d templates/.compressed ]]; then
+    cp -r templates/.compressed "$SPEC_DIR/templates/"
+    echo "Copied templates/.compressed -> .specify/templates/.compressed"
+  fi
+
+  # Copy compressed command variants as references
+  mkdir -p "$SPEC_DIR/templates/commands"
+  find templates/commands -name "*.COMPRESSED.md" -exec cp {} "$SPEC_DIR/templates/commands/" \; 2>/dev/null && \
+    echo "Copied compressed command templates -> .specify/templates/commands"
+
   # NOTE: We substitute {ARGS} internally. Outward tokens differ intentionally:
   #   * Markdown/prompt (claude, copilot, cursor-agent, opencode): $ARGUMENTS
   #   * TOML (gemini, qwen): {{args}}

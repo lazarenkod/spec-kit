@@ -1,0 +1,126 @@
+# Validation Gates Reference
+# Used by: [REF:VG-001], [REF:VG-002], [REF:VG-003], etc.
+# Replaces: ~100+ lines of inline gate definitions across templates
+
+VG-001:
+  name: SRS Threshold
+  description: Specification Readiness Score quality gate
+  check: SRS >= {threshold}
+  thresholds:
+    MVP: 75
+    production: 85
+    critical: 90
+  block_if: score < threshold
+  message: "SRS {score}% below {threshold}% threshold. Improve specification quality."
+  remediation:
+    - Add missing acceptance criteria to user stories
+    - Ensure all requirements are testable
+    - Remove ambiguous language
+    - Add edge case scenarios
+
+VG-002:
+  name: CQS Threshold
+  description: Concept Quality Score quality gate
+  check: CQS >= {threshold}
+  thresholds:
+    TRIVIAL: 50    # Not applicable, but set for completeness
+    SIMPLE: 50     # Not applicable
+    MODERATE: 60   # Recommended
+    COMPLEX: 80    # Required
+  block_if: score < threshold
+  message: "CQS {score}/100 below {threshold} for {COMPLEXITY_TIER}. Complete discovery."
+  remediation:
+    - Complete market validation section
+    - Add persona JTBD analysis
+    - Define measurable success metrics
+    - Identify risks and pivot criteria
+
+VG-003:
+  name: Checklist Complete
+  description: All checklist items must pass
+  check: incomplete_items == 0
+  source: checklists/requirements.md
+  block_if: incomplete_items > 0
+  message: "Resolve {count} incomplete checklist items before proceeding."
+  remediation:
+    - Review each incomplete item
+    - Mark as complete or add [SKIP] with reason
+
+VG-004:
+  name: Constitution Alignment
+  description: No violations of project constitution
+  source: /memory/constitution.md
+  check: constitution_violations == 0
+  severity: CRITICAL
+  block_if: violations > 0
+  message: "Spec violates project constitution. Resolve before planning."
+  remediation:
+    - Review constitution principles
+    - Align spec with stated constraints
+    - If conflict, document rationale for exception
+
+VG-005:
+  name: Ambiguity Gate
+  description: Limit ambiguous statements
+  check: ambiguity_count <= {threshold}
+  thresholds:
+    TRIVIAL: 10
+    SIMPLE: 5
+    MODERATE: 3
+    COMPLEX: 0
+  block_if: count > threshold
+  message: "Too many ambiguities detected ({count}). Clarification required."
+  auto_remediate: speckit.clarify
+  remediation:
+    - Run /speckit.clarify to resolve
+    - Replace vague terms with specific ones
+    - Add quantifiable metrics
+
+VG-006:
+  name: PRS Threshold
+  description: Plan Readiness Score quality gate
+  check: PRS >= {threshold}
+  thresholds:
+    MVP: 70
+    production: 80
+  block_if: score < threshold
+  message: "PRS {score}% below {threshold}%. Improve plan quality."
+
+VG-007:
+  name: TRS Threshold
+  description: Task Readiness Score quality gate
+  check: TRS >= {threshold}
+  thresholds:
+    MVP: 65
+    production: 75
+  block_if: score < threshold
+  message: "TRS {score}% below {threshold}%. Improve task breakdown."
+
+VG-008:
+  name: DQS Threshold
+  description: Design Quality Score quality gate
+  check: DQS >= {threshold}
+  thresholds:
+    MVP: 70
+    production: 85
+  block_if: score < threshold
+  message: "DQS {score}/100 below {threshold}. Improve design quality."
+
+# Compound Gates (combine multiple checks)
+VG-HANDOFF-SPEC-TO-PLAN:
+  name: Spec-to-Plan Handoff Gate
+  gates: [VG-001, VG-003, VG-004, VG-005]
+  pass_condition: ALL gates pass
+  message: "Pre-handoff validation failed. Resolve issues before planning."
+
+VG-HANDOFF-PLAN-TO-TASKS:
+  name: Plan-to-Tasks Handoff Gate
+  gates: [VG-006]
+  pass_condition: ALL gates pass
+  message: "Plan not ready for task breakdown."
+
+VG-HANDOFF-CONCEPT-TO-SPEC:
+  name: Concept-to-Spec Handoff Gate
+  gates: [VG-002]
+  pass_condition: CQS meets COMPLEXITY_TIER threshold
+  message: "Concept not validated. Complete discovery first."

@@ -1,0 +1,133 @@
+# Output Schemas Reference
+# Common artifact output structures
+# Used to standardize output formats across compressed templates
+
+OUT-SPEC:
+  name: Specification Output Schema
+  path: specs/{feature-id}/spec.md
+  sections:
+    required:
+      - Goal: 1-3 sentence feature objective
+      - User Stories: US-xxx with acceptance criteria
+      - Functional Requirements: FR-xxx list
+      - Acceptance Scenarios: AS-xxx happy + edge cases
+    conditional:
+      - Change Specification: If BROWNFIELD_MODE
+      - Non-Functional Requirements: If COMPLEXITY >= MODERATE
+      - Data Contracts: If API feature
+      - Cross-Repository Dependencies: If WORKSPACE_MODE
+    optional:
+      - Out of Scope: Explicit boundaries
+      - Success Metrics: Measurable outcomes
+      - Technical Constraints: Known limitations
+  id_formats:
+    user_story: US-{NNN}
+    functional_req: FR-{NNN}
+    non_functional: NFR-{NNN}
+    scenario: AS-{NNN}
+    change: CHG-{NNN}
+  traceability:
+    - US-xxx → FR-xxx (many-to-many)
+    - FR-xxx → AS-xxx (one-to-many)
+    - If concept.md: US-xxx → EPIC-NNN.FNN (concept reference)
+
+OUT-PLAN:
+  name: Plan Output Schema
+  path: specs/{feature-id}/plan.md
+  sections:
+    required:
+      - Overview: Brief summary linking to spec
+      - Component Architecture: High-level design
+      - Implementation Approach: Selected solution
+      - API Design: If integration feature
+      - Error Handling: Error scenarios + recovery
+      - Testing Strategy: Unit, integration, E2E scope
+    conditional:
+      - Migration Strategy: If BROWNFIELD_MODE
+      - Rollback Plan: If BROWNFIELD_MODE
+      - Research Summary: If unknowns identified
+    optional:
+      - Alternative Approaches: Considered but rejected
+      - Security Considerations: If auth/data feature
+      - Performance Considerations: If high-load feature
+  traceability:
+    - Each section → FR-xxx from spec
+    - API endpoints → FR-xxx
+    - Components → US-xxx
+
+OUT-TASKS:
+  name: Tasks Output Schema
+  path: specs/{feature-id}/tasks.md
+  sections:
+    required:
+      - Task Breakdown: T001-T999 list
+      - Dependencies: Task dependency graph
+    conditional:
+      - Requirements Traceability Matrix: If FR > 3
+      - Regression Tasks: If BROWNFIELD_MODE
+      - Rollback Tasks: If migration involved
+    optional:
+      - Milestones: Checkpoint markers
+      - Risk Tasks: [RISK] tagged items
+  task_format: |
+    ### T{NNN}: {Title}
+    **Trace**: FR-{x}, US-{y}
+    **Depends**: T{a}, T{b}
+    **Estimate**: {points} pts
+    **Description**: {brief description}
+  markers:
+    - "[CRITICAL]": Must complete first
+    - "[RISK]": Requires careful execution
+    - "[ROLLBACK]": Rollback preparation
+    - "[REG]": Regression testing
+
+OUT-CONCEPT:
+  name: Concept Output Schema
+  path: specs/concept.md
+  sections:
+    required:
+      - Vision Statement: Product vision
+      - Golden Path: 5-phase user journey
+      - Feature Hierarchy: EPIC → Feature → Story structure
+      - Success Metrics: North Star + supporting metrics
+    conditional:
+      - Market Analysis: TAM/SAM/SOM (if market-facing)
+      - Personas: JTBD analysis (if user-facing)
+      - Risk Matrix: 3+ risks with mitigation
+      - Competitive Analysis: If market-facing
+    optional:
+      - Technical Hints: Domain entities, integrations
+      - Wave Planning: P1a/P1b priority buckets
+  traceability:
+    - Concept ID format: EPIC-{NNN}.F{NN}.S{NN}
+    - Links to: specs/{feature-id}/ directories
+
+OUT-DESIGN:
+  name: Design Output Schema
+  path: specs/app-design/
+  structure:
+    - design-system.md: Colors, typography, spacing
+    - components/: Component specifications
+    - wireframes/: ASCII wireframes
+    - journeys/: User flow diagrams
+  traceability:
+    - Screen → US-xxx
+    - Component → Design System token
+    - Journey → Golden Path phase
+
+OUT-MANIFEST:
+  name: Feature Manifest Schema
+  path: specs/.manifest.json
+  schema:
+    version: "1.0"
+    active_feature: "{feature-id}"
+    features:
+      - id: "{feature-id}"
+        name: "{feature name}"
+        branch: "feature/{id}"
+        status: "draft|in-progress|complete|merged"
+        created: "{ISO date}"
+        artifacts:
+          - spec.md
+          - plan.md
+          - tasks.md

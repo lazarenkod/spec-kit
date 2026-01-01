@@ -1,0 +1,193 @@
+# Self-Review Framework Reference
+# Used by: [REF:SR-001]
+# Replaces: ~476 lines of self-review/framework.md
+
+SR-001:
+  name: Self-Review Framework
+  description: Unified quality checks with iteration and verdict logic
+  source: templates/shared/self-review/framework.md
+
+  severity_levels:
+    CRITICAL:
+      weight: 10
+      auto_fail: true
+      description: Blocks artifact completion. Must be fixed.
+    HIGH:
+      weight: 5
+      auto_fail: false
+      warn_threshold: 2
+      description: Significant quality issue. Should be fixed.
+    MEDIUM:
+      weight: 2
+      auto_fail: false
+      warn_threshold: 4
+      description: Quality improvement. Fix if possible.
+    LOW:
+      weight: 1
+      auto_fail: false
+      description: Nice to have. Optional fix.
+
+  iteration:
+    max_iterations: 3
+    algorithm: |
+      FOR iteration IN 1..MAX_ITERATIONS:
+        results = RUN_CHECKS(artifact, criteria)
+        verdict = CALCULATE_VERDICT(results)
+        IF verdict == PASS: BREAK
+        ELIF iteration < MAX: auto-fix and retry
+        ELSE: report final verdict
+
+  verdict_logic:
+    FAIL: critical_fails > 0
+    WARN: high_fails >= 2 OR medium_fails >= 4 OR score < 80
+    PASS: score >= 80 AND critical_fails == 0 AND high_fails < 2
+
+  quality_score:
+    formula: 100 * (1 - failed_weight / total_weight)
+    threshold: 80
+
+  report_format: |
+    ## Self-Review Report
+    **Artifact**: {name} | **Iteration**: {n}/{max} | **Score**: {score}%
+    **Verdict**: {PASS|WARN|FAIL}
+    | ID | Name | Status | Details |
+
+SR-SPEC:
+  name: Specification Criteria
+  source: templates/shared/self-review/criteria-spec.md
+  checks:
+    - id: SR-SPEC-01
+      name: Feature ID Format
+      severity: CRITICAL
+      check: Feature ID matches F-NNN or FEAT-NNN pattern
+    - id: SR-SPEC-02
+      name: User Stories Present
+      severity: HIGH
+      check: At least one US-xxx with acceptance criteria
+    - id: SR-SPEC-03
+      name: Requirements Traceable
+      severity: HIGH
+      check: All FR-xxx linked to user stories
+    - id: SR-SPEC-04
+      name: Scenarios Complete
+      severity: MEDIUM
+      check: AS-xxx covers happy path + 2 edge cases
+    - id: SR-SPEC-05
+      name: NFR Defined
+      severity: MEDIUM
+      check: NFR-xxx present if COMPLEXITY >= MODERATE
+    - id: SR-SPEC-06
+      name: Out of Scope Clear
+      severity: LOW
+      check: Out of Scope section exists with explicit boundaries
+    - id: SR-SPEC-07
+      name: Success Metrics
+      severity: MEDIUM
+      check: At least one measurable success metric
+    - id: SR-SPEC-08
+      name: No Ambiguity Markers
+      severity: HIGH
+      check: No [NEEDS CLARIFICATION] markers remain
+    - id: SR-SPEC-09
+      name: Constitution Aligned
+      severity: CRITICAL
+      check: No violations of /memory/constitution.md principles
+    - id: SR-SPEC-10
+      name: SRS Score Met
+      severity: HIGH
+      check: SRS >= 75 (MVP) or >= 85 (production)
+
+SR-PLAN:
+  name: Plan Criteria
+  source: templates/shared/self-review/criteria-plan.md
+  checks:
+    - id: SR-PLAN-01
+      name: Spec Linkage
+      severity: CRITICAL
+      check: All FR/US from spec addressed in plan
+    - id: SR-PLAN-02
+      name: Component Design
+      severity: HIGH
+      check: Component Architecture section complete
+    - id: SR-PLAN-03
+      name: API Defined
+      severity: HIGH
+      check: API contracts defined if integration feature
+    - id: SR-PLAN-04
+      name: Data Model
+      severity: MEDIUM
+      check: Data model section if persistence required
+    - id: SR-PLAN-05
+      name: Error Handling
+      severity: MEDIUM
+      check: Error scenarios documented
+    - id: SR-PLAN-06
+      name: Security Considerations
+      severity: HIGH
+      check: Security section if auth/data feature
+    - id: SR-PLAN-07
+      name: Testing Strategy
+      severity: MEDIUM
+      check: Test approach defined
+    - id: SR-PLAN-08
+      name: No Placeholders
+      severity: HIGH
+      check: No TODO, TBD, FIXME markers
+    - id: SR-PLAN-09
+      name: Rollback Plan
+      severity: MEDIUM
+      check: Rollback section if BROWNFIELD_MODE
+    - id: SR-PLAN-10
+      name: PRS Score Met
+      severity: HIGH
+      check: PRS >= 70
+
+SR-TASK:
+  name: Task Criteria
+  source: templates/shared/self-review/criteria-tasks.md
+  checks:
+    - id: SR-TASK-01
+      name: Plan Coverage
+      severity: CRITICAL
+      check: All plan components have tasks
+    - id: SR-TASK-02
+      name: Task Format
+      severity: HIGH
+      check: T001-T999 format with clear descriptions
+    - id: SR-TASK-03
+      name: Dependencies
+      severity: MEDIUM
+      check: Task dependencies clearly marked
+    - id: SR-TASK-04
+      name: Estimates Present
+      severity: LOW
+      check: Story points or time estimates
+    - id: SR-TASK-05
+      name: RTM Complete
+      severity: MEDIUM
+      check: Requirements Traceability Matrix if FR > 3
+
+SR-CONC:
+  name: Concept Criteria
+  source: templates/shared/self-review/criteria-concept.md
+  checks:
+    - id: SR-CONC-01
+      name: CQS Score Met
+      severity: CRITICAL
+      check: CQS >= 60 (or 80 for COMPLEX)
+    - id: SR-CONC-02
+      name: Vision Defined
+      severity: HIGH
+      check: Vision Statement section complete
+    - id: SR-CONC-03
+      name: Golden Path Complete
+      severity: HIGH
+      check: Golden Path has all 5 phases
+    - id: SR-CONC-04
+      name: Personas Defined
+      severity: MEDIUM
+      check: At least 2 personas with JTBD
+    - id: SR-CONC-05
+      name: Metrics Defined
+      severity: MEDIUM
+      check: Success metrics with baselines
