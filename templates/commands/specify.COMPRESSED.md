@@ -28,6 +28,26 @@ $ARGUMENTS
 
 ---
 
+## Prefetch Phase [REF:PF-001]
+
+**Speculative parallel load** BEFORE any conditional logic:
+
+```text
+# PREFETCH BATCH (single message, all Read calls in parallel)
+Read IN PARALLEL:
+- `memory/constitution.md`
+- `templates/spec-template.md`
+- `templates/shared/core/language-loading.md`
+- `templates/shared/complexity-scoring.md`
+- `templates/shared/core/brownfield-detection.md`
+- `templates/shared/core/workspace-detection.md`
+- `specs/concept.md` (if exists)
+
+CACHE results. REPORT: "Prefetched {N} files"
+```
+
+---
+
 ## Init [REF:INIT-001]
 
 Load project context using **parallel loading** (see `templates/shared/core/parallel-loading.md`):

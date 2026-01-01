@@ -581,6 +581,29 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Prefetch Phase [REF:PF-001]
+
+**Speculative parallel load** of all potentially-needed files BEFORE any conditional logic:
+
+```text
+# PREFETCH BATCH (single message, all Read calls in parallel)
+Read IN PARALLEL:
+- `memory/constitution.md`
+- `templates/shared/core/language-loading.md`
+- `templates/shared/complexity-scoring.md`
+- `FEATURE_DIR/tasks.md` (required - will be resolved after script runs)
+- `FEATURE_DIR/plan.md` (required - will be resolved after script runs)
+- `FEATURE_DIR/spec.md` (if exists)
+- `FEATURE_DIR/checklists/*.md` (if directory exists)
+
+CACHE all results with session lifetime.
+REPORT: "Prefetched {N} files in {T}ms"
+```
+
+**Why prefetch?** Loading 5-8 files in parallel (300ms) vs sequential (2-3s) saves 2+ seconds per command invocation.
+
+---
+
 ## Outline
 
 ### Performance Optimizations Summary

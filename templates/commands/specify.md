@@ -273,6 +273,32 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Prefetch Phase [REF:PF-001]
+
+**Speculative parallel load** of all potentially-needed files BEFORE any conditional logic:
+
+```text
+# PREFETCH BATCH (single message, all Read calls in parallel)
+Read IN PARALLEL:
+- `memory/constitution.md`
+- `templates/spec-template.md`
+- `templates/shared/core/language-loading.md`
+- `templates/shared/complexity-scoring.md`
+- `templates/shared/core/brownfield-detection.md`
+- `templates/shared/core/workspace-detection.md`
+
+# CONDITIONAL PREFETCH (add to batch if files exist)
+IF exists("specs/concept.md") → include in parallel batch
+IF exists("memory/baseline.md") OR exists("specs/baseline.md") → include in parallel batch
+
+CACHE all results with session lifetime.
+REPORT: "Prefetched {N} files in {T}ms"
+```
+
+**Why prefetch?** Loading 6-8 files in parallel (300ms) vs sequential (2-3s) saves 2+ seconds per command invocation.
+
+---
+
 ## Brownfield Detection
 
 Read `templates/shared/core/brownfield-detection.md` and apply the confidence-weighted detection algorithm.

@@ -121,18 +121,32 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
 
 ## Outline
 
-0. **Load project context**:
+0. **Prefetch Phase** [REF:PF-001]:
 
-   Read and apply shared modules using **parallel loading** (see `templates/shared/core/parallel-loading.md`):
+   **Speculative parallel load** of all potentially-needed files BEFORE any conditional logic:
 
    ```text
-   # PARALLEL BATCH READ (single message, multiple Read tool calls)
+   # PREFETCH BATCH (single message, all Read calls in parallel)
    Read IN PARALLEL:
+   - `memory/constitution.md`
+   - `templates/tasks-template.md`
    - `templates/shared/core/language-loading.md`
    - `templates/shared/complexity-scoring.md`
    - `templates/shared/core/brownfield-detection.md`
+   - `specs/concept.md` (if exists)
+   - `FEATURE_DIR/spec.md` (required - will be resolved after script runs)
+   - `FEATURE_DIR/plan.md` (required - will be resolved after script runs)
 
-   # Execute after all loaded
+   CACHE all results with session lifetime.
+   REPORT: "Prefetched {N} files in {T}ms"
+   ```
+
+1. **Load project context**:
+
+   Execute prefetched modules (already in cache from Step 0):
+
+   ```text
+   # Execute cached modules
    EXECUTE language-loading.md → ARTIFACT_LANGUAGE
    EXECUTE complexity-scoring.md → COMPLEXITY_TIER, COMPLEXITY_SCORE
    EXECUTE brownfield-detection.md → BROWNFIELD_MODE

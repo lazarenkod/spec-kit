@@ -444,6 +444,29 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Prefetch Phase [REF:PF-001]
+
+**Speculative parallel load** of all potentially-needed files BEFORE any conditional logic:
+
+```text
+# PREFETCH BATCH (single message, all Read calls in parallel)
+Read IN PARALLEL:
+- `memory/constitution.md`
+- `templates/shared/core/language-loading.md`
+- `templates/shared/complexity-scoring.md`
+- `FEATURE_DIR/spec.md` (required - will be resolved after script runs)
+- `specs/concept.md` (if exists)
+- `specs/app-design/design-system.md` (if exists)
+- `templates/design-tokens/*.md` (if directory exists)
+
+CACHE all results with session lifetime.
+REPORT: "Prefetched {N} files in {T}ms"
+```
+
+**Why prefetch?** Loading 5-8 files in parallel (300ms) vs sequential (2-3s) saves 2+ seconds per command invocation.
+
+---
+
 ## Purpose
 
 This command creates **visual and interaction specifications** for UI-heavy features. It bridges the gap between functional requirements (spec.md) and implementation by defining:

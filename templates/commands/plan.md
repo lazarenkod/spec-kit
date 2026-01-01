@@ -116,18 +116,30 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
 
 ## Outline
 
-0. **Load project context**:
+0. **Prefetch Phase** [REF:PF-001]:
 
-   Read and apply shared modules for initialization using **parallel loading** (see `templates/shared/core/parallel-loading.md`):
+   **Speculative parallel load** of all potentially-needed files BEFORE any conditional logic:
 
    ```text
-   # PARALLEL BATCH READ (single message, multiple Read tool calls)
+   # PREFETCH BATCH (single message, all Read calls in parallel)
    Read IN PARALLEL:
+   - `memory/constitution.md`
+   - `templates/plan-template.md`
    - `templates/shared/core/language-loading.md`
    - `templates/shared/complexity-scoring.md`
    - `templates/shared/core/brownfield-detection.md`
+   - `specs/concept.md` (if exists)
 
-   # Execute after all loaded
+   CACHE all results with session lifetime.
+   REPORT: "Prefetched {N} files in {T}ms"
+   ```
+
+1. **Load project context**:
+
+   Execute prefetched modules (already in cache from Step 0):
+
+   ```text
+   # Execute cached modules
    EXECUTE language-loading.md → ARTIFACT_LANGUAGE
    EXECUTE complexity-scoring.md → COMPLEXITY_TIER, COMPLEXITY_SCORE
    EXECUTE brownfield-detection.md → BROWNFIELD_MODE
@@ -138,11 +150,11 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
 
    Adapt workflow based on COMPLEXITY_TIER (see complexity-scoring.md for tier-specific guidelines).
 
-1. **Setup**: Run `{SCRIPT}` from repo root and parse JSON for FEATURE_SPEC, IMPL_PLAN, SPECS_DIR, BRANCH. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+2. **Setup**: Run `{SCRIPT}` from repo root and parse JSON for FEATURE_SPEC, IMPL_PLAN, SPECS_DIR, BRANCH. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
-2. **Load context**: Read IN PARALLEL: FEATURE_SPEC, `/memory/constitution.md`, and IMPL_PLAN template. Confirm ARTIFACT_LANGUAGE from constitution Project Settings.
+3. **Load context**: Read IN PARALLEL: FEATURE_SPEC, `/memory/constitution.md`, and IMPL_PLAN template. Confirm ARTIFACT_LANGUAGE from constitution Project Settings.
 
-3. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
+4. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
    - Fill Technical Context (mark unknowns as "NEEDS CLARIFICATION")
    - Fill Constitution Check section from constitution
    - Evaluate gates (ERROR if violations unjustified)
@@ -152,7 +164,7 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
    - Phase 1: Update agent context by running the agent script
    - Re-evaluate Constitution Check post-design
 
-4. **Update Feature Manifest**: After plan artifacts are generated:
+5. **Update Feature Manifest**: After plan artifacts are generated:
    ```text
    Read `templates/shared/core/manifest-update.md` and apply with:
    - NEW_STATUS = "PLANNED"
