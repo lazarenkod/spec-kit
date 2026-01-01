@@ -27,6 +27,7 @@ claude_code:
   thinking_budget: 8000
   cache_control: {system_prompt: ephemeral, constitution: ephemeral, artifacts: ephemeral}
   semantic_cache: {enabled: true, encoder: all-MiniLM-L6-v2, threshold: 0.95, scope: session}
+  cache_hierarchy: full
   plan_mode_trigger: true
   subagents: [architecture-specialist, design-researcher]
 ---

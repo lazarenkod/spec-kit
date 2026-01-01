@@ -20,6 +20,7 @@ claude_code:
   model: sonnet
   reasoning_mode: normal
   thinking_budget: 2000
+  cache_hierarchy: full
 ---
 
 ## Input

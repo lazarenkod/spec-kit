@@ -127,35 +127,55 @@ This section contains stable project context.
 
 ## Cache Hierarchy Integration
 
-Prompt caching works with the existing cache layers:
+Prompt caching works with the six-level cache hierarchy:
 
 ```
-┌─────────────────────────────────────────────────┐
-│ L0: Prompt Cache (Anthropic API)                │
-│  • System prompts, constitution                 │
-│  • TTL: Session (managed by API)                │
-│  • Savings: 80-90% input tokens                 │
-└─────────────────────────────────────────────────┘
-                        ↓
-┌─────────────────────────────────────────────────┐
-│ L1: Semantic Cache (Embeddings)                 │  ← NEW
-│  • Query similarity matching                    │
-│  • TTL: Session/Project/Global                  │
-│  • Savings: 10-100x for similar queries         │
-└─────────────────────────────────────────────────┘
-                        ↓
-┌─────────────────────────────────────────────────┐
-│ L2: In-Memory (Command scope)                   │
-│  • File contents, glob results                  │
-│  • TTL: Command lifetime                        │
-└─────────────────────────────────────────────────┘
-                        ↓
-┌─────────────────────────────────────────────────┐
-│ L3: Session Cache                               │
-│  • LLM responses, computed results              │
-│  • TTL: 30 minutes                              │
-└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│ L0: Prompt Cache (Anthropic API)                            │  v0.0.61
+│  • System prompts, constitution                             │
+│  • TTL: Session (managed by API)                            │
+│  • Savings: 80-90% input tokens                             │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ L1: Semantic Cache (Embeddings)                             │  v0.0.62
+│  • Query similarity matching                                │
+│  • TTL: Session/1 hour                                      │
+│  • Savings: 10-100x for similar queries                     │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ L2: In-Memory Cache (Command scope)                         │
+│  • File contents, glob results                              │
+│  • TTL: Command lifetime (2-5 min)                          │
+│  • Hit rate: 60-70%                                         │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ L3: Session Cache (RAM)                                     │
+│  • LLM responses, computed results                          │
+│  • TTL: 30 minutes                                          │
+│  • Hit rate: 30-40%                                         │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ L4: Project Cache (Disk)                                    │  v0.0.63
+│  • Compiled templates, analyses, constitution               │
+│  • TTL: Git commit SHA                                      │
+│  • Path: .speckit/cache/                                    │
+│  • Hit rate: 20-30%                                         │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ L5: Global Cache (Disk)                                     │  v0.0.63
+│  • Context7 docs, common templates                          │
+│  • TTL: 7 days                                              │
+│  • Path: ~/.speckit/cache/                                  │
+│  • Hit rate: 40-50%                                         │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+**Full Documentation**: See `templates/shared/cache-hierarchy.md` for complete specifications.
 
 ---
 
@@ -233,6 +253,7 @@ Similarity: 0.97 → Cache Hit!
 ## References
 
 - [Anthropic Prompt Caching Docs](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching)
-- `templates/shared/core/parallel-loading.md` - File-level caching
+- `templates/shared/cache-hierarchy.md` - Complete six-level cache hierarchy
 - `templates/shared/semantic-cache.md` - Query-level semantic caching
-- `SPEC-KIT-ACCELERATION-STRATEGIES.md` sections 3.2 and 3.3
+- `templates/shared/core/parallel-loading.md` - File-level caching
+- `SPEC-KIT-ACCELERATION-STRATEGIES.md` section 3.1

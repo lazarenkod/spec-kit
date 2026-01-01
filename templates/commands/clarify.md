@@ -28,6 +28,7 @@ claude_code:
   model: sonnet
   reasoning_mode: extended
   thinking_budget: 16000
+  cache_hierarchy: full
   orchestration:
     max_parallel: 3
     fail_fast: true

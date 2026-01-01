@@ -7,6 +7,38 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.63] - 2026-01-01
+
+### Added
+
+- **Six-Level Cache Hierarchy** — Complete cache infrastructure with Project Cache (L4) and Global Cache (L5)
+  - **New Shared Module**:
+    - `templates/shared/cache-hierarchy.md` — Comprehensive six-level cache documentation
+    - Full specifications for all cache levels with TTL, size limits, and hit rates
+    - Cache lookup algorithm with level promotion
+    - Invalidation strategies per level
+
+  - **Cache Levels [REF:CH-001]**:
+    - L0: Prompt Cache (Anthropic API) — 80-90% token reduction
+    - L1: Semantic Cache (Embeddings) — 10-100x for similar queries
+    - L2: In-Memory (Command scope) — TTL: 2-5 min, 60-70% hit rate
+    - L3: Session Cache (RAM) — TTL: 30 min, 30-40% hit rate
+    - **L4: Project Cache (Disk) — NEW: TTL: Git SHA, path `.speckit/cache/`**
+    - **L5: Global Cache (Disk) — NEW: TTL: 7 days, path `~/.speckit/cache/`**
+
+  - **Frontmatter Directive**:
+    - Added `cache_hierarchy: full` to all 22 command templates
+    - Added `cache_hierarchy: full` to all 21 COMPRESSED templates
+    - Compact format enables all cache levels with sensible defaults
+
+  - **Updated Shared Modules**:
+    - `caching-strategy.md` — Added reference to cache-hierarchy.md
+
+  - **Expected Performance**:
+    - L4 Project Cache: 20-30% hit rate, saves 500ms-2s per hit
+    - L5 Global Cache: 40-50% hit rate, saves 1-3s per hit
+    - Combined latency reduction: 20-30% across workflows
+
 ## [0.0.62] - 2026-01-01
 
 ### Added

@@ -24,6 +24,7 @@ claude_code:
     cache_scope: session
     cacheable_fields: [user_input, feature_description]
     ttl: 3600
+  cache_hierarchy: full
   plan_mode_trigger: true
   orchestration:
     max_parallel: 3

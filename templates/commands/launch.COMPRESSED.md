@@ -20,6 +20,11 @@ handoffs:
   - { label: Ship Product, agent: speckit.ship, condition: "NOT deployed" }
   - { label: Setup Monitoring, agent: speckit.monitor, condition: "launch_day" }
   - { label: Continue Implementation, agent: speckit.implement, condition: "readiness < 90%" }
+claude_code:
+  model: sonnet
+  reasoning_mode: extended
+  thinking_budget: 6000
+  cache_hierarchy: full
 ---
 
 ## Input

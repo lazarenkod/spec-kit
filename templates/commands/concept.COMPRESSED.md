@@ -10,6 +10,7 @@ claude_code:
   thinking_budget: 10000
   cache_control: {system_prompt: ephemeral, constitution: ephemeral, templates: ephemeral}
   semantic_cache: {enabled: true, encoder: all-MiniLM-L6-v2, threshold: 0.95, scope: session}
+  cache_hierarchy: full
   plan_mode_trigger: true
 skills: [market-research, ux-audit]
 scripts:

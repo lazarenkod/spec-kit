@@ -77,6 +77,7 @@ claude_code:
     cache_scope: session
     cacheable_fields: [user_input, feature_description]
     ttl: 3600
+  cache_hierarchy: full
   orchestration:
     max_parallel: 3
     conflict_resolution: queue

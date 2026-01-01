@@ -34,6 +34,7 @@ claude_code:
   model: sonnet
   reasoning_mode: extended
   thinking_budget: 12000
+  cache_hierarchy: full
   subagents:
     - role: spec-validator
       parallel: true

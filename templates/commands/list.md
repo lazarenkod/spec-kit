@@ -16,6 +16,7 @@ claude_code:
   model: haiku
   reasoning_mode: extended
   thinking_budget: 4000
+  cache_hierarchy: full
   subagents:
     - role: registry-reader
       role_group: ANALYSIS
