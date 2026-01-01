@@ -30,6 +30,7 @@ claude_code:
   reasoning_mode: extended
   thinking_budget: 16000
   cache_control: {system_prompt: ephemeral, constitution: ephemeral, artifacts: ephemeral}
+  semantic_cache: {enabled: true, encoder: all-MiniLM-L6-v2, threshold: 0.95, scope: session}
   phases: [bootstrap, implement, validate, document]
   orchestration:
     max_parallel: 3

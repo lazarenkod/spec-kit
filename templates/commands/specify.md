@@ -70,6 +70,13 @@ claude_code:
     constitution: ephemeral
     templates: ephemeral
     ttl: session
+  semantic_cache:
+    enabled: true
+    encoder: all-MiniLM-L6-v2
+    similarity_threshold: 0.95
+    cache_scope: session
+    cacheable_fields: [user_input, feature_description]
+    ttl: 3600
   orchestration:
     max_parallel: 3
     conflict_resolution: queue

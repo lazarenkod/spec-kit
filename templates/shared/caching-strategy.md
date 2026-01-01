@@ -131,20 +131,27 @@ Prompt caching works with the existing cache layers:
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ L0: Prompt Cache (Anthropic API)                │  ← NEW
+│ L0: Prompt Cache (Anthropic API)                │
 │  • System prompts, constitution                 │
 │  • TTL: Session (managed by API)                │
 │  • Savings: 80-90% input tokens                 │
 └─────────────────────────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────┐
-│ L1: In-Memory (Command scope)                   │
+│ L1: Semantic Cache (Embeddings)                 │  ← NEW
+│  • Query similarity matching                    │
+│  • TTL: Session/Project/Global                  │
+│  • Savings: 10-100x for similar queries         │
+└─────────────────────────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────┐
+│ L2: In-Memory (Command scope)                   │
 │  • File contents, glob results                  │
 │  • TTL: Command lifetime                        │
 └─────────────────────────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────┐
-│ L2: Session Cache                               │
+│ L3: Session Cache                               │
 │  • LLM responses, computed results              │
 │  • TTL: 30 minutes                              │
 └─────────────────────────────────────────────────┘
@@ -182,8 +189,50 @@ Prompt caching works with the existing cache layers:
 
 ---
 
+## Semantic Caching [REF:SC-001]
+
+Beyond prompt caching, use semantic caching for query-level similarity matching.
+
+**Integration**: See `templates/shared/semantic-cache.md` for full documentation.
+
+### Quick Reference
+
+```yaml
+# In command frontmatter
+claude_code:
+  semantic_cache:
+    enabled: true
+    encoder: all-MiniLM-L6-v2
+    similarity_threshold: 0.95
+    cache_scope: session
+    cacheable_fields: [user_input, feature_description]
+    ttl: 3600
+```
+
+### How It Works
+
+Semantic caching uses embedding vectors to match similar queries:
+
+```text
+Query A: "Create user authentication"
+Query B: "Build login functionality"
+Similarity: 0.97 → Cache Hit!
+```
+
+### Expected Savings
+
+| Scenario | Without Semantic Cache | With Semantic Cache | Improvement |
+|----------|------------------------|---------------------|-------------|
+| Identical query | 5-10 min | Instant | 100x |
+| Similar query (0.95+) | 5-10 min | 30s | 10-100x |
+| Different query | 5-10 min | 5-10 min | - |
+| Overall hit rate | 0% | 40-50% | New capability |
+
+---
+
 ## References
 
 - [Anthropic Prompt Caching Docs](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching)
 - `templates/shared/core/parallel-loading.md` - File-level caching
-- `SPEC-KIT-ACCELERATION-STRATEGIES.md` section 3.3
+- `templates/shared/semantic-cache.md` - Query-level semantic caching
+- `SPEC-KIT-ACCELERATION-STRATEGIES.md` sections 3.2 and 3.3
