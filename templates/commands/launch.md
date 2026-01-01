@@ -62,6 +62,153 @@ handoffs:
   - label: Continue Implementation
     agent: speckit.implement
     condition: "readiness_score < 90%"
+claude_code:
+  model: sonnet
+  reasoning_mode: extended
+  thinking_budget: 16000
+  orchestration:
+    max_parallel: 3
+    conflict_resolution: queue
+    timeout_per_agent: 300000
+    retry_on_failure: 1
+    role_isolation: true
+    wave_overlap:
+      enabled: true
+      threshold: 0.80
+  subagents:
+    # Wave 1: Content Generation (parallel)
+    - role: release-notes-generator
+      role_group: DOCS
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Generate comprehensive release notes for the product launch.
+
+        Analyze:
+        - Recent git commits and changelog
+        - Feature specifications in specs/
+        - User-facing changes and improvements
+
+        Generate:
+        - Clear, user-friendly release notes
+        - Feature highlights with benefits
+        - Breaking changes (if any)
+        - Migration notes (if applicable)
+
+        Output:
+        - docs/launch/release-notes.md
+        - Key features summary for other agents
+
+    - role: changelog-compiler
+      role_group: DOCS
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: haiku
+      prompt: |
+        Compile and format the project changelog for launch.
+
+        Tasks:
+        - Parse existing CHANGELOG.md
+        - Extract entries since last release
+        - Format for public consumption
+        - Group by category (Added, Changed, Fixed, etc.)
+
+        Output:
+        - Formatted changelog section for launch materials
+        - Version number and date confirmation
+
+    # Wave 2: Marketing Assets (depends on content generation)
+    - role: press-kit-generator
+      role_group: MARKETING
+      parallel: true
+      depends_on: [release-notes-generator]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        Generate complete press kit for product launch.
+
+        Using release notes and product information:
+
+        Create:
+        - docs/press-kit/press-release.md (journalist-ready)
+        - docs/press-kit/fact-sheet.md (key stats and features)
+        - docs/press-kit/founder-bios.md (team bios)
+        - Media asset requirements checklist
+
+        Format:
+        - Professional press release style
+        - Quotable founder statements
+        - Key metrics and differentiators
+
+        Output:
+        - Complete press kit directory
+        - Media distribution list suggestions
+
+    - role: announcement-drafter
+      role_group: MARKETING
+      parallel: true
+      depends_on: [release-notes-generator]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        Draft launch announcements for all channels.
+
+        Using release notes and product details:
+
+        Create for each channel:
+        - Twitter/X: Launch thread (5-7 tweets)
+        - LinkedIn: Long-form announcement
+        - Product Hunt: Tagline, description, maker comment
+        - Hacker News: Show HN post draft
+        - Email: Waitlist announcement template
+
+        Follow channel best practices:
+        - Character limits
+        - Optimal posting times
+        - CTA placement
+        - Hashtag strategy
+
+        Output:
+        - docs/launch/social-content.md
+        - docs/launch/email-templates.md
+        - Platform-specific formatting
+
+    # Wave 3: Coordination (depends on all assets)
+    - role: distribution-coordinator
+      role_group: MARKETING
+      parallel: true
+      depends_on: [press-kit-generator, announcement-drafter]
+      priority: 30
+      model_override: haiku
+      prompt: |
+        Coordinate launch distribution and create launch plan.
+
+        Compile all generated assets into:
+
+        1. Launch Plan (docs/launch/launch-plan.md):
+           - Timeline with specific dates/times
+           - Channel posting schedule
+           - Team responsibilities
+           - War room setup checklist
+
+        2. Readiness Report (docs/launch/readiness-report.md):
+           - Asset completion status
+           - Quality gate results
+           - Risk assessment
+           - Go/No-Go recommendation
+
+        3. Growth Playbook (docs/launch/growth-playbook.md):
+           - Directory submission tracker
+           - Community engagement plan
+           - Partnership opportunities
+
+        Output:
+        - Complete launch documentation
+        - Readiness score (target: >= 90%)
+        - Action items for any gaps
 ---
 
 # /speckit.launch

@@ -4,6 +4,38 @@ tools: ['github/github-mcp-server/issue_write']
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
+claude_code:
+  model: sonnet
+  reasoning_mode: extended
+  thinking_budget: 8000
+  subagents:
+    # Wave 1: Task Parsing
+    - role: task-parser
+      role_group: ANALYSIS
+      parallel: false
+      depends_on: []
+      priority: 10
+      model_override: haiku
+      prompt: |
+        Parse tasks.md for all task entries.
+        Extract task IDs, descriptions, dependencies.
+        Build dependency graph for ordering.
+        Validate GitHub remote URL before proceeding.
+        Output: parsed tasks with dependency order.
+
+    # Wave 2: Issue Creation (sequential after parsing)
+    - role: issue-creator
+      role_group: DOCS
+      parallel: false
+      depends_on: [task-parser]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        Create GitHub issues using MCP server.
+        Maintain dependency order in issue references.
+        Add labels, milestones if configured.
+        Link issues to spec and plan artifacts.
+        Output: created issue URLs with mapping.
 ---
 
 ## User Input

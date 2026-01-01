@@ -67,6 +67,159 @@ pre_gates:
 scripts:
   sh: scripts/bash/ship.sh
   ps: scripts/powershell/ship.ps1
+claude_code:
+  model: sonnet
+  reasoning_mode: extended
+  thinking_budget: 16000
+  orchestration:
+    max_parallel: 3
+    conflict_resolution: queue
+    timeout_per_agent: 300000
+    retry_on_failure: 1
+    role_isolation: true
+    wave_overlap:
+      enabled: true
+      threshold: 0.80
+  subagents:
+    # Wave 1: Infrastructure Setup (parallel)
+    - role: infra-provisioner
+      role_group: INFRA
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Provision cloud infrastructure for deployment.
+
+        Read `templates/shared/ship/terraform-turbo.md` for optimization strategies.
+
+        Tasks:
+        1. Load infra.yaml configuration
+        2. Check fingerprint cache for skip eligibility
+        3. Generate/update Terraform configuration
+        4. Run terraform init and plan
+        5. Apply infrastructure changes (if not --dry-run)
+        6. Extract outputs for deploy stage
+
+        Apply optimizations:
+        - Provider caching
+        - Parallelism tuning
+        - Fingerprint-based skip
+
+        Output:
+        - INFRA_OUTPUTS with database_host, redis_host, k8s_endpoint, etc.
+        - Updated .speckit/state/{ENV}/infra-outputs.json
+        - Fingerprint cache update
+
+    - role: config-validator
+      role_group: INFRA
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: haiku
+      prompt: |
+        Validate deployment configuration before provisioning.
+
+        Check:
+        - infra.yaml syntax and required fields
+        - deploy.yaml syntax and required fields
+        - Environment variables are defined
+        - Secrets references are valid
+        - Resource limits are specified
+        - Helm values files exist
+
+        Output:
+        - CONFIG_VALID: true/false
+        - List of validation errors (if any)
+        - Suggested fixes for common issues
+
+    # Wave 2: Deployment (depends on infrastructure)
+    - role: deployment-executor
+      role_group: BACKEND
+      parallel: true
+      depends_on: [infra-provisioner, config-validator]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        Execute application deployment to target environment.
+
+        Read `templates/shared/ship/deploy-optimizer.md` for optimization strategies.
+
+        Using INFRA_OUTPUTS from provisioning:
+
+        1. Check if deployment needed (version comparison)
+        2. Build and push container image
+        3. Deploy with Helm to Kubernetes
+        4. Wait for rollout completion
+        5. Save deployed version state
+
+        Apply optimizations:
+        - Docker layer intelligence
+        - Helm template caching
+        - Adaptive timeouts
+
+        Output:
+        - DEPLOY_SUCCESS: true/false
+        - BASE_URL for verification
+        - Deployed version details
+        - Namespace and pod status
+
+    # Wave 3: Verification (depends on deployment)
+    - role: health-checker
+      role_group: TESTING
+      parallel: true
+      depends_on: [deployment-executor]
+      priority: 30
+      model_override: haiku
+      prompt: |
+        Verify basic health of deployed application.
+
+        Run quick health checks:
+        - HTTP health endpoint (/health)
+        - Database connectivity
+        - Redis connectivity (if applicable)
+        - Basic API endpoint responses
+
+        Output:
+        - HEALTH_STATUS: healthy/degraded/unhealthy
+        - Individual check results
+        - Latency metrics for each check
+        - Recommendations if degraded
+
+    - role: smoke-tester
+      role_group: TESTING
+      parallel: true
+      depends_on: [deployment-executor]
+      priority: 30
+      model_override: sonnet
+      prompt: |
+        Execute smoke and acceptance tests on deployed application.
+
+        Read optimization modules:
+        - `templates/shared/ship/test-parallel.md`
+        - `templates/shared/ship/browser-pool.md`
+        - `templates/shared/ship/contract-testing.md`
+        - `templates/shared/ship/incremental-tests.md`
+
+        Using BASE_URL from deployment:
+
+        1. Run smoke tests (parallel)
+        2. Run acceptance tests linked to AS-xxx
+        3. Generate verify-results.md
+        4. Create snapshot on success (for rollback)
+        5. Handle failures per smart-rollback.md
+
+        Apply optimizations:
+        - Browser pool pre-warming
+        - Incremental test selection
+        - Test result caching
+        - Contract vs E2E strategy
+
+        Output:
+        - FEATURE_DIR/verify-results.md
+        - Test summary with pass/fail counts
+        - Snapshot ID (if successful)
+        - Rollback recommendation (if failed)
 ---
 
 ## User Input

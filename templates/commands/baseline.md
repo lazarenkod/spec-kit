@@ -43,7 +43,112 @@ pre_gates:
 claude_code:
   model: sonnet
   reasoning_mode: extended
-  thinking_budget: 10000
+  thinking_budget: 16000
+  orchestration:
+    max_parallel: 3
+    conflict_resolution: queue
+    timeout_per_agent: 300000
+    retry_on_failure: 1
+    role_isolation: true
+    wave_overlap:
+      enabled: true
+      threshold: 0.80
+  subagents:
+    # Wave 1: Analysis (parallel)
+    - role: code-structure-analyzer
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Analyze code structure for brownfield baseline capture.
+
+        Based on SCOPE_PATTERNS, SCOPE_MODULES, SCOPE_KEYWORDS:
+
+        1. Discover matching files using glob patterns
+        2. Extract components (classes, functions, methods)
+        3. Extract public API signatures
+        4. Identify design patterns and conventions
+
+        Output:
+        - List of discovered files and components
+        - Pattern recognition results (Factory, Repository, etc.)
+        - Framework conventions detected
+        - Component inventory with file:line references
+
+    - role: dependency-mapper
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: haiku
+      prompt: |
+        Map dependencies between components in scope.
+
+        For each discovered component:
+        1. Extract imports and dependencies
+        2. Extract function calls
+        3. Extract class inheritance
+        4. Identify internal vs external dependencies
+
+        Output:
+        - Dependency graph data structure
+        - Internal dependencies (within scope)
+        - External dependencies (outside scope)
+        - Mermaid diagram for visualization
+
+    - role: behavior-documenter
+      role_group: DOCS
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Document current behaviors for each component.
+
+        For each component, extract behavior from:
+        1. Docstrings and comments
+        2. Function names and naming conventions
+        3. Test files (expected behaviors)
+        4. Type hints (input/output contracts)
+        5. Usage patterns (how component is called)
+
+        Output:
+        - CB-xxx entries with current behavior descriptions
+        - Inputs and outputs for each component
+        - Side effects identification
+        - Test coverage status
+
+    # Wave 2: Compilation (depends on analysis)
+    - role: baseline-compiler
+      role_group: DOCS
+      parallel: true
+      depends_on: [code-structure-analyzer, dependency-mapper, behavior-documenter]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        Compile baseline.md from all analysis results.
+
+        Using structure analysis, dependency map, and behavior documentation:
+
+        1. Generate FEATURE_DIR/baseline.md with:
+           - Executive Summary
+           - Current Behaviors (CB-xxx) with code locations
+           - Dependency Graph (Mermaid)
+           - API Contracts (if applicable)
+           - Performance Baselines (if available)
+           - Identified Patterns
+           - Potential Limitations (pre-identified issues)
+
+        2. Validate all file:line references exist
+        3. Ensure CB-xxx IDs are unique and sequential
+        4. Run self-review criteria (SR-BASE-01 to SR-BASE-10)
+
+        Output:
+        - Complete FEATURE_DIR/baseline.md
+        - Summary report with component counts
+        - Ready for /speckit.specify brownfield mode
 skills:
   - name: code-explore
     trigger: "When analyzing code structure or tracing dependencies"

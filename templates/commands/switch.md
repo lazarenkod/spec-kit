@@ -28,6 +28,24 @@ handoffs:
 scripts:
   sh: mkdir -p .speckit && echo "{FEATURE_ID}" > .speckit/active
   ps: $null = New-Item -ItemType Directory -Force -Path .speckit; Set-Content -Path ".speckit/active" -Value "{FEATURE_ID}"
+claude_code:
+  model: haiku
+  reasoning_mode: extended
+  thinking_budget: 4000
+  subagents:
+    - role: feature-switcher
+      role_group: INFRA
+      parallel: false
+      depends_on: []
+      priority: 10
+      model_override: haiku
+      prompt: |
+        Switch active feature context.
+        Parse feature ID/name from arguments.
+        Validate feature exists in manifest.
+        Update .speckit/active file.
+        Handle git branch checkout if branch exists.
+        Display feature status and suggest next action.
 ---
 
 ## User Input

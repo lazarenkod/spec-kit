@@ -12,6 +12,24 @@ handoffs:
 scripts:
   sh: echo "Feature list - no prerequisites required"
   ps: Write-Host "Feature list - no prerequisites required"
+claude_code:
+  model: haiku
+  reasoning_mode: extended
+  thinking_budget: 4000
+  subagents:
+    - role: registry-reader
+      role_group: ANALYSIS
+      parallel: false
+      depends_on: []
+      priority: 10
+      model_override: haiku
+      prompt: |
+        Read and display feature registry from manifest.
+        Parse specs/features/.manifest.md for feature list.
+        Detect active feature from .speckit/active.
+        Verify status by checking actual file existence.
+        Support --verbose, --json, --tree, --evolution modes.
+        Output formatted feature table with status legend.
 ---
 
 ## User Input

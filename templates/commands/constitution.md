@@ -13,7 +13,58 @@ scripts:
 claude_code:
   model: opus
   reasoning_mode: extended
-  thinking_budget: 8000
+  thinking_budget: 16000
+  orchestration:
+    max_parallel: 3
+    fail_fast: true
+    wave_overlap:
+      enabled: true
+      overlap_threshold: 0.80
+  subagents:
+    # Wave 1: Analysis (parallel)
+    - role: layer-analyzer
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: haiku
+      prompt: |
+        Analyze existing constitution layers.
+        Read /memory/constitution.base.md (always exists).
+        Check if /memory/constitution.domain.md exists and identify domain.
+        Read /memory/constitution.md (project layer).
+        Report layer status and identify placeholder tokens.
+        Output: layer analysis summary.
+
+    - role: principle-extractor
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Extract principles from repo context if user input incomplete.
+        Scan README, docs/, prior constitution versions.
+        Identify applicable domain from project type.
+        Collect values for [ALL_CAPS_IDENTIFIER] placeholders.
+        Suggest principle strengthenings based on project needs.
+        Output: extracted values and recommendations.
+
+    # Wave 2: Constitution Writing (after analysis)
+    - role: constitution-writer
+      role_group: DOCS
+      parallel: true
+      depends_on: [layer-analyzer, principle-extractor]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        Write or update constitution based on analysis.
+        Apply inheritance rules: higher layers cannot weaken MUST.
+        Fill placeholder tokens with extracted values.
+        Handle domain selection, principle strengthening, or merge view.
+        Validate: no unexplained brackets, version updated.
+        Generate sync impact report as HTML comment.
+        Output: updated /memory/constitution.md.
 ---
 
 ## User Input

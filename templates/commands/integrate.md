@@ -30,6 +30,58 @@ handoffs:
   - label: Continue Implementation
     agent: speckit.implement
     condition: "integration_complete"
+claude_code:
+  model: sonnet
+  reasoning_mode: extended
+  thinking_budget: 16000
+  orchestration:
+    max_parallel: 3
+    fail_fast: true
+    wave_overlap:
+      enabled: true
+      overlap_threshold: 0.80
+  subagents:
+    # Wave 1: Analysis (parallel)
+    - role: service-analyzer
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Analyze selected third-party service for integration.
+        Identify: SDK package, required environment variables.
+        Determine webhook requirements and endpoints.
+        Check for existing integrations in src/lib/integrations/.
+        Output: service analysis with configuration requirements.
+
+    - role: api-designer
+      role_group: BACKEND
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Design API wrapper interface for the service.
+        Define typed operations based on service capabilities.
+        Plan error handling with typed error classes.
+        Design retry logic for transient failures.
+        Output: API design specification.
+
+    # Wave 2: Code Generation (after analysis)
+    - role: contract-generator
+      role_group: BACKEND
+      parallel: true
+      depends_on: [service-analyzer, api-designer]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        Generate integration code based on analysis and design.
+        Create SDK wrapper: src/lib/integrations/{service}.ts.
+        Add webhook handler if needed: src/app/api/webhooks/{service}/route.ts.
+        Update .env.example with required variables.
+        Generate documentation: docs/integrations/{service}.md.
+        Verify TypeScript compiles and imports work.
 ---
 
 # /speckit.integrate

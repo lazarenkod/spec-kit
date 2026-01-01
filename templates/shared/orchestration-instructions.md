@@ -6,6 +6,59 @@
 
 When this command defines `claude_code.subagents` in its YAML frontmatter, you MUST execute them using parallel Task tool calls organized into dependency waves.
 
+## Ultrathink Mode Detection
+
+**Activation**: Ultrathink mode is active when BOTH conditions are met:
+```yaml
+claude_code:
+  reasoning_mode: extended      # REQUIRED for ultrathink
+  thinking_budget: 8000         # REQUIRED (recommended: 8000-16000)
+```
+
+**Ultrathink Behavior**:
+- Enables deep reasoning for complex architectural decisions
+- Allocates extended thinking time for each subagent
+- Uses opus model by default for high-stakes tasks
+- Increases wave completion verification rigor
+
+**Detection Logic**:
+```text
+IF claude_code.reasoning_mode == "extended" AND claude_code.thinking_budget >= 8000:
+  ULTRATHINK_MODE = true
+  DEFAULT_MODEL = claude_code.model OR "opus"
+  LOG "⚡ Ultrathink mode activated (budget: {thinking_budget})"
+ELSE:
+  ULTRATHINK_MODE = false
+  DEFAULT_MODEL = "sonnet"
+```
+
+## Model Routing Guidelines
+
+Select models based on task complexity and cost/performance tradeoffs:
+
+| Model | Use For | Thinking Budget | Cost Factor |
+|-------|---------|-----------------|-------------|
+| **haiku** | Simple tasks: scaffolding, config files, dependency install, file copying | 2000-4000 | 1x (baseline) |
+| **sonnet** | Standard tasks: data layer, API building, test generation, documentation | 4000-8000 | 10x |
+| **opus** | Complex tasks: architecture decisions, business logic, multi-file refactoring | 8000-16000 | 25x |
+
+**Model Selection by Role Group**:
+```text
+INFRA → haiku (scaffolding, deps, config)
+BACKEND → sonnet/opus (data layer: sonnet, business logic: opus)
+FRONTEND → sonnet (UI components, state management)
+TESTING → sonnet (test generation, mocking)
+REVIEW → sonnet (code review, quality checks)
+DOCS → haiku (documentation generation)
+```
+
+**Override Priority**:
+1. `subagent.model_override` (highest - explicit per-agent)
+2. `orchestration.model_selection.complexity_tier` (task complexity)
+3. Role group default (from table above)
+4. `claude_code.model` (command default)
+5. "sonnet" (fallback)
+
 ## Execution Algorithm
 
 ### Step 1: Parse Subagents
@@ -204,4 +257,70 @@ claude_code:
       skip_flag: "--sequential"  # Flag to disable overlap
       overlap_threshold: 0.80    # 80% completion triggers next wave
       critical_deps_only: true   # Only wait for critical path deps
+```
+
+## Wave Status Tracking
+
+During execution, maintain and display wave progress:
+
+### Status Format (per wave)
+
+```text
+🌊 Wave {N}/{TOTAL} - {WAVE_NAME}
+├── Model: {DEFAULT_MODEL} (ultrathink: {ON|OFF})
+├── Agents: {COMPLETED}/{TOTAL} ({PERCENTAGE}%)
+├── Status: {RUNNING|COMPLETE|BLOCKED}
+│
+├── ✓ {agent1} [{model}]: {status} ({duration}s)
+├── ✓ {agent2} [{model}]: {status} ({duration}s)
+├── ⏳ {agent3} [{model}]: in progress...
+└── ⏸ {agent4} [{model}]: waiting for deps
+```
+
+### Completion Summary
+
+```text
+📊 Orchestration Complete
+├── Total Waves: {N}
+├── Total Agents: {M}
+├── Execution Time: {TOTAL_TIME}s
+├── Parallelism Achieved: {PARALLEL_RATIO}x
+│
+├── Model Usage:
+│   ├── haiku: {count} agents ({cost_pct}%)
+│   ├── sonnet: {count} agents ({cost_pct}%)
+│   └── opus: {count} agents ({cost_pct}%)
+│
+├── Wave Timing:
+│   ├── Wave 1: {time}s ({agents} agents)
+│   ├── Wave 2: {time}s ({agents} agents)
+│   └── Wave N: {time}s ({agents} agents)
+│
+└── Estimated Savings: {SAVINGS}% vs sequential
+```
+
+### Error Recovery in Ultrathink Mode
+
+When ultrathink mode is active and an agent fails:
+
+```text
+IF ULTRATHINK_MODE AND agent.failed:
+  # Extended recovery with deep reasoning
+  1. Analyze failure root cause with extended thinking
+  2. Check if dependencies produced valid output
+  3. Attempt retry with increased thinking_budget (+50%)
+  4. If retry fails, mark dependents as BLOCKED
+  5. Report detailed failure analysis
+```
+
+### Live Progress (Background Agents)
+
+For long-running waves with `run_in_background: true`:
+
+```text
+EVERY 30 seconds:
+  CHECK TaskOutput(agent_id, block=false)
+  UPDATE wave status display
+  IF wave >= 80% complete AND wave_overlap.enabled:
+    TRIGGER next wave start
 ```

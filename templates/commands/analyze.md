@@ -75,7 +75,7 @@ handoffs:
 claude_code:
   model: sonnet
   reasoning_mode: extended
-  thinking_budget: 12000
+  thinking_budget: 16000
   orchestration:
     max_parallel: 2
     role_isolation: false

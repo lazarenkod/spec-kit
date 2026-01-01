@@ -26,8 +26,60 @@ scripts:
    ps: scripts/powershell/check-prerequisites.ps1 -Json -PathsOnly
 claude_code:
   model: sonnet
-  reasoning_mode: normal
-  thinking_budget: 4000
+  reasoning_mode: extended
+  thinking_budget: 16000
+  orchestration:
+    max_parallel: 3
+    fail_fast: true
+    wave_overlap:
+      enabled: true
+      overlap_threshold: 0.80
+  subagents:
+    # Wave 1: Ambiguity Detection
+    - role: ambiguity-detector
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Perform structured ambiguity & coverage scan on spec.
+        Use taxonomy: Functional Scope, Domain & Data Model,
+        Interaction & UX Flow, Non-Functional Quality Attributes,
+        Integration & Dependencies, Edge Cases, Constraints, Terminology.
+        Mark each category: Clear / Partial / Missing.
+        Generate prioritized queue of clarification opportunities.
+        Output: coverage map with candidate questions.
+
+    # Wave 2: Question Generation (after detection)
+    - role: question-generator
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [ambiguity-detector]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        Generate up to 5 targeted clarification questions.
+        Each question must be multiple-choice (2-5 options) or short-answer.
+        Prioritize by (Impact * Uncertainty) heuristic.
+        Ensure category coverage balance.
+        Add recommended option with reasoning for each.
+        Output: formatted question queue ready for user interaction.
+
+    # Wave 3: Spec Update (after user answers)
+    - role: spec-updater
+      role_group: DOCS
+      parallel: true
+      depends_on: [question-generator]
+      priority: 30
+      model_override: sonnet
+      prompt: |
+        Integrate clarifications into spec.md after user answers.
+        Create/update ## Clarifications section with session date.
+        Apply answers to appropriate sections: Functional, Data Model, etc.
+        Replace obsolete statements, normalize terminology.
+        Perform self-review: verify integration, check contradictions.
+        Output: updated spec with clarifications applied.
 ---
 
 ## User Input

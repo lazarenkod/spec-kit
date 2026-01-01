@@ -64,7 +64,205 @@ skills:
 claude_code:
   model: opus
   reasoning_mode: extended
-  thinking_budget: 10000
+  thinking_budget: 16000
+  orchestration:
+    max_parallel: 3
+    conflict_resolution: queue
+    timeout_per_agent: 300000
+    retry_on_failure: 1
+    role_isolation: true
+    wave_overlap:
+      enabled: true
+      threshold: 0.80
+  subagents:
+    # Wave 1: Context Gathering (parallel)
+    - role: brownfield-detector
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: haiku
+      prompt: |
+        Detect brownfield mode for this specification.
+
+        Read `templates/shared/core/brownfield-detection.md` and apply the confidence-weighted detection algorithm.
+
+        Check for:
+        - Existing baseline.md in specs/
+        - Existing codebase patterns
+        - User input signals for modification vs new feature
+
+        Output:
+        - BROWNFIELD_MODE: true/false
+        - BROWNFIELD_CONFIDENCE: 0-100%
+        - Baseline file exists: yes/no
+        - Suggested Change Type if brownfield
+
+    - role: workspace-analyzer
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Detect workspace mode for cross-repository specification.
+
+        Read `templates/shared/core/workspace-detection.md` and apply the detection algorithm.
+
+        Check for:
+        - .speckit-workspace file in parent directories
+        - Multi-repo configuration
+        - Repository aliases and relationships
+
+        Output:
+        - WORKSPACE_MODE: true/false
+        - WORKSPACE_CONTEXT: {current_repo, available_repos} if applicable
+        - Cross-repo dependency patterns detected
+
+    - role: concept-loader
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: haiku
+      prompt: |
+        Load concept context for specification.
+
+        Check for `specs/concept.md` in repository root:
+        - If exists: Parse Feature Hierarchy, extract matching Concept IDs
+        - Calculate Concept Quality Score (CQS)
+        - Extract: Vision context, related User Journeys, Dependencies
+
+        Output:
+        - CONCEPT_EXISTS: true/false
+        - CONCEPT_IDS: matched IDs or "N/A"
+        - CQS_SCORE: 0-100 (if concept exists)
+        - Priority levels to use (P1a/P1b vs P1/P2/P3)
+
+    # Wave 2: Analysis (depends on context gathering)
+    - role: requirement-extractor
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [brownfield-detector, workspace-analyzer]
+      priority: 20
+      model_override: opus
+      prompt: |
+        Extract and structure requirements from user input and gathered context.
+
+        Using BROWNFIELD_MODE and WORKSPACE_MODE context:
+        1. Parse user description for key concepts (actors, actions, data, constraints)
+        2. Generate concise short name (2-4 words) for branch
+        3. Determine complexity tier using complexity-scoring.md
+        4. Apply semantic detection for intent and feature name
+
+        If BROWNFIELD_MODE = true:
+        - Extract current limitations (CL-xxx)
+        - Infer change deltas (CHG-xxx)
+        - Identify preserved behaviors (PB-xxx)
+
+        Output:
+        - SHORT_NAME: feature branch name
+        - COMPLEXITY_TIER: TRIVIAL/SIMPLE/MODERATE/COMPLEX
+        - DETECTED_INTENT: feature intent summary
+        - Key actors and actions identified
+        - Brownfield change analysis (if applicable)
+
+    - role: acceptance-criteria-generator
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [concept-loader]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        Generate acceptance scenarios from concept and user input.
+
+        Using CONCEPT_IDS and concept context:
+        1. Generate Acceptance Scenarios with IDs (AS-[story number][scenario letter])
+        2. Use Given/When/Then format for all scenarios
+        3. Identify edge cases (EC-xxx)
+        4. Map priorities from concept (P1a, P1b) or use simple (P1, P2, P3)
+
+        Output:
+        - Acceptance Scenarios table (ID, Given, When, Then)
+        - Edge Cases list with IDs
+        - Priority mapping for user stories
+        - Independent Test descriptions per story
+
+    # Wave 3: Specification Writing (depends on analysis)
+    - role: spec-writer
+      role_group: DOCS
+      parallel: true
+      depends_on: [requirement-extractor, acceptance-criteria-generator]
+      priority: 30
+      model_override: opus
+      prompt: |
+        Write the complete feature specification.
+
+        Using all gathered context (brownfield, workspace, concept, requirements, acceptance criteria):
+
+        1. Run create-new-feature script to set up branch and spec file
+        2. Load templates/spec-template.md for required sections
+        3. Fill all sections with concrete details:
+           - Overview and Feature Description
+           - User Stories with priorities and concept references
+           - Functional Requirements (FR-xxx) with AS links
+           - Acceptance Scenarios (AS-xxx) in table format
+           - Success Criteria (SC-xxx) - measurable and tech-agnostic
+           - Edge Cases (EC-xxx)
+           - Traceability Summary table
+
+        If WORKSPACE_MODE = true:
+           - Add Cross-Repository Dependencies section
+
+        If BROWNFIELD_MODE = true:
+           - Add Change Specification section with deltas
+
+        Apply quality filters:
+        - Anti-slop scan (no forbidden phrases)
+        - Reader testing (comprehension check)
+        - Max 3 [NEEDS CLARIFICATION] markers
+
+        Output:
+        - Complete spec.md written to FEATURE_DIR
+        - Checklists/requirements.md created
+        - Concept traceability updated (if concept exists)
+
+    # Wave 4: Validation (depends on spec writing)
+    - role: spec-validator
+      role_group: VALIDATION
+      parallel: true
+      depends_on: [spec-writer]
+      priority: 40
+      model_override: sonnet
+      prompt: |
+        Validate specification quality and completeness.
+
+        Read the generated spec.md and perform:
+
+        1. Self-Review Phase:
+           - Check all SR-SPEC-01 to SR-SPEC-10 criteria
+           - Apply UXQ criteria if domain is active
+           - Apply Workspace criteria if WORKSPACE_MODE = true
+
+        2. Quality Validation:
+           - Verify no implementation details
+           - Confirm all FRs have linked ASs
+           - Validate Success Criteria are measurable and tech-agnostic
+           - Check edge cases are defined
+
+        3. Checklist Validation:
+           - Update checklists/requirements.md with pass/fail status
+           - Document any remaining issues
+
+        4. Self-Correction (up to 3 iterations if needed):
+           - Fix CRITICAL and HIGH issues
+           - Re-validate until PASS or max iterations
+
+        Output:
+        - Self-Review Report with verdict (PASS/WARN/FAIL)
+        - Updated checklist with validation status
+        - Traceability summary (FRs, ASs, ECs counts)
+        - Readiness for /speckit.plan handoff
 ---
 
 ## User Input

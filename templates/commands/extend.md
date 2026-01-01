@@ -26,6 +26,38 @@ handoffs:
 scripts:
   sh: scripts/bash/create-new-feature.sh --json --extends "{PARENT}" "{DESCRIPTION}"
   ps: scripts/powershell/create-new-feature.ps1 -Json -Extends "{PARENT}" "{DESCRIPTION}"
+claude_code:
+  model: sonnet
+  reasoning_mode: extended
+  thinking_budget: 8000
+  subagents:
+    # Wave 1: Context Loading
+    - role: context-loader
+      role_group: ANALYSIS
+      parallel: false
+      depends_on: []
+      priority: 10
+      model_override: haiku
+      prompt: |
+        Validate parent feature exists and is merged.
+        Load parent spec, plan, and .merged file.
+        Extract system specs affected by parent.
+        Gather key user stories, constraints, and decisions.
+        Output: parent context summary for extension.
+
+    # Wave 2: Extension Planning (sequential after context)
+    - role: extension-planner
+      role_group: ANALYSIS
+      parallel: false
+      depends_on: [context-loader]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        Create extension feature with Feature Lineage.
+        Suggest relationship type based on description keywords.
+        Pre-populate inherited context section.
+        Identify system specs to update.
+        Output: new feature spec with lineage established.
 ---
 
 ## User Input

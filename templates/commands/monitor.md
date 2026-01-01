@@ -44,6 +44,59 @@ handoffs:
   - label: Prepare Launch
     agent: speckit.launch
     condition: "observability_complete"
+claude_code:
+  model: sonnet
+  reasoning_mode: extended
+  thinking_budget: 16000
+  orchestration:
+    max_parallel: 3
+    fail_fast: true
+    wave_overlap:
+      enabled: true
+      overlap_threshold: 0.80
+  subagents:
+    # Wave 1: Configuration (parallel)
+    - role: telemetry-configurer
+      role_group: INFRA
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Set up OpenTelemetry instrumentation for the service.
+        Detect technology stack from package.json/requirements.txt/go.mod.
+        Generate SDK initialization code for traces, metrics, logs.
+        Configure auto-instrumentation for detected frameworks.
+        Create custom span/metric helpers for business logic.
+        Output: src/lib/telemetry.{ts,py,go}.
+
+    - role: alert-designer
+      role_group: INFRA
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Design alerting rules based on golden signals and SLOs.
+        Create alerts for: high latency, error rate, traffic drops.
+        Add database-specific alerts: connection pool, slow queries.
+        Define SLO-based alerts: error budget burn rate.
+        Generate runbooks for each alert with diagnosis steps.
+        Output: infra/observability/rules/, docs/runbooks/.
+
+    # Wave 2: Dashboard Generation (after config)
+    - role: dashboard-generator
+      role_group: DOCS
+      parallel: true
+      depends_on: [telemetry-configurer, alert-designer]
+      priority: 20
+      model_override: haiku
+      prompt: |
+        Generate Grafana dashboards for observability.
+        Create: Service Overview, Service Deep Dive, SLO Dashboard.
+        Include Infrastructure and Database panels.
+        Configure data sources for Prometheus, Loki, Jaeger.
+        Output: infra/observability/grafana/dashboards/.
 ---
 
 # /speckit.monitor

@@ -15,7 +15,66 @@ handoffs:
 claude_code:
   model: opus
   reasoning_mode: extended
-  thinking_budget: 6000
+  thinking_budget: 16000
+  orchestration:
+    max_parallel: 3
+    fail_fast: true
+    wave_overlap:
+      enabled: true
+      overlap_threshold: 0.80
+  subagents:
+    # Wave 1: Preview Generation (parallel)
+    - role: wireframe-converter
+      role_group: FRONTEND
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Convert ASCII wireframes from design.md to visual HTML.
+        Parse layout regions, map to HTML structure, apply design tokens.
+        Generate responsive HTML files in .preview/wireframes/.
+        Include CSS variables from design system.
+
+    - role: component-previewer
+      role_group: FRONTEND
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Generate component previews from design.md specifications.
+        For each component: extract states, variants, sizes, props.
+        Use v0.dev for complex components, templates for simple ones.
+        Create preview wrappers with all states in grid layout.
+        Output to .preview/components/{name}/.
+
+    # Wave 2: Capture & Validation (parallel, after generation)
+    - role: screenshot-capturer
+      role_group: TESTING
+      parallel: true
+      depends_on: [wireframe-converter, component-previewer]
+      priority: 20
+      model_override: haiku
+      prompt: |
+        Capture Playwright screenshots for all previews.
+        Use viewports: mobile (375x812), tablet (768x1024), desktop (1440x900).
+        Capture both light and dark themes if configured.
+        For components, capture each state (hover, focus, disabled, etc.).
+        Output to .preview/screenshots/.
+
+    - role: design-quality-validator
+      role_group: REVIEW
+      parallel: true
+      depends_on: [wireframe-converter]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        Calculate Design Quality Score (DQS) for generated previews.
+        Check: contrast ratios, typography hierarchy, spacing consistency.
+        Verify accessibility: ARIA labels, keyboard navigation, focus indicators.
+        Validate token usage and component pattern adherence.
+        Generate DQS report with grade and issues list.
 skills:
   - name: wireframe-preview
     trigger: "When converting ASCII wireframes to visual HTML"

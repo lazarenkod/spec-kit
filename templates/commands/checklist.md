@@ -3,6 +3,24 @@ description: Generate a custom checklist for the current feature based on user r
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json
   ps: scripts/powershell/check-prerequisites.ps1 -Json
+claude_code:
+  model: sonnet
+  reasoning_mode: extended
+  thinking_budget: 8000
+  subagents:
+    - role: checklist-generator
+      role_group: DOCS
+      parallel: false
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Generate custom checklist based on user requirements.
+        Parse feature context from spec.md, plan.md, tasks.md.
+        Ask clarifying questions (max 5) for scope refinement.
+        Create checklist that tests requirements quality (not implementation).
+        Use CHK### IDs with quality dimension tags.
+        Output to FEATURE_DIR/checklists/{domain}.md.
 ---
 
 ## Checklist Purpose: "Unit Tests for English"

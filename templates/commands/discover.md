@@ -46,6 +46,109 @@ handoffs:
   - label: Pivot Hypothesis
     agent: speckit.discover
     condition: "validation_failed AND pivot_direction_identified"
+claude_code:
+  model: opus
+  reasoning_mode: extended
+  thinking_budget: 16000
+  orchestration:
+    max_parallel: 3
+    conflict_resolution: queue
+    timeout_per_agent: 300000
+    retry_on_failure: 1
+    role_isolation: true
+    wave_overlap:
+      enabled: true
+      threshold: 0.80
+  subagents:
+    # Wave 1: Discovery Preparation (parallel)
+    - role: hypothesis-generator
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: opus
+      prompt: |
+        Capture and structure the problem hypothesis for customer discovery.
+
+        Based on user input:
+        1. Parse problem_hypothesis and target_persona
+        2. Generate docs/discover/hypothesis.md
+        3. Define assumptions to validate
+        4. Set success criteria thresholds
+
+        Create hypothesis.md with:
+        - Core Hypothesis (problem statement, persona)
+        - Assumptions to Validate table (A1-A4)
+        - Success Criteria (minimum interviews, severity threshold)
+        - Pivot History section
+
+        Output:
+        - docs/discover/hypothesis.md
+        - Structured assumptions list
+        - Validation method recommendations
+
+    - role: experiment-designer
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        Design discovery experiments and interview materials.
+
+        Based on validation_method, generate:
+
+        For interviews:
+        - docs/discover/interview-guide.md (Mom Test methodology)
+        - docs/discover/scoring-template.md (severity, WTP, urgency)
+        - Create docs/discover/interviews/ directory
+
+        For survey:
+        - docs/discover/surveys/survey-template.md
+        - Distribution plan
+
+        For landing_page:
+        - docs/discover/landing-spec.md (page structure)
+        - public/landing/index.html (smoke test page)
+        - docs/discover/landing-metrics.md (tracking)
+
+        Output:
+        - All artifacts per validation_method
+        - Execution guidance for each method
+        - Minimum thresholds (10 interviews, 50 surveys, 500 visitors)
+
+    # Wave 2: Validation Planning (depends on preparation)
+    - role: validation-planner
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [hypothesis-generator, experiment-designer]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        Create analysis and decision framework for discovery results.
+
+        Using hypothesis and experiment design:
+
+        1. Generate analysis framework (docs/discover/analysis.md template)
+           - Quantitative scoring dimensions
+           - Qualitative synthesis structure
+           - Assumption validation matrix
+
+        2. Generate decision matrix (docs/discover/decision.md template)
+           - Green/Yellow/Red light criteria
+           - GO/ITERATE/STOP thresholds
+           - Next step recommendations
+
+        3. Generate discovery-report.md template
+           - Executive summary structure
+           - Artifacts index
+           - Handoff instructions
+
+        Output:
+        - Analysis framework ready for data entry
+        - Decision matrix with quantified thresholds
+        - Executive report template
+        - Integration points with /speckit.concept
 ---
 
 # /speckit.discover

@@ -11,8 +11,226 @@ handoffs:
 claude_code:
   model: opus
   reasoning_mode: extended
-  thinking_budget: 10000
+  thinking_budget: 16000
   plan_mode_trigger: true
+  orchestration:
+    max_parallel: 3
+    wave_overlap:
+      enabled: true
+      threshold: 0.80
+  subagents:
+    # Wave 1: Discovery & Research (parallel)
+    - role: market-researcher
+      role_group: RESEARCH
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Project: {{PROJECT_ROOT}}
+        User Input: {{ARGUMENTS}}
+
+        ## Task
+        Conduct market research:
+        1. Analyze TAM/SAM/SOM for the product category
+        2. Research industry trends and growth projections
+        3. Identify market entry barriers and opportunities
+        4. Document regulatory considerations if applicable
+
+        ## Output
+        - Market size estimates with sources
+        - Industry trend analysis
+        - Entry barrier assessment
+    - role: competitive-analyst
+      role_group: RESEARCH
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Project: {{PROJECT_ROOT}}
+        User Input: {{ARGUMENTS}}
+
+        ## Task
+        Analyze competitive landscape:
+        1. Identify direct and indirect competitors
+        2. Map competitor features and positioning
+        3. Find gaps and differentiation opportunities
+        4. Analyze competitor pricing and business models
+
+        ## Output
+        - Competitor matrix with features
+        - Gap analysis
+        - Differentiation opportunities
+    - role: persona-designer
+      role_group: RESEARCH
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Project: {{PROJECT_ROOT}}
+        User Input: {{ARGUMENTS}}
+
+        ## Task
+        Design user personas:
+        1. Identify primary and secondary user segments
+        2. Create detailed persona profiles with demographics
+        3. Document pain points and motivations
+        4. Estimate willingness-to-pay for each segment
+
+        ## Output
+        - Persona cards (2-4 personas)
+        - Pain point inventory
+        - WTP analysis per segment
+
+    # Wave 2: Synthesis (after research)
+    - role: jtbd-analyst
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [persona-designer]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Personas: (from persona-designer)
+
+        ## Task
+        Analyze Jobs-to-Be-Done:
+        1. Map functional jobs for each persona
+        2. Identify emotional and social jobs
+        3. Define success criteria per job
+        4. Prioritize by frequency and importance
+
+        ## Output
+        - JTBD framework per persona
+        - Job prioritization matrix
+        - Success metrics per job
+    - role: value-prop-designer
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [market-researcher, competitive-analyst]
+      priority: 20
+      model_override: opus
+      prompt: |
+        ## Context
+        Market Research: (from market-researcher)
+        Competitive Analysis: (from competitive-analyst)
+        User Input: {{ARGUMENTS}}
+
+        ## Task
+        Design value proposition:
+        1. Articulate unique value proposition
+        2. Define key differentiators vs competition
+        3. Create positioning statement
+        4. Develop messaging hierarchy
+
+        ## Output
+        - Value proposition canvas
+        - Positioning statement
+        - Key messaging points
+
+    # Wave 3: Validation Framework (after synthesis)
+    - role: metrics-designer
+      role_group: VALIDATION
+      parallel: true
+      depends_on: [value-prop-designer]
+      priority: 30
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Value Proposition: (from value-prop-designer)
+        JTBD Analysis: (from jtbd-analyst)
+
+        ## Task
+        Design success metrics:
+        1. Define North Star metric
+        2. Create SMART goals for launch
+        3. Design metric hierarchy (input/output/outcome)
+        4. Set realistic benchmarks
+
+        ## Output
+        - North Star metric definition
+        - SMART launch goals
+        - Metric dashboard spec
+    - role: risk-assessor
+      role_group: VALIDATION
+      parallel: true
+      depends_on: [jtbd-analyst, value-prop-designer]
+      priority: 30
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Value Proposition: (from value-prop-designer)
+        Market Research: (from market-researcher)
+        JTBD Analysis: (from jtbd-analyst)
+
+        ## Task
+        Assess risks and mitigation:
+        1. Identify market, technical, and execution risks
+        2. Score by impact and likelihood (1-5)
+        3. Propose mitigation strategies
+        4. Define pivot criteria/triggers
+
+        ## Output
+        - Risk matrix (impact vs likelihood)
+        - Mitigation strategies
+        - Pivot trigger definitions
+
+    # Wave 4: Technical Discovery (after validation)
+    - role: technical-hint-generator
+      role_group: TECHNICAL
+      parallel: true
+      depends_on: [value-prop-designer]
+      priority: 40
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Value Proposition: (from value-prop-designer)
+        Project Type: {{PROJECT_TYPE}}
+
+        ## Task
+        Generate technical discovery hints:
+        1. Identify core domain entities
+        2. Sketch API surface area
+        3. Note integration requirements
+        4. Flag technical risk areas
+
+        ## Output
+        - Domain entity list
+        - API surface sketch
+        - Integration requirements
+        - Technical risk notes
+
+    # Wave 5: Quality Validation (final)
+    - role: concept-quality-scorer
+      role_group: REVIEW
+      parallel: false
+      depends_on: [metrics-designer, risk-assessor, technical-hint-generator]
+      priority: 50
+      model_override: opus
+      prompt: |
+        ## Context
+        All Concept Artifacts: (from previous agents)
+
+        ## Task
+        Calculate Concept Quality Score (CQS):
+        1. Score each dimension (0-20 points):
+           - Problem Clarity (personas, JTBD defined)
+           - Solution Viability (value prop, differentiation)
+           - Market Validation (TAM/SAM/SOM, competition)
+           - Risk Awareness (risks identified, mitigations)
+           - Technical Readiness (domain hints, API surface)
+        2. Calculate total CQS (0-100)
+        3. Generate improvement recommendations
+
+        ## Output
+        - CQS score with breakdown
+        - Quality gate verdict (PASS >= 80, REVIEW 60-79, FAIL < 60)
+        - Improvement recommendations
 skills:
   - name: market-research
     trigger: "Phase 0b: Market & User Research"

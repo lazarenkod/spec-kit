@@ -7,6 +7,58 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.55] - 2026-01-01
+
+### Added
+
+- **Wave-Based Parallel Execution for All Commands** — Ultrathink mode support across all 19 speckit commands
+  - **Standardized Claude Code Configuration**:
+    - All commands now have `claude_code` blocks with subagent definitions
+    - `reasoning_mode: extended` + `thinking_budget: 16000` for complex commands
+    - Wave-based parallel execution with dependency ordering
+
+  - **P1 Commands (High Impact)** — Full parallel subagent orchestration:
+    - `design.md` — 10 subagents across 5 waves (design research → generation → system → integration → quality)
+    - `concept.md` — 9 subagents across 5 waves (discovery → synthesis → validation → technical → quality)
+    - `specify.md` — 7 subagents across 4 waves (context → analysis → specification → quality)
+
+  - **P2 Commands (Medium-High Impact)**:
+    - `launch.md` — 5 subagents across 3 waves (release notes → press kit → distribution)
+    - `ship.md` — 5 subagents across 3 waves (infra → deployment → verification)
+    - `discover.md` — 3 subagents across 2 waves (hypothesis → validation)
+
+  - **P3 Commands (Medium Impact)**:
+    - `baseline.md` — 4 subagents across 2 waves (analysis → compilation)
+    - `preview.md` — 4 subagents across 2 waves (conversion → validation)
+    - `monitor.md` — 3 subagents across 2 waves (telemetry → dashboards)
+
+  - **P4 Commands (Lower Impact)**:
+    - `constitution.md` — 3 subagents across 2 waves (analysis → writing)
+    - `clarify.md` — 3 subagents across 3 waves (detection → generation → update)
+    - `integrate.md` — 3 subagents across 2 waves (analysis → contracts)
+
+  - **P5 Commands (Minimal Impact)** — Simpler configurations:
+    - `checklist.md`, `list.md`, `switch.md` — Single subagent (sequential)
+    - `extend.md`, `taskstoissues.md` — 2 sequential subagents
+
+  - **Existing Commands** — Upgraded thinking_budget to ultrathink:
+    - `implement.md` — 8000 → 16000
+    - `analyze.md` — 12000 → 16000
+    - `plan.md` — 8000 → 16000
+    - `tasks.md` — 6000 → 8000
+    - `speckit.merge.md` — 8000 → 16000
+
+  - **Orchestration Features**:
+    - `max_parallel: 3` — Maximum concurrent agents per wave
+    - `wave_overlap.threshold: 0.80` — Start next wave at 80% completion
+    - `fail_fast: true` — Stop on critical errors
+    - Model routing: haiku (simple) → sonnet (standard) → opus (complex)
+
+  - **Expected Outcome**:
+    - 40-50% time reduction for complex workflows
+    - All commands support Claude Code Task tool parallel execution
+    - Ultrathink mode enabled for deep reasoning on specifications
+
 ## [0.0.54] - 2026-01-01
 
 ### Added

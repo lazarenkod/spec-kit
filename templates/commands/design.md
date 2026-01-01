@@ -116,8 +116,249 @@ handoffs:
 claude_code:
   model: opus
   reasoning_mode: extended
-  thinking_budget: 8000
+  thinking_budget: 16000
   plan_mode_trigger: true
+  orchestration:
+    max_parallel: 3
+    wave_overlap:
+      enabled: true
+      threshold: 0.80
+  subagents:
+    # Wave 1: Research & Analysis (parallel)
+    - role: design-researcher
+      role_group: RESEARCH
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Constitution: memory/constitution.md
+
+        ## Task
+        Research design context and gather inputs:
+        1. Analyze spec.md for UI-related functional requirements
+        2. Extract brand guidelines from constitution if available
+        3. Identify target user personas and their preferences
+        4. Research competitor UX patterns for similar features
+
+        ## Output
+        - Design brief with user needs and constraints
+        - Brand alignment notes
+        - Competitor pattern analysis
+    - role: pattern-analyst
+      role_group: RESEARCH
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Existing Design System: specs/app-design/design_system.md (if exists)
+
+        ## Task
+        Analyze existing design patterns:
+        1. Scan codebase for existing UI components
+        2. Identify design system tokens already in use
+        3. Document reusable patterns and components
+        4. Note inconsistencies to address
+
+        ## Output
+        - Existing component inventory
+        - Design token analysis
+        - Pattern reuse recommendations
+
+    # Wave 2: Design Generation (parallel after research)
+    - role: ux-designer
+      role_group: DESIGN
+      parallel: true
+      depends_on: [design-researcher]
+      priority: 20
+      model_override: opus
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Design Brief: (from design-researcher)
+        Spec: {{FEATURE_DIR}}/spec.md
+
+        ## Task
+        Create UX specifications:
+        1. Design user flows for each user story
+        2. Create wireframes (ASCII or descriptive)
+        3. Define interaction patterns and states
+        4. Specify accessibility requirements
+
+        ## Output
+        - User flow diagrams
+        - Wireframe specifications
+        - Interaction design document
+    - role: product-designer
+      role_group: DESIGN
+      parallel: true
+      depends_on: [design-researcher]
+      priority: 20
+      model_override: opus
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Brand Guidelines: (from design-researcher)
+        Existing Patterns: (from pattern-analyst)
+
+        ## Task
+        Create visual design language:
+        1. Define color palette extensions if needed
+        2. Create typography specifications
+        3. Design component visual styles
+        4. Establish spacing and layout rules
+
+        ## Output
+        - Visual design specifications
+        - Color and typography tokens
+        - Component style definitions
+    - role: motion-designer
+      role_group: DESIGN
+      parallel: true
+      depends_on: [pattern-analyst]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Existing Animations: (from pattern-analyst)
+
+        ## Task
+        Design animation system:
+        1. Define transition patterns (enter, exit, transform)
+        2. Specify timing curves and durations
+        3. Create micro-interaction specifications
+        4. Document loading state animations
+
+        ## Output
+        - Motion design specifications
+        - CSS/Framer Motion code snippets
+        - Animation timing tokens
+
+    # Wave 3: System Creation (after design)
+    - role: design-system-generator
+      role_group: SYSTEM
+      parallel: true
+      depends_on: [ux-designer, product-designer]
+      priority: 30
+      model_override: opus
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        UX Specs: (from ux-designer)
+        Visual Specs: (from product-designer)
+
+        ## Task
+        Generate complete design system:
+        1. Compile design tokens (colors, typography, spacing)
+        2. Create token files (CSS variables, JSON, etc.)
+        3. Document component specifications
+        4. Generate Figma-compatible token export
+
+        ## Output
+        - design_system.md specification
+        - design-tokens/ directory with token files
+        - Figma tokens JSON export
+    - role: component-preset-generator
+      role_group: SYSTEM
+      parallel: true
+      depends_on: [ux-designer]
+      priority: 30
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        UX Specs: (from ux-designer)
+        Library: (from constitution.md design_system.component_library)
+
+        ## Task
+        Generate component library presets:
+        1. Map wireframe components to library equivalents
+        2. Create component configuration presets
+        3. Generate theme overrides for branding
+        4. Document component usage patterns
+
+        ## Output
+        - Component preset configurations
+        - Theme override files
+        - Usage documentation
+
+    # Wave 4: Integration & Export (after system creation)
+    - role: storybook-generator
+      role_group: INTEGRATION
+      parallel: true
+      depends_on: [component-preset-generator]
+      priority: 40
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Component Presets: (from component-preset-generator)
+        Design System: (from design-system-generator)
+
+        ## Task
+        Generate Storybook documentation:
+        1. Create story files for each component
+        2. Add interaction documentation
+        3. Include accessibility notes
+        4. Generate design token showcase
+
+        ## Output
+        - .storybook/ configuration
+        - Component story files
+        - Design token stories
+    - role: figma-exporter
+      role_group: INTEGRATION
+      parallel: true
+      depends_on: [design-system-generator]
+      priority: 40
+      model_override: haiku
+      prompt: |
+        ## Context
+        Design System: (from design-system-generator)
+        Token Files: design-tokens/
+
+        ## Task
+        Export Figma-compatible tokens:
+        1. Convert tokens to Figma Tokens Studio format
+        2. Generate color styles export
+        3. Create typography styles export
+        4. Package for Figma import
+
+        ## Output
+        - figma-tokens.json
+        - Import instructions
+
+    # Wave 5: Quality Validation (final)
+    - role: design-quality-validator
+      role_group: REVIEW
+      parallel: false
+      depends_on: [design-system-generator, storybook-generator]
+      priority: 50
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        All Design Artifacts: (from previous agents)
+        Spec: {{FEATURE_DIR}}/spec.md
+
+        ## Task
+        Validate design quality:
+        1. Check all FR-xxx have corresponding UI specs
+        2. Verify accessibility compliance (WCAG 2.1 AA)
+        3. Validate design token completeness
+        4. Check brand consistency
+
+        ## Output
+        - Design QA report
+        - Issue list with severity
+        - Recommendations for fixes
 skills:
   - name: interaction-design
     trigger: "When defining component states and behaviors"

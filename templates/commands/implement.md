@@ -282,7 +282,7 @@ vision_validation:
 claude_code:
   model: opus
   reasoning_mode: extended
-  thinking_budget: 8000
+  thinking_budget: 16000
   phases:
     setup:
       model: haiku
