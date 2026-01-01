@@ -130,7 +130,7 @@ SET cache_key = hash(spec + plan + tasks)
 |----------|---------|--------------|
 | TypeScript | TS2307 module not found | npm install, check tsconfig paths |
 | TypeScript | TS2339 property missing | Add property or fix interface |
-| Python | ModuleNotFoundError | pip install, check __init__.py |
+| Python | ModuleNotFoundError | pip install, check `__init__.py` |
 | Python | ImportError | Fix relative imports, check PYTHONPATH |
 | Rust | E0433 unresolved | cargo add, check mod.rs |
 | Go | undefined: X | go get, check imports |

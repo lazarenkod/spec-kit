@@ -132,7 +132,7 @@ IF user input matches extension patterns ("add to", "extend", "enhance"):
    - Add Independent Test description
 
 9. **Generate Acceptance Scenarios** with IDs:
-   - Format: AS-[story][letter] (AS-1A, AS-1B, AS-2A)
+   - Format: `AS-[story][letter]` (AS-1A, AS-1B, AS-2A)
    - Edge cases: EC-001, EC-002
    - Table: | ID | Given | When | Then |
 
