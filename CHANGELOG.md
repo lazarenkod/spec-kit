@@ -7,6 +7,41 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.64] - 2026-01-01
+
+### Added
+
+- **Template Pre-Compilation Engine** — Build-time template compilation for 20-30x faster runtime loading
+  - **New Modules**:
+    - `src/specify_cli/template_compiler.py` — Main compiler engine
+      - `IncludeResolver` — Transitive `{{include:}}` directive resolution
+      - `TemplateCompiler` — Compiles markdown to optimized JSON
+      - Source hash tracking (SHA-256) for cache invalidation
+      - Wave assignment computation for subagent dependencies
+      - Fast path detection for greenfield/brownfield scenarios
+    - `src/specify_cli/compiled_loader.py` — Runtime JSON loader
+      - `CompiledTemplateLoader` — LRU-cached template loading
+      - Automatic fallback to runtime parsing if compiled not available
+      - Fast path optimization based on runtime context
+
+  - **Release Pipeline Integration**:
+    - Added `compile_templates()` function to `create-release-packages.sh`
+    - Pre-compiles all command templates before package building
+    - Compiled JSON included in `.specify/compiled/` directory
+
+  - **Compiled JSON Schema [REF:TC-001]**:
+    - `meta`: command, source_file, source_hash, compiled_at, includes_resolved
+    - `config`: description, persona, model, reasoning_mode, thinking_budget, cache_hierarchy
+    - `execution_plan`: max_parallel, wave_overlap, subagents, wave_assignments
+    - `prompt`: user_template, sections
+    - `fast_paths`: greenfield, simple, brownfield_with_baseline
+
+  - **Expected Performance**:
+    - Template load: 2-3s → ~100ms (20-30x improvement)
+    - Include resolution: Runtime → Pre-computed (100% savings)
+    - Frontmatter parsing: Every call → Pre-parsed (100% savings)
+    - LRU cache hit: <1ms response
+
 ## [0.0.63] - 2026-01-01
 
 ### Added

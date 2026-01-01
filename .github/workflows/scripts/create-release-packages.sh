@@ -30,6 +30,33 @@ GENRELEASES_DIR=".genreleases"
 mkdir -p "$GENRELEASES_DIR"
 rm -rf "$GENRELEASES_DIR"/* || true
 
+# Pre-compile templates to JSON for faster runtime loading
+compile_templates() {
+  echo "Pre-compiling templates to JSON..."
+  local compiled_dir="$GENRELEASES_DIR/compiled"
+
+  if command -v python3 &>/dev/null; then
+    python3 -m specify_cli.template_compiler \
+      --templates-dir templates/commands \
+      --shared-dir templates/shared \
+      --output-dir "$compiled_dir" \
+      --verbose 2>/dev/null || {
+        echo "Warning: Template compilation failed, continuing without pre-compiled templates"
+        return 0
+      }
+
+    if [[ -d "$compiled_dir" ]]; then
+      local count=$(find "$compiled_dir" -name "*.json" | wc -l | tr -d ' ')
+      echo "Compiled $count templates to $compiled_dir"
+    fi
+  else
+    echo "Warning: Python3 not found, skipping template pre-compilation"
+  fi
+}
+
+# Run template compilation
+compile_templates
+
 rewrite_paths() {
   sed -E \
     -e 's@(/?)memory/@.specify/memory/@g' \
@@ -165,6 +192,13 @@ build_variant() {
   mkdir -p "$SPEC_DIR/templates/commands"
   find templates/commands -name "*.COMPRESSED.md" -exec cp {} "$SPEC_DIR/templates/commands/" \; 2>/dev/null && \
     echo "Copied compressed command templates -> .specify/templates/commands"
+
+  # Copy pre-compiled templates if available
+  if [[ -d "$GENRELEASES_DIR/compiled" ]]; then
+    mkdir -p "$SPEC_DIR/compiled"
+    cp -r "$GENRELEASES_DIR/compiled"/*.json "$SPEC_DIR/compiled/" 2>/dev/null && \
+      echo "Copied pre-compiled templates -> .specify/compiled"
+  fi
 
   # NOTE: We substitute {ARGS} internally. Outward tokens differ intentionally:
   #   * Markdown/prompt (claude, copilot, cursor-agent, opencode): $ARGUMENTS
