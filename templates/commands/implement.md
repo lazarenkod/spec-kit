@@ -586,9 +586,34 @@ This command includes multiple performance optimizations for 50-65% faster execu
 | Wave Overlap Execution | `templates/shared/implement/wave-overlap.md` | 25-30% | `--sequential-waves` |
 | Build Optimizer | `templates/shared/implement/build-optimizer.md` | 50% | `--no-build-fix` |
 | Model Selection | `templates/shared/implement/model-selection.md` | 60-90% cost | `--no-adaptive-model` |
+| **Streaming Output** | `orchestration-instructions.md` → "Streaming Output" | Real-time visibility | `--no-streaming` or `--quiet` |
 | File Caching | Inline (Step 3) | 85% | N/A |
 
 {{include: shared/orchestration-instructions.md}}
+
+### Wave Execution with Streaming
+
+During parallel execution, apply streaming output for real-time visibility:
+
+1. **Before wave**: Emit wave header with agent list and progress bar
+2. **During wave**: Emit checkpoint after each agent completes (✓/✗ status)
+3. **At 80% threshold**: Announce overlap trigger if wave overlap enabled
+4. **After wave**: Emit collapsed summary, proceed to next wave
+
+**Output format** (per checkpoint):
+```text
+🌊 Wave 2/4 - Core Implementation
+├── Progress: [████████████░░░░░░░░] 60%
+├── Agents: 3/5
+├── Elapsed: 45s | Tokens: 89,230
+│
+├── ✓ data-layer-builder [sonnet]: 22s
+├── ✓ api-builder [sonnet]: 35s
+├── ⏳ ui-feature-builder [sonnet]: running...
+├── ⏸ state-manager: waiting
+```
+
+**Reference**: See `templates/shared/orchestration-instructions.md` → "Streaming Output" section for full format.
 
 **Expected Impact** (MODERATE complexity feature):
 - Sequential time: 400s → Optimized: ~180s (55% faster)

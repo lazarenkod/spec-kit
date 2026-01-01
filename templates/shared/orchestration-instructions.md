@@ -469,3 +469,167 @@ EVERY 30 seconds:
   IF wave >= 80% complete AND wave_overlap.enabled:
     TRIGGER next wave start
 ```
+
+---
+
+## Streaming Output
+
+> **Purpose**: Provide real-time visibility into parallel agent execution. Claude doesn't support true mid-message streaming, so we use **checkpoint-based output** — emitting new progress sections after each significant event.
+
+### Streaming Configuration
+
+```yaml
+streaming:
+  enabled: true                    # Enable streaming output
+  checkpoint_on: agent_complete    # Emit after each agent finishes
+  show_progress_bar: true          # Visual progress indicator
+  show_running_metrics: true       # Time, tokens, cost
+  collapse_completed_waves: true   # Minimize finished waves
+```
+
+### Checkpoint Trigger Events
+
+| Event | Action |
+|-------|--------|
+| Wave start | Emit wave header with agent list |
+| Agent complete | Update wave display with ✓/✗ status |
+| Wave 80% threshold | Announce overlap trigger (if enabled) |
+| Wave complete | Emit summary, collapse wave |
+| All waves complete | Emit final orchestration report |
+
+### Streaming Output Format
+
+```text
+FUNCTION emit_wave_progress(wave, agents_status, metrics):
+
+  # Progress bar calculation
+  completed = count(agents_status WHERE status IN ["success", "failed"])
+  total = len(wave.agents)
+  pct = (completed / total) * 100
+  bar_filled = floor(pct / 5)  # 20 chars total
+  bar_empty = 20 - bar_filled
+
+  PRINT "
+🌊 Wave {wave.index}/{TOTAL_WAVES} - {wave.name}
+├── Progress: [{'█' * bar_filled}{'░' * bar_empty}] {pct:.0f}%
+├── Agents: {completed}/{total}
+├── Elapsed: {metrics.elapsed}s | Tokens: {metrics.tokens_total:,}
+│"
+
+  FOR agent IN wave.agents:
+    status = agents_status[agent.role]
+    IF status.state == "success":
+      PRINT "├── ✓ {agent.role} [{status.model}]: {status.duration}s"
+    ELIF status.state == "failed":
+      PRINT "├── ✗ {agent.role} [{status.model}]: {status.error}"
+    ELIF status.state == "running":
+      PRINT "├── ⏳ {agent.role} [{status.model}]: running..."
+    ELSE:
+      PRINT "├── ⏸ {agent.role}: waiting"
+
+  IF wave.overlap_triggered:
+    PRINT "│"
+    PRINT "└── 🚀 Overlap threshold reached — Wave {wave.index + 1} started early"
+```
+
+### Live Metrics Tracking
+
+```text
+METRICS_STATE = {
+  start_time: timestamp(),
+  tokens_in: 0,
+  tokens_out: 0,
+  cost_estimate: 0.0,
+  agents_completed: 0,
+  agents_failed: 0
+}
+
+FUNCTION update_metrics(agent_result):
+  METRICS_STATE.tokens_in += agent_result.tokens_in
+  METRICS_STATE.tokens_out += agent_result.tokens_out
+  METRICS_STATE.cost_estimate += calculate_cost(agent_result)
+
+  IF agent_result.success:
+    METRICS_STATE.agents_completed += 1
+  ELSE:
+    METRICS_STATE.agents_failed += 1
+
+FUNCTION calculate_cost(result):
+  RATES = {
+    haiku: {input: 0.25, output: 1.25},    # per 1M tokens
+    sonnet: {input: 3.00, output: 15.00},
+    opus: {input: 15.00, output: 75.00}
+  }
+  rate = RATES[result.model_used]
+  RETURN (result.tokens_in * rate.input + result.tokens_out * rate.output) / 1_000_000
+```
+
+### Execution Loop with Streaming
+
+```text
+FUNCTION execute_wave_with_streaming(wave):
+
+  # 1. Emit wave start
+  emit_wave_header(wave)
+
+  # 2. Launch all agents in parallel (single message with multiple Task calls)
+  agent_tasks = launch_parallel_agents(wave.agents)
+
+  # 3. Collect results as they complete
+  agents_status = {}
+  FOR agent IN wave.agents:
+    agents_status[agent.role] = {state: "running", model: agent.model}
+
+  WHILE NOT all_complete(agent_tasks):
+
+    # Check for completed agents (non-blocking)
+    FOR task IN agent_tasks:
+      IF task.completed AND task.role NOT IN agents_status.completed:
+        result = get_task_result(task)
+        update_metrics(result)
+        agents_status[task.role] = {
+          state: "success" IF result.success ELSE "failed",
+          duration: result.duration_ms / 1000,
+          model: result.model_used,
+          error: result.error
+        }
+
+        # CHECKPOINT: Emit updated progress
+        emit_wave_progress(wave, agents_status, METRICS_STATE)
+
+    # Check overlap threshold
+    IF wave_overlap.enabled AND wave.completion_ratio >= 0.80:
+      IF NOT wave.overlap_triggered:
+        wave.overlap_triggered = true
+        LOG "🚀 Starting Wave {wave.index + 1} early (80% threshold)"
+        # Next wave will be started by orchestrator
+
+  # 4. Emit wave completion summary
+  emit_wave_complete(wave, agents_status, METRICS_STATE)
+```
+
+### Collapsed Wave Format (After Completion)
+
+After a wave completes, collapse it to save screen space:
+
+```text
+<details>
+<summary>✅ Wave {N} Complete — {agent_count} agents, {duration}s, ${cost:.3f}</summary>
+
+| Agent | Model | Duration | Status |
+|-------|-------|----------|--------|
+| {role1} | haiku | 12s | ✓ |
+| {role2} | sonnet | 34s | ✓ |
+| {role3} | opus | 45s | ✓ |
+
+</details>
+```
+
+### Skip Flag
+
+```text
+IF "--no-streaming" IN ARGS OR "--quiet" IN ARGS:
+  streaming.enabled = false
+  LOG "📴 Streaming output disabled"
+  # Fall back to batch-mode reporting (existing behavior)
+```

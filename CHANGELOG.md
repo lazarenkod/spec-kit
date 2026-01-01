@@ -7,6 +7,33 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.57] - 2026-01-01
+
+### Added
+
+- **Streaming Output** — Real-time progress updates during parallel wave execution
+  - **Checkpoint-Based Updates**:
+    - Emit progress after each agent completes (not wait for entire wave)
+    - Visual progress bar: `[████████████░░░░░░░░] 60%`
+    - Per-agent status with model and duration: `✓ data-layer-builder [sonnet]: 22s`
+
+  - **Live Metrics Tracking**:
+    - Running elapsed time and token count
+    - Real-time cost estimation per model tier
+    - Wave overlap announcements when 80% threshold reached
+
+  - **Checkpoint Trigger Events**:
+    - Wave start → emit header with agent list
+    - Agent complete → update with ✓/✗ status
+    - Wave 80% threshold → announce overlap trigger
+    - Wave complete → emit collapsed summary
+
+  - **Template Changes**:
+    - `orchestration-instructions.md` — Added "Streaming Output" section with format and execution loop
+    - `implement.md` — Added streaming reference and output format example
+
+  - **Skip Flags**: `--no-streaming` or `--quiet` to disable
+
 ## [0.0.56] - 2026-01-01
 
 ### Added
