@@ -123,13 +123,16 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
 
 0. **Load project context**:
 
-   Read and apply shared modules for initialization:
+   Read and apply shared modules using **parallel loading** (see `templates/shared/core/parallel-loading.md`):
 
    ```text
-   Read `templates/shared/core/language-loading.md` and apply.
-   Read `templates/shared/complexity-scoring.md` and apply.
-   Read `templates/shared/core/brownfield-detection.md` and apply.
+   # PARALLEL BATCH READ (single message, multiple Read tool calls)
+   Read IN PARALLEL:
+   - `templates/shared/core/language-loading.md`
+   - `templates/shared/complexity-scoring.md`
+   - `templates/shared/core/brownfield-detection.md`
 
+   # Execute after all loaded
    EXECUTE language-loading.md → ARTIFACT_LANGUAGE
    EXECUTE complexity-scoring.md → COMPLEXITY_TIER, COMPLEXITY_SCORE
    EXECUTE brownfield-detection.md → BROWNFIELD_MODE

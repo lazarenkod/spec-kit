@@ -30,9 +30,12 @@ $ARGUMENTS
 
 ## Init [REF:INIT-001]
 
-Load project context and assess complexity:
+Load project context using **parallel loading** (see `templates/shared/core/parallel-loading.md`):
 
 ```text
+# PARALLEL BATCH READ of shared modules (single message, multiple Read calls)
+Read IN PARALLEL: language-loading.md, complexity-scoring.md, brownfield-detection.md
+
 EXECUTE language-loading → ARTIFACT_LANGUAGE
 EXECUTE complexity-scoring → COMPLEXITY_TIER, COMPLEXITY_SCORE
 EXECUTE brownfield-detection → BROWNFIELD_MODE, BROWNFIELD_CONFIDENCE

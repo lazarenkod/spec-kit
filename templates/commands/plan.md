@@ -118,13 +118,16 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
 
 0. **Load project context**:
 
-   Read and apply shared modules for initialization:
+   Read and apply shared modules for initialization using **parallel loading** (see `templates/shared/core/parallel-loading.md`):
 
    ```text
-   Read `templates/shared/core/language-loading.md` and apply.
-   Read `templates/shared/complexity-scoring.md` and apply.
-   Read `templates/shared/core/brownfield-detection.md` and apply.
+   # PARALLEL BATCH READ (single message, multiple Read tool calls)
+   Read IN PARALLEL:
+   - `templates/shared/core/language-loading.md`
+   - `templates/shared/complexity-scoring.md`
+   - `templates/shared/core/brownfield-detection.md`
 
+   # Execute after all loaded
    EXECUTE language-loading.md → ARTIFACT_LANGUAGE
    EXECUTE complexity-scoring.md → COMPLEXITY_TIER, COMPLEXITY_SCORE
    EXECUTE brownfield-detection.md → BROWNFIELD_MODE
@@ -137,7 +140,7 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
 
 1. **Setup**: Run `{SCRIPT}` from repo root and parse JSON for FEATURE_SPEC, IMPL_PLAN, SPECS_DIR, BRANCH. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
-2. **Load context**: Read FEATURE_SPEC and `/memory/constitution.md`. Load IMPL_PLAN template (already copied). Confirm ARTIFACT_LANGUAGE from constitution Project Settings.
+2. **Load context**: Read IN PARALLEL: FEATURE_SPEC, `/memory/constitution.md`, and IMPL_PLAN template. Confirm ARTIFACT_LANGUAGE from constitution Project Settings.
 
 3. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
    - Fill Technical Context (mark unknowns as "NEEDS CLARIFICATION")

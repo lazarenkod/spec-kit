@@ -1784,13 +1784,18 @@ When spec file exists (default mode), create visual specs for the feature.
    **Step 0.75.1: Detect UI Framework**
 
    ```text
-   1. Read spec.md → "Framework Requirements" table
-      - Look for: React, Next.js, Vue, Nuxt, Angular, Svelte, SvelteKit
-      - Check if TypeScript mentioned (tsx, ts, TypeScript)
+   # PARALLEL READ for performance (see templates/shared/core/parallel-loading.md)
+   1-2. Read IN PARALLEL:
+        - spec.md → "Framework Requirements" table
+        - constitution.md → "Technology Constraints" table
 
-   2. Read constitution.md → "Technology Constraints" table
-      - Find "UI Framework" row
-      - Extract value: React | Vue | Angular | Svelte | None
+   From spec.md:
+     - Look for: React, Next.js, Vue, Nuxt, Angular, Svelte, SvelteKit
+     - Check if TypeScript mentioned (tsx, ts, TypeScript)
+
+   From constitution.md:
+     - Find "UI Framework" row
+     - Extract value: React | Vue | Angular | Svelte | None
 
    3. Determine framework:
       IF constitution.md has explicit UI Framework:

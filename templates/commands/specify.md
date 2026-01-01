@@ -527,14 +527,19 @@ Given that feature description, do this:
 
 0. **Load project language and assess complexity**:
 
-   Read `templates/shared/core/language-loading.md` and apply.
-   Read `templates/shared/complexity-scoring.md` and apply.
-   Read `templates/shared/semantic-detection.md` and apply to user input.
+   Use **parallel loading** for initialization (see `templates/shared/core/parallel-loading.md`):
 
    ```text
+   # PARALLEL BATCH READ (single message, multiple Read tool calls)
+   Read IN PARALLEL:
+   - `templates/shared/core/language-loading.md`
+   - `templates/shared/complexity-scoring.md`
+   - `templates/shared/semantic-detection.md`
+
+   # Execute after all loaded
    EXECUTE language-loading.md → ARTIFACT_LANGUAGE
    EXECUTE complexity-scoring.md → COMPLEXITY_TIER, COMPLEXITY_SCORE
-   EXECUTE semantic-detection.md → DETECTED_INTENT, FEATURE_NAME
+   EXECUTE semantic-detection.md → DETECTED_INTENT, FEATURE_NAME (apply to user input)
 
    REPORT: "Generating specification in {LANGUAGE_NAME} ({ARTIFACT_LANGUAGE})..."
    REPORT: "Complexity: {COMPLEXITY_TIER} ({COMPLEXITY_SCORE}/100)"
