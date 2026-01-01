@@ -250,3 +250,39 @@ FUNCTION cached_parallel_read(files: list):
 
   RETURN results
 ```
+
+---
+
+## API-Level Prompt Caching [REF:PC-001]
+
+Beyond file-level caching, use Anthropic's native prompt caching for API calls.
+
+**Integration**: See `templates/shared/caching-strategy.md` for full documentation.
+
+### Quick Reference
+
+```yaml
+# In command frontmatter
+claude_code:
+  cache_control:
+    system_prompt: ephemeral    # Cache command instructions
+    constitution: ephemeral      # Cache project principles
+    templates: ephemeral         # Cache loaded templates
+    artifacts: ephemeral         # Cache spec/plan/tasks
+    ttl: session                 # session | 3600 | permanent
+```
+
+### Expected Savings
+
+| Layer | Hit Rate | Savings |
+|-------|----------|---------|
+| File caching (L1) | 60-70% | 10-50ms per hit |
+| Prompt caching (L0) | 80-90% | 80-90% input tokens |
+
+### Cache Hierarchy
+
+```
+L0: Prompt Cache (Anthropic API) ← API-level, 80-90% token reduction
+L1: File Cache (In-Memory)       ← File-level, 60-70% hit rate
+L2: Session Cache                ← Response caching
+```

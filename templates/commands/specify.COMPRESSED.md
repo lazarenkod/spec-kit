@@ -19,6 +19,7 @@ claude_code:
   model: opus
   reasoning_mode: extended
   thinking_budget: 10000
+  cache_control: {system_prompt: ephemeral, constitution: ephemeral, templates: ephemeral}
 ---
 
 ## Input

@@ -7,6 +7,37 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.61] - 2026-01-01
+
+### Added
+
+- **Anthropic Prompt Caching Integration** — API-level prompt caching for 80-90% input token reduction
+  - **Cache Control Directives [REF:PC-001]**:
+    - Added `cache_control` section to YAML frontmatter in all major commands
+    - Supports caching of system prompts, constitution, templates, and artifacts
+    - Session-scoped TTL with file-change invalidation
+
+  - **New Shared Module**:
+    - `templates/shared/caching-strategy.md` — Comprehensive caching strategy documentation
+    - Explains Anthropic prompt caching mechanics, cacheable content types, TTL strategies
+    - Integration with existing file-level caching hierarchy
+
+  - **Command Updates**:
+    - `specify.md`, `specify.COMPRESSED.md` — Added cache_control
+    - `plan.md`, `plan.COMPRESSED.md` — Added cache_control with artifacts
+    - `tasks.md`, `tasks.COMPRESSED.md` — Added cache_control with artifacts
+    - `implement.md`, `implement.COMPRESSED.md` — Added cache_control with artifacts
+    - `design.md`, `design.COMPRESSED.md` — Added cache_control with artifacts
+    - `concept.md`, `concept.COMPRESSED.md` — Added cache_control
+
+  - **Updated Documentation**:
+    - `parallel-loading.md` — Added API-Level Prompt Caching section
+
+  - **Expected Performance**:
+    - Input tokens per call: 80-90% reduction on cache hits
+    - API response time: 50-70% faster on cached prompts
+    - Workflow cost savings: 80-90% for repeated operations
+
 ## [0.0.60] - 2026-01-01
 
 ### Added

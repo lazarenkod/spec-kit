@@ -72,6 +72,12 @@ claude_code:
   model: sonnet
   reasoning_mode: extended
   thinking_budget: 8000
+  cache_control:
+    system_prompt: ephemeral
+    constitution: ephemeral
+    templates: ephemeral
+    artifacts: ephemeral
+    ttl: session
   orchestration:
     max_parallel: 2
     role_isolation: true

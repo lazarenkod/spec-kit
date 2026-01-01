@@ -12,6 +12,11 @@ claude_code:
   model: opus
   reasoning_mode: extended
   thinking_budget: 16000
+  cache_control:
+    system_prompt: ephemeral
+    constitution: ephemeral
+    templates: ephemeral
+    ttl: session
   plan_mode_trigger: true
   orchestration:
     max_parallel: 3

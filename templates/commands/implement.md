@@ -292,6 +292,12 @@ claude_code:
   model: opus
   reasoning_mode: extended
   thinking_budget: 16000
+  cache_control:
+    system_prompt: ephemeral
+    constitution: ephemeral
+    templates: ephemeral
+    artifacts: ephemeral
+    ttl: session
   phases:
     setup:
       model: haiku

@@ -36,6 +36,7 @@ claude_code:
   model: opus
   reasoning_mode: extended
   thinking_budget: 8000
+  cache_control: {system_prompt: ephemeral, constitution: ephemeral, artifacts: ephemeral}
   plan_mode_trigger: true
 skills:
   - interaction-design
