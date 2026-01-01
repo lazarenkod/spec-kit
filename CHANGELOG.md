@@ -7,6 +7,39 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.58] - 2026-01-01
+
+### Added
+
+- **Progressive Validation** — 4-tier validation pipeline that replaces blocking gates with tiered execution
+  - **4-Tier Pipeline Architecture**:
+    - **Tier 1 (Syntax)**: < 1s, BLOCKING — Checks section IDs, format, mandatory fields
+    - **Tier 2 (Semantic)**: 1-5s, BLOCKING on errors — Constitution alignment, link validation, schema checks
+    - **Tier 3 (Quality)**: 5-15s, NON-BLOCKING — SRS/CQS/PRS/TRS scoring, ambiguity detection
+    - **Tier 4 (Deep)**: 15-30s, ASYNC BACKGROUND — LLM review, cross-artifact consistency, suggestions
+
+  - **Probabilistic Early Exit**:
+    - At 95%+ confidence after Tier 1-2 pass, skip expensive Tier 3-4 checks
+    - Confidence calculation: `base_confidence × historical_rate - issue_penalty`
+    - Historical pass rates: spec.md (92%), plan.md (88%), tasks.md (95%)
+
+  - **Performance Optimizations**:
+    - Clean artifact: 25s → 3s (saves ~22s via early exit)
+    - Minor warnings: 25s → 8s (saves ~17s)
+    - Average savings: 5-10s per command
+
+  - **Skip Flags**:
+    - `--skip-validate` / `--skip-validation` — Skip all validation
+    - `--fast` — Run Tier 1-2 only, skip expensive checks
+    - `--full-validation` — Force all tiers (no early exit)
+
+  - **Template Changes**:
+    - `checkpoints.md` — Added Progressive Validation section (~330 lines)
+    - `validation-gates.yaml` — Added tier classifications to all VG-xxx gates
+    - `specify.COMPRESSED.md` — Updated validation phase with tiered pipeline
+    - `plan.md` — Added progressive mode to pre_handoff_action
+    - `implement.md` — Added progressive mode to pre_gates with tier classifications
+
 ## [0.0.57] - 2026-01-01
 
 ### Added

@@ -1,10 +1,17 @@
 # Validation Gates Reference
 # Used by: [REF:VG-001], [REF:VG-002], [REF:VG-003], etc.
 # Replaces: ~100+ lines of inline gate definitions across templates
+#
+# Progressive Validation Tiers:
+#   tier: 1  # SYNTAX - < 1s, BLOCKING
+#   tier: 2  # SEMANTIC - 1-5s, BLOCKING on errors
+#   tier: 3  # QUALITY - 5-15s, NON-BLOCKING
+#   tier: 4  # DEEP - 15-30s, ASYNC BACKGROUND
 
 VG-001:
   name: SRS Threshold
   description: Specification Readiness Score quality gate
+  tier: 3  # QUALITY - NON-BLOCKING
   check: SRS >= {threshold}
   thresholds:
     MVP: 75
@@ -21,6 +28,7 @@ VG-001:
 VG-002:
   name: CQS Threshold
   description: Concept Quality Score quality gate
+  tier: 3  # QUALITY - NON-BLOCKING
   check: CQS >= {threshold}
   thresholds:
     TRIVIAL: 50    # Not applicable, but set for completeness
@@ -38,6 +46,7 @@ VG-002:
 VG-003:
   name: Checklist Complete
   description: All checklist items must pass
+  tier: 2  # SEMANTIC - BLOCKING on errors
   check: incomplete_items == 0
   source: checklists/requirements.md
   block_if: incomplete_items > 0
@@ -49,6 +58,7 @@ VG-003:
 VG-004:
   name: Constitution Alignment
   description: No violations of project constitution
+  tier: 2  # SEMANTIC - BLOCKING (CRITICAL)
   source: /memory/constitution.md
   check: constitution_violations == 0
   severity: CRITICAL
@@ -62,6 +72,7 @@ VG-004:
 VG-005:
   name: Ambiguity Gate
   description: Limit ambiguous statements
+  tier: 3  # QUALITY - NON-BLOCKING
   check: ambiguity_count <= {threshold}
   thresholds:
     TRIVIAL: 10
@@ -79,6 +90,7 @@ VG-005:
 VG-006:
   name: PRS Threshold
   description: Plan Readiness Score quality gate
+  tier: 3  # QUALITY - NON-BLOCKING
   check: PRS >= {threshold}
   thresholds:
     MVP: 70
@@ -89,6 +101,7 @@ VG-006:
 VG-007:
   name: TRS Threshold
   description: Task Readiness Score quality gate
+  tier: 3  # QUALITY - NON-BLOCKING
   check: TRS >= {threshold}
   thresholds:
     MVP: 65
@@ -99,6 +112,7 @@ VG-007:
 VG-008:
   name: DQS Threshold
   description: Design Quality Score quality gate
+  tier: 3  # QUALITY - NON-BLOCKING
   check: DQS >= {threshold}
   thresholds:
     MVP: 70

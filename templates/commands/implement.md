@@ -80,23 +80,32 @@ handoffs:
       - "Implementation required spec deviations"
       - "New requirements discovered during implementation"
 pre_gates:
-  - name: "Tasks Exist Gate"
-    check: "tasks.md exists in FEATURE_DIR"
-    block_if: "tasks.md missing"
-    message: "Run /speckit.tasks first to generate task breakdown"
-  - name: "Required Artifacts Gate"
-    check: "plan.md exists in FEATURE_DIR"
-    block_if: "plan.md missing"
-    message: "Run /speckit.plan first to generate implementation plan"
-  - name: "No Critical Issues Gate"
-    check: "If analyze was run, CRITICAL == 0"
-    block_if: "CRITICAL issues exist from prior analysis"
-    message: "Resolve CRITICAL issues before starting implementation"
-  - name: "QG-001: SQS Quality Gate"
-    check: "Run /speckit.analyze; SQS >= 80"  # Profile auto-detected from caller context
-    block_if: "SQS < 80"
-    message: "SQS below MVP threshold (80). Improve FR coverage, AS coverage, or resolve constitution violations before implementation. See memory/domains/quality-gates.md"
-    domain_ref: "QG-001"
+  mode: progressive  # 4-tier validation (see templates/shared/validation/checkpoints.md)
+  fast_flag: "--fast"  # Tier 1-2 only (saves ~20s)
+  skip_flag: "--skip-pre-gates"
+  early_exit_threshold: 0.95  # Skip Tier 3-4 at high confidence
+  gates:
+    - name: "Tasks Exist Gate"
+      tier: 1  # SYNTAX - BLOCKING
+      check: "tasks.md exists in FEATURE_DIR"
+      block_if: "tasks.md missing"
+      message: "Run /speckit.tasks first to generate task breakdown"
+    - name: "Required Artifacts Gate"
+      tier: 1  # SYNTAX - BLOCKING
+      check: "plan.md exists in FEATURE_DIR"
+      block_if: "plan.md missing"
+      message: "Run /speckit.plan first to generate implementation plan"
+    - name: "No Critical Issues Gate"
+      tier: 2  # SEMANTIC - BLOCKING on errors
+      check: "If analyze was run, CRITICAL == 0"
+      block_if: "CRITICAL issues exist from prior analysis"
+      message: "Resolve CRITICAL issues before starting implementation"
+    - name: "QG-001: SQS Quality Gate"
+      tier: 3  # QUALITY - NON-BLOCKING (but warns)
+      check: "Run /speckit.analyze; SQS >= 80"  # Profile auto-detected from caller context
+      block_if: "SQS < 80"
+      message: "SQS below MVP threshold (80). Improve FR coverage, AS coverage, or resolve constitution violations before implementation. See memory/domains/quality-gates.md"
+      domain_ref: "QG-001"
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
@@ -968,7 +977,7 @@ During parallel execution, apply streaming output for real-time visibility:
    - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
-   - **Validation checkpoints**: Verify each phase completion before proceeding
+   - **Validation checkpoints**: Use progressive validation (Tier 1-2 BLOCKING, Tier 3-4 non-blocking/async). See `templates/shared/validation/checkpoints.md`
    - **⚠️ MANDATORY**: After completing each task, IMMEDIATELY mark it as `[X]` in tasks.md (see Step 9)
 
 8. Implementation execution rules:

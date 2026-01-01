@@ -16,10 +16,13 @@ handoffs:
       - "All [NEEDS CLARIFICATION] resolved"
     pre_handoff_action:
       name: "Plan Validation"
+      mode: progressive  # 4-tier validation (see templates/shared/validation/checkpoints.md)
       invoke: speckit.analyze
       args: "--quiet"  # Profile auto-detected from caller context
       skip_flag: "--skip-validate"
+      fast_flag: "--fast"  # Tier 1-2 only
       timeout: 45s
+      early_exit_threshold: 0.95  # Skip Tier 3-4 at high confidence
       gates:
         - name: "Constitution Alignment Gate"
           pass: D

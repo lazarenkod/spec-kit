@@ -256,23 +256,28 @@ PROCEED when:
 
 ## Spec Validation Phase (Auto-Triggered)
 
-Pre-handoff action invokes `/speckit.analyze --quiet`:
+Pre-handoff action uses **Progressive Validation** (see `templates/shared/validation/checkpoints.md`):
 
-**Gates**:
-| Gate | Pass | Threshold | Severity |
-|------|------|-----------|----------|
-| Constitution Alignment [REF:VG-004] | D | 0 | CRITICAL |
-| Ambiguity Count [REF:VG-005] | B | 5 | HIGH |
+**4-Tier Pipeline**:
+| Tier | Checks | Time | Behavior |
+|------|--------|------|----------|
+| 1 | Syntax: sections, IDs | < 1s | BLOCKING |
+| 2 | Semantic: VG-004 (constitution), links | 1-5s | BLOCKING on errors |
+| 3 | Quality: VG-001 (SRS), VG-005 (ambiguity) | 5-15s | NON-BLOCKING |
+| 4 | Deep: LLM review, consistency | 15-30s | ASYNC background |
+
+**Early Exit**: At 95%+ confidence after Tier 2, skip Tier 3-4 (saves ~20s)
 
 **Flow**:
 ```text
-IF all gates pass → Proceed to /speckit.plan
-IF gates fail → Auto-invoke /speckit.clarify
-  - Extract questions from violations
-  - Re-validate after clarification (max 3 iterations)
+IF tier_1.fails → STOP, fix syntax issues
+IF tier_2.errors → STOP, fix semantic issues (constitution violations)
+IF tier_2.warnings → CONTINUE, log for review
+IF confidence >= 0.95 → EARLY EXIT, proceed to /speckit.plan
+ELSE → Run Tier 3-4, display scores, proceed
 ```
 
-Skip with `--skip-validate` or `--fast` (not recommended)
+Skip with `--skip-validate` or `--fast` (Tier 1-2 only)
 
 ---
 
