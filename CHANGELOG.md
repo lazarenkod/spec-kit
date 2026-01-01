@@ -7,6 +7,32 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.56] - 2026-01-01
+
+### Added
+
+- **Adaptive Model Routing** — Dynamic model selection (haiku/sonnet/opus) based on feature complexity and role group
+  - **Complexity Detection Algorithm**:
+    - Analyzes `spec.md` to calculate complexity score (0-100)
+    - Scoring factors: user stories (×5), FRs (×2), APIs (×8), tech signals (×5)
+    - Four tiers: TRIVIAL (0-25), SIMPLE (26-50), MODERATE (51-75), COMPLEX (76-100)
+
+  - **Model Routing Matrix**:
+    - Maps (complexity_tier × role_group) → optimal model
+    - Role groups: INFRA, BACKEND, FRONTEND, TESTING, REVIEW, DOCS
+    - Example: SIMPLE/INFRA → haiku, MODERATE/BACKEND → opus
+
+  - **Cost Optimization**:
+    - 40-85% cost reduction vs all-opus baseline
+    - Cost model: haiku ~$0.001, sonnet ~$0.012, opus ~$0.060 per agent
+    - Real-time cost reporting with savings percentage
+
+  - **Template Changes**:
+    - `orchestration-instructions.md` — Added Step 0/0.5 for complexity detection and routing
+    - `implement.md` — Added Step 3.7 for adaptive routing execution
+
+  - **Skip Flag**: `--no-adaptive-model` to disable adaptive routing
+
 ## [0.0.55] - 2026-01-01
 
 ### Added

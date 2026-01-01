@@ -54,10 +54,155 @@ DOCS → haiku (documentation generation)
 
 **Override Priority**:
 1. `subagent.model_override` (highest - explicit per-agent)
-2. `orchestration.model_selection.complexity_tier` (task complexity)
+2. Adaptive routing matrix (complexity_tier × role_group)
 3. Role group default (from table above)
 4. `claude_code.model` (command default)
 5. "sonnet" (fallback)
+
+---
+
+## Adaptive Model Routing
+
+> **Purpose**: Dynamically select the optimal model (haiku/sonnet/opus) for each subagent based on feature complexity and role group, reducing costs by 40-85% for simpler features.
+
+### Step 0: Determine Complexity Tier
+
+Execute BEFORE building waves. Analyze spec.md to determine feature complexity.
+
+```text
+FUNCTION determine_complexity_tier(FEATURE_DIR):
+
+  spec_path = "{FEATURE_DIR}/spec.md"
+
+  IF NOT exists(spec_path):
+    LOG "⚠️ No spec.md found, defaulting to MODERATE"
+    RETURN "MODERATE", 50
+
+  # Count complexity signals
+  spec_content = read(spec_path)
+
+  user_story_count = count_pattern(spec_content, "### User Story")
+  fr_count = count_pattern(spec_content, "FR-\d{3}")
+  as_count = count_pattern(spec_content, "AS-\d")
+  api_count = count_pattern(spec_content, "API-\d{3}|PKG-\d{3}")
+
+  # Technical complexity signals
+  tech_signals = count_keywords(spec_content, [
+    "real-time", "distributed", "cache", "queue", "ML",
+    "async", "websocket", "migration", "legacy"
+  ])
+
+  # Calculate score (0-100)
+  score = 0
+  score += min(25, user_story_count * 5)   # Max 25 from stories
+  score += min(25, fr_count * 2)            # Max 25 from FRs
+  score += min(25, api_count * 8)           # Max 25 from integrations
+  score += min(25, tech_signals * 5)        # Max 25 from tech signals
+
+  # Determine tier
+  IF score <= 25:     tier = "TRIVIAL"
+  ELIF score <= 50:   tier = "SIMPLE"
+  ELIF score <= 75:   tier = "MODERATE"
+  ELSE:               tier = "COMPLEX"
+
+  LOG "📊 Complexity: {tier} (score: {score}/100)"
+  LOG "   Stories: {user_story_count}, FRs: {fr_count}, APIs: {api_count}"
+
+  RETURN tier, score
+```
+
+### Step 0.5: Apply Model Routing Matrix
+
+```text
+MODEL_ROUTING_MATRIX = {
+  "TRIVIAL": {
+    "INFRA": "haiku", "BACKEND": "sonnet", "FRONTEND": "haiku",
+    "TESTING": "haiku", "REVIEW": "haiku", "DOCS": "haiku"
+  },
+  "SIMPLE": {
+    "INFRA": "haiku", "BACKEND": "sonnet", "FRONTEND": "sonnet",
+    "TESTING": "haiku", "REVIEW": "sonnet", "DOCS": "haiku"
+  },
+  "MODERATE": {
+    "INFRA": "haiku", "BACKEND": "opus", "FRONTEND": "sonnet",
+    "TESTING": "sonnet", "REVIEW": "opus", "DOCS": "haiku"
+  },
+  "COMPLEX": {
+    "INFRA": "sonnet", "BACKEND": "opus", "FRONTEND": "opus",
+    "TESTING": "sonnet", "REVIEW": "opus", "DOCS": "sonnet"
+  }
+}
+
+FUNCTION apply_model_routing(subagents, complexity_tier):
+
+  assignments = {}
+
+  FOR EACH agent IN subagents:
+
+    # Priority 1: Explicit model_override (skip routing)
+    IF agent.model_override IS SET:
+      assignments[agent.role] = {model: agent.model_override, reason: "explicit"}
+      CONTINUE
+
+    # Priority 2: Matrix lookup by role_group
+    role_group = agent.role_group OR "BACKEND"
+    selected = MODEL_ROUTING_MATRIX[complexity_tier][role_group]
+    agent.model_override = selected
+    assignments[agent.role] = {model: selected, reason: "{complexity_tier}/{role_group}"}
+
+  RETURN assignments
+```
+
+### Cost Report
+
+Display after routing to show cost savings:
+
+```text
+FUNCTION report_routing(assignments, tier, score):
+
+  COSTS = {haiku: 0.001, sonnet: 0.012, opus: 0.060}  # $/agent approx
+
+  haiku_n = count(assignments WHERE model="haiku")
+  sonnet_n = count(assignments WHERE model="sonnet")
+  opus_n = count(assignments WHERE model="opus")
+
+  adaptive_cost = haiku_n * COSTS.haiku + sonnet_n * COSTS.sonnet + opus_n * COSTS.opus
+  opus_cost = len(assignments) * COSTS.opus
+  savings = opus_cost - adaptive_cost
+  savings_pct = (savings / opus_cost * 100) IF opus_cost > 0 ELSE 0
+
+  PRINT "
+🎯 Adaptive Model Routing
+├── Complexity: {tier} (score: {score}/100)
+├── Models: haiku({haiku_n}) sonnet({sonnet_n}) opus({opus_n})
+├── Assignments:"
+
+  FOR role, a IN assignments:
+    PRINT "│   └── {role}: {a.model} ({a.reason})"
+
+  PRINT "├── Cost: ${adaptive_cost:.3f} (vs ${opus_cost:.3f} all-opus)
+└── Savings: ${savings:.3f} ({savings_pct:.0f}%)
+"
+```
+
+### Skip Flag
+
+```text
+IF "--no-adaptive-model" IN ARGS:
+  LOG "⚡ Adaptive routing DISABLED (using template defaults)"
+  SKIP Step 0, Step 0.5
+```
+
+### Complexity Tier Reference
+
+| Tier | Score | Typical Feature | Default Model Mix |
+|------|-------|-----------------|-------------------|
+| TRIVIAL | 0-25 | Bug fix, config change | 90% haiku, 10% sonnet |
+| SIMPLE | 26-50 | Single component feature | 50% haiku, 40% sonnet, 10% opus |
+| MODERATE | 51-75 | Multi-component feature | 30% haiku, 40% sonnet, 30% opus |
+| COMPLEX | 76-100 | System-wide change | 10% haiku, 40% sonnet, 50% opus |
+
+---
 
 ## Execution Algorithm
 

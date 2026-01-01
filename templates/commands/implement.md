@@ -790,6 +790,54 @@ This command includes multiple performance optimizations for 50-65% faster execu
    - `enforcement_level: "off"`
    - Feature has no FRONTEND role_group tasks
 
+3.7. **Apply Adaptive Model Routing**:
+
+   **Purpose**: Dynamically select optimal model (haiku/sonnet/opus) per subagent based on feature complexity.
+
+   **Skip flag**: `--no-adaptive-model`
+
+   **Execution**:
+   ```text
+   IF "--no-adaptive-model" NOT in user input:
+
+     1. Execute determine_complexity_tier(FEATURE_DIR)
+        → Analyze spec.md for user stories, FRs, APIs, tech signals
+        → Calculate score (0-100)
+        → Determine tier: TRIVIAL/SIMPLE/MODERATE/COMPLEX
+
+     2. Execute apply_model_routing(subagents, tier)
+        → Apply MODEL_ROUTING_MATRIX[tier][role_group] to each subagent
+        → Respect explicit model_override (skip routing for those)
+        → Set model_override on remaining subagents
+
+     3. Execute report_routing(assignments, tier, score)
+        → Display model distribution and cost savings
+        → Show per-agent assignments with reasoning
+
+   ELSE:
+     LOG "⚡ Adaptive routing DISABLED (using template defaults)"
+   ```
+
+   **Expected Output**:
+   ```text
+   🎯 Adaptive Model Routing
+   ├── Complexity: SIMPLE (score: 38/100)
+   ├── Models: haiku(4) sonnet(5) opus(1)
+   ├── Assignments:
+   │   └── project-scaffolder: haiku (SIMPLE/INFRA)
+   │   └── dependency-installer: haiku (SIMPLE/INFRA)
+   │   └── data-layer-builder: sonnet (SIMPLE/BACKEND)
+   │   └── api-builder: sonnet (SIMPLE/BACKEND)
+   │   └── ui-foundation-builder: sonnet (SIMPLE/FRONTEND)
+   │   └── unit-test-generator: haiku (SIMPLE/TESTING)
+   │   └── self-reviewer: sonnet (SIMPLE/REVIEW)
+   │   └── documentation-generator: haiku (explicit)
+   ├── Cost: $0.089 (vs $0.600 all-opus)
+   └── Savings: $0.511 (85%)
+   ```
+
+   **Reference**: See `templates/shared/orchestration-instructions.md` → "Adaptive Model Routing" section for full algorithm.
+
 4. **Project Setup Verification**:
    - **REQUIRED**: Create/verify ignore files based on actual project setup:
 
