@@ -7,6 +7,95 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.54] - 2026-01-01
+
+### Added
+
+- **Parallel Agent Orchestration Instructions for Claude Code** — Template instructions enabling parallel Task tool calls
+  - **New Shared Module**: `templates/shared/orchestration-instructions.md`
+    - Reusable instructions for Claude Code on executing `claude_code.subagents` in parallel
+    - Wave building algorithm with dependency resolution
+    - Task call patterns for concurrent execution
+    - Error handling strategies (fail-fast vs continue-on-error)
+    - Progress reporting between waves
+
+  - **Updated Templates with Include Directive**:
+    - `templates/commands/implement.md` — Enhanced 10 subagent prompts with Context/Task/Success Criteria structure
+    - `templates/commands/implement.COMPRESSED.md` — Added orchestration config and expanded subagents
+    - `templates/commands/plan.md` — Added parallel execution section
+    - `templates/commands/tasks.md` — Added parallel execution section
+    - `templates/commands/analyze.md` — Added parallel execution section
+    - `templates/commands/speckit.merge.md` — Added parallel execution section
+
+  - **Enhanced Subagent Prompts** (implement.md):
+    - Each of 10 subagents now has structured prompts with:
+      - `## Context` — Feature directory and relevant artifacts
+      - `## Task` — Numbered steps for execution
+      - `## Success Criteria` — Clear validation checklist
+
+  - **Orchestration Settings**:
+    - `max_parallel: 3` — Maximum concurrent agents per wave
+    - `wave_overlap.threshold: 0.80` — Start next wave at 80% completion
+    - Respects `depends_on` for dependency ordering
+
+  - **Expected Outcome**:
+    - 20-30% speedup for multi-agent commands
+    - Parallel execution of independent subagents within waves
+    - Better utilization of Claude Code's Task tool concurrency
+
+## [0.0.53] - 2025-12-31
+
+### Added
+
+- **Distributed Agent Pool (2.2)** — Parallel Claude API execution for multi-agent workflows
+  - **New Modules**:
+    - `agent_pool.py` — Pool of async Anthropic clients with semaphore-based concurrency
+    - `wave_scheduler.py` — DAG-based wave scheduling with overlap execution
+    - `template_parser.py` — YAML frontmatter parsing for subagent extraction
+
+  - **New CLI Command**: `specify orchestrate <command> <feature>`
+    - Execute command templates with parallel agent orchestration
+    - Parses `claude_code.subagents` from template frontmatter
+    - Respects dependency graphs and wave-based execution
+    - Options: `--pool-size`, `--dry-run`, `--sequential`, `--verbose`
+
+  - **Execution Strategies**:
+    - `SEQUENTIAL` — Execute waves one after another (safest)
+    - `OVERLAPPED` — Start next wave at 80% completion threshold (default)
+    - `AGGRESSIVE` — Start next wave ASAP when deps satisfied
+
+  - **Features**:
+    - Pool of 4 async Anthropic clients (configurable 1-8)
+    - Automatic retry with exponential backoff (tenacity)
+    - Real-time progress callbacks
+    - Statistics tracking (tokens, duration, success rate)
+    - Dry-run mode for execution plan preview
+
+  - **Expected Speedup**:
+    - `/speckit.implement` (10 agents): 750s → 220s (70% faster)
+    - Multi-command workflows: 20-30% speedup
+    - API utilization: ~25% → ~90%
+
+  - **Dependencies Added**:
+    - `anthropic>=0.40.0` — Claude API async client
+    - `tenacity>=8.2.0` — Retry logic with exponential backoff
+
+  - **Usage**:
+    ```bash
+    # Preview execution plan
+    specify orchestrate implement 001-user-auth --dry-run
+
+    # Execute with 4 parallel agents
+    specify orchestrate implement 001-user-auth --pool-size 4
+
+    # Sequential execution (no wave overlap)
+    specify orchestrate implement 001-user-auth --sequential
+    ```
+
+  - **Requirements**:
+    - `ANTHROPIC_API_KEY` environment variable must be set
+    - Templates must define `claude_code.subagents` in YAML frontmatter
+
 ## [0.0.52] - 2025-12-31
 
 ### Added

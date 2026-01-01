@@ -2655,6 +2655,224 @@ def workspace_sync(
 app.add_typer(workspace_app, name="workspace")
 
 
+# =============================================================================
+# ORCHESTRATE COMMAND - Parallel Agent Execution
+# =============================================================================
+
+@app.command()
+def orchestrate(
+    command: str = typer.Argument(
+        ...,
+        help="Command template to orchestrate (e.g., 'implement', 'plan')"
+    ),
+    feature: str = typer.Argument(
+        ...,
+        help="Feature directory (e.g., '001-user-auth')"
+    ),
+    pool_size: int = typer.Option(
+        4,
+        "--pool-size", "-p",
+        help="Number of parallel agents (1-8)",
+        min=1,
+        max=8,
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Show execution plan without running agents"
+    ),
+    sequential: bool = typer.Option(
+        False,
+        "--sequential",
+        help="Disable wave overlap (run waves one at a time)"
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose", "-v",
+        help="Show detailed progress and agent outputs"
+    ),
+):
+    """
+    Execute a speckit command with parallel agent orchestration.
+
+    This command parses subagent definitions from command templates and
+    executes them in parallel using the Anthropic API, respecting dependencies
+    and wave-based scheduling.
+
+    Requires ANTHROPIC_API_KEY environment variable to be set.
+
+    Examples:
+
+        specify orchestrate implement 001-user-auth
+
+        specify orchestrate implement 001-user-auth --pool-size 4
+
+        specify orchestrate implement 001-user-auth --dry-run
+
+        specify orchestrate plan 002-payments --sequential
+    """
+    import asyncio
+
+    # Check for API key
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key and not dry_run:
+        console.print("[bold red]Error:[/bold red] ANTHROPIC_API_KEY environment variable is required")
+        console.print("[dim]Set it with: export ANTHROPIC_API_KEY=your-key-here[/dim]")
+        raise typer.Exit(1)
+
+    # Find template
+    template_candidates = [
+        Path(".specify/templates/commands") / f"{command}.md",
+        Path(".specify/templates/commands") / f"speckit.{command}.md",
+        Path("templates/commands") / f"{command}.md",
+    ]
+
+    template_path = None
+    for candidate in template_candidates:
+        if candidate.exists():
+            template_path = candidate
+            break
+
+    if template_path is None:
+        console.print(f"[bold red]Error:[/bold red] Template not found for command: {command}")
+        console.print("[dim]Searched:[/dim]")
+        for c in template_candidates:
+            console.print(f"  - {c}")
+        raise typer.Exit(1)
+
+    console.print(f"[bold]Orchestrate:[/bold] {command}")
+    console.print(f"[dim]Template:[/dim] {template_path}")
+    console.print(f"[dim]Feature:[/dim] {feature}")
+    console.print()
+
+    # Import orchestration modules
+    try:
+        from .template_parser import parse_subagents_from_template, get_wave_config_from_template
+        from .agent_pool import DistributedAgentPool
+        from .wave_scheduler import WaveScheduler, WaveConfig, ExecutionStrategy
+    except ImportError as e:
+        console.print(f"[bold red]Error:[/bold red] Failed to import orchestration modules: {e}")
+        console.print("[dim]Ensure anthropic and tenacity are installed: pip install anthropic tenacity[/dim]")
+        raise typer.Exit(1)
+
+    # Parse template
+    try:
+        tasks = parse_subagents_from_template(template_path, feature)
+        wave_config = get_wave_config_from_template(template_path)
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] Failed to parse template: {e}")
+        raise typer.Exit(1)
+
+    if not tasks:
+        console.print("[bold yellow]Warning:[/bold yellow] No parallel subagents found in template")
+        console.print("[dim]This command template may not support parallel execution[/dim]")
+        raise typer.Exit(0)
+
+    # Override config with CLI options
+    wave_config.max_parallel = pool_size
+    if sequential:
+        wave_config.strategy = ExecutionStrategy.SEQUENTIAL
+        wave_config.overlap_enabled = False
+
+    # Show execution plan
+    console.print(f"[bold cyan]Execution Plan[/bold cyan] ({len(tasks)} agents)")
+    console.print()
+
+    # Build waves for display
+    pool = DistributedAgentPool(pool_size=pool_size) if not dry_run else None
+    scheduler = WaveScheduler(pool, wave_config) if pool else WaveScheduler(None, wave_config)
+
+    try:
+        waves = scheduler.build_waves(tasks)
+    except ValueError as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
+        raise typer.Exit(1)
+
+    # Display waves
+    wave_table = Table(show_header=True, header_style="bold cyan", box=None)
+    wave_table.add_column("Wave", style="cyan", width=8)
+    wave_table.add_column("Agents", style="white")
+    wave_table.add_column("Model", style="dim")
+
+    for wave in waves:
+        agent_names = ", ".join(t.name for t in wave.tasks)
+        models = set(t.model.split("-")[1] if "-" in t.model else t.model for t in wave.tasks)
+        wave_table.add_row(f"{wave.index + 1}", agent_names, "/".join(models))
+
+    console.print(wave_table)
+    console.print()
+
+    if dry_run:
+        console.print("[bold yellow]Dry run mode[/bold yellow] - no agents executed")
+        console.print()
+        console.print("[dim]Strategy:[/dim]", wave_config.strategy.value)
+        console.print("[dim]Pool size:[/dim]", pool_size)
+        console.print("[dim]Overlap:[/dim]", "enabled" if wave_config.overlap_enabled else "disabled")
+        if wave_config.overlap_enabled:
+            console.print("[dim]Threshold:[/dim]", f"{wave_config.overlap_threshold:.0%}")
+        return
+
+    # Execute
+    console.print("[bold]Executing agents...[/bold]")
+    console.print()
+
+    async def run_orchestration():
+        # Set up progress tracking
+        completed_count = 0
+        total_count = len(tasks)
+
+        def on_task_complete(name: str, result):
+            nonlocal completed_count
+            completed_count += 1
+            status = "[green]OK[/green]" if result.success else "[red]FAIL[/red]"
+            duration = f"{result.duration_ms}ms"
+            tokens = f"{result.tokens_in + result.tokens_out} tokens"
+            console.print(f"  [{completed_count}/{total_count}] {name}: {status} ({duration}, {tokens})")
+
+            if verbose and result.output:
+                # Show first 200 chars of output
+                preview = result.output[:200] + "..." if len(result.output) > 200 else result.output
+                console.print(f"    [dim]{preview}[/dim]")
+
+        def on_wave_complete(wave):
+            if verbose:
+                console.print(f"  [dim]Wave {wave.index + 1} complete: {len(wave.completed)} succeeded, {len(wave.failed)} failed[/dim]")
+
+        scheduler.on_task_complete(on_task_complete)
+        scheduler.on_wave_complete(on_wave_complete)
+
+        try:
+            results = await scheduler.execute_all(tasks)
+            return results
+        finally:
+            if pool:
+                await pool.close()
+
+    try:
+        results = asyncio.run(run_orchestration())
+    except RuntimeError as e:
+        console.print(f"[bold red]Execution failed:[/bold red] {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[bold red]Unexpected error:[/bold red] {e}")
+        raise typer.Exit(1)
+
+    # Summary
+    console.print()
+    success_count = sum(1 for r in results.values() if r.success)
+    fail_count = len(results) - success_count
+    total_duration = sum(r.duration_ms for r in results.values())
+    total_tokens = sum(r.tokens_in + r.tokens_out for r in results.values())
+
+    if fail_count == 0:
+        console.print(f"[bold green]Completed {success_count} agents[/bold green] in {total_duration}ms ({total_tokens} tokens)")
+    else:
+        console.print(f"[bold yellow]Completed {success_count} agents, {fail_count} failed[/bold yellow] in {total_duration}ms")
+        for name, result in results.items():
+            if not result.success:
+                console.print(f"  [red]FAILED:[/red] {name}: {result.error}")
+
+
 def main():
     app()
 

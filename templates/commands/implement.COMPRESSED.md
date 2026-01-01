@@ -30,11 +30,53 @@ claude_code:
   reasoning_mode: extended
   thinking_budget: 16000
   phases: [bootstrap, implement, validate, document]
+  orchestration:
+    max_parallel: 3
+    wave_overlap: { enabled: true, threshold: 0.80 }
   subagents:
-    wave_1: [spec-analyzer, plan-analyzer, task-reader]
-    wave_2: [code-generator, test-generator]
-    wave_3: [code-validator, build-runner]
-    wave_4: [doc-generator, consistency-checker]
+    # Wave 1: Analysis (parallel)
+    - role: spec-analyzer
+      parallel: true
+      depends_on: []
+      prompt: "Parse {{FEATURE_DIR}}/spec.md → extract FRs, NFRs, AS scenarios"
+    - role: plan-analyzer
+      parallel: true
+      depends_on: []
+      prompt: "Parse {{FEATURE_DIR}}/plan.md → extract architecture, dependencies"
+    - role: task-reader
+      parallel: true
+      depends_on: []
+      prompt: "Parse {{FEATURE_DIR}}/tasks.md → build task queue with priorities"
+    # Wave 2: Generation (parallel)
+    - role: code-generator
+      parallel: true
+      depends_on: [spec-analyzer, plan-analyzer, task-reader]
+      prompt: "Generate source code per tasks.md, annotate @speckit:FR-xxx"
+    - role: test-generator
+      parallel: true
+      depends_on: [spec-analyzer, task-reader]
+      prompt: "Generate tests per AS scenarios, annotate @speckit:AS-xxx"
+      model_override: sonnet
+    # Wave 3: Validation (parallel)
+    - role: code-validator
+      parallel: true
+      depends_on: [code-generator, test-generator]
+      prompt: "Run lint, type-check, validate @speckit annotations"
+    - role: build-runner
+      parallel: true
+      depends_on: [code-generator]
+      prompt: "Run build, fix errors using build_error_patterns"
+    # Wave 4: Documentation (parallel)
+    - role: doc-generator
+      parallel: true
+      depends_on: [code-validator, build-runner]
+      prompt: "Generate RUNNING.md, update README.md"
+      model_override: haiku
+    - role: consistency-checker
+      parallel: true
+      depends_on: [code-validator]
+      prompt: "Verify FR→code→test traceability chain"
+      model_override: haiku
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
@@ -44,6 +86,15 @@ scripts:
 ```text
 $ARGUMENTS
 ```
+
+---
+
+## Parallel Execution
+
+{{include: shared/orchestration-instructions.md}}
+
+Execute subagents defined in `claude_code.subagents` using parallel Task calls per wave.
+See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
 
 ---
 

@@ -32,6 +32,16 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+---
+
+## Parallel Execution
+
+{{include: shared/orchestration-instructions.md}}
+
+Execute subagents defined in `claude_code.subagents` using parallel Task calls per wave.
+
+---
+
 ## Goal
 
 After a feature PR is merged, this command:

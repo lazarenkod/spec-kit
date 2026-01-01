@@ -240,6 +240,17 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+---
+
+## Parallel Execution
+
+{{include: shared/orchestration-instructions.md}}
+
+Execute subagents defined in `claude_code.subagents` using parallel Task calls per wave.
+See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
+
+---
+
 ## Goal
 
 Identify inconsistencies, duplications, ambiguities, underspecified items, **dependency cycles**, and **traceability gaps** across project artifacts before implementation. This command validates:

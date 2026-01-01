@@ -329,7 +329,22 @@ claude_code:
       depends_on: []
       priority: 10
       trigger: "during setup phase"
-      prompt: "Create project structure per plan.md: directories, config files, .gitignore"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Plan: {{FEATURE_DIR}}/plan.md
+
+        ## Task
+        Create project structure per plan.md:
+        1. Create all directories specified in the plan
+        2. Generate .gitignore with language-specific patterns
+        3. Create base config files (tsconfig.json, pyproject.toml, etc.)
+        4. Set up folder structure matching the architecture
+
+        ## Success Criteria
+        - All directories from plan exist
+        - Config files are valid JSON/YAML (parseable)
+        - .gitignore includes node_modules, __pycache__, .env, etc.
       model_override: haiku
     - role: dependency-installer
       role_group: INFRA
@@ -337,7 +352,23 @@ claude_code:
       depends_on: [project-scaffolder]
       priority: 9
       trigger: "after project structure exists"
-      prompt: "Install dependencies from Dependency Registry, configure package.json/requirements.txt"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Plan: {{FEATURE_DIR}}/plan.md
+        Dependency Registry: memory/domains/dependency-registry.md
+
+        ## Task
+        Install and configure dependencies:
+        1. Read dependencies from plan.md and dependency registry
+        2. Install production dependencies (npm install, pip install, etc.)
+        3. Install dev dependencies (testing, linting, types)
+        4. Verify installation succeeds without errors
+
+        ## Success Criteria
+        - All dependencies installed without conflicts
+        - Lock file generated (package-lock.json, poetry.lock)
+        - No security vulnerabilities in major dependencies
       model_override: haiku
     # Wave 2: Core Implementation (parallel by role_group)
     - role: data-layer-builder
@@ -346,28 +377,94 @@ claude_code:
       depends_on: [dependency-installer]
       priority: 8
       trigger: "when implementing data models"
-      prompt: "Build data models, schemas, migrations from data-model.md"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Data Model: {{FEATURE_DIR}}/data-model.md (if exists)
+
+        ## Task
+        Build data layer from specification:
+        1. Create database models/schemas per spec requirements
+        2. Implement data access layer (repositories, DAOs)
+        3. Generate migrations if applicable
+        4. Add data validation and type safety
+
+        ## Success Criteria
+        - All entities from spec.md have corresponding models
+        - Relationships match data-model.md
+        - Types are fully annotated (@speckit:FR-xxx)
     - role: ui-foundation-builder
       role_group: FRONTEND
       parallel: true
       depends_on: [dependency-installer]
       priority: 8
       trigger: "when implementing UI foundation"
-      prompt: "Build UX foundation: layout, navigation, error handling, auth UI"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Design System: specs/app-design/design_system.md
+
+        ## Task
+        Build UX foundation:
+        1. Set up layout components (Header, Footer, Sidebar)
+        2. Implement navigation structure per sitemap
+        3. Create error boundary and loading states
+        4. Build authentication UI if spec requires
+
+        ## Success Criteria
+        - Layout renders without errors
+        - Navigation works between routes
+        - Error handling catches and displays errors gracefully
     - role: api-builder
       role_group: BACKEND
       parallel: true
       depends_on: [data-layer-builder]
       priority: 7
       trigger: "when implementing API endpoints"
-      prompt: "Build API endpoints from contracts/, connect to data layer"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        API Contracts: contracts/ (if exists)
+        Data Layer: (from data-layer-builder)
+
+        ## Task
+        Build API endpoints:
+        1. Create REST/GraphQL endpoints per contracts
+        2. Connect endpoints to data layer
+        3. Implement request validation
+        4. Add proper error responses (400, 401, 404, 500)
+
+        ## Success Criteria
+        - All spec FRs have corresponding endpoints
+        - Endpoints return correct status codes
+        - Request/response types match contracts
     - role: ui-feature-builder
       role_group: FRONTEND
       parallel: true
       depends_on: [ui-foundation-builder, api-builder]
       priority: 6
       trigger: "when implementing feature UI"
-      prompt: "Build feature components, connect to API, implement user stories"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        User Stories: (from spec.md)
+        API Endpoints: (from api-builder)
+
+        ## Task
+        Build feature UI components:
+        1. Create feature-specific components per user stories
+        2. Connect components to API endpoints
+        3. Implement form handling and validation
+        4. Add loading, error, and success states
+
+        ## Success Criteria
+        - Each user story has corresponding UI
+        - Forms validate input before submission
+        - API errors display user-friendly messages
     # Wave 3: Testing (parallel per test type)
     - role: unit-test-generator
       role_group: TESTING
@@ -375,7 +472,23 @@ claude_code:
       depends_on: [data-layer-builder, api-builder]
       priority: 5
       trigger: "when generating unit tests"
-      prompt: "Generate unit tests for completed services and models"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Acceptance Scenarios: AS-xxx from spec.md
+
+        ## Task
+        Generate unit tests:
+        1. Test each service method with happy path
+        2. Test edge cases and error conditions
+        3. Mock external dependencies
+        4. Add @speckit:AS-xxx annotations for traceability
+
+        ## Success Criteria
+        - Coverage >= 80% for new code
+        - All public methods have tests
+        - Tests are isolated (no side effects)
       model_override: sonnet
     - role: integration-test-generator
       role_group: TESTING
@@ -383,7 +496,23 @@ claude_code:
       depends_on: [ui-feature-builder, api-builder]
       priority: 4
       trigger: "when generating integration tests"
-      prompt: "Generate integration and e2e tests for user journeys"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        User Journeys: (from spec.md)
+
+        ## Task
+        Generate integration/e2e tests:
+        1. Test complete user journeys end-to-end
+        2. Test API endpoints with real database
+        3. Test UI flows with simulated user interaction
+        4. Add @speckit:AS-xxx annotations
+
+        ## Success Criteria
+        - Each user journey has e2e test
+        - Tests run in CI environment
+        - No flaky tests (deterministic)
       model_override: sonnet
     # Wave 4: Review (sequential)
     - role: code-reviewer
@@ -392,14 +521,46 @@ claude_code:
       depends_on: [unit-test-generator, integration-test-generator]
       priority: 3
       trigger: "when reviewing implementation"
-      prompt: "Review code quality, security, @speckit annotations, DoD compliance"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Tasks: {{FEATURE_DIR}}/tasks.md
+
+        ## Task
+        Review implementation quality:
+        1. Check @speckit annotations are present
+        2. Verify no TODO/FIXME/HACK comments remain
+        3. Run linter and fix warnings
+        4. Check DoD compliance per tasks.md
+
+        ## Success Criteria
+        - All FRs traceable via @speckit:FR-xxx
+        - Lint passes with 0 errors
+        - No security vulnerabilities (no hardcoded secrets)
     - role: documentation-generator
       role_group: DOCS
       parallel: true
       depends_on: [code-reviewer]
       priority: 2
       trigger: "when generating documentation"
-      prompt: "Generate RUNNING.md, update README.md with setup instructions"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Implementation: (from all builders)
+
+        ## Task
+        Generate documentation:
+        1. Create RUNNING.md with startup instructions
+        2. Update README.md with feature description
+        3. Generate .env.example with required variables
+        4. Document API endpoints (OpenAPI if applicable)
+
+        ## Success Criteria
+        - RUNNING.md has complete setup steps
+        - README.md reflects new features
+        - All env vars documented in .env.example
       model_override: haiku
 ---
 
@@ -419,12 +580,15 @@ This command includes multiple performance optimizations for 50-65% faster execu
 
 | Optimization | Module | Savings | Skip Flag |
 |--------------|--------|---------|-----------|
+| **Parallel Agent Orchestration** | `templates/shared/orchestration-instructions.md` | 20-30% | `--sequential` |
 | Vision Turbo Mode | `templates/shared/implement/vision-turbo.md` | 75-80% | `--no-turbo` |
 | API Batch Verification | `templates/shared/implement/api-batch.md` | 70% | `--no-batch-verify` |
 | Wave Overlap Execution | `templates/shared/implement/wave-overlap.md` | 25-30% | `--sequential-waves` |
 | Build Optimizer | `templates/shared/implement/build-optimizer.md` | 50% | `--no-build-fix` |
 | Model Selection | `templates/shared/implement/model-selection.md` | 60-90% cost | `--no-adaptive-model` |
 | File Caching | Inline (Step 3) | 85% | N/A |
+
+{{include: shared/orchestration-instructions.md}}
 
 **Expected Impact** (MODERATE complexity feature):
 - Sequential time: 400s → Optimized: ~180s (55% faster)
