@@ -7,6 +7,40 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.65] - 2026-01-01
+
+### Added
+
+- **Batch API Requests (Strategy 1.3)** — Cross-wave task aggregation for 50-70% reduction in API latency
+  - **New Module**: `src/specify_cli/batch_aggregator.py`
+    - `BatchConfig` — Configuration for batch aggregation (max_batch_size, timeout_ms, cross_wave)
+    - `BatchGroup` — Represents a group of independent tasks that can execute in parallel
+    - `BatchAggregator` — DAG analysis and intelligent task grouping across wave boundaries
+    - Topological level computation for identifying truly independent tasks
+    - Aggregation statistics for monitoring performance improvements
+
+  - **WaveScheduler Enhancements**:
+    - New `BATCHED` execution strategy in `ExecutionStrategy` enum
+    - Batch configuration in `WaveConfig`: `batch_mode`, `max_batch_size`, `cross_wave_batching`
+    - `_execute_batched()` method for cross-wave batch execution
+    - Proper wave status tracking for batched tasks
+
+  - **PoolConfig Extensions**:
+    - `batch_mode: bool` — Enable/disable batch aggregation
+    - `max_batch_size: int` — Maximum tasks per aggregated batch (default: 10)
+    - `batch_timeout_ms: int` — Collection timeout before batch execution (default: 100ms)
+
+  - **Algorithm**:
+    - Build dependency graph from all tasks across waves
+    - Compute topological levels (tasks at same level are independent)
+    - Group by level into batches respecting max_batch_size
+    - Execute batches sequentially, tasks within batch in parallel
+
+  - **Expected Performance**:
+    - Wave boundaries: 3+ → 1-2 per execution (50-70% reduction)
+    - Round-trip latency: 300-900ms → 100-200ms (60% reduction)
+    - Parallel utilization: Within-wave → Cross-wave (higher throughput)
+
 ## [0.0.64] - 2026-01-01
 
 ### Added

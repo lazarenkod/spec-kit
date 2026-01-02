@@ -117,6 +117,9 @@ class PoolConfig:
         max_retries: Maximum retry attempts for failed requests
         backoff_base: Base wait time for exponential backoff (seconds)
         backoff_max: Maximum wait time for backoff (seconds)
+        batch_mode: Enable cross-wave batch aggregation for latency reduction
+        max_batch_size: Maximum tasks per aggregated batch
+        batch_timeout_ms: Time to wait for more requests before executing batch
     """
     pool_size: int = 4
     default_model: str = ModelTier.SONNET.value
@@ -125,6 +128,10 @@ class PoolConfig:
     max_retries: int = 3
     backoff_base: float = 1.0
     backoff_max: float = 10.0
+    # Batch aggregation settings (Strategy 1.3)
+    batch_mode: bool = False
+    max_batch_size: int = 10
+    batch_timeout_ms: int = 100
 
 
 class DistributedAgentPool:
