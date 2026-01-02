@@ -65,6 +65,24 @@ CP-SPEC-03: After Scenarios
   early_fail: false
   validation: "Checking scenario coverage..."
 
+CP-SPEC-03B: After Edge Cases
+  trigger: after_edge_cases
+  checks: [SR-SPEC-11, SR-SPEC-12, SR-SPEC-13]  # AC completeness? Entity coverage? Security EC?
+  early_fail: false
+  validation: "Checking edge case coverage..."
+
+CP-SPEC-03C: After Completeness Check
+  trigger: after_completeness
+  checks: [SR-SPEC-14, SR-SPEC-15, SR-SPEC-16, SR-SPEC-17, SR-SPEC-18]  # Ambiguity + Completeness
+  early_fail: false
+  validation: "Checking spec completeness and ambiguity..."
+
+CP-SPEC-03D: After Quality Scoring
+  trigger: after_quality_scoring
+  checks: [SR-SPEC-19, SR-SPEC-20, SR-SPEC-21]  # G-Eval quality score + Consistency
+  early_fail: false
+  validation: "Calculating G-Eval specification quality score..."
+
 CP-SPEC-04: After Success Criteria
   trigger: after_success_criteria
   checks: [SR-SPEC-06, SR-SPEC-07]  # Measurable? Tech-agnostic?
@@ -341,6 +359,14 @@ TIER_2_SEMANTIC:  # 1-5s, BLOCKING on errors
   - SR-SPEC-03: fr_linked_to_as
   - SR-SPEC-04: as_given_when_then
   - SR-SPEC-08: stories_have_as
+  - SR-SPEC-11: ac_completeness_score  # >= 0.80 threshold
+  - SR-SPEC-12: entity_type_coverage   # heuristic EC for entities
+  - SR-SPEC-13: security_ec_coverage   # auth/input/session patterns
+  - SR-SPEC-14: no_vague_terms         # NEW: ambiguity detection
+  - SR-SPEC-15: quantities_defined     # NEW: explicit numbers required
+  - SR-SPEC-16: error_path_coverage    # NEW: error:happy >= 0.5
+  - SR-SPEC-17: security_triggers_covered  # NEW: CRITICAL - all triggers have reqs
+  - SR-SPEC-18: completeness_score     # NEW: >= 0.75 threshold
   - SR-PLAN-03: dependencies_listed
   - SR-PLAN-07: constitution_checked
   - SR-TASK-07: dep_refs_valid
@@ -353,6 +379,8 @@ TIER_3_QUALITY:  # 5-15s, NON-BLOCKING
   - VG-005: ambiguity_count
   - VG-006: PRS_score (Plan Readiness)
   - VG-007: TRS_score (Task Readiness)
+  - VG-009: spec_quality_score (G-Eval overall >= 70)
+  - VG-010: dimension_minimums (All dimensions >= 0.50)
   - TRACEABILITY: coverage_percentage
   - SR-SLOP: anti_slop_checks
 
@@ -541,8 +569,10 @@ CP-SPEC-05: Final (Progressive)
   mode: progressive
   tiers:
     1: [SR-SPEC-01]
-    2: [SR-SPEC-02, SR-SPEC-03, SR-SPEC-04, SR-SPEC-08]
-    3: [VG-001, VG-003, VG-005]
+    2: [SR-SPEC-02, SR-SPEC-03, SR-SPEC-04, SR-SPEC-08, SR-SPEC-11, SR-SPEC-12, SR-SPEC-13,
+        SR-SPEC-14, SR-SPEC-15, SR-SPEC-16, SR-SPEC-17, SR-SPEC-18,
+        SR-SPEC-19, SR-SPEC-20, SR-SPEC-21]  # + Ambiguity + Completeness + G-Eval Quality
+    3: [VG-001, VG-003, VG-005, VG-009, VG-010]  # + Quality score gates
     4: [LLM_REVIEW, CONSISTENCY]
   early_exit_threshold: 0.95
 

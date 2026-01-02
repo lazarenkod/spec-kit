@@ -7,6 +7,179 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.68] - 2026-01-02
+
+### Added
+
+- **AI Augmentation 2.1: ML-Based Specification Quality Scoring** — G-Eval framework for objective multi-dimensional spec quality measurement
+  - **New Module**: `templates/shared/quality/spec-quality-scorer.md` (~400 lines)
+    - 5 Quality Dimensions with weighted scoring: Clarity (25%), Completeness (25%), Testability (20%), Consistency (15%), Traceability (15%)
+    - Hybrid scoring approach: 60% automated metrics + 40% LLM G-Eval evaluation
+    - Grade scale: A (90-100), B (80-89), C (70-79), D (60-69), F (<60)
+    - Pass threshold: 70.0 (Grade C or higher)
+    - Core algorithms:
+      - `SCORE_SPECIFICATION(spec, historical_benchmark)` — main entry point
+      - `EVALUATE_CLARITY(spec)` — ambiguity count + LLM G-Eval
+      - `EVALUATE_COMPLETENESS(spec)` — severity-weighted gap penalty
+      - `EVALUATE_TESTABILITY(spec)` — scenario measurability + traceability
+      - `EVALUATE_CONSISTENCY(spec)` — LLM contradiction detection
+      - `EVALUATE_TRACEABILITY(spec)` — FR→AS→EC link coverage
+      - `LLM_GEVAL_RUBRIC(dimension, requirements)` — G-Eval prompting (0.85+ human correlation)
+      - `ASSIGN_GRADE(overall_score)` — grade classification
+      - `GENERATE_RECOMMENDATION(score, dimensions)` — actionable improvement advice
+  - **New Subagent**: `spec-quality-scorer` in `templates/commands/specify.md`
+    - Wave 3.5 execution (priority 35, after spec-writer and completeness-checker)
+    - 6-step evaluation pipeline covering all quality dimensions
+    - Outputs structured quality report with dimension breakdown and suggestions
+  - **Template Update**: `templates/spec-template.md`
+    - New Specification Quality Score section after Completeness Analysis
+    - Dimension table with score, weight, and explanation columns
+    - Quality gates status display (SR-SPEC-19/20/21)
+    - Improvement suggestions based on lowest-scoring dimensions
+
+- **New Validation Criteria** — G-Eval quality gates for specification quality
+  - **Updated File**: `templates/shared/self-review/criteria-spec.md`
+    - SR-SPEC-19: Quality Score Pass — overall G-Eval score >= 70 (Grade C+) (HIGH severity)
+    - SR-SPEC-20: No Failing Dimensions — all quality dimensions >= 0.50 (MEDIUM severity)
+    - SR-SPEC-21: Consistency Check — no CRITICAL contradictions detected (CRITICAL severity)
+  - **New Checkpoint**: CP-SPEC-03D in `templates/shared/validation/checkpoints.md`
+    - Triggers after quality scoring (before success criteria)
+    - Validates SR-SPEC-19, SR-SPEC-20, SR-SPEC-21
+  - **New Validation Gates**: VG-009 and VG-010 in progressive validation Tier 3
+    - VG-009: spec_quality_score (G-Eval overall >= 70)
+    - VG-010: dimension_minimums (All dimensions >= 0.50)
+
+### Expected Impact
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Spec quality measurement | SQS only (4 components) | 5-dimension G-Eval scoring |
+| Quality scoring method | Rule-based only | 60% automated + 40% LLM |
+| Grade system | Quality levels | A/B/C/D/F grades |
+| Pass threshold | 80% (SQS) | 70% (Grade C) |
+| Improvement guidance | Generic | Dimension-specific suggestions |
+| Contradiction detection | None | LLM-based semantic analysis |
+| Human-expert correlation | N/A | 0.85+ via G-Eval rubrics |
+
+---
+
+## [0.0.67] - 2026-01-02
+
+### Added
+
+- **AI Augmentation 1.3: Requirement Ambiguity Detection** — Metacognitive LLM-based detection of vague terms, missing quantities, unclear actors, conditional gaps
+  - **New Module**: `templates/shared/quality/ambiguity-patterns.md` (~290 lines)
+    - 6 ambiguity types: VAGUE_TERM, MISSING_QUANTITY, UNCLEAR_ACTOR, UNDEFINED_TERM, CONDITIONAL_GAP, INCOMPLETE_LIST
+    - Pattern library with severity and suggestions for each type
+    - `DETECT_AMBIGUITIES(functional_requirements, glossary)` multi-pass algorithm
+    - `LLM_AMBIGUITY_ANALYSIS(requirements, context)` metacognitive prompting
+    - `REPAIR_AMBIGUITY(ambiguity, user_clarification)` repair algorithm
+  - **Enhanced Subagent**: `ambiguity-detector` in `templates/commands/clarify.md`
+    - 3-pass detection: Heuristic Pattern Matching → LLM Metacognitive Analysis → Cross-Requirement Consistency
+    - Integration with `ambiguity-patterns.md` pattern library
+    - Outputs structured ambiguity reports with repair suggestions
+
+- **AI Augmentation 1.4: Completeness Checking via Semantic Analysis** — Multi-dimensional validation for error handling, security, observability, and prerequisites
+  - **New Module**: `templates/shared/quality/completeness-checklist.md` (~300 lines)
+    - 7 completeness categories: ERROR_HANDLING (0.20), PERFORMANCE (0.15), SECURITY (0.20), OBSERVABILITY (0.10), ACCESSIBILITY (0.10), PREREQUISITES (0.15), EDGE_CASES (0.10)
+    - Category-specific check algorithms with pattern detection
+    - `CALCULATE_COMPLETENESS_SCORE(spec, codebase_context)` weighted scoring
+    - `LLM_GAP_ANALYSIS(spec, context)` for semantic gap detection
+    - EARS template validation for requirement patterns
+  - **New Subagent**: `completeness-checker` in `templates/commands/specify.md`
+    - 8-step validation pipeline covering all completeness categories
+    - Parallel execution with `edge-case-detector` in Wave 3
+    - Outputs gaps with severity, explanation, and suggested requirements
+  - **Template Update**: `templates/spec-template.md`
+    - New Completeness Analysis section with 6-category status table
+    - Completeness Score threshold of 0.75 for PASS
+
+- **New Validation Criteria** — Self-review checks for ambiguity and completeness
+  - **Updated File**: `templates/shared/self-review/criteria-spec.md`
+    - SR-SPEC-14: No Vague Terms — no "fast", "user-friendly" without metrics (HIGH severity)
+    - SR-SPEC-15: Quantities Defined — all "some/many/few" have specific numbers (MEDIUM severity)
+    - SR-SPEC-16: Error Path Coverage — ratio of error:happy scenarios >= 0.5 (HIGH severity)
+    - SR-SPEC-17: Security Triggers Covered — all auth/input/file triggers have security reqs (CRITICAL severity)
+    - SR-SPEC-18: Completeness Score — overall completeness >= 0.75 (HIGH severity)
+  - **New Checkpoint**: CP-SPEC-03C in `templates/shared/validation/checkpoints.md`
+    - Triggers after completeness check (before success criteria)
+    - Validates SR-SPEC-14 through SR-SPEC-18
+    - Integrated into progressive validation Tier 2
+
+### Expected Impact
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Vague terms detected | Manual review | Automatic detection with repair suggestions |
+| Missing quantities flagged | Ad-hoc | 100% flagged with clarification questions |
+| Error path coverage | Not tracked | >= 0.5 ratio enforced |
+| Security gap detection | Partial (EC only) | 100% for auth/input/file triggers |
+| Completeness score | Not measured | >= 0.75 threshold with 7-category breakdown |
+| Clarification efficiency | 5 generic questions | Targeted questions from ambiguity detection |
+
+---
+
+## [0.0.66] - 2026-01-02
+
+### Added
+
+- **AI Augmentation 1.1: Acceptance Criteria Enhancement** — RaT prompting for acceptance scenario generation in `/speckit.specify`
+  - **Enhanced `acceptance-criteria-generator` subagent** in `templates/commands/specify.md`:
+    - 5-step RaT (Refine-and-Thought) pipeline: REFINE → THINK → EXTRACT → GENERATE → SCORE
+    - Scenario Classification: HAPPY_PATH, ALT_PATH, ERROR_PATH, BOUNDARY, SECURITY
+    - Entity extraction with type detection (email, phone, date, numeric, string, password, file, url, array, boolean, id)
+    - Completeness scoring formula with >= 0.80 threshold
+    - YAML output format for structured consumption
+  - **Template Update**: `templates/spec-template.md`
+    - New Classification column in Acceptance Scenarios tables
+    - Documented classification values in HTML comments
+    - Updated Test Strategy coverage targets
+
+- **AI Augmentation 1.2: Automatic Edge Case Identification** — Systematic edge case discovery via heuristics and security patterns
+  - **New Module**: `templates/shared/quality/edge-case-heuristics.md` (~330 lines)
+    - `DETECT_ENTITY_TYPE(field_name, context)` algorithm
+    - Edge case patterns for 11 entity types (email, phone, date, numeric, string, password, file, url, array, boolean, id)
+    - `GENERATE_HEURISTIC_EDGE_CASES(entities)` procedure
+    - `CALCULATE_ENTITY_COVERAGE(entities, edge_cases)` for validation
+    - Integration with SR-SPEC-12 self-review
+  - **New Module**: `templates/shared/quality/security-patterns.md` (~360 lines)
+    - `DETECT_SECURITY_TRIGGERS(requirements_text)` algorithm
+    - OWASP-based patterns for 7 categories: Authentication, Input Validation, Access Control, Session Management, File Upload, API Security, Data Protection
+    - Security edge cases with OWASP references (EC-SEC-AUTH, EC-SEC-INJ, EC-SEC-AC, EC-SEC-SESS, EC-SEC-FILE, EC-SEC-API, EC-SEC-DATA)
+    - Confidence scoring (0.95 pattern match, 0.75 inferred, 0.60 LLM-generated)
+    - Integration with SR-SPEC-13 self-review
+  - **New Subagent**: `edge-case-detector` in `templates/commands/specify.md`
+    - 4-step pipeline: Entity-Type Heuristics → Security Pattern Matching → LLM Gap Analysis → Deduplicate and Rank
+    - Parallel execution with `acceptance-criteria-generator`
+    - Outputs enhanced EC table with Severity (CRITICAL/HIGH/MEDIUM/LOW) and Category columns
+  - **Template Update**: `templates/spec-template.md`
+    - New Severity and Category columns in Edge Cases table
+    - New Edge Case Coverage Summary section with completeness score
+    - Updated coverage targets for severity-based testing
+
+- **New Validation Criteria** — Self-review checks for acceptance criteria and edge case coverage
+  - **New File**: `templates/shared/self-review/criteria-spec.md`
+    - SR-SPEC-01 to SR-SPEC-10: Existing spec validation criteria (documented)
+    - SR-SPEC-11: AC Completeness Score >= 0.80 threshold (HIGH severity)
+    - SR-SPEC-12: Entity Type Coverage — auto-fixable heuristic EC generation (MEDIUM severity)
+    - SR-SPEC-13: Security EC Coverage for auth/input/session features (HIGH severity)
+  - **New Checkpoint**: CP-SPEC-03B in `templates/shared/validation/checkpoints.md`
+    - Triggers after edge case generation
+    - Validates SR-SPEC-11/12/13
+    - Integrated into progressive validation Tier 2
+
+### Expected Impact
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Edge cases per spec | 5-10 manual | 15-25 systematic |
+| Security EC coverage | Ad-hoc | 100% for auth/input features |
+| Entity type coverage | Not tracked | 100% of detected entities |
+| Completeness score | Not measured | >= 0.80 threshold |
+| Scenario classification | None | HAPPY/ALT/ERROR/BOUNDARY/SECURITY |
+
+---
+
 ## [0.0.65] - 2026-01-01
 
 ### Added

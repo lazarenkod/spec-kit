@@ -187,25 +187,464 @@ claude_code:
       priority: 20
       model_override: sonnet
       prompt: |
-        Generate acceptance scenarios from concept and user input.
+        Generate acceptance scenarios using RaT (Refine-and-Thought) prompting.
+
+        Load `templates/shared/quality/edge-case-heuristics.md` for entity-type detection.
 
         Using CONCEPT_IDS and concept context:
-        1. Generate Acceptance Scenarios with IDs (AS-[story number][scenario letter])
-        2. Use Given/When/Then format for all scenarios
-        3. Identify edge cases (EC-xxx)
-        4. Map priorities from concept (P1a, P1b) or use simple (P1, P2, P3)
 
-        Output:
-        - Acceptance Scenarios table (ID, Given, When, Then)
-        - Edge Cases list with IDs
-        - Priority mapping for user stories
-        - Independent Test descriptions per story
+        ## STEP 1: REFINE the User Story
+
+        Filter ambiguous language and redundant information:
+        - Replace vague terms ("fast", "secure", "user-friendly") with measurable criteria
+        - Remove hedge phrases ("might", "may", "could possibly")
+        - Clarify actors (who exactly is performing the action?)
+        - Resolve pronouns ("it", "they") to specific entities
+
+        ## STEP 2: THINK through Complete User Journey
+
+        For each user story, systematically consider ALL path types:
+
+        | Classification | What to Consider | Example |
+        |----------------|------------------|---------|
+        | HAPPY_PATH | Primary success flow, expected journey | User submits valid form → success |
+        | ALT_PATH | Alternate valid paths to same outcome | User uses social login instead |
+        | ERROR_PATH | Network failures, validation errors, auth failures | Invalid email → error message |
+        | BOUNDARY | Min/max values, empty states, edge quantities | Zero items, max 100 chars |
+        | SECURITY | Auth bypass, injection, privilege escalation | SQL in username field |
+
+        ## STEP 3: EXTRACT Domain Entities
+
+        Identify entities from the user story and detect their types:
+
+        ```text
+        Apply DETECT_ENTITY_TYPE(field_name, context) from edge-case-heuristics.md:
+        - email fields → "email" type
+        - phone/tel/mobile → "phone" type
+        - date/time/timestamp → "date" type
+        - amount/price/quantity → "numeric" type
+        - password/secret/pin → "password" type
+        - file/upload/attachment → "file" type
+        - Other text fields → "string" type
+        ```
+
+        Mark critical entities (core to the feature's value proposition).
+
+        ## STEP 4: GENERATE Acceptance Scenarios
+
+        Create scenarios with classification in table format:
+
+        | ID | Classification | Given | When | Then | Requires Test |
+        |----|----------------|-------|------|------|---------------|
+        | AS-1A | HAPPY_PATH | [specific initial state] | [specific action] | [measurable outcome] | YES |
+        | AS-1B | ERROR_PATH | [error-triggering state] | [same action] | [error handling] | YES |
+        | AS-1C | BOUNDARY | [edge value state] | [action with boundary] | [boundary handling] | YES |
+
+        Rules:
+        - Each user story needs at minimum: 1 HAPPY_PATH, 1 ERROR_PATH
+        - P1/P1a stories also need: 1 BOUNDARY scenario
+        - Security-related stories need: 1 SECURITY scenario
+
+        ## STEP 5: SCORE Completeness
+
+        Calculate scenario completeness score (0.0 - 1.0):
+
+        ```text
+        completeness_score = (
+          (has_happy_path ? 0.30 : 0) +
+          (has_error_path ? 0.25 : 0) +
+          (has_boundary ? 0.20 : 0) +
+          (has_security IF security_trigger ELSE 0.15 : 0) +
+          (all_critical_entities_covered ? 0.10 : 0)
+        )
+        ```
+
+        **Threshold**: completeness_score >= 0.80 for PASS
+
+        ## OUTPUT
+
+        ```yaml
+        refined_stories:
+          - id: "Story 1"
+            original: "[original story text]"
+            refined: "[clarified story without ambiguity]"
+            actors_clarified: ["user", "system"]
+
+        entities_detected:
+          - name: "email"
+            type: "email"
+            critical: true
+          - name: "amount"
+            type: "numeric"
+            critical: true
+
+        scenarios:
+          - id: "AS-1A"
+            classification: "HAPPY_PATH"
+            given: "[specific initial state]"
+            when: "[specific action]"
+            then: "[measurable outcome with criteria]"
+            requires_test: true
+            linked_fr: "FR-001"
+            reasoning: "[why this scenario is essential]"
+
+        completeness:
+          score: 0.85
+          gaps_identified:
+            - "[any missing coverage areas]"
+          coverage_by_type:
+            HAPPY_PATH: 3
+            ERROR_PATH: 2
+            BOUNDARY: 1
+            SECURITY: 0
+
+        priority_mapping:
+          "Story 1": "P1a"
+          "Story 2": "P1b"
+        ```
+
+    - role: edge-case-detector
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [acceptance-criteria-generator]
+      priority: 25
+      model_override: sonnet
+      prompt: |
+        Systematically discover edge cases using heuristics and security patterns.
+
+        Load and apply:
+        - `templates/shared/quality/edge-case-heuristics.md`
+        - `templates/shared/quality/security-patterns.md`
+
+        ## INPUT (from acceptance-criteria-generator)
+
+        - entities_detected: list of {name, type, critical}
+        - scenarios: existing acceptance scenarios
+        - functional_requirements: FR-xxx list from requirement-extractor
+
+        ## STEP 1: Entity-Type Heuristics
+
+        For each detected entity, generate type-specific edge cases:
+
+        ```text
+        FOR entity IN entities_detected:
+          type = entity.type  # email, phone, date, numeric, string, password, file
+
+          LOAD EDGE_CASES_BY_TYPE[type] from edge-case-heuristics.md
+
+          FOR case IN type_edge_cases:
+            # Include HIGH+ severity always, MEDIUM+ for critical entities
+            IF case.severity IN ["CRITICAL", "HIGH"] OR entity.critical:
+              ADD EdgeCase(
+                id: "EC-{NNN}",
+                condition: SUBSTITUTE(case.condition, entity.name),
+                expected_behavior: case.expected_behavior,
+                severity: case.severity,
+                category: "validation",
+                entity_source: entity.name,
+                confidence: 0.90
+              )
+        ```
+
+        ## STEP 2: Security Pattern Matching
+
+        Scan functional requirements for security triggers:
+
+        ```text
+        requirements_text = JOIN(functional_requirements)
+
+        triggers = DETECT_SECURITY_TRIGGERS(requirements_text)
+        # Returns: [{category: "auth", keyword: "login", edge_cases: [...]}]
+
+        FOR trigger IN triggers:
+          FOR ec IN trigger.edge_cases:
+            ADD EdgeCase(
+              id: ec.id,  # e.g., EC-SEC-AUTH-001
+              condition: ec.condition,
+              expected_behavior: ec.expected_behavior,
+              severity: "CRITICAL",  # All security EC are CRITICAL
+              category: "security",
+              owasp_ref: trigger.owasp_ref,
+              confidence: 0.95
+            )
+        ```
+
+        Security trigger categories:
+        - **auth**: login, password, token, session, jwt, oauth
+        - **input**: form, search, query, filter, user input
+        - **access**: permission, role, admin, authorize
+        - **file**: upload, attachment, import
+        - **api**: endpoint, rate limit, webhook
+
+        ## STEP 3: LLM Gap Analysis
+
+        For complex scenarios not covered by heuristics:
+
+        ```text
+        ANALYZE for additional edge cases in:
+        - Concurrency: race conditions, parallel access, deadlocks
+        - Integration: external API failures, timeout, version mismatch
+        - State machine: invalid transitions, orphaned states
+        - Performance: large data sets, slow operations
+        ```
+
+        Generate with lower confidence (0.60-0.75) for LLM-discovered cases.
+
+        ## STEP 4: Deduplicate and Rank
+
+        ```text
+        edge_cases = DEDUPLICATE_BY_CONDITION(all_edge_cases)
+        edge_cases = SORT_BY_SEVERITY_DESC(edge_cases)
+        ```
+
+        ## OUTPUT
+
+        Enhanced Edge Cases table for spec.md:
+
+        | ID | Condition | Expected Behavior | Severity | Category |
+        |----|-----------|-------------------|----------|----------|
+        | EC-001 | email: Invalid format (missing @) | Return validation error | HIGH | validation |
+        | EC-002 | SQL injection in search field | Sanitize, use parameterized query | CRITICAL | security |
+        | EC-003 | amount: Negative value | Return validation error | HIGH | validation |
+
+        Coverage summary:
+
+        ```yaml
+        edge_case_coverage:
+          total_count: 23
+          by_category:
+            validation: 12
+            security: 8
+            boundary: 2
+            concurrency: 1
+          by_severity:
+            CRITICAL: 8
+            HIGH: 10
+            MEDIUM: 5
+          entity_types_covered: [email, numeric, password]
+          security_triggers_detected: [auth, input]
+          heuristic_count: 15
+          security_count: 8
+          llm_generated_count: 0
+          confidence_avg: 0.91
+
+        gaps_remaining:
+          - "[any uncovered areas]"
+        ```
+
+    - role: completeness-checker
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [edge-case-detector]
+      priority: 27
+      model_override: sonnet
+      prompt: |
+        Validate specification completeness across multiple dimensions.
+
+        Load and apply: `templates/shared/quality/completeness-checklist.md`
+
+        ## INPUT (from previous stages)
+
+        - functional_requirements: FR-xxx list from requirement-extractor
+        - acceptance_scenarios: AS-xxx list from acceptance-criteria-generator
+        - edge_cases: EC-xxx list from edge-case-detector
+        - has_ui: boolean (detected from requirements)
+
+        ## STEP 1: Error Handling Check
+
+        ```text
+        happy_paths = FILTER(acceptance_scenarios, s => "error" NOT IN s.then.lower())
+        error_paths = FILTER(acceptance_scenarios, s => "error" IN s.then.lower())
+
+        # Heuristic: Minimum 1 error scenario per 2 happy paths
+        expected_error_count = CEIL(happy_paths.length / 2)
+
+        IF error_paths.length < expected_error_count:
+          ADD Gap(category: "ERROR_HANDLING", severity: "HIGH")
+
+        # Check for specific error types
+        CRITICAL_ERROR_TYPES = ["network", "validation", "auth", "rate_limit", "database"]
+        FOR type IN CRITICAL_ERROR_TYPES:
+          IF FEATURE_REQUIRES_TYPE(requirements, type) AND NOT HAS_ERROR_SCENARIO(error_paths, type):
+            ADD Gap(category: "ERROR_HANDLING", missing: "{type} error", severity: "MEDIUM")
+        ```
+
+        ## STEP 2: Security Completeness Check
+
+        ```text
+        SECURITY_DIMENSIONS = {
+          "authentication": ["login", "auth", "password", "token"],
+          "authorization": ["permission", "role", "access", "admin"],
+          "input_validation": ["input", "form", "field", "search", "query"],
+          "data_protection": ["encrypt", "sensitive", "personal", "pii"],
+          "session_management": ["session", "cookie", "logout"]
+        }
+
+        FOR dimension, keywords IN SECURITY_DIMENSIONS:
+          IF ANY(keyword IN requirements_text FOR keyword IN keywords):
+            IF NOT HAS_SECURITY_REQUIREMENT(spec, dimension):
+              ADD Gap(
+                category: "SECURITY",
+                missing: "{dimension} security requirement",
+                severity: "CRITICAL",
+                owasp: "A01-A10 reference"
+              )
+        ```
+
+        ## STEP 3: Performance Check
+
+        ```text
+        PERFORMANCE_TRIGGERS = {
+          "api_latency": ["api", "endpoint", "request", "response"],
+          "throughput": ["batch", "bulk", "import", "process"],
+          "page_load": ["page", "load", "render"],
+          "search": ["search", "filter", "query"]
+        }
+
+        FOR trigger, keywords IN PERFORMANCE_TRIGGERS:
+          IF ANY(keyword IN requirements_text FOR keyword IN keywords):
+            IF NOT HAS_PERFORMANCE_METRIC(spec):
+              ADD Gap(
+                category: "PERFORMANCE",
+                missing: "{trigger} performance requirement",
+                severity: "HIGH"
+              )
+        ```
+
+        ## STEP 4: Observability Check
+
+        ```text
+        is_critical_feature = ANY(
+          trigger IN requirements_text FOR trigger IN
+          ["auth", "payment", "admin", "permission", "security"]
+        )
+
+        has_observability = ANY(
+          keyword IN requirements_text FOR keyword IN
+          ["log", "metric", "monitor", "alert", "trace", "audit"]
+        )
+
+        IF is_critical_feature AND NOT has_observability:
+          ADD Gap(
+            category: "OBSERVABILITY",
+            missing: "No observability requirements",
+            severity: "MEDIUM"
+          )
+        ```
+
+        ## STEP 5: Accessibility Check (UI features only)
+
+        ```text
+        IF has_ui:
+          has_accessibility = HAS_SECTION(spec, "Accessibility") OR
+                             ANY("wcag" IN text.lower() OR "a11y" IN text.lower())
+
+          IF NOT has_accessibility:
+            ADD Gap(
+              category: "ACCESSIBILITY",
+              missing: "No WCAG compliance requirements",
+              severity: "HIGH"
+            )
+        ```
+
+        ## STEP 6: Prerequisites Check
+
+        ```text
+        DEPENDENCY_PATTERNS = {
+          "authentication": ["authenticated user", "logged in", "current user"],
+          "database": ["store", "save", "retrieve"],
+          "api_client": ["external api", "third-party", "integration"]
+        }
+
+        FOR dep_type, keywords IN DEPENDENCY_PATTERNS:
+          IF ANY(keyword IN requirements_text FOR keyword IN keywords):
+            IF NOT HAS_SECTION(spec, "Technical Dependencies"):
+              ADD Gap(
+                category: "PREREQUISITES",
+                missing: "{dep_type} prerequisite not documented",
+                severity: "HIGH"
+              )
+        ```
+
+        ## STEP 7: LLM Gap Analysis
+
+        ```text
+        PROMPT: "What's missing from this specification that would cause
+                implementation failures?"
+
+        Consider:
+        - Error handling gaps not caught by heuristics
+        - Subtle security vulnerabilities
+        - Performance bottlenecks
+        - Cross-cutting concerns
+        - Integration edge cases
+        ```
+
+        ## STEP 8: Calculate Completeness Score
+
+        ```text
+        CATEGORY_WEIGHTS = {
+          ERROR_HANDLING: 0.20,
+          PERFORMANCE: 0.15,
+          SECURITY: 0.20,
+          OBSERVABILITY: 0.10,
+          ACCESSIBILITY: 0.10,
+          PREREQUISITES: 0.15,
+          EDGE_CASES: 0.10
+        }
+
+        FOR category IN CATEGORIES:
+          category_gaps = FILTER(all_gaps, g => g.category == category)
+          IF category_gaps.length == 0:
+            category_scores[category] = 1.0
+          ELSE:
+            deductions = SUM(severity_penalty FOR gap IN category_gaps)
+            category_scores[category] = MAX(0.0, 1.0 - deductions)
+
+        completeness_score = WEIGHTED_SUM(category_scores, CATEGORY_WEIGHTS)
+        ```
+
+        ## OUTPUT
+
+        Completeness Analysis section for spec.md:
+
+        ```markdown
+        ### Completeness Analysis
+
+        | Category | Status | Details |
+        |----------|--------|---------|
+        | Error Handling | ✅/⚠️/❌ | X error scenarios for Y happy paths |
+        | Security | ✅/⚠️/❌ | Auth/Input/Data coverage status |
+        | Performance | ✅/⚠️/❌ | Latency/throughput requirements |
+        | Observability | ✅/⚠️/❌ | Logging/metrics defined |
+        | Accessibility | ✅/⚠️/❌ | WCAG compliance (if UI) |
+        | Prerequisites | ✅/⚠️/❌ | Dependencies documented |
+
+        **Completeness Score**: X.XX / 1.00
+        ```
+
+        Gaps list for remediation:
+
+        ```yaml
+        completeness_result:
+          score: 0.XX
+          status: "PASS|FAIL"  # >= 0.75 is PASS
+          category_scores:
+            error_handling: 0.XX
+            security: 0.XX
+            # ...
+          gaps:
+            - category: "SECURITY"
+              missing_aspect: "input validation requirement"
+              severity: "CRITICAL"
+              suggested_requirement: "Add input sanitization for search field"
+        ```
 
     # Wave 3: Specification Writing (depends on analysis)
     - role: spec-writer
       role_group: DOCS
       parallel: true
-      depends_on: [requirement-extractor, acceptance-criteria-generator]
+      depends_on: [requirement-extractor, acceptance-criteria-generator, edge-case-detector, completeness-checker]
       priority: 30
       model_override: opus
       prompt: |
@@ -240,11 +679,91 @@ claude_code:
         - Checklists/requirements.md created
         - Concept traceability updated (if concept exists)
 
-    # Wave 4: Validation (depends on spec writing)
+    # Wave 3.5: Quality Scoring (depends on spec writing)
+    - role: spec-quality-scorer
+      role_group: QUALITY
+      parallel: false
+      depends_on: [spec-writer, completeness-checker]
+      priority: 35
+      model_override: sonnet
+      prompt: |
+        Score specification quality using G-Eval framework.
+
+        Load and apply: `templates/shared/quality/spec-quality-scorer.md`
+
+        ## STEP 1: Evaluate Clarity (25%)
+        - Import ambiguity detection from ambiguity-patterns.md
+        - Count ambiguities by severity (CRITICAL, HIGH, MEDIUM)
+        - Run LLM G-Eval clarity rubric (1-5 scale)
+        - Combine: 60% automated + 40% LLM
+
+        ## STEP 2: Evaluate Completeness (25%)
+        - Use completeness-checker results (gaps by severity)
+        - Apply severity-weighted gap penalty
+        - Run LLM G-Eval completeness rubric
+        - Combine: 60% automated + 40% LLM
+
+        ## STEP 3: Evaluate Testability (20%)
+        - Calculate testable scenario ratio (has measurable criteria)
+        - Calculate FR→AS traceability ratio
+        - Run LLM G-Eval testability rubric
+        - Combine: 60% automated + 40% LLM
+
+        ## STEP 4: Evaluate Consistency (15%)
+        - Run LLM contradiction detection
+        - Check for logical/semantic/constraint/behavioral/temporal conflicts
+        - Calculate penalty from contradiction count and severity
+        - Combine LLM score with penalty
+
+        ## STEP 5: Evaluate Traceability (15%)
+        - Calculate FR→AS coverage percentage
+        - Calculate FR→EC coverage percentage
+        - Identify orphan requirements
+        - Run LLM G-Eval traceability rubric
+        - Combine: 70% automated + 30% LLM
+
+        ## STEP 6: Calculate Overall Score
+        - Weighted sum: Clarity×0.25 + Completeness×0.25 + Testability×0.20 + Consistency×0.15 + Traceability×0.15
+        - Scale to 0-100
+        - Assign grade: A (90+), B (80-89), C (70-79), D (60-69), F (<60)
+        - Generate recommendation based on grade and lowest dimensions
+
+        ## STEP 7: Validate Quality Gates
+        - SR-SPEC-19: Overall score >= 70 (Grade C+)
+        - SR-SPEC-20: All dimensions >= 0.50
+        - SR-SPEC-21: No CRITICAL contradictions
+
+        ## OUTPUT FORMAT
+        Add "Specification Quality Score" section to spec.md:
+
+        ```markdown
+        ### Specification Quality Score
+
+        **Overall Score**: XX.X / 100 (Grade: X)
+        **Status**: ✅ PASSED | ❌ FAILED
+        **Recommendation**: [Generated recommendation]
+
+        | Dimension | Score | Weight | Explanation |
+        |-----------|-------|--------|-------------|
+        | Clarity | X.XX | 25% | Ambiguities: N (X critical). LLM: X.XX |
+        | Completeness | X.XX | 25% | N gaps (X critical, Y high) |
+        | Testability | X.XX | 20% | Testable: X%, FR→AS: Y% |
+        | Consistency | X.XX | 15% | N contradictions (X critical) |
+        | Traceability | X.XX | 15% | FR→AS: X%, FR→EC: Y%, Orphans: N |
+
+        **Improvement Suggestions**:
+        1. [Highest priority suggestion]
+        2. [Second suggestion]
+        3. [Third suggestion]
+        ```
+
+        Return quality score result for validation gates.
+
+    # Wave 4: Validation (depends on spec writing and quality scoring)
     - role: spec-validator
       role_group: VALIDATION
       parallel: true
-      depends_on: [spec-writer]
+      depends_on: [spec-writer, spec-quality-scorer]
       priority: 40
       model_override: sonnet
       prompt: |

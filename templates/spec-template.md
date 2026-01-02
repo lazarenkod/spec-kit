@@ -93,16 +93,23 @@
   These IDs will be referenced in tasks.md to ensure test coverage.
   Format: AS-[story number][scenario letter], e.g., AS-1A, AS-1B, AS-2A
 
+  "Classification" column (auto-assigned by acceptance-criteria-generator):
+  - HAPPY_PATH = Primary success flow, expected user journey
+  - ALT_PATH = Alternate valid paths, secondary success flows
+  - ERROR_PATH = Failure scenarios, validation errors, exceptions
+  - BOUNDARY = Min/max values, empty states, edge conditions
+  - SECURITY = Authentication, authorization, injection prevention
+
   "Requires Test" column:
   - YES = Automated test REQUIRED in tasks.md (enforced by Pass W in /speckit.analyze)
   - NO = No automated test needed (e.g., UI-only, manual validation)
   If YES but no test is feasible, use [NO-TEST:AS-xxx] with justification in tasks.md.
 -->
 
-| ID | Given | When | Then | Requires Test |
-|----|-------|------|------|---------------|
-| AS-1A | [initial state] | [action] | [expected outcome] | YES |
-| AS-1B | [initial state] | [action] | [expected outcome] | YES |
+| ID | Classification | Given | When | Then | Requires Test |
+|----|----------------|-------|------|------|---------------|
+| AS-1A | HAPPY_PATH | [initial state] | [action] | [expected outcome] | YES |
+| AS-1B | ERROR_PATH | [initial state] | [action] | [expected outcome] | YES |
 
 ---
 
@@ -118,9 +125,9 @@
 
 **Acceptance Scenarios**:
 
-| ID | Given | When | Then | Requires Test |
-|----|-------|------|------|---------------|
-| AS-2A | [initial state] | [action] | [expected outcome] | YES |
+| ID | Classification | Given | When | Then | Requires Test |
+|----|----------------|-------|------|------|---------------|
+| AS-2A | HAPPY_PATH | [initial state] | [action] | [expected outcome] | YES |
 
 ---
 
@@ -136,9 +143,9 @@
 
 **Acceptance Scenarios**:
 
-| ID | Given | When | Then | Requires Test |
-|----|-------|------|------|---------------|
-| AS-3A | [initial state] | [action] | [expected outcome] | NO |
+| ID | Classification | Given | When | Then | Requires Test |
+|----|----------------|-------|------|------|---------------|
+| AS-3A | ALT_PATH | [initial state] | [action] | [expected outcome] | NO |
 
 ---
 
@@ -150,18 +157,110 @@
   ACTION REQUIRED: The content in this section represents placeholders.
   Fill them out with the right edge cases.
 
-  Edge cases should also have IDs for traceability (EC-NNN format).
+  Edge cases should have IDs for traceability (EC-NNN format).
 
-  "Critical" column:
-  - CRITICAL = Security-related or data-integrity edge case (test REQUIRED, enforced by Pass W)
-  - Empty = Non-critical edge case (test recommended but not enforced)
-  Security keywords that trigger CRITICAL: auth, inject, XSS, SQL, CSRF, token, session, permission
+  Columns:
+  - Severity: CRITICAL | HIGH | MEDIUM | LOW
+    - CRITICAL = Security-related, data-integrity, or system-breaking (test REQUIRED)
+    - HIGH = Important validation or business logic (test strongly recommended)
+    - MEDIUM = Quality improvement (test recommended)
+    - LOW = Minor edge case (test optional)
+  - Category: security | validation | boundary | concurrency | integration | performance
+
+  Auto-generated edge cases from entity-type heuristics and security patterns
+  will have confidence scores (0.60-0.95) noted in comments.
 -->
 
-| ID | Condition | Expected Behavior | Critical |
-|----|-----------|-------------------|----------|
-| EC-001 | [boundary condition] | [expected behavior] | |
-| EC-002 | [security: auth bypass attempt] | [expected behavior] | CRITICAL |
+| ID | Condition | Expected Behavior | Severity | Category |
+|----|-----------|-------------------|----------|----------|
+| EC-001 | [boundary condition] | [expected behavior] | MEDIUM | boundary |
+| EC-002 | [security: auth bypass attempt] | [expected behavior] | CRITICAL | security |
+| EC-003 | [validation: invalid email format] | [validation error with message] | HIGH | validation |
+
+### Edge Case Coverage Summary
+
+<!--
+  This summary is auto-populated by edge-case-detector subagent.
+  It tracks coverage across entity types and security categories.
+-->
+
+| Category | Count | Triggers Detected | Coverage Status |
+|----------|-------|-------------------|-----------------|
+| Security | N | [auth, input, etc.] | ✅ Covered / ⚠️ Partial |
+| Validation | N | [entity types found] | ✅ Covered / ⚠️ Partial |
+| Boundary | N | - | ✅ Covered / ⚠️ Partial |
+| Concurrency | N | - | ✅ Covered / ⚠️ Partial |
+
+**Completeness Score**: X.XX / 1.00 (threshold: >= 0.80)
+
+**Gaps Identified**:
+- [Any missing coverage noted by edge-case-detector]
+
+### Completeness Analysis
+
+<!--
+  This section is auto-populated by completeness-checker subagent.
+  It validates spec completeness across multiple dimensions.
+  See templates/shared/quality/completeness-checklist.md for details.
+-->
+
+| Category | Status | Details |
+|----------|--------|---------|
+| Error Handling | ✅/⚠️/❌ | X error scenarios for Y happy paths |
+| Security | ✅/⚠️/❌ | Auth/Input/Data protection coverage |
+| Performance | ✅/⚠️/❌ | Latency/throughput requirements defined |
+| Observability | ✅/⚠️/❌ | Logging/metrics/alerting requirements |
+| Accessibility | ✅/⚠️/❌ | WCAG compliance (UI features only) |
+| Prerequisites | ✅/⚠️/❌ | Technical dependencies documented |
+
+**Completeness Score**: X.XX / 1.00 (threshold: >= 0.75)
+
+**Status Legend**:
+- ✅ Covered: Category requirements fully specified
+- ⚠️ Partial: Some requirements missing or incomplete
+- ❌ Missing: Critical requirements not addressed
+
+**Gaps Requiring Attention**:
+- [Any missing requirements identified by completeness-checker]
+
+### Specification Quality Score
+
+<!--
+  This section is auto-populated by spec-quality-scorer subagent.
+  It provides multi-dimensional quality assessment using G-Eval framework.
+  See templates/shared/quality/spec-quality-scorer.md for details.
+
+  Grade Scale:
+  - A (90-100): Excellent — Ship with confidence
+  - B (80-89): Good — Minor improvements recommended
+  - C (70-79): Acceptable — Address suggestions before implementation
+  - D (60-69): Below Standard — Significant gaps, needs work
+  - F (< 60): Failing — Major revision required
+
+  Pass Threshold: 70.0 (Grade C or higher)
+-->
+
+**Overall Score**: XX.X / 100 (Grade: X)
+**Status**: ✅ PASSED | ❌ FAILED
+**Recommendation**: [Ship with confidence | Minor improvements | Address suggestions | Needs revision | Major revision required]
+
+| Dimension | Score | Weight | Explanation |
+|-----------|-------|--------|-------------|
+| Clarity | X.XX | 25% | Ambiguities: N (X critical, Y high). LLM clarity: X.XX |
+| Completeness | X.XX | 25% | N gaps (X critical, Y high, Z medium) |
+| Testability | X.XX | 20% | Testable: X%, FR→AS traceability: Y% |
+| Consistency | X.XX | 15% | N contradictions (X critical, Y high) |
+| Traceability | X.XX | 15% | FR→AS: X%, FR→EC: Y%, Orphans: N |
+
+**Quality Gates**:
+- SR-SPEC-19 (Overall >= 70): ✅/❌
+- SR-SPEC-20 (All dimensions >= 0.50): ✅/❌
+- SR-SPEC-21 (No CRITICAL contradictions): ✅/❌
+
+**Improvement Suggestions**:
+1. [Highest priority suggestion from lowest-scoring dimension]
+2. [Second priority suggestion]
+3. [Third priority suggestion]
 
 ## Requirements *(mandatory)*
 
@@ -659,7 +758,7 @@
 |----------|-------|---------------|-----------------|
 | Acceptance Scenarios (AS) | 4 | 3 | 100% of YES |
 | UI Acceptance Scenarios (AS-UI) | 3 | 0 | N/A (manual) |
-| Edge Cases (EC) | 2 | 1 (CRITICAL) | 100% of CRITICAL |
+| Edge Cases (EC) | 3 | 2 (CRITICAL/HIGH) | 100% of CRITICAL, 80% of HIGH |
 
 ### Test Types Required
 

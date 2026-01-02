@@ -36,7 +36,7 @@ claude_code:
       enabled: true
       overlap_threshold: 0.80
   subagents:
-    # Wave 1: Ambiguity Detection
+    # Wave 1: Ambiguity Detection (Enhanced with pattern-based detection)
     - role: ambiguity-detector
       role_group: ANALYSIS
       parallel: true
@@ -44,13 +44,88 @@ claude_code:
       priority: 10
       model_override: sonnet
       prompt: |
-        Perform structured ambiguity & coverage scan on spec.
-        Use taxonomy: Functional Scope, Domain & Data Model,
-        Interaction & UX Flow, Non-Functional Quality Attributes,
-        Integration & Dependencies, Edge Cases, Constraints, Terminology.
-        Mark each category: Clear / Partial / Missing.
-        Generate prioritized queue of clarification opportunities.
-        Output: coverage map with candidate questions.
+        Detect ambiguities in the specification using multi-pass analysis.
+
+        Read: `templates/shared/quality/ambiguity-patterns.md` for detection patterns.
+
+        ## PASS 1: Heuristic Pattern Matching (Fast)
+
+        FOR requirement IN functional_requirements:
+
+          # 1a. Vague Term Detection
+          Check against VAGUE_TERM_PATTERNS:
+          - Performance: "fast", "slow", "quickly", "responsive", "real-time"
+          - Quality/UX: "user-friendly", "intuitive", "simple", "easy", "clean"
+          - Security: "secure", "safe", "protected", "robust", "reliable"
+          - Quantity: "some", "many", "few", "several", "multiple", "various"
+          - Frequency: "often", "rarely", "occasionally", "sometimes"
+          - Size: "large", "small", "big", "minimal", "significant"
+          - Time: "soon", "later", "eventually", "immediately", "recently"
+
+          # 1b. Missing Quantity Detection
+          Check for triggers WITHOUT explicit values:
+          - Retention: "retain", "store", "keep" → How long?
+          - Rate limits: "limit", "throttle", "quota" → What limit?
+          - Pagination: "list", "show", "display" → How many per page?
+          - Timeout: "timeout", "expire", "wait" → What duration?
+          - Max length: "text", "input", "field" → Character limit?
+
+          # 1c. Unclear Actor Detection
+          - Generic system: "the system", "it", "this"
+          - Generic user: "user", "the user" (which type?)
+          - Passive voice: "is displayed", "will be sent", "should be validated"
+
+          # 1d. Conditional Gap Detection
+          - "if X" without "else" or "otherwise" behavior
+
+          # 1e. Incomplete List Detection
+          - "etc.", "...", "and more", "such as", "including", "like"
+
+        ## PASS 2: LLM Metacognitive Analysis (Deep)
+
+        Apply this metacognitive prompt for each requirement:
+        "What CANNOT I understand clearly from this requirement?"
+
+        For each ambiguity found:
+        - Generate at least 2 different valid interpretations
+        - Explain implementation impact of each interpretation
+        - Flag if interpretations lead to DIFFERENT implementations
+
+        ## PASS 3: Cross-Requirement Consistency
+
+        Check for contradictions or inconsistencies:
+        - Conflicting constraints between requirements
+        - Terminology inconsistencies (same concept, different names)
+        - Logical impossibilities ("offline-only" + "real-time sync")
+
+        ## OUTPUT FORMAT
+
+        ambiguities: [
+          {
+            requirement_id: "FR-XXX",
+            ambiguity_type: "VAGUE_TERM|MISSING_QUANTITY|UNCLEAR_ACTOR|CONDITIONAL_GAP|INCOMPLETE_LIST|UNDEFINED_TERM",
+            ambiguous_text: "the specific text",
+            explanation: "why this is ambiguous",
+            interpretations: ["interpretation 1", "interpretation 2"],
+            implementation_impact: "how this affects implementation",
+            clarification_question: "targeted question to resolve",
+            severity: "CRITICAL|HIGH|MEDIUM|LOW"
+          }
+        ]
+
+        coverage_map: {
+          functional_scope: "Clear|Partial|Missing",
+          domain_data_model: "Clear|Partial|Missing",
+          interaction_ux: "Clear|Partial|Missing",
+          non_functional: "Clear|Partial|Missing",
+          integration_deps: "Clear|Partial|Missing",
+          edge_cases: "Clear|Partial|Missing",
+          constraints: "Clear|Partial|Missing",
+          terminology: "Clear|Partial|Missing"
+        }
+
+        Prioritize by (Impact * Uncertainty) heuristic.
+        Output: ambiguities list + coverage map with candidate questions.
 
     # Wave 2: Question Generation (after detection)
     - role: question-generator
