@@ -11,6 +11,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Part 1: Strategic Frameworks** — World-class business strategy frameworks for `/speckit.concept`
+  - **5 New Templates** in `templates/shared/concept-sections/`:
+    - `pr-faq.md` — Amazon Working Backwards methodology (Press Release + FAQ)
+    - `blue-ocean-canvas.md` — Blue Ocean Strategy ERRC Grid (Eliminate/Reduce/Raise/Create)
+    - `porters-five-forces.md` — Porter's Five Forces competitive analysis
+    - `business-model-canvas.md` — 9-component canvas with unit economics (CAC, LTV, LTV:CAC)
+    - `three-horizons.md` — McKinsey Three Horizons (H1: 70%, H2: 20%, H3: 10%)
+  - **Concept Command Integration**: All frameworks referenced at strategic points in `concept.md`
+    - Porter's 5 Forces → Phase 0b (market research)
+    - Blue Ocean Canvas → Phase 0c (solution ideation)
+    - PR/FAQ → Step 5 (Extract Vision)
+    - Business Model Canvas → Step 5aa (after SMART metrics)
+    - Three Horizons → Step 6b (Feature Hierarchy prioritization)
+  - **Expected CQS Impact**: +10-15 points (strategic depth)
+
+- **Part 2: Decision-Making Frameworks** — Stripe-style decision documentation for `/speckit.concept`
+  - **3 New Templates** in `templates/shared/concept-sections/`:
+    - `decision-log.md` — Stripe-style decision log (DEC-001 format, options/pros/cons, reversibility assessment)
+    - `tradeoff-resolution.md` — Trade-off hierarchy (Safety > User Value > Simplicity > Speed > Reversible)
+    - `scope-exclusions.md` — Explicit non-goals with guardrails and rejected alternatives
+  - **Concept Command Integration**: All frameworks referenced at decision points in `concept.md`
+    - Trade-off Resolution → Section 5-TR (after PR/FAQ)
+    - Decision Log → Section 5c-DL (after Risk Assessment)
+    - Scope Exclusions → Section 6a (between Feature Hierarchy and Three Horizons)
+  - **Expected CQS Impact**: +5-8 points (decision clarity, scope creep prevention)
+
+- **Part 3: Validation Frameworks** — OpenAI-style hypothesis testing and pre-mortem analysis for `/speckit.concept`
+  - **2 New Templates** in `templates/shared/concept-sections/`:
+    - `hypothesis-testing.md` — HYP-001 format with Type (Desirability/Feasibility/Viability), evidence tracking, success criteria
+    - `pre-mortem.md` — FAIL-001 format with failure scenarios, early warning signs, prevention strategies, kill criteria
+  - **Concept Command Integration**:
+    - Pre-Mortem → Section 5b-PM (before Risk Assessment)
+    - Hypothesis Testing → Section 5c-HTL (after Risk Assessment)
+  - **Expected CQS Impact**: +5-8 points (validation rigor, failure prevention)
+
+- **Part 5: AI Augmentation** — Multi-agent research and Evidence-Based CQS for `/speckit.concept`
+  - **2 New Templates** in `templates/shared/concept-sections/`:
+    - `multi-agent-research.md` — Research agent orchestration (market_intelligence, competitor_analyst, validation_agent)
+    - `ai-responsibility.md` — Responsible AI checklist (bias/fairness, transparency, privacy, safety) for AI products
+  - **CQS-E Enhancement** in `cqs-score.md`:
+    - New dimensions: Strategic (10%), Validation (5%)
+    - Evidence Multiplier (0.8-1.2) for citation quality
+    - Updated formula with 8 components
+  - **Concept Command Integration**:
+    - Multi-Agent Research → Phase 0b.1 (research orchestration)
+    - AI Responsibility → Section 5c-AIR (conditional for AI products)
+    - CQS-E → Updated CQS section with Strategic + Validation + Evidence Multiplier
+  - **Expected Impact**: +8-12 CQS points, 2-4 hours research time saved, 100x ROI vs manual research
+
+- **Part 4.1: Executive Summary Excellence** — 90-second decision context for executives in `/speckit.concept`
+  - **New Template**: `templates/shared/concept-sections/executive-summary.md`
+    - 8-section structure: The Ask, Why Now, Opportunity, Approach, Investment, Risks, Success Criteria, Recommendation
+    - Synthesis instructions mapping source sections to executive summary fields
+    - Quality checklist for executive-ready output
+  - **Concept Template Update**: `templates/concept-template.md`
+    - Executive Summary section inserted between Vision Statement and UX Foundation Layer
+    - First comprehensive view executives see after 2-3 sentence vision
+  - **Concept Command Integration**: `templates/commands/concept.md`
+    - New Step 5-ES: Executive Summary Synthesis (after all sections, before Self-Review)
+    - Synthesis table mapping 8 sections to source data
+    - Quality check before proceeding to Self-Review
+  - **Expected Impact**: 10% concept quality improvement, reduced executive back-and-forth
+
 - **Batch API Requests (Strategy 1.3)** — Cross-wave task aggregation for 50-70% reduction in API latency
   - **New Module**: `src/specify_cli/batch_aggregator.py`
     - `BatchConfig` — Configuration for batch aggregation (max_batch_size, timeout_ms, cross_wave)

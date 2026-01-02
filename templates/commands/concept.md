@@ -418,6 +418,32 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Goal**: Validate problem with external data and quantify market opportunity.
 
+   #### Phase 0b.1: Multi-Agent Research Orchestration — NEW
+
+   Leverage AI agents to accelerate research (cost: ~$0.50-1.00/concept, saves 2-4 hours):
+
+   ```yaml
+   research_agents:
+     market_intelligence:
+       triggers: [TAM_SAM_SOM, competitive_positioning]
+       sources: [web_search, industry_reports, SEC_filings]
+       output: Evidence-backed market sizing with citations
+
+     competitor_analyst:
+       triggers: [Blue_Ocean_Canvas, Porter_5_Forces]
+       sources: [competitor_websites, G2_reviews, job_postings]
+       output: Feature comparison matrix, positioning gaps
+
+     validation_agent:
+       triggers: [hypothesis_testing, pre_mortem]
+       sources: [similar_product_launches, failure_case_studies]
+       output: Historical precedent analysis
+   ```
+
+   **ROI**: 100x+ vs manual research at $50-100/hour
+
+   **Reference template**: `templates/shared/concept-sections/multi-agent-research.md`
+
    **Research actions** (use WebSearch tool proactively):
 
    1. **Competitor Analysis**:
@@ -477,6 +503,25 @@ This command captures the **complete vision and scope** of a service/product BEF
    - Include source links for reference
 
    **Reference template**: `templates/shared/concept-sections/market-framework.md`
+
+   6. **Porter's 5 Forces Analysis** — NEW:
+      Analyze market structure for strategic positioning:
+
+      ```markdown
+      ## Market Dynamics (Porter's 5 Forces)
+
+      | Force | Intensity | Trend | Our Strategy |
+      |-------|:---------:|:-----:|--------------|
+      | Competitive Rivalry | [HIGH/MED/LOW] | [↑/→/↓] | [Brief strategy] |
+      | Threat of New Entrants | [HIGH/MED/LOW] | [↑/→/↓] | [Brief strategy] |
+      | Threat of Substitutes | [HIGH/MED/LOW] | [↑/→/↓] | [Brief strategy] |
+      | Buyer Power | [HIGH/MED/LOW] | [↑/→/↓] | [Brief strategy] |
+      | Supplier Power | [HIGH/MED/LOW] | [↑/→/↓] | [Brief strategy] |
+
+      **Strategic Implications**: [Key positioning decisions based on forces]
+      ```
+
+      **Reference template**: `templates/shared/concept-sections/porters-five-forces.md`
 
    ### Phase 0b-2: Multi-Perspective Problem Analysis (NEW)
 
@@ -628,6 +673,26 @@ This command captures the **complete vision and scope** of a service/product BEF
    - Feed winning ideas into Feature Hierarchy (step 6)
    - Move lower-priority ideas to Ideas Backlog
 
+3b. **Blue Ocean Strategy Canvas** — NEW:
+
+   Identify uncontested market space by analyzing differentiation:
+
+   ```markdown
+   ## ERRC Grid (Eliminate-Reduce-Raise-Create)
+
+   | Action | Factor | Industry Level | Our Level | Rationale |
+   |:------:|--------|:--------------:|:---------:|-----------|
+   | **Eliminate** | [Factor competitors obsess over] | ●●●●○ | ○○○○○ | [Why it doesn't matter] |
+   | **Reduce** | [Over-served factor] | ●●●●○ | ●●○○○ | [Why less is enough] |
+   | **Raise** | [Under-served factor] | ●●○○○ | ●●●●● | [Customer value] |
+   | **Create** | [New factor] | ○○○○○ | ●●●●○ | [Innovation opportunity] |
+   ```
+
+   **Our Uncontested Space**: [1-sentence description of unique positioning]
+   **Why Competitors Can't Follow**: [Key barrier to imitation]
+
+   **Reference template**: `templates/shared/concept-sections/blue-ocean-canvas.md`
+
 4. **Transition: Discovery → Structure** (if Discovery Mode was used):
 
    **Synthesis step** before proceeding to structured capture:
@@ -745,6 +810,62 @@ This command captures the **complete vision and scope** of a service/product BEF
    - If implied: Infer from context and document as assumption
    - If unclear: Use reasonable industry defaults (or use Discovery findings if available)
 
+5-PR. **Amazon Working Backwards: PR/FAQ** — NEW:
+
+   Define the customer experience before building by writing the launch press release:
+
+   ```markdown
+   ## Press Release (Draft — Launch Day Vision)
+
+   **Headline**: [Product Name] Helps [Target Customer] [Achieve Outcome]
+
+   **Problem**: [2-3 sentences on the pain point]
+
+   **Solution**: [1 paragraph on how we solve it]
+
+   **Customer Quote** (imagined):
+   > "[How the product changed their workflow/life]"
+   > — [Persona Name], [Role]
+
+   **Getting Started**: [How customers begin using it]
+   ```
+
+   **Customer FAQ Example**:
+   - "How is this different from [competitor]?" → [Differentiation]
+   - "How long until I see value?" → [Time to value]
+
+   **Internal FAQ Example**:
+   - "Why build this now?" → [Market timing rationale]
+   - "What are we NOT building?" → [Explicit scope exclusions]
+
+   **Reference template**: `templates/shared/concept-sections/pr-faq.md`
+
+5-TR. **Trade-off Resolution Framework** — NEW:
+
+   Establish hierarchy for resolving competing priorities:
+
+   ```markdown
+   ## Trade-off Hierarchy
+
+   When in conflict, prioritize in this order:
+   1. **Safety & Security** > everything (never compromise)
+   2. **User Value** > internal convenience
+   3. **Simplicity** > features (remove before adding)
+   4. **Speed** > perfection (ship MVP, iterate)
+   5. **Reversible decisions** > extensive analysis
+
+   ## This Concept's Key Trade-offs
+   | Trade-off | Options | Our Choice | Rationale |
+   |-----------|---------|:----------:|-----------|
+   | Speed vs Quality | [Fast/Polished] | [Choice] | [Why] |
+   | Features vs Simplicity | [Full/Core] | [Choice] | [Why] |
+   | Build vs Buy | [Custom/3rd party] | [Choice] | [Why] |
+   ```
+
+   **Connected to**: Constitution principles, Decision Log
+
+   **Reference template**: `templates/shared/concept-sections/tradeoff-resolution.md`
+
 5a. **Deep Persona Framework (JTBD-Enhanced)** — NEW:
 
    For each identified persona, capture Jobs-to-be-Done:
@@ -809,6 +930,38 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Reference template**: `templates/shared/concept-sections/metrics-smart.md`
 
+5ab. **Business Model Canvas** — NEW:
+
+   Visualize the complete business model to ensure value creation and capture coherence:
+
+   ```markdown
+   ## Business Model Canvas Summary
+
+   | Component | Description |
+   |-----------|-------------|
+   | **Customer Segments** | [Who we serve — primary, secondary] |
+   | **Value Propositions** | [What value we deliver — by segment] |
+   | **Channels** | [How we reach customers — awareness → purchase → delivery] |
+   | **Customer Relationships** | [Relationship type — self-serve / assisted / dedicated] |
+   | **Revenue Streams** | [How we make money — pricing model, billing] |
+   | **Key Resources** | [What we need — people, IP, infrastructure] |
+   | **Key Activities** | [What we do — product, acquisition, operations] |
+   | **Key Partnerships** | [Who helps us — suppliers, integrations, distribution] |
+   | **Cost Structure** | [What we spend — fixed, variable, drivers] |
+
+   ## Unit Economics
+   | Metric | Current | Target | Benchmark |
+   |--------|:-------:|:------:|:---------:|
+   | CAC (Customer Acquisition Cost) | $[X] | $[X] | $[X] |
+   | LTV (Lifetime Value) | $[X] | $[X] | $[X] |
+   | LTV:CAC Ratio | [X]:1 | 3:1+ | 3:1 |
+   | Payback Period | [X] mo | <12 mo | 12-18 mo |
+   ```
+
+   **Validation rule**: LTV:CAC ratio < 2:1 is a red flag — reconsider pricing or CAC.
+
+   **Reference template**: `templates/shared/concept-sections/business-model-canvas.md`
+
 5b. **Extract UX Foundation Layer**:
 
    Generate foundation features based on detected project type.
@@ -845,6 +998,39 @@ This command captures the **complete vision and scope** of a service/product BEF
    - Generate foundation Epic/Features/Stories BEFORE user-defined features
    - Set up "Foundation Scenarios" mapping table
 
+5b-PM. **Pre-Mortem Analysis** — NEW:
+
+   Imagine failure before it happens to identify preventable scenarios:
+
+   ```markdown
+   ## Pre-Mortem Analysis
+
+   *"It's 12 months from now. This product has failed. What went wrong?"*
+
+   ### FAIL-001: [Failure Mode Name]
+   **Probability**: HIGH | MEDIUM | LOW
+   **Impact**: CRITICAL | MAJOR | MINOR
+
+   **Failure Story**: [Narrative of how this failure unfolds]
+
+   **Early Warning Signs**:
+   - [ ] [Metric dropping below X]
+   - [ ] [User feedback pattern]
+   - [ ] [Competitive move]
+
+   **Prevention Strategy**:
+   | Action | Owner | Timeline |
+   |--------|:-----:|:--------:|
+   | [Preventive measure] | [Name] | [When] |
+
+   **Kill Criteria**: IF [metric] < [threshold] BY [date], THEN [pivot/kill]
+   ```
+
+   **Purpose**: Identify preventable failures and establish early warning systems.
+   **Minimum requirement**: Document at least 3 failure scenarios with prevention strategies.
+
+   **Reference template**: `templates/shared/concept-sections/pre-mortem.md`
+
 5c. **Risk Assessment Matrix** — NEW:
 
    Identify and document execution risks before detailed planning:
@@ -875,6 +1061,106 @@ This command captures the **complete vision and scope** of a service/product BEF
    **Minimum requirement**: At least 3 risks with mitigations documented.
 
    **Reference template**: `templates/shared/concept-sections/risk-matrix.md`
+
+5c-HTL. **Hypothesis Testing Log (OpenAI-Style)** — NEW:
+
+   Track assumptions systematically with evidence:
+
+   ```markdown
+   ## Hypothesis Testing Log
+
+   ### HYP-001: [Hypothesis Title]
+   **Type**: DESIRABILITY | FEASIBILITY | VIABILITY
+
+   **Statement**: We believe that [specific user segment] will [behavior] because [rationale].
+
+   **Test Method**:
+   - [ ] User interviews (n=10+)
+   - [ ] Landing page conversion (>5%)
+   - [ ] Prototype testing
+   - [ ] Market research
+
+   **Success Criteria**:
+   | Metric | Target | Minimum Viable |
+   |--------|:------:|:--------------:|
+   | Quantitative | [e.g., >40% intent to pay] | [e.g., >25%] |
+   | Qualitative | [e.g., 8/10 say "critical"] | [e.g., 6/10] |
+
+   **Evidence Collected**:
+   | Date | Method | Sample | Result | Confidence |
+   |:----:|--------|:------:|--------|:----------:|
+   | MM/DD | Interview | n=12 | 9/12 validated | HIGH |
+
+   **Status**: ✅ Validated | ⚠️ Partially | ❌ Invalidated | 🔄 Testing
+
+   **Implications**: [What changes based on evidence]
+   ```
+
+   **Purpose**: Validate assumptions before investing in build.
+   **Minimum requirement**: At least 3 hypotheses (1 Desirability, 1 Feasibility, 1 Viability).
+
+   **Reference template**: `templates/shared/concept-sections/hypothesis-testing.md`
+
+5c-AIR. **AI Responsibility Assessment** — NEW (if applicable):
+
+   *Required for concepts with AI/ML components. Skip if no AI functionality.*
+
+   ```markdown
+   ## AI Responsibility Assessment
+
+   ### Bias & Fairness
+   - [ ] Training data sources reviewed for bias
+   - [ ] Performance tested across demographic groups
+   - [ ] Disparate impact analysis completed
+
+   ### Transparency
+   - [ ] AI involvement clearly disclosed to users
+   - [ ] Confidence levels communicated
+   - [ ] Human override available
+
+   ### Privacy
+   - [ ] Data minimization applied
+   - [ ] User consent mechanisms in place
+   - [ ] Right to deletion implemented
+
+   ### Safety
+   - [ ] Failure modes identified
+   - [ ] Graceful degradation designed
+   - [ ] Human-in-the-loop for critical decisions
+   ```
+
+   **Purpose**: Ensure responsible AI development with appropriate safeguards.
+
+   **Reference template**: `templates/shared/concept-sections/ai-responsibility.md`
+
+5c-DL. **Decision Log (Stripe-Style)** — NEW:
+
+   Document key decisions with rationale to enable pivots and preserve knowledge:
+
+   ```markdown
+   ## Decision Log
+
+   ### DEC-001: [Decision Title]
+   **Date**: YYYY-MM-DD | **Status**: Decided | **Owner**: [Name]
+
+   **Context**: [What prompted this decision]
+
+   **Options Considered**:
+   | Option | Pros | Cons | Effort |
+   |:------:|------|------|:------:|
+   | **A** | [Benefits] | [Drawbacks] | [S/M/L] |
+   | **B** | [Benefits] | [Drawbacks] | [S/M/L] |
+   | **C** | Do nothing | [Opportunity cost] | — |
+
+   **Decision**: [Option X]
+   **Rationale**: [Why this choice, with evidence]
+   **Reversibility**: [Type 1 (hard) / Type 2 (easy)]
+   **Review Trigger**: Revisit if [condition]
+   ```
+
+   **Minimum requirement**: Document at least 3 key decisions with alternatives considered.
+
+   **Reference template**: `templates/shared/concept-sections/decision-log.md`
 
 5d. **Technical Discovery Hints** — NEW:
 
@@ -936,6 +1222,68 @@ This command captures the **complete vision and scope** of a service/product BEF
    - `P1a`, `P1b`, `P1c`: MVP critical path (ordered sequence)
    - `P2a`, `P2b`: Important but post-MVP
    - `P3`: Nice-to-have, future enhancements
+
+6a. **Scope Exclusions ("What We're NOT Building")** — NEW:
+
+   Explicitly define what is out of scope to prevent scope creep and align expectations:
+
+   ```markdown
+   ## Explicit Non-Goals (v1.0)
+
+   ### Features We Are NOT Building
+   | Feature/Capability | Why Excluded | Alternative for Users | Revisit When |
+   |-------------------|--------------|----------------------|--------------|
+   | [Feature X] | [Strategic reason] | [Workaround or competitor] | [Trigger condition] |
+
+   ### Segments We Are NOT Serving
+   | Segment | Why Excluded | Risk if We Try | Revisit When |
+   |---------|--------------|----------------|--------------|
+   | [Segment] | [Focus reason] | [Dilution risk] | [Scale milestone] |
+
+   ## Scope Guardrails
+   Before adding ANY feature, it must pass ALL gates:
+   - [ ] JTBD Alignment: Directly supports primary Jobs-to-be-Done
+   - [ ] User Evidence: >30% of target users explicitly need it
+   - [ ] Effort Justified: Can be built in <[X] weeks
+   - [ ] Simplicity Preserved: Doesn't compromise core UX
+   - [ ] Strategic Fit: Aligns with Blue Ocean positioning
+
+   ## Rejected Alternatives
+   | Alternative | Why Considered | Why Rejected | Reconsider If |
+   |-------------|----------------|--------------|---------------|
+   | [Approach X] | [Reason] | [Rationale] | [Trigger] |
+   ```
+
+   **Purpose**: Enable confident "no" to feature requests and preserve strategic focus.
+   **Minimum requirement**: Document at least 5 explicit non-goals with rationale.
+
+   **Reference template**: `templates/shared/concept-sections/scope-exclusions.md`
+
+6b. **Three Horizons Framework (McKinsey)** — NEW:
+
+   Allocate features across innovation horizons to balance execution with growth:
+
+   ```markdown
+   ## Three Horizons Resource Allocation
+
+   | Horizon | Time Frame | Focus | Resource % | Features |
+   |:-------:|:----------:|-------|:----------:|----------|
+   | **H1** | 0-12 mo | Defend & extend core | **70%** | [MVP features, P1 priorities] |
+   | **H2** | 12-24 mo | Scale emerging opportunities | **20%** | [P2 features, new segments] |
+   | **H3** | 24-36+ mo | Create future options | **10%** | [P3 exploration, R&D bets] |
+
+   ## Horizon Assignment
+   | Feature ID | Horizon | Rationale |
+   |------------|:-------:|-----------|
+   | EPIC-001.F01 | H1 | Core MVP, revenue protection |
+   | EPIC-002.F03 | H2 | New market segment entry |
+   | EPIC-003.F01 | H3 | Exploratory AI capability |
+   ```
+
+   **Promotion Criteria**: H3 → H2 when validated; H2 → H1 when proven unit economics
+   **Kill Criteria**: No progress after 2 stage-gates (H2) or no learning after X months (H3)
+
+   **Reference template**: `templates/shared/concept-sections/three-horizons.md`
 
 7. **Map User Journeys**:
 
@@ -1226,6 +1574,49 @@ Ideas Backlog:
 
 ---
 
+## Executive Summary Synthesis (Step 5-ES)
+
+**After completing all concept sections, synthesize the Executive Summary.**
+
+The Executive Summary provides 90-second decision context for executives by consolidating key information from all sections.
+
+### Executive Summary Template Reference
+
+```markdown
+<!-- @include: ../shared/concept-sections/executive-summary.md -->
+```
+
+### Synthesis Instructions
+
+Generate the Executive Summary by synthesizing from completed sections:
+
+| Executive Summary Section | Source Sections | Key Data |
+|---------------------------|-----------------|----------|
+| **The Ask** | Vision Statement, Business Model Canvas | Decision/resources needed |
+| **Why Now** | Market Framework, Porter's Five Forces | Timing signals, urgency |
+| **The Opportunity** | Market Framework, Persona-JTBD | TAM/SAM/SOM, WTP |
+| **Our Approach** | Blue Ocean Canvas, PR/FAQ | Differentiation, strategy |
+| **Investment Required** | Business Model Canvas, Technical Hints | FTEs, budget, opportunity cost |
+| **Key Risks & Mitigations** | Risk Matrix, Pre-Mortem | Top 3 risks with status |
+| **Success Criteria** | Metrics-SMART | 6/12/36 month targets |
+| **Recommendation** | CQS-E Score, Quality Gate | GO/NO-GO/CONDITIONAL |
+
+### Quality Check
+
+Before proceeding to Self-Review:
+- [ ] The Ask is 1 actionable sentence
+- [ ] Why Now has evidence-backed timing signals
+- [ ] Opportunity includes validated TAM/SAM/SOM
+- [ ] Approach has 2-3 defensible differentiators
+- [ ] Investment covers headcount + budget + opportunity cost
+- [ ] Top 3 risks have active mitigations
+- [ ] Success metrics are SMART-validated
+- [ ] Recommendation includes CQS-E score
+
+**Output**: Update Executive Summary section at top of concept.md (after Vision Statement).
+
+---
+
 ## Self-Review Phase (MANDATORY)
 
 **Before declaring concept.md complete, you MUST perform self-review.**
@@ -1378,21 +1769,48 @@ IF "Domain Entities" sketched: TECH_SCORE += 40
 IF "API Surface Estimation" present: TECH_SCORE += 30
 IF "Constitution Principle Conflicts" reviewed: TECH_SCORE += 30
 
-# Calculate weighted CQS
-CQS = (MARKET_SCORE × 0.25) + (PERSONA_SCORE × 0.20) + (METRICS_SCORE × 0.15) +
-      (FEATURES_SCORE × 0.20) + (RISK_SCORE × 0.10) + (TECH_SCORE × 0.10)
+# Calculate weighted CQS-E (Evidence-Based)
+STRATEGIC_SCORE = 0
+IF "PR/FAQ" completed: STRATEGIC_SCORE += 25
+IF "Blue Ocean Canvas" completed: STRATEGIC_SCORE += 20
+IF "Business Model Canvas" completed: STRATEGIC_SCORE += 20
+IF "Three Horizons" allocated: STRATEGIC_SCORE += 15
+IF "Trade-off Resolution" defined: STRATEGIC_SCORE += 10
+IF "Scope Exclusions" documented: STRATEGIC_SCORE += 10
 
-# SR-CONCEPT-21: CQS Calculated
-STORE CQS for report output
+VALIDATION_SCORE = 0
+IF count(hypotheses) >= 3: VALIDATION_SCORE += 30
+IF has_hypothesis_per_type(D, F, V): VALIDATION_SCORE += 25
+IF evidence_collected: VALIDATION_SCORE += 25
+IF "Pre-Mortem" scenarios documented: VALIDATION_SCORE += 20
 
-# SR-CONCEPT-22: CQS Quality Gate
-IF CQS < 60:
-  WARN: "CQS {CQS}/100 — Concept not ready for specification"
+# CQS-E Formula with Evidence Multiplier
+CQS_BASE = (MARKET_SCORE × 0.20) + (PERSONA_SCORE × 0.15) + (METRICS_SCORE × 0.15) +
+           (FEATURES_SCORE × 0.15) + (RISK_SCORE × 0.10) + (TECH_SCORE × 0.10) +
+           (STRATEGIC_SCORE × 0.10) + (VALIDATION_SCORE × 0.05)
+
+# Evidence Multiplier (0.8-1.2)
+EVIDENCE_MULTIPLIER = assess_evidence_quality()
+  # 1.2: All claims sourced with primary research
+  # 1.0: Most claims have credible sources
+  # 0.8: Many claims unsourced
+
+CQS_E = CQS_BASE × EVIDENCE_MULTIPLIER
+
+# SR-CONCEPT-21: CQS-E Calculated
+STORE CQS_E for report output
+
+# SR-CONCEPT-22: CQS-E Quality Gate
+IF CQS_E < 60:
+  WARN: "CQS-E {CQS_E}/100 — Concept not ready for specification"
   WARN: "Low scoring components: [list components < 60]"
-ELSE IF CQS < 80:
-  INFO: "CQS {CQS}/100 — Proceed with caution, flag gaps during specification"
+  WARN: "Evidence quality: {EVIDENCE_MULTIPLIER}"
+ELSE IF CQS_E < 80:
+  INFO: "CQS-E {CQS_E}/100 — Proceed with caution, flag gaps during specification"
 ELSE:
-  INFO: "CQS {CQS}/100 — Concept ready for specification"
+  INFO: "CQS-E {CQS_E}/100 — Concept ready for specification"
+
+**Reference template**: `templates/shared/concept-sections/cqs-score.md`
 ```
 
 ### Step 4: Dependency Validation

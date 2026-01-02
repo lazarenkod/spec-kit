@@ -1,20 +1,52 @@
-# Concept Quality Score (CQS)
+# Concept Quality Score (CQS) — Evidence-Based (CQS-E)
 
-> **Purpose**: Quantify concept readiness before proceeding to specification.
+> **Purpose**: Quantify concept readiness with evidence quality tracking before proceeding to specification.
 
-## CQS Calculation
+## CQS-E Calculation
 
-**Formula**: `CQS = (Market × 0.25 + Persona × 0.20 + Metrics × 0.15 + Features × 0.20 + Risk × 0.10 + Technical × 0.10) × 100`
+**Formula**:
+```
+CQS-E = (
+  Market × 0.20 +
+  Persona × 0.15 +
+  Metrics × 0.15 +
+  Features × 0.15 +
+  Risk × 0.10 +
+  Technical × 0.10 +
+  Strategic × 0.10 +      # NEW: Framework completeness
+  Validation × 0.05       # NEW: Hypothesis test status
+) × 100 × Evidence_Multiplier
+```
 
-| Component | Score | Weight | Weighted | Notes |
-|-----------|:-----:|:------:|:--------:|-------|
-| Market Validation | /100 | 0.25 | | [Gaps to address] |
-| Persona Depth | /100 | 0.20 | | [Gaps to address] |
-| Metrics Quality | /100 | 0.15 | | [Gaps to address] |
-| Feature Completeness | /100 | 0.20 | | [Gaps to address] |
-| Risk Assessment | /100 | 0.10 | | [Gaps to address] |
-| Technical Hints | /100 | 0.10 | | [Gaps to address] |
-| **CQS Total** | | | **/100** | |
+| Component | Score | Weight | Weighted | Evidence Quality | Notes |
+|-----------|:-----:|:------:|:--------:|:----------------:|-------|
+| Market Validation | /100 | 0.20 | | HIGH/MED/LOW | [Gaps to address] |
+| Persona Depth | /100 | 0.15 | | HIGH/MED/LOW | [Gaps to address] |
+| Metrics Quality | /100 | 0.15 | | HIGH/MED/LOW | [Gaps to address] |
+| Feature Completeness | /100 | 0.15 | | HIGH/MED/LOW | [Gaps to address] |
+| Risk Assessment | /100 | 0.10 | | HIGH/MED/LOW | [Gaps to address] |
+| Technical Hints | /100 | 0.10 | | HIGH/MED/LOW | [Gaps to address] |
+| **Strategic Depth** | /100 | 0.10 | | HIGH/MED/LOW | [Framework coverage] |
+| **Validation Rigor** | /100 | 0.05 | | HIGH/MED/LOW | [Hypothesis status] |
+| **Base CQS** | | | **/100** | | |
+| **Evidence Multiplier** | | | **×[0.8-1.2]** | | |
+| **CQS-E Total** | | | **/120** | | |
+
+---
+
+## Evidence Multiplier
+
+Adjust CQS based on citation and evidence quality:
+
+| Multiplier | Criteria | Description |
+|:----------:|----------|-------------|
+| **1.2** | All claims sourced | Primary research, verified data, recent citations |
+| **1.1** | Most claims sourced | Credible secondary sources, some primary |
+| **1.0** | Adequate sourcing | Mix of sourced and reasoned assumptions |
+| **0.9** | Partial sourcing | Some claims lack evidence |
+| **0.8** | Weak sourcing | Most claims unsourced or outdated |
+
+**Current Evidence Multiplier**: [1.2/1.1/1.0/0.9/0.8] — [Justification]
 
 ---
 
@@ -63,7 +95,7 @@
 | Lagging indicators defined | 15 | ✓/✗ | |
 | **Subtotal** | 100 | | **/100** |
 
-### Feature Completeness (20% weight)
+### Feature Completeness (15% weight)
 
 | Criterion | Points | Achieved | Score |
 |-----------|:------:|:--------:|:-----:|
@@ -91,6 +123,28 @@
 | API surface estimated | 25 | ✓/✗ | |
 | Integration complexity assessed | 20 | ✓/✗ | |
 | Constitution conflicts resolved | 20 | ✓/✗ | |
+| **Subtotal** | 100 | | **/100** |
+
+### Strategic Depth (10% weight) — NEW
+
+| Criterion | Points | Achieved | Score |
+|-----------|:------:|:--------:|:-----:|
+| PR/FAQ completed (Amazon format) | 25 | ✓/✗ | |
+| Blue Ocean Canvas (ERRC grid) | 20 | ✓/✗ | |
+| Business Model Canvas with unit economics | 20 | ✓/✗ | |
+| Three Horizons allocation | 15 | ✓/✗ | |
+| Trade-off Resolution hierarchy | 10 | ✓/✗ | |
+| Scope Exclusions documented | 10 | ✓/✗ | |
+| **Subtotal** | 100 | | **/100** |
+
+### Validation Rigor (5% weight) — NEW
+
+| Criterion | Points | Achieved | Score |
+|-----------|:------:|:--------:|:-----:|
+| ≥3 hypotheses documented | 30 | ✓/✗ | |
+| At least 1 per type (D/F/V) | 25 | ✓/✗ | |
+| Evidence collected for each | 25 | ✓/✗ | |
+| Pre-mortem scenarios documented | 20 | ✓/✗ | |
 | **Subtotal** | 100 | | **/100** |
 
 ---
@@ -134,6 +188,20 @@ Complete these items to improve CQS:
 - [ ] Estimate API surface (endpoints count)
 - [ ] Assess external integration complexity
 - [ ] Check for constitution principle conflicts
+
+### Strategic (if score < 80) — NEW
+- [ ] Complete PR/FAQ using Amazon Working Backwards
+- [ ] Fill Blue Ocean Canvas (ERRC grid)
+- [ ] Document Business Model Canvas with unit economics
+- [ ] Allocate features to Three Horizons
+- [ ] Define Trade-off Resolution hierarchy
+- [ ] Document explicit Scope Exclusions
+
+### Validation (if score < 80) — NEW
+- [ ] Document at least 3 hypotheses (HYP-001 format)
+- [ ] Include at least 1 Desirability, 1 Feasibility, 1 Viability hypothesis
+- [ ] Collect evidence for each hypothesis
+- [ ] Document Pre-Mortem failure scenarios
 
 ---
 

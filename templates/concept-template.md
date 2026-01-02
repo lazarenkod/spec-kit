@@ -15,6 +15,50 @@
 
 ---
 
+## Executive Summary
+
+<!--
+  90-second decision context for executives.
+  Synthesizes all concept sections into actionable brief.
+  Reference: templates/shared/concept-sections/executive-summary.md
+-->
+
+### The Ask
+[1 sentence: What decision/resources are needed]
+
+### Why Now
+[2-3 sentences: Market timing, urgency drivers]
+
+### The Opportunity
+- TAM: $[X]B | SAM: $[X]M | SOM: $[X]M (Year 1)
+- Primary customer: [Persona] at [Company type]
+- Willingness to pay: $[X]/month validated via [method]
+
+### Our Approach
+[2-3 sentences: How we'll win, key differentiator]
+
+### Investment Required
+| Resource | Amount | Duration |
+|----------|:------:|:--------:|
+| Headcount | [X] FTEs | [X] months |
+| Budget | $[X]K | [X] months |
+| Opportunity Cost | [What we delay] | [Impact] |
+
+### Key Risks & Mitigations
+1. **[Risk 1]**: [Mitigation]
+2. **[Risk 2]**: [Mitigation]
+3. **[Risk 3]**: [Mitigation]
+
+### Success Criteria
+- 6 months: [Metric] = [Target]
+- 12 months: [Metric] = [Target]
+- 36 months: [Metric] = [Target]
+
+### Recommendation
+[GO / NO-GO / CONDITIONAL] — CQS-E: [XX]/120
+
+---
+
 ## UX Foundation Layer
 
 <!--
