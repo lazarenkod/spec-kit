@@ -7,6 +7,57 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.69] - 2026-01-02
+
+### Added
+
+- **Concept Transparency & Explainability Framework** — Full visibility into AI decision-making during `/speckit.concept`
+  - **New Module**: `templates/shared/concept-sections/concept-variants.md` — 3 alternative concept variants (MINIMAL/BALANCED/AMBITIOUS)
+    - Variant Comparison Matrix with timeline, feature count, risk level
+    - Recommended variant with evidence-based rationale
+    - Feature allocation by JTBD priority (MUST/SHOULD/COULD HAVE)
+  - **New Module**: `templates/shared/concept-sections/selection-rationale.md` — Per-feature decision documentation
+    - Selection Decision Table with SEL-NNN IDs
+    - JTBD links, alternatives considered, evidence citations
+    - Reversibility classification (Type 1 irreversible / Type 2 reversible)
+  - **New Module**: `templates/shared/concept-sections/wave-rationale.md` — Wave grouping explanations
+    - Why features are grouped together (dependencies, logical coherence)
+    - Alternative groupings considered with rejection rationale
+    - Wave completion gates and triggers for next wave
+  - **New Module**: `templates/shared/concept-sections/reasoning-trace.md` — Decision chain visualization
+    - RT-NNN formatted traces: Problem → JTBD → Persona → Feature → Priority
+    - INCLUDE, EXCLUDE, DEFER trace types with evidence
+    - Mermaid diagrams for Problem→Feature flow visualization
+  - **Template Update**: `templates/concept-template.md` — 4 new sections
+    - Concept Variants (after Executive Summary)
+    - Feature Selection Rationale (after Feature Hierarchy)
+    - Wave Rationale subsections in Execution Order
+    - Reasoning Trace (before Next Steps)
+  - **Workflow Update**: `templates/commands/concept.md` — New transparency steps
+    - Step 4c: Generate Concept Variants (3 alternatives with comparison)
+    - Step 6c: Document Feature Selection Rationale (per-feature decisions)
+    - Step 8d: Document Wave Rationale (grouping explanations)
+    - Step 10b: Generate Reasoning Trace (decision chain visualization)
+    - Transparency Gates in Validation Gates section
+  - **CQS Update**: `templates/shared/concept-sections/cqs-score.md` — Transparency component (5% weight)
+    - Scoring criteria: variants, JTBD links, wave rationale, reasoning traces
+    - Validation checklist for transparency items
+  - **New Self-Review Criteria**: SR-CONCEPT-23 through SR-CONCEPT-26
+    - SR-CONCEPT-23: Variants Generated (HIGH) — 3 variants documented
+    - SR-CONCEPT-24: Per-Feature Rationale (HIGH) — >80% JTBD coverage
+    - SR-CONCEPT-25: Wave Rationale (MEDIUM) — Wave grouping explanations
+    - SR-CONCEPT-26: Reasoning Trace (MEDIUM) — ≥3 traces documented
+
+### Expected Impact
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Concept output | 1 concept | 3 variants with comparison |
+| Feature selection visibility | None | Full rationale per feature |
+| Wave grouping explanation | None | Why grouped + alternatives |
+| Decision traceability | None | Problem → Feature chains |
+| AI explainability | Black box | Transparent reasoning |
+
 ## [0.0.68] - 2026-01-02
 
 ### Added

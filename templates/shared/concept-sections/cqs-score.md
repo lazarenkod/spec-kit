@@ -13,8 +13,9 @@ CQS-E = (
   Features × 0.15 +
   Risk × 0.10 +
   Technical × 0.10 +
-  Strategic × 0.10 +      # NEW: Framework completeness
-  Validation × 0.05       # NEW: Hypothesis test status
+  Strategic × 0.05 +      # Framework completeness
+  Validation × 0.05 +     # Hypothesis test status
+  Transparency × 0.05     # NEW: Decision transparency
 ) × 100 × Evidence_Multiplier
 ```
 
@@ -26,8 +27,9 @@ CQS-E = (
 | Feature Completeness | /100 | 0.15 | | HIGH/MED/LOW | [Gaps to address] |
 | Risk Assessment | /100 | 0.10 | | HIGH/MED/LOW | [Gaps to address] |
 | Technical Hints | /100 | 0.10 | | HIGH/MED/LOW | [Gaps to address] |
-| **Strategic Depth** | /100 | 0.10 | | HIGH/MED/LOW | [Framework coverage] |
+| **Strategic Depth** | /100 | 0.05 | | HIGH/MED/LOW | [Framework coverage] |
 | **Validation Rigor** | /100 | 0.05 | | HIGH/MED/LOW | [Hypothesis status] |
+| **Transparency** | /100 | 0.05 | | HIGH/MED/LOW | [Decision rationale] |
 | **Base CQS** | | | **/100** | | |
 | **Evidence Multiplier** | | | **×[0.8-1.2]** | | |
 | **CQS-E Total** | | | **/120** | | |
@@ -125,7 +127,7 @@ Adjust CQS based on citation and evidence quality:
 | Constitution conflicts resolved | 20 | ✓/✗ | |
 | **Subtotal** | 100 | | **/100** |
 
-### Strategic Depth (10% weight) — NEW
+### Strategic Depth (5% weight) — NEW
 
 | Criterion | Points | Achieved | Score |
 |-----------|:------:|:--------:|:-----:|
@@ -145,6 +147,17 @@ Adjust CQS based on citation and evidence quality:
 | At least 1 per type (D/F/V) | 25 | ✓/✗ | |
 | Evidence collected for each | 25 | ✓/✗ | |
 | Pre-mortem scenarios documented | 20 | ✓/✗ | |
+| **Subtotal** | 100 | | **/100** |
+
+### Transparency (5% weight) — NEW
+
+| Criterion | Points | Achieved | Score |
+|-----------|:------:|:--------:|:-----:|
+| 3 concept variants documented | 25 | ✓/✗ | |
+| Per-feature JTBD links (>80%) | 25 | ✓/✗ | |
+| Wave rationale for each wave | 20 | ✓/✗ | |
+| At least 3 reasoning traces | 15 | ✓/✗ | |
+| Feature selection table complete | 15 | ✓/✗ | |
 | **Subtotal** | 100 | | **/100** |
 
 ---
@@ -202,6 +215,13 @@ Complete these items to improve CQS:
 - [ ] Include at least 1 Desirability, 1 Feasibility, 1 Viability hypothesis
 - [ ] Collect evidence for each hypothesis
 - [ ] Document Pre-Mortem failure scenarios
+
+### Transparency (if score < 80) — NEW
+- [ ] Document 3 concept variants (MINIMAL, BALANCED, AMBITIOUS)
+- [ ] Link each feature to JTBD (>80% coverage required)
+- [ ] Add wave rationale for each wave (why grouped together)
+- [ ] Create at least 3 reasoning traces (RT-001 format)
+- [ ] Complete feature selection table with alternatives
 
 ---
 

@@ -797,6 +797,75 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Output**: Document clarifications in "Assumptions & Clarifications" section.
 
+4c. **Generate Concept Variants** (NEW — Transparency Enhancement):
+
+   **Goal**: Generate 2-3 alternative concept variants to make feature selection transparent.
+   Users see not just "what" but "why this approach vs alternatives".
+
+   **Reference template**: `templates/shared/concept-sections/concept-variants.md`
+
+   **Variant Generation Algorithm**:
+
+   ```text
+   INPUTS:
+     - Solution approaches from Phase 0c (Option 1-5)
+     - JTBD prioritization from persona analysis
+     - Technical hints from Phase 4
+
+   FOR EACH feature candidate:
+     1. Classify by JTBD priority:
+        - MUST_HAVE: Directly enables PRIMARY functional JTBD
+        - SHOULD_HAVE: Enables SECONDARY JTBD or emotional jobs
+        - COULD_HAVE: Enables social jobs or nice-to-have
+
+     2. Assign to variants:
+        MINIMAL:   MUST_HAVE only
+        BALANCED:  MUST_HAVE + SHOULD_HAVE (Impact/Effort > threshold)
+        AMBITIOUS: All features (MUST + SHOULD + COULD)
+
+     3. Calculate variant metrics:
+        - Feature count
+        - Estimated effort (sum of feature T-shirt sizes)
+        - Risk score (technical complexity weighted average)
+        - Differentiation score (from Blue Ocean analysis)
+
+     4. Generate recommendation:
+        DEFAULT: BALANCED (unless constraints dictate otherwise)
+        OVERRIDE if:
+          - Timeline < 8 weeks → recommend MINIMAL
+          - "Land and expand" strategy → recommend MINIMAL
+          - Competitive pressure high → recommend AMBITIOUS
+   ```
+
+   **Output for Concept Variants section**:
+
+   ```markdown
+   ### Variant Comparison Matrix
+
+   | Dimension | MINIMAL | BALANCED | AMBITIOUS |
+   |-----------|:-------:|:--------:|:---------:|
+   | Time to MVP | [X] weeks | [Y] weeks | [Z] weeks |
+   | Team Size | [N] FTEs | [N] FTEs | [N] FTEs |
+   | Feature Count | [N] | [N] | [N] |
+   | Risk Level | Low | Medium | High |
+   | Differentiation | Table stakes | Competitive | Market leader |
+   | JTBD Coverage | Primary only | Primary + Secondary | All JTBD |
+
+   ### Recommended Variant: [BALANCED]
+
+   **Why this recommendation**:
+   1. [Timeline/constraint fit]
+   2. [Differentiation reasoning]
+   3. [Risk balance rationale]
+
+   **When to choose differently**:
+   - MINIMAL if: [specific condition]
+   - AMBITIOUS if: [specific condition]
+   ```
+
+   **Integration**: Feed variant assignment into Feature Hierarchy (step 6) — each feature
+   should indicate which variants it belongs to (ALL, MINIMAL+, BALANCED+, AMBITIOUS only).
+
 5. **Extract Vision and Business Context** from user input:
 
    Parse the user description to identify:
@@ -1285,6 +1354,65 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Reference template**: `templates/shared/concept-sections/three-horizons.md`
 
+6c. **Document Feature Selection Rationale** (NEW — Transparency Enhancement):
+
+   **Goal**: For each feature, document WHY it was included, alternatives considered, and JTBD link.
+   This eliminates "black box" feature selection.
+
+   **Reference template**: `templates/shared/concept-sections/selection-rationale.md`
+
+   ```text
+   FOR EACH feature in Feature Hierarchy:
+     1. Assign Selection ID: SEL-NNN (sequential)
+
+     2. Document JTBD Link (REQUIRED):
+        - Primary JTBD this feature enables
+        - Format: JTBD-FUNC-001, JTBD-EMOT-001, JTBD-SOC-001
+
+     3. Document Selection Decision:
+        - INCLUDE: Feature selected for concept
+        - EXCLUDE: Deliberately not building (move to 6a Scope Exclusions)
+        - DEFER: Not in this version (document when to reconsider)
+
+     4. Document Alternatives Analyzed (min 2 for P1a features):
+        | Alternative | Score | Pros | Cons | Why Not Chosen |
+        |-------------|:-----:|------|------|----------------|
+
+     5. Assign Variant:
+        - ALL: Included in MINIMAL, BALANCED, AMBITIOUS
+        - MINIMAL+: Included in MINIMAL and above
+        - BALANCED+: Included in BALANCED and above
+        - AMBITIOUS: Only in AMBITIOUS variant
+
+     6. Assess Reversibility:
+        - Type 1: Irreversible, locked-in (careful!)
+        - Type 2: Reversible, can change later (preferred for MVP)
+   ```
+
+   **Output for Feature Selection Rationale section**:
+
+   ```markdown
+   ### Selection Decision Table
+
+   | ID | Feature | Decision | Variant | JTBD | Alternatives | Why This Choice |
+   |:--:|---------|:--------:|:-------:|------|--------------|-----------------|
+   | SEL-001 | [Name] | INCLUDE | ALL | JTBD-FUNC-001 | [Alt 1], [Alt 2] | [Rationale] |
+   | SEL-002 | [Name] | INCLUDE | BALANCED+ | JTBD-FUNC-002 | [Alt] | [Rationale] |
+   | SEL-003 | [Name] | EXCLUDE | — | JTBD-EMOT-001 | [Alt] | [Rationale] |
+
+   ### JTBD Coverage Analysis
+
+   | JTBD ID | Job Description | Features Addressing | Coverage | Gap Action |
+   |---------|-----------------|---------------------|:--------:|------------|
+   | JTBD-FUNC-001 | [Job] | F01, F02 | FULL | — |
+   | JTBD-FUNC-002 | [Job] | — | GAP | Deferred to H2 |
+   ```
+
+   **Validation Rules**:
+   - Every feature MUST have a JTBD link (CQS penalty if missing)
+   - Every primary JTBD MUST have at least one feature addressing it
+   - P1a features MUST have 2+ alternatives documented
+
 7. **Map User Journeys**:
 
    Identify end-to-end flows that cross features:
@@ -1428,6 +1556,56 @@ This command captures the **complete vision and scope** of a service/product BEF
      feature.blocks = find_features_that_depend_on(feature.id)
    ```
 
+8d. **Document Wave Rationale** (NEW — Transparency Enhancement):
+
+   **Goal**: Explain WHY features are grouped in each wave and what dependency chains determined the order.
+
+   **Reference template**: `templates/shared/concept-sections/wave-rationale.md`
+
+   ```text
+   FOR EACH wave:
+     1. Document "Why these features are grouped together":
+        - Technical dependencies (what must exist first)
+        - Logical coherence (form a complete capability)
+
+     2. Document "What blocks next wave":
+        - Specific capabilities that must be complete
+        - Data/APIs that next wave depends on
+
+     3. Document "Alternative groupings considered":
+        | Alternative | Why Not Chosen |
+        |-------------|----------------|
+        - E.g., "Could split auth and user mgmt" → "Would create integration risk"
+
+     4. Visualize dependency chain:
+        ```text
+        Wave 1 (Foundation) → Wave 2 (Experience) → Wave 3 (Business Value)
+             ↓                      ↓                      ↓
+         Auth exists         User can navigate      User achieves goal
+        ```
+   ```
+
+   **Output for Execution Order section**:
+
+   ```markdown
+   #### Wave 1 Rationale
+
+   **Why these features are grouped together**:
+   - [Technical dependency explanation]
+   - [Logical coherence explanation]
+
+   **What blocks Wave 2**:
+   - [ ] [Specific capability or API]
+   - [ ] [Data requirement]
+
+   **Alternative groupings considered**:
+   | Alternative | Why Not Chosen |
+   |-------------|----------------|
+   | [Alt approach] | [Reason] |
+   ```
+
+   **Validation**: Every wave MUST have rationale documented (CQS requirement).
+
 9. **Capture Ideas Backlog**:
 
    **CRITICAL**: No idea should be lost. For each idea that doesn't fit current scope:
@@ -1455,6 +1633,84 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    This will be populated by subsequent commands (`/speckit.specify`, `/speckit.tasks`).
 
+10b. **Generate Reasoning Trace** (NEW — Transparency Enhancement):
+
+   **Goal**: Visualize the decision chain from Problem → JTBD → Feature for key features.
+   Makes AI reasoning transparent and auditable.
+
+   **Reference template**: `templates/shared/concept-sections/reasoning-trace.md`
+
+   ```text
+   # Generate at least 3 reasoning traces (more for complex concepts)
+   TRACE_COUNT = max(3, count(P1a_features))
+
+   FOR EACH P1a feature (and key excluded features):
+     1. Assign Trace ID: RT-NNN (sequential)
+
+     2. Build trace chain:
+        PROBLEM: [Specific user problem from discovery]
+            ↓
+        PERSONA: [Which persona] experiences this when [situation]
+            ↓
+        JTBD: [JTBD-xxx-xxx] — "[When/I want/So I can]"
+            ↓
+        FEATURE: [EPIC-xxx.Fxx] [Feature Name]
+            ↓
+        PRIORITY: [P1a/P1b/etc] — [Why this priority]
+            ↓
+        VARIANT: [ALL/MINIMAL+/BALANCED+/AMBITIOUS] — [Why this variant]
+            ↓
+        SELECTION: [SEL-xxx] — Chosen over [alternatives] because [rationale]
+
+     3. For EXCLUDED features, continue trace to:
+        DECISION: EXCLUDE
+            ↓
+        RATIONALE: [Why excluded]
+            ↓
+        ALTERNATIVE: [How users accomplish similar outcome]
+            ↓
+        REVISIT TRIGGER: [When to reconsider]
+   ```
+
+   **Output for Reasoning Trace section**:
+
+   ```markdown
+   ### Reasoning Summary
+
+   | Trace ID | Problem | JTBD | Feature | Decision | Key Rationale |
+   |:--------:|---------|------|---------|:--------:|---------------|
+   | RT-001 | [Problem] | JTBD-FUNC-001 | F01 | INCLUDE | [1-line rationale] |
+   | RT-002 | [Problem] | JTBD-EMOT-001 | [Feature] | EXCLUDE | [1-line rationale] |
+
+   ### Key Decision Points
+
+   1. **[Decision 1]**: We chose [A] over [B] because [evidence/rationale]
+      - Impact: [What this enabled/prevented]
+      - Reversibility: [Type 1/Type 2]
+   ```
+
+   **Mermaid Diagram Generation**:
+   ```text
+   Generate visual flow:
+   graph LR
+       subgraph Problem["Problem Space"]
+           P1[Problem: ...]
+       end
+       subgraph JTBD["Jobs to Be Done"]
+           J1[JTBD-FUNC-001: ...]
+       end
+       subgraph Features["Feature Decisions"]
+           F1[EPIC-001.F01: ...]
+           F2[EXCLUDED: ...]
+       end
+       P1 --> J1
+       J1 --> F1
+       J1 --> F2
+       style F2 fill:#ffcccc
+   ```
+
+   **Validation**: At least 3 reasoning traces required (CQS criterion).
+
 11. **Write concept.md** to `specs/concept.md` using template structure.
 
 ## Validation Gates
@@ -1479,6 +1735,17 @@ Before completing, verify:
 - [ ] Market research sources documented
 - [ ] User confirmed synthesized vision before structured capture
 - [ ] Discovery findings connected to Feature Hierarchy (winning ideas became features)
+
+**Transparency Gates** (NEW — always required):
+- [ ] 3 concept variants documented (MINIMAL, BALANCED, AMBITIOUS)
+- [ ] Variant comparison matrix complete (all 7 dimensions)
+- [ ] Recommendation includes specific rationale (not generic)
+- [ ] Every feature has JTBD link (JTBD-xxx-xxx format)
+- [ ] Selection Decision Table has entry for each feature
+- [ ] >80% of features have alternatives documented
+- [ ] Wave Rationale documented for each wave
+- [ ] At least 3 Reasoning Traces (RT-001, RT-002, RT-003)
+- [ ] JTBD Coverage Analysis shows no unexplained gaps
 
 ## Quality Guidelines
 
@@ -1656,6 +1923,10 @@ Parse to extract hierarchy and validate structure.
 | SR-CONCEPT-20 | Technical Hints | Domain entities or API surface estimated | MEDIUM |
 | SR-CONCEPT-21 | CQS Calculated | Concept Quality Score computed and displayed | HIGH |
 | SR-CONCEPT-22 | CQS Quality Gate | CQS ≥ 60 for specification readiness | HIGH |
+| SR-CONCEPT-23 | Variants Generated | 3 concept variants (MINIMAL/BALANCED/AMBITIOUS) documented | HIGH |
+| SR-CONCEPT-24 | Per-Feature Rationale | Every feature has JTBD link and selection rationale | HIGH |
+| SR-CONCEPT-25 | Wave Rationale | Each wave has grouping explanation and dependencies | MEDIUM |
+| SR-CONCEPT-26 | Reasoning Trace | At least 3 traces (Problem → Feature) documented | MEDIUM |
 
 ### Step 3: Hierarchy Validation
 
@@ -1811,6 +2082,56 @@ ELSE:
   INFO: "CQS-E {CQS_E}/100 — Concept ready for specification"
 
 **Reference template**: `templates/shared/concept-sections/cqs-score.md`
+```
+
+### Step 3d: Transparency Validation
+
+Verify transparency and explainability:
+
+```text
+# SR-CONCEPT-23: Variants Generated
+VARIANTS_COUNT = count(sections matching "Variant: MINIMAL|BALANCED|AMBITIOUS")
+IF VARIANTS_COUNT < 3:
+  ERROR: "Only {VARIANTS_COUNT} concept variants documented, need 3"
+IF "Recommended Variant" section missing:
+  ERROR: "No recommended variant with rationale"
+
+# SR-CONCEPT-24: Per-Feature Rationale
+FEATURES_WITH_JTBD = 0
+TOTAL_FEATURES = count(features in Feature Hierarchy)
+FOR EACH feature in Feature Selection Rationale:
+  IF feature has JTBD link (non-empty):
+    FEATURES_WITH_JTBD += 1
+COVERAGE = FEATURES_WITH_JTBD / TOTAL_FEATURES
+IF COVERAGE < 0.80:
+  ERROR: "Only {COVERAGE*100}% features have JTBD links, need >80%"
+IF "Selection Decision Table" section missing:
+  ERROR: "Feature Selection Rationale table not found"
+
+# SR-CONCEPT-25: Wave Rationale
+WAVES_WITH_RATIONALE = 0
+FOR EACH wave in Execution Order (1, 2, 3+):
+  IF wave has "Wave N Rationale" subsection:
+    WAVES_WITH_RATIONALE += 1
+  ELSE:
+    WARN: "Wave {N} missing rationale explanation"
+IF WAVES_WITH_RATIONALE < 2:
+  ERROR: "Only {WAVES_WITH_RATIONALE} waves have rationale, need ≥2"
+
+# SR-CONCEPT-26: Reasoning Trace
+TRACE_COUNT = count(sections matching "Trace [0-9]+:" OR "RT-[0-9]+")
+IF TRACE_COUNT < 3:
+  ERROR: "Only {TRACE_COUNT} reasoning traces documented, need ≥3"
+IF no EXCLUDE trace found:
+  WARN: "No EXCLUDE reasoning trace — add at least 1 to show scope decisions"
+IF "Reasoning Summary" table missing:
+  WARN: "Add Reasoning Summary table for trace overview"
+
+**Reference templates**:
+- `templates/shared/concept-sections/concept-variants.md`
+- `templates/shared/concept-sections/selection-rationale.md`
+- `templates/shared/concept-sections/wave-rationale.md`
+- `templates/shared/concept-sections/reasoning-trace.md`
 ```
 
 ### Step 4: Dependency Validation
