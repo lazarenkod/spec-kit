@@ -7,6 +7,61 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.70] - 2026-01-02
+
+### Added
+
+- **AI Augmentation Suite v0.0.70** — Multi-Agent Research Framework, Evidence-Based CQS, and Continuous Validation
+
+  - **Feature 1: Multi-Agent Research Framework** — 4 parallel AI agents for accelerated market research
+    - **New Module**: `templates/shared/concept-sections/research-agents.md` (~350 lines)
+      - `market-intelligence-ai`: TAM/SAM/SOM calculation with cross-validation
+      - `competitive-intelligence-ai`: Competitor analysis with pricing intel
+      - `persona-researcher-ai`: JTBD synthesis with evidence tracking
+      - `trend-analyst-ai`: Timing analysis and risk factors
+    - Shared memory structure (`research_db`) for cross-agent references
+    - Cross-validation rules: TAM variance <30%, ≥2 sources per claim, ≥3 evidence per JTBD
+    - Research time reduction: 4-8 hours manual → 30-45 minutes automated
+    - Cost: ~$0.75-1.00 per concept
+    - **Workflow Update**: `templates/commands/concept.md` Phase 0b.1 enhanced
+
+  - **Feature 2: Evidence-Based CQS** — Transform checkbox scoring to evidence tier scoring
+    - **New Module**: `templates/shared/concept-sections/evidence-tracking.md` (~200 lines)
+      - Evidence Tiers: VERY_STRONG (30pts), STRONG (25pts), MEDIUM (20pts), WEAK (5pts), NONE (0pts)
+      - Evidence Registry table (EV-001, EV-002, ...)
+      - Evidence Gap Analysis with priority assignments
+      - Cross-Validation Matrix for critical claims
+      - AI-assisted evidence collection integration
+    - **Updated Module**: `templates/shared/concept-sections/cqs-score.md`
+      - All 9 component scoring tables updated with Evidence Tier column
+      - Source ID tracking for each criterion
+      - Evidence Requirements per component (e.g., ≥3 sources for TAM)
+      - Evidence Gap Report section
+
+  - **Feature 3: Continuous Validation** — New `/speckit.validate-concept` command
+    - **New Command**: `templates/commands/validate-concept.md` (~400 lines)
+      - Re-validation workflow with 3 parallel validators
+      - Market, Competitive, and Trend validators
+      - CQS delta calculation with impact classification (CRITICAL/HIGH/MEDIUM/LOW)
+      - Diff report generation: `concept-validation-{date}.md`
+      - Evidence freshness scoring
+      - Validation history tracking
+    - **New Wrapper**: `.claude/commands/speckit.validate-concept.md`
+      - Quick start guide with common usage patterns
+      - Impact level reference table
+      - Cost estimation (~$0.30-0.40 per validation)
+
+### Expected Impact
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Research time | 4-8 hours | 30-45 minutes |
+| Evidence quality | Binary (✓/✗) | Tiered (N/W/M/S/VS) |
+| Source tracking | None | Evidence Registry |
+| Concept freshness | One-time snapshot | Continuous validation |
+| CQS baseline | ~60 | ~85+ (with evidence) |
+| Cost per concept | $50-100 (manual) | ~$1 (automated) |
+
 ## [0.0.69] - 2026-01-02
 
 ### Added

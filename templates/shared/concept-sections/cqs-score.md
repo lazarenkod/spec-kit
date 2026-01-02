@@ -52,6 +52,42 @@ Adjust CQS based on citation and evidence quality:
 
 ---
 
+## Evidence-Based Scoring (Enhanced)
+
+> **Upgrade**: Replace binary (✓/✗) with evidence tier scoring for higher accuracy.
+
+### Evidence Tiers
+
+| Tier | Code | Points | Criteria |
+|------|:----:|:------:|----------|
+| **VERY_STRONG** | VS | 30 | Primary research (n≥10), verified data, multiple independent sources |
+| **STRONG** | S | 25 | Credible secondary sources, recent data (<1 year), industry reports |
+| **MEDIUM** | M | 20 | Analyst estimates, expert opinions, comparable company data |
+| **WEAK** | W | 5 | Assumptions, extrapolations, outdated data (>2 years) |
+| **NONE** | N | 0 | No evidence provided |
+
+### Minimum Evidence Requirements
+
+| Component | Critical Claim | Minimum Evidence | Tier Required |
+|-----------|----------------|------------------|:-------------:|
+| **Market** | TAM Calculation | ≥3 independent sources | STRONG |
+| **Market** | Competitive Matrix | ≥3 competitors with pricing | STRONG |
+| **Persona** | Persona Definition | ≥5 interviews OR ≥100 surveys | STRONG |
+| **Persona** | Willingness to Pay | Pricing research conducted | STRONG |
+| **Metrics** | North Star Metric | ≥2 comparable benchmarks | STRONG |
+| **Features** | Golden Path | Validated with ≥3 users | STRONG |
+| **Technical** | Domain Entities | Architecture review OR prototype | STRONG |
+
+### Evidence Gap Report
+
+| Component | Claim | Current | Required | Gap | Priority |
+|-----------|-------|:-------:|:--------:|:---:|:--------:|
+| [Component] | [Claim] | [N/W/M/S/VS] | [Tier] | [-X pts] | [P0/P1/P2] |
+
+**Total Evidence Gap**: [X] points — [Action required]
+
+---
+
 ## Quality Gate
 
 | CQS Range | Status | Recommendation |
@@ -66,99 +102,135 @@ Adjust CQS based on citation and evidence quality:
 
 ## Component Scoring Criteria
 
-### Market Validation (25% weight)
+### Market Validation (20% weight)
 
-| Criterion | Points | Achieved | Score |
-|-----------|:------:|:--------:|:-----:|
-| TAM defined with methodology | 30 | ✓/✗ | |
-| SAM calculated with filters | 25 | ✓/✗ | |
-| SOM estimated realistically | 20 | ✓/✗ | |
-| Competitive matrix completed | 25 | ✓/✗ | |
-| **Subtotal** | 100 | | **/100** |
+| Criterion | Max Pts | Evidence Tier | Score | Sources |
+|-----------|:-------:|:-------------:|:-----:|---------|
+| TAM defined with methodology | 30 | N/W/M/S/VS | | [Source IDs] |
+| SAM calculated with filters | 25 | N/W/M/S/VS | | [Source IDs] |
+| SOM estimated realistically | 20 | N/W/M/S/VS | | [Source IDs] |
+| Competitive matrix completed | 25 | N/W/M/S/VS | | [Source IDs] |
+| **Subtotal** | 100 | | **/100** | |
 
-### Persona Depth (20% weight)
+**Evidence Requirements**:
+- TAM: ≥3 independent sources, bottom-up AND top-down (variance <30%)
+- Competitors: ≥3 analyzed with pricing data
 
-| Criterion | Points | Achieved | Score |
-|-----------|:------:|:--------:|:-----:|
-| ≥2 distinct personas defined | 30 | ✓/✗ | |
-| JTBD (functional) for each | 25 | ✓/✗ | |
-| JTBD (emotional/social) for each | 15 | ✓/✗ | |
-| Willingness to pay assessed | 15 | ✓/✗ | |
-| Success criteria per persona | 15 | ✓/✗ | |
-| **Subtotal** | 100 | | **/100** |
+### Persona Depth (15% weight)
+
+| Criterion | Max Pts | Evidence Tier | Score | Sources |
+|-----------|:-------:|:-------------:|:-----:|---------|
+| ≥2 distinct personas defined | 30 | N/W/M/S/VS | | [Source IDs] |
+| JTBD (functional) for each | 25 | N/W/M/S/VS | | [Source IDs] |
+| JTBD (emotional/social) for each | 15 | N/W/M/S/VS | | [Source IDs] |
+| Willingness to pay assessed | 15 | N/W/M/S/VS | | [Source IDs] |
+| Success criteria per persona | 15 | N/W/M/S/VS | | [Source IDs] |
+| **Subtotal** | 100 | | **/100** | |
+
+**Evidence Requirements**:
+- Personas: ≥5 customer interviews OR ≥100 survey responses
+- WTP: Van Westendorp analysis OR pricing research conducted
 
 ### Metrics Quality (15% weight)
 
-| Criterion | Points | Achieved | Score |
-|-----------|:------:|:--------:|:-----:|
-| North Star metric identified | 40 | ✓/✗ | |
-| All metrics pass SMART validation | 30 | ✓/✗ | |
-| Leading indicators defined | 15 | ✓/✗ | |
-| Lagging indicators defined | 15 | ✓/✗ | |
-| **Subtotal** | 100 | | **/100** |
+| Criterion | Max Pts | Evidence Tier | Score | Sources |
+|-----------|:-------:|:-------------:|:-----:|---------|
+| North Star metric identified | 40 | N/W/M/S/VS | | [Source IDs] |
+| All metrics pass SMART validation | 30 | N/W/M/S/VS | | [Source IDs] |
+| Leading indicators defined | 15 | N/W/M/S/VS | | [Source IDs] |
+| Lagging indicators defined | 15 | N/W/M/S/VS | | [Source IDs] |
+| **Subtotal** | 100 | | **/100** | |
+
+**Evidence Requirements**:
+- North Star: ≥2 comparable company benchmarks
+- SMART: Each metric has baseline + target with measurement methodology
 
 ### Feature Completeness (15% weight)
 
-| Criterion | Points | Achieved | Score |
-|-----------|:------:|:--------:|:-----:|
-| Epic/Feature/Story hierarchy | 30 | ✓/✗ | |
-| Wave assignments (1/2/3+) | 25 | ✓/✗ | |
-| Golden Path (J000) defined | 25 | ✓/✗ | |
-| UX Foundations identified | 20 | ✓/✗ | |
-| **Subtotal** | 100 | | **/100** |
+| Criterion | Max Pts | Evidence Tier | Score | Sources |
+|-----------|:-------:|:-------------:|:-----:|---------|
+| Epic/Feature/Story hierarchy | 30 | N/W/M/S/VS | | [Source IDs] |
+| Wave assignments (1/2/3+) | 25 | N/W/M/S/VS | | [Source IDs] |
+| Golden Path (J000) defined | 25 | N/W/M/S/VS | | [Source IDs] |
+| UX Foundations identified | 20 | N/W/M/S/VS | | [Source IDs] |
+| **Subtotal** | 100 | | **/100** | |
+
+**Evidence Requirements**:
+- Golden Path: Validated with ≥3 target users
+- Feature hierarchy: Each feature traced to ≥1 JTBD
 
 ### Risk Assessment (10% weight)
 
-| Criterion | Points | Achieved | Score |
-|-----------|:------:|:--------:|:-----:|
-| ≥3 risks identified | 30 | ✓/✗ | |
-| Mitigations documented | 25 | ✓/✗ | |
-| Contingencies defined | 15 | ✓/✗ | |
-| Pivot criteria documented | 30 | ✓/✗ | |
-| **Subtotal** | 100 | | **/100** |
+| Criterion | Max Pts | Evidence Tier | Score | Sources |
+|-----------|:-------:|:-------------:|:-----:|---------|
+| ≥3 risks identified | 30 | N/W/M/S/VS | | [Source IDs] |
+| Mitigations documented | 25 | N/W/M/S/VS | | [Source IDs] |
+| Contingencies defined | 15 | N/W/M/S/VS | | [Source IDs] |
+| Pivot criteria documented | 30 | N/W/M/S/VS | | [Source IDs] |
+| **Subtotal** | 100 | | **/100** | |
+
+**Evidence Requirements**:
+- Risks: Industry research OR expert consultation
+- Pivot criteria: Quantitative thresholds defined
 
 ### Technical Hints (10% weight)
 
-| Criterion | Points | Achieved | Score |
-|-----------|:------:|:--------:|:-----:|
-| Domain entities sketched | 35 | ✓/✗ | |
-| API surface estimated | 25 | ✓/✗ | |
-| Integration complexity assessed | 20 | ✓/✗ | |
-| Constitution conflicts resolved | 20 | ✓/✗ | |
-| **Subtotal** | 100 | | **/100** |
+| Criterion | Max Pts | Evidence Tier | Score | Sources |
+|-----------|:-------:|:-------------:|:-----:|---------|
+| Domain entities sketched | 35 | N/W/M/S/VS | | [Source IDs] |
+| API surface estimated | 25 | N/W/M/S/VS | | [Source IDs] |
+| Integration complexity assessed | 20 | N/W/M/S/VS | | [Source IDs] |
+| Constitution conflicts resolved | 20 | N/W/M/S/VS | | [Source IDs] |
+| **Subtotal** | 100 | | **/100** | |
 
-### Strategic Depth (5% weight) — NEW
+**Evidence Requirements**:
+- Domain entities: Architecture review OR working prototype
+- Integrations: Documentation review completed
 
-| Criterion | Points | Achieved | Score |
-|-----------|:------:|:--------:|:-----:|
-| PR/FAQ completed (Amazon format) | 25 | ✓/✗ | |
-| Blue Ocean Canvas (ERRC grid) | 20 | ✓/✗ | |
-| Business Model Canvas with unit economics | 20 | ✓/✗ | |
-| Three Horizons allocation | 15 | ✓/✗ | |
-| Trade-off Resolution hierarchy | 10 | ✓/✗ | |
-| Scope Exclusions documented | 10 | ✓/✗ | |
-| **Subtotal** | 100 | | **/100** |
+### Strategic Depth (5% weight)
 
-### Validation Rigor (5% weight) — NEW
+| Criterion | Max Pts | Evidence Tier | Score | Sources |
+|-----------|:-------:|:-------------:|:-----:|---------|
+| PR/FAQ completed (Amazon format) | 25 | N/W/M/S/VS | | [Source IDs] |
+| Blue Ocean Canvas (ERRC grid) | 20 | N/W/M/S/VS | | [Source IDs] |
+| Business Model Canvas with unit economics | 20 | N/W/M/S/VS | | [Source IDs] |
+| Three Horizons allocation | 15 | N/W/M/S/VS | | [Source IDs] |
+| Trade-off Resolution hierarchy | 10 | N/W/M/S/VS | | [Source IDs] |
+| Scope Exclusions documented | 10 | N/W/M/S/VS | | [Source IDs] |
+| **Subtotal** | 100 | | **/100** | |
 
-| Criterion | Points | Achieved | Score |
-|-----------|:------:|:--------:|:-----:|
-| ≥3 hypotheses documented | 30 | ✓/✗ | |
-| At least 1 per type (D/F/V) | 25 | ✓/✗ | |
-| Evidence collected for each | 25 | ✓/✗ | |
-| Pre-mortem scenarios documented | 20 | ✓/✗ | |
-| **Subtotal** | 100 | | **/100** |
+**Evidence Requirements**:
+- Unit economics: Based on actual cost data OR comparable company analysis
+- Blue Ocean: Competitive differentiation validated with users
 
-### Transparency (5% weight) — NEW
+### Validation Rigor (5% weight)
 
-| Criterion | Points | Achieved | Score |
-|-----------|:------:|:--------:|:-----:|
-| 3 concept variants documented | 25 | ✓/✗ | |
-| Per-feature JTBD links (>80%) | 25 | ✓/✗ | |
-| Wave rationale for each wave | 20 | ✓/✗ | |
-| At least 3 reasoning traces | 15 | ✓/✗ | |
-| Feature selection table complete | 15 | ✓/✗ | |
-| **Subtotal** | 100 | | **/100** |
+| Criterion | Max Pts | Evidence Tier | Score | Sources |
+|-----------|:-------:|:-------------:|:-----:|---------|
+| ≥3 hypotheses documented | 30 | N/W/M/S/VS | | [Source IDs] |
+| At least 1 per type (D/F/V) | 25 | N/W/M/S/VS | | [Source IDs] |
+| Evidence collected for each | 25 | N/W/M/S/VS | | [Source IDs] |
+| Pre-mortem scenarios documented | 20 | N/W/M/S/VS | | [Source IDs] |
+| **Subtotal** | 100 | | **/100** | |
+
+**Evidence Requirements**:
+- Hypotheses: Each has testable success criteria
+- Pre-mortem: Based on industry failure analysis
+
+### Transparency (5% weight)
+
+| Criterion | Max Pts | Evidence Tier | Score | Sources |
+|-----------|:-------:|:-------------:|:-----:|---------|
+| 3 concept variants documented | 25 | N/W/M/S/VS | | [Source IDs] |
+| Per-feature JTBD links (>80%) | 25 | N/W/M/S/VS | | [Source IDs] |
+| Wave rationale for each wave | 20 | N/W/M/S/VS | | [Source IDs] |
+| At least 3 reasoning traces | 15 | N/W/M/S/VS | | [Source IDs] |
+| Feature selection table complete | 15 | N/W/M/S/VS | | [Source IDs] |
+| **Subtotal** | 100 | | **/100** | |
+
+**Evidence Requirements**:
+- Variants: Each variant has differentiated scope
+- JTBD links: Traced to user research evidence
 
 ---
 

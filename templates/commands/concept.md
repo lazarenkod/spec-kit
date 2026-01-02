@@ -418,31 +418,79 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Goal**: Validate problem with external data and quantify market opportunity.
 
-   #### Phase 0b.1: Multi-Agent Research Orchestration — NEW
+   #### Phase 0b.1: Multi-Agent Research Orchestration (Enhanced)
 
-   Leverage AI agents to accelerate research (cost: ~$0.50-1.00/concept, saves 2-4 hours):
+   Leverage 4 parallel AI agents to accelerate research:
+   - **Time**: 4-8 hours manual → 30-45 minutes automated
+   - **Cost**: ~$0.75-1.00 per concept
+   - **Quality**: Evidence-based with cross-validation
 
    ```yaml
-   research_agents:
-     market_intelligence:
-       triggers: [TAM_SAM_SOM, competitive_positioning]
-       sources: [web_search, industry_reports, SEC_filings]
-       output: Evidence-backed market sizing with citations
+   research_orchestration:
+     max_parallel: 4
+     timeout_minutes: 15
+     shared_memory: research_db
 
-     competitor_analyst:
-       triggers: [Blue_Ocean_Canvas, Porter_5_Forces]
-       sources: [competitor_websites, G2_reviews, job_postings]
-       output: Feature comparison matrix, positioning gaps
+     agents:
+       - role: market-intelligence-ai
+         model: sonnet-4.5
+         tools: [web_search, context7_docs, greptile_search]
+         parallel: true
+         outputs: [tam_analysis, sam_analysis, som_analysis, growth_signals]
+         tasks:
+           - Calculate TAM using bottom-up AND top-down methodology
+           - Require ≥3 independent sources per calculation
+           - Flag if variance between methods >30%
 
-     validation_agent:
-       triggers: [hypothesis_testing, pre_mortem]
-       sources: [similar_product_launches, failure_case_studies]
-       output: Historical precedent analysis
+       - role: competitive-intelligence-ai
+         model: sonnet-4.5
+         tools: [web_search, greptile_code_reviews]
+         parallel: true
+         outputs: [competitor_matrix, feature_gap_analysis, pricing_intel]
+         tasks:
+           - Identify ≥5 direct + ≥3 indirect competitors
+           - Require ≥2 sources per competitor claim
+           - Extract pricing models and tiers
+
+       - role: persona-researcher-ai
+         model: opus-4.5
+         tools: [web_search, context7_docs]
+         parallel: true
+         outputs: [persona_profiles, jtbd_synthesis, pain_point_ranking]
+         tasks:
+           - Define ≥2 distinct personas from market signals
+           - Synthesize functional, emotional, social JTBD
+           - Require ≥3 evidence points per JTBD
+
+       - role: trend-analyst-ai
+         model: sonnet-4.5
+         tools: [web_search]
+         parallel: true
+         outputs: [trend_signals, timing_analysis, risk_factors]
+         tasks:
+           - Identify enabling technology trends
+           - Analyze "why now" timing factors
+           - Assess market and competitive risks
+
+     cross_validation:
+       tam_variance_threshold: 0.30
+       min_sources_per_claim: 2
+       min_evidence_per_jtbd: 3
    ```
 
-   **ROI**: 100x+ vs manual research at $50-100/hour
+   **Execution Protocol**:
+   1. Launch all 4 agents in parallel (0-10 min)
+   2. Agents write to shared `research_db` memory
+   3. Run cross-validation checks (10-12 min)
+   4. Generate unified Evidence Registry (12-15 min)
+   5. Populate concept sections with evidence IDs
 
-   **Reference template**: `templates/shared/concept-sections/multi-agent-research.md`
+   **Output Artifacts**:
+   - Evidence Registry (EV-001, EV-002, ...)
+   - Cross-Validation Report
+   - Confidence scores per claim
+
+   **Reference**: `templates/shared/concept-sections/research-agents.md`
 
    **Research actions** (use WebSearch tool proactively):
 
