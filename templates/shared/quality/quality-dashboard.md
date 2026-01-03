@@ -176,16 +176,20 @@ TOTAL SQS:                                              {{SQS_SCORE}}/100
 
 | Flag | Severity | Location | Action |
 |------|----------|----------|--------|
+<!-- markdownlint-disable-next-line MD055 -->
 {{#RED_FLAGS_CRITICAL}}
 | `{{FLAG_ID}}` | CRITICAL | `{{FLAG_LOC}}` | `{{FLAG_ACTION}}` |
+<!-- markdownlint-disable-next-line MD055 -->
 {{/RED_FLAGS_CRITICAL}}
 
 ### Warning (Address Before GA)
 
 | Flag | Severity | Location | Action |
 |------|----------|----------|--------|
+<!-- markdownlint-disable-next-line MD055 -->
 {{#RED_FLAGS_WARNING}}
 | `{{FLAG_ID}}` | WARNING | `{{FLAG_LOC}}` | `{{FLAG_ACTION}}` |
+<!-- markdownlint-disable-next-line MD055 -->
 {{/RED_FLAGS_WARNING}}
 
 ### Red Flag Triggers
@@ -210,8 +214,10 @@ TOTAL SQS:                                              {{SQS_SCORE}}/100
 
 | Date | CQS | SQS | Plan | Tasks | Impl |
 |------|-----|-----|------|-------|------|
+<!-- markdownlint-disable-next-line MD055 -->
 {{#HISTORY}}
 | `{{DATE}}` | `{{H_CQS}}` | `{{H_SQS}}` | `{{H_PLAN}}` | `{{H_TASKS}}` | `{{H_IMPL}}` |
+<!-- markdownlint-disable-next-line MD055 -->
 {{/HISTORY}}
 
 ### Improvement Velocity
