@@ -103,46 +103,95 @@ research_framework:
 
     - role: persona-researcher-ai
       model: opus-4.5
-      tools: [web_search, context7_docs]
+      tools: [web_search, context7_docs, review_analyzer, job_posting_parser, sentiment_analyzer]
       parallel: true
       priority: 1
+      data_sources:
+        b2b_reviews:
+          - platform: G2
+            search_query: "{{PRODUCT_CATEGORY}} reviews"
+            extract: [pain_points, feature_requests, ratings, quotes]
+          - platform: Capterra
+            search_query: "{{PRODUCT_CATEGORY}} software reviews"
+            extract: [pros, cons, ratings, company_size]
+          - platform: TrustRadius
+            search_query: "{{PRODUCT_CATEGORY}} reviews"
+            extract: [trueScore, pain_points, alternatives]
+        prosumer:
+          - platform: Reddit
+            subreddits: ["{{RELEVANT_SUBREDDIT}}", "SaaS", "startups", "Entrepreneur"]
+            extract: [complaints, recommendations, alternatives, upvote_counts]
+          - platform: HackerNews
+            search_query: "{{PRODUCT_CATEGORY}}"
+            extract: [discussions, pain_points, tool_mentions]
+        job_postings:
+          - platform: LinkedIn
+            search_query: "{{TARGET_ROLE}} job description 2025"
+            extract: [responsibilities, tools_used, kpis, salary_range]
+          - platform: Indeed
+            search_query: "{{TARGET_ROLE}}"
+            extract: [requirements, tech_stack, company_size]
+        industry_reports:
+          - sources: [Gartner, Forrester, McKinsey, IDC]
+            search_query: "{{MARKET}} market size 2025"
+            extract: [tam_estimates, growth_rates, buyer_segments, budget_data]
       outputs:
-        - persona_profiles
-        - jtbd_synthesis
+        - ai_synthesized_personas
+        - jtbd_with_evidence
         - pain_point_ranking
         - wtp_analysis
+        - evidence_citations
       prompt_template: |
-        ## Task: Persona & JTBD Research
+        ## Task: AI-Assisted Persona Synthesis
 
-        Research target users for: {{USER_INPUT}}
+        Synthesize data-validated personas for: {{USER_INPUT}}
+
+        ### Phase 1: Data Collection
+
+        1. **Review Mining** (G2, Capterra, Reddit):
+           - Search: "{{PRODUCT_CATEGORY}} reviews"
+           - Extract: pain points, feature requests, sentiment
+           - Count frequency of each pain point (frequency = severity)
+           - Capture direct quotes with source attribution [EV-XXX]
+
+        2. **Job Posting Analysis**:
+           - Search: "{{TARGET_ROLE}} job description 2025"
+           - Extract: responsibilities, required tools, KPIs
+           - Infer: tech comfort, decision authority, team size
+           - Capture 3+ job postings per persona segment
+
+        3. **Pricing Research**:
+           - Search: competitor pricing pages
+           - Extract: price points, tiers, enterprise vs SMB
+           - Infer: budget authority, WTP range
+           - Document: "We pay $X/mo for..." quotes from reviews
+
+        ### Phase 2: Persona Synthesis
+
+        For each persona (synthesize 2-4):
+        - Cluster similar pain points → persona segments
+        - Match job posting patterns → demographics
+        - Correlate pricing tolerance → WTP
+        - Validate: ≥3 evidence points per JTBD
+
+        ### Phase 3: Evidence Documentation
+
+        For EACH claim in persona output:
+        - Assign evidence ID: [EV-XXX]
+        - Record source: platform, URL, date
+        - Assign tier: VS/S/M/W/N based on source credibility
+        - Include direct quote or data point
 
         ### Required Outputs
 
-        1. **Persona Profiles** (≥2 distinct personas)
-           - Demographics and firmographics
-           - Current workflow / day in the life
-           - Tools currently used
-           - Decision-making authority
-
-        2. **JTBD Synthesis**
-           - Functional jobs (what they need to accomplish)
-           - Emotional jobs (how they want to feel)
-           - Social jobs (how they want to be perceived)
-           - Require ≥3 evidence points per JTBD
-
-        3. **Pain Point Ranking**
-           - Severity score (1-10)
-           - Frequency score (1-10)
-           - Current workarounds
-           - Willingness to switch
-
-        4. **Willingness to Pay Analysis**
-           - Budget authority
-           - Current spend on alternatives
-           - Price sensitivity indicators
+        1. **Persona Profiles**: Name, role, demographics, context
+        2. **JTBD with Evidence**: Each job linked to [EV-XXX] citations
+        3. **Pain Point Ranking**: Severity × Frequency matrix
+        4. **WTP Analysis**: Budget data, price sensitivity, switching costs
+        5. **Evidence Citations**: Full source list with URLs, dates, excerpts
 
         ### Output Format
-        Return structured JSON with evidence_links[] for each claim.
+        Return structured JSON with evidence_registry[] for automatic CQS integration.
 
     - role: trend-analyst-ai
       model: sonnet-4.5

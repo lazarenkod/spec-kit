@@ -110,3 +110,94 @@
 | [Persona 3] | [High/Med/Low] | [High/Med/Low] | [High/Med/Low] | [P0/P1/P2] |
 
 **Primary target**: [Persona name] — [Why they're the beachhead]
+
+---
+
+## AI-Assisted Persona Synthesis
+
+> **Purpose**: Generate data-validated personas from real user evidence, not PM intuition. Transform persona development from guesswork to systematic evidence collection.
+
+### Data Sources for AI Persona Generation
+
+| Source Type | Platforms | AI Task | Evidence Tier |
+|-------------|-----------|---------|:-------------:|
+| **Public Reviews** | G2, Capterra, TrustRadius (B2B) | Extract pain points, feature requests, sentiment | STRONG |
+| **App Reviews** | App Store, Google Play (B2C) | Extract UX frustrations, delight moments | STRONG |
+| **Community Discourse** | Reddit, HackerNews (Prosumer) | Identify repeated pain points (frequency = severity) | MEDIUM |
+| **Job Postings** | LinkedIn, Indeed | Extract responsibilities, required tools, KPIs | STRONG |
+| **Industry Reports** | Gartner, Forrester, McKinsey | Extract budget data, market segments, WTP | VERY_STRONG |
+| **Social Media** | LinkedIn, Twitter/X | Identify workflow pain, tool frustrations | MEDIUM |
+
+### AI Persona Synthesis Prompt
+
+Use this prompt with `persona-researcher-ai` for data-driven persona generation:
+
+```markdown
+## AI Persona Synthesis Task
+
+Based on research data from [DATA_SOURCES], synthesize 2-4 distinct user personas for [PRODUCT_CONCEPT].
+
+For each persona:
+
+1. **Demographics** (from job postings, industry reports):
+   - Job title, industry, company size
+   - Tech comfort level (infer from tools in job descriptions)
+   - Frequency of use (infer from problem severity in reviews)
+
+2. **Jobs-to-be-Done** (from reviews, forum discussions):
+   - Functional: Extract from "I wish I could..." statements
+   - Emotional: Extract from sentiment analysis of frustration/delight
+   - Social: Extract from status-signaling language in reviews
+   - **Require ≥3 evidence citations per JTBD**
+
+3. **Willingness-to-Pay** (from pricing data, budget reports):
+   - Current spend: Extract from "We pay $X/mo for [alternative]"
+   - Pain severity: Score 1-10 based on complaint frequency/intensity
+   - Switching cost: High if "locked in", Low if "easy to replace"
+
+4. **Success Criteria** (from KPIs in job postings, reviews):
+   - Must have: Features in >50% of positive reviews
+   - Nice to have: Features in 20-50% of reviews
+   - Deal breakers: Issues in >30% of negative reviews
+
+**Output**: JTBD-Enhanced persona profiles with [EV-XXX] source citations.
+```
+
+### Evidence Requirements per Persona
+
+| Element | Minimum Evidence | Tier Required | Points |
+|---------|------------------|:-------------:|:------:|
+| Demographics | ≥3 job postings analyzed | STRONG | 25 |
+| Functional JTBD | ≥5 review citations | STRONG | 25 |
+| Emotional JTBD | ≥3 sentiment examples | MEDIUM | 20 |
+| Social JTBD | ≥2 status-signaling quotes | MEDIUM | 15 |
+| WTP | Pricing data from ≥2 alternatives | STRONG | 25 |
+| Deal Breakers | ≥10 negative review patterns | STRONG | 20 |
+
+### Validation Layer
+
+Cross-reference AI-generated personas with:
+- [ ] Customer interviews (if available)
+- [ ] Sales team feedback
+- [ ] Support ticket analysis
+- [ ] Usage analytics (for existing products)
+
+### Persona Quality Gate
+
+| Persona Element | Evidence Status | Action |
+|-----------------|:---------------:|--------|
+| Demographics | ✅ VS/S | Proceed |
+| Demographics | ⚠️ M | Proceed with caution |
+| Demographics | ❌ W/N | Block — gather more evidence |
+| JTBD Functional | ✅ VS/S | Proceed |
+| JTBD Functional | ❌ M/W/N | Block — minimum STRONG required |
+| WTP | ✅ VS/S | Proceed |
+| WTP | ❌ M/W/N | Warn — conduct pricing research |
+
+---
+
+## Integration Notes
+
+- **CQS Impact**: Persona Depth component (15% weight) directly uses evidence tiers from this section
+- **Agent Dependency**: `persona-researcher-ai` populates evidence automatically
+- **JTBD Links**: Each feature should trace back to ≥1 JTBD (>80% coverage required for CQS transparency points)

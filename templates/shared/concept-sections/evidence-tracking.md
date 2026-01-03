@@ -157,3 +157,130 @@ When using research agents, evidence is automatically tracked:
 | trend-analyst-ai | Trend sources, timing signals | ✅ |
 
 Agent outputs include `evidence_links[]` array for automatic registry population.
+
+---
+
+## Automated Evidence Tier Assignment
+
+### Tier Assignment Rules
+
+```yaml
+tier_assignment:
+  rules:
+    # VERY_STRONG (VS) - 30 points
+    - condition: "source_type == 'primary_research' AND sample_size >= 10"
+      assign: VERY_STRONG
+      rationale: "First-party data with statistical significance"
+
+    - condition: "source_type IN ['gartner', 'forrester', 'mckinsey', 'idc'] AND age_days <= 365"
+      assign: VERY_STRONG
+      rationale: "Top-tier analyst firms with recent data"
+
+    # STRONG (S) - 25 points
+    - condition: "source_type IN ['g2', 'capterra', 'trustradius'] AND review_count >= 100"
+      assign: STRONG
+      rationale: "Aggregated user reviews with sufficient volume"
+
+    - condition: "source_type == 'job_posting' AND postings_analyzed >= 10"
+      assign: STRONG
+      rationale: "Pattern across multiple job descriptions"
+
+    - condition: "source_type IN ['sec_filing', '10k', 's1'] AND age_days <= 180"
+      assign: STRONG
+      rationale: "Official company filings, recent"
+
+    # MEDIUM (M) - 20 points
+    - condition: "source_type IN ['reddit', 'hackernews'] AND upvotes >= 50"
+      assign: MEDIUM
+      rationale: "Community-validated discussions"
+
+    - condition: "source_type == 'industry_report' AND age_days > 365"
+      assign: MEDIUM
+      rationale: "Analyst report with recency decay"
+
+    - condition: "source_type == 'expert_blog' AND citations >= 3"
+      assign: MEDIUM
+      rationale: "Expert content with references"
+
+    # WEAK (W) - 5 points
+    - condition: "source_type == 'expert_opinion'"
+      assign: WEAK
+      rationale: "Opinion without data backing"
+
+    - condition: "source_type IN ['reddit', 'hackernews'] AND upvotes < 50"
+      assign: WEAK
+      rationale: "Community discussion, low engagement"
+
+    - condition: "age_days > 730"  # >2 years
+      assign: WEAK
+      rationale: "Outdated regardless of source"
+
+    # NONE (N) - 0 points
+    - condition: "no_source OR source_type == 'assumption'"
+      assign: NONE
+      rationale: "Unsubstantiated claim"
+
+  recency_penalty:
+    - age_threshold: 365
+      penalty: -1  # tier levels
+      applies_to: [industry_report, review_platform]
+
+    - age_threshold: 180
+      penalty: -1
+      applies_to: [community_forum, company_filing]
+
+    - age_threshold: 90
+      penalty: -1
+      applies_to: [social_media]
+```
+
+### Evidence Quality Gate
+
+Block concept progression if critical claims lack sufficient evidence:
+
+| Component | Critical Claim | Minimum Tier | Action if Below |
+|-----------|----------------|:------------:|-----------------|
+| **Market** | TAM Calculation | STRONG | Block — gather 3+ sources |
+| **Market** | Competitive Matrix | STRONG | Block — analyze 3+ competitors |
+| **Persona** | Persona Definition | STRONG | Block — conduct interviews |
+| **Persona** | WTP Analysis | STRONG | Warn — recommend pricing research |
+| **Metrics** | North Star Metric | MEDIUM | Warn — find benchmarks |
+| **Features** | Golden Path | STRONG | Block — validate with users |
+| **Technical** | Domain Entities | MEDIUM | Warn — conduct architecture review |
+
+### Automated Tier Validation
+
+When evidence is submitted, automatically:
+
+1. **Parse Source Type**: Extract platform/source from URL or metadata
+2. **Calculate Age**: Days since publication/collection
+3. **Apply Rules**: Match against tier_assignment rules
+4. **Apply Penalties**: Reduce tier based on recency thresholds
+5. **Record Final Tier**: Store in Evidence Registry with full rationale
+
+### Evidence Tier Override
+
+Allow manual tier adjustment with justification:
+
+| ID | Auto Tier | Override Tier | Justification | Approved By |
+|:--:|:---------:|:-------------:|---------------|:-----------:|
+| EV-XXX | M | S | Primary source verified directly | [Name] |
+
+---
+
+## Integration with CQS-E
+
+The automated tier assignment directly feeds into CQS-E calculation:
+
+```
+Component_Score = Σ(Claim_Points × Tier_Multiplier)
+
+Where Tier_Multiplier:
+- VS: 1.0 (full points)
+- S: 0.85
+- M: 0.65
+- W: 0.20
+- N: 0.00
+```
+
+This ensures CQS cannot be inflated by checking boxes without real evidence.

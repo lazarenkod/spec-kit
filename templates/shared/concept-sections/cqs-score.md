@@ -78,6 +78,63 @@ Adjust CQS based on citation and evidence quality:
 | **Features** | Golden Path | Validated with ≥3 users | STRONG |
 | **Technical** | Domain Entities | Architecture review OR prototype | STRONG |
 
+---
+
+## Source Credibility Matrix
+
+Assign evidence tier based on source type and recency:
+
+| Source Type | Base Tier | Recency Adjustment | Final Tier |
+|-------------|:---------:|:------------------:|:----------:|
+| Primary research (n≥10) | VS | None | VS |
+| Industry report (Gartner, Forrester, IDC) | VS | -1 tier if >1 year old | S |
+| Official company data (10-K, S-1) | S | -1 tier if >6 months old | M |
+| Review platforms (G2, Capterra, TrustRadius) | S | -1 tier if >1 year old | M |
+| Community forums (Reddit, HN) | M | -1 tier if >6 months old | W |
+| Social media mentions | M | -1 tier if >3 months old | W |
+| Expert opinion (no data backing) | W | N/A | W |
+| PM assumption (no source) | N | N/A | N |
+
+### Recency Decay Formula
+
+```
+Tier_Final = Tier_Base - floor((Age_Days / Decay_Threshold_Days))
+
+Decay Thresholds:
+- Industry reports: 365 days
+- Review platforms: 365 days
+- Community forums: 180 days
+- Social media: 90 days
+- Company filings: 180 days
+```
+
+### Tier Decay Examples
+
+| Source | Age | Decay Threshold | Tiers Lost | Final Tier |
+|--------|:---:|:---------------:|:----------:|:----------:|
+| Gartner 2024 | 400 days | 365 | 1 | S → M |
+| G2 Review | 200 days | 365 | 0 | S → S |
+| Reddit Post | 200 days | 180 | 1 | M → W |
+
+### Conflict Detection Rules
+
+When multiple sources provide contradictory information:
+
+| Scenario | Resolution | Action |
+|----------|------------|--------|
+| Same tier, different values | Average values, note variance | Flag if variance >30% |
+| Higher tier vs lower tier | Use higher tier value | Note discrepancy in registry |
+| All sources weak/none | Mark claim as UNVALIDATED | Block if critical claim |
+| Conflicting qualitative claims | Document both perspectives | Require human resolution |
+
+**Conflict Registry**:
+
+| ID | Claims | Sources | Discrepancy | Resolution | Resolved By |
+|:--:|--------|---------|-------------|------------|:-----------:|
+| CF-001 | [Claim A vs B] | [EV-X vs EV-Y] | [% or description] | [How resolved] | AI/Human |
+
+---
+
 ### Evidence Gap Report
 
 | Component | Claim | Current | Required | Gap | Priority |

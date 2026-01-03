@@ -7,6 +7,43 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.72] - 2026-01-03
+
+### Added
+
+- **AI-Assisted Persona Synthesis & Evidence-Based CQS Enhancement v0.0.72**
+
+  - **Section 1.3: AI-Assisted Persona Synthesis** (from AI_CONCEPT_EVOLUTION_ANALYSIS.md)
+    - **Enhanced**: `templates/shared/concept-sections/persona-jtbd.md` (~90 lines added)
+      - Data Sources for AI Persona Generation table (G2, Capterra, Reddit, job postings, industry reports)
+      - AI Persona Synthesis Prompt Template with evidence citation requirements
+      - Evidence Requirements per Persona (demographics, JTBD, WTP, deal breakers)
+      - Persona Quality Gate with VS/S/M/W/N tier gating
+    - **Enhanced**: `templates/shared/concept-sections/research-agents.md` (~100 lines added)
+      - New tools: `review_analyzer`, `job_posting_parser`, `sentiment_analyzer`
+      - Multi-source `data_sources` configuration (b2b_reviews, prosumer, job_postings, industry_reports)
+      - 3-phase AI Synthesis workflow in prompt template
+      - Evidence documentation with [EV-XXX] citations
+
+  - **Section 2.1: Evidence-Based CQS (Assumptions → Evidence)** (from AI_CONCEPT_EVOLUTION_ANALYSIS.md)
+    - **Enhanced**: `templates/shared/concept-sections/cqs-score.md` (~60 lines added)
+      - Source Credibility Matrix (8 source types with base tiers)
+      - Recency Decay Formula with configurable thresholds
+      - Tier Decay Examples table
+      - Conflict Detection Rules with resolution strategies
+      - Conflict Registry template
+    - **Enhanced**: `templates/shared/concept-sections/evidence-tracking.md` (~130 lines added)
+      - Automated Evidence Tier Assignment with YAML rules
+      - Evidence Quality Gate (blocking/warning per component)
+      - Automated Tier Validation 5-step process
+      - Evidence Tier Override with justification tracking
+      - CQS-E Integration formula with tier multipliers
+
+### Changed
+
+- **CQS Inflation Prevention**: CQS can no longer be inflated by checking boxes without real evidence
+- **Persona Validation**: Minimum STRONG tier now required for demographics and functional JTBD
+
 ## [0.0.71] - 2026-01-02
 
 ### Added
