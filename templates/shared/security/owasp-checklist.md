@@ -1107,11 +1107,11 @@ networks:
 
 ## Additional Resources
 
-- **OWASP Top 10**: https://owasp.org/www-project-top-ten/
-- **OWASP Cheat Sheets**: https://cheatsheetseries.owasp.org/
-- **CWE Top 25**: https://cwe.mitre.org/top25/
-- **NIST Cybersecurity Framework**: https://www.nist.gov/cyberframework
-- **SANS Top 25**: https://www.sans.org/top25-software-errors/
+- **OWASP Top 10**: <https://owasp.org/www-project-top-ten/>
+- **OWASP Cheat Sheets**: <https://cheatsheetseries.owasp.org/>
+- **CWE Top 25**: <https://cwe.mitre.org/top25/>
+- **NIST Cybersecurity Framework**: <https://www.nist.gov/cyberframework>
+- **SANS Top 25**: <https://www.sans.org/top25-software-errors/>
 
 ---
 

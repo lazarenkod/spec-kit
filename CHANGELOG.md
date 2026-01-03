@@ -65,7 +65,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Vague term detection (prevents "fast", "secure" without quantification)
     - NFR scoring integration with weighted thresholds
 
-
 ## [0.0.73] - 2026-01-03
 
 ### Added
