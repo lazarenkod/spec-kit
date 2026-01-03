@@ -353,6 +353,104 @@
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]
 - **[Entity 2]**: [What it represents, relationships to other entities]
+---
+
+## Non-Functional Requirements *(mandatory)*
+
+<!--
+  ACTION REQUIRED: Define performance, security, and compliance requirements.
+  These are critical for architectural decisions and must be specified upfront.
+  Reference: memory/domains/security.md for Security by Design principles.
+-->
+
+### Performance Requirements
+
+| Endpoint/Operation | p99 Target | Critical Threshold | Notes |
+|--------------------|------------|-------------------|-------|
+| GET /api/v1/[resource] | < 200ms | < 500ms | Public read |
+| POST /api/v1/[resource] | < 1s | < 2s | Transactional write |
+| Background job [name] | < 30s | < 60s | Async processing |
+
+**Throughput Requirements**:
+- Peak RPS: [expected requests per second]
+- Concurrent users: [expected concurrent users]
+
+### Security Requirements
+
+<!--
+  Apply Security by Design principles (SBD-001 to SBD-005).
+  Use STRIDE threat modeling for critical features.
+  Reference: templates/shared/security/threat-model-template.md
+-->
+
+| Requirement ID | Description | Auth Required | Roles | Data Classification |
+|----------------|-------------|---------------|-------|---------------------|
+| SEC-[FEATURE]-001 | [Operation description] | Yes/No | [Roles] | [Classification] |
+| SEC-[FEATURE]-002 | [Operation description] | Yes/No | [Roles] | [Classification] |
+
+**Data Classification Legend** (per security.md):
+- **Public**: No restrictions
+- **Internal**: Company internal only
+- **Confidential**: Business-sensitive (PII, financial)
+- **Restricted**: Highly sensitive (credentials, keys)
+
+**OWASP Considerations** (check applicable):
+- [ ] A01: Broken Access Control - [mitigation approach]
+- [ ] A02: Cryptographic Failures - [mitigation approach]
+- [ ] A03: Injection - [mitigation approach]
+- [ ] A07: Authentication Failures - [mitigation approach]
+
+### Compliance Requirements
+
+- [ ] **PII Handling**: [describe what PII is collected, how it's protected]
+- [ ] **Audit Logging**: [what events must be logged, retention period]
+- [ ] **Data Retention**: [retention period, deletion policy]
+- [ ] **GDPR/CCPA**: [applicable regulations, consent requirements]
+- [ ] **Industry Standards**: [PCI-DSS, HIPAA, SOC2 if applicable]
+
+---
+
+## Events *(for event-driven features)*
+
+<!--
+  INCLUDE THIS SECTION when feature produces or consumes async events.
+  Document event schemas, producers, consumers for event-driven architecture.
+
+  Skip for:
+  - Synchronous-only features
+  - Features not participating in event bus
+-->
+
+### Events Produced
+
+| Event Name | Schema | Trigger | Consumers |
+|------------|--------|---------|-----------|
+| [Feature]Created | [Avro/JSON Schema link] | [When triggered] | [consumer-services] |
+| [Feature]Updated | [Schema link] | [When triggered] | [consumer-services] |
+
+### Events Consumed
+
+| Event Name | Schema | Producer | Handler |
+|------------|--------|----------|---------|
+| [Dependency]Completed | [Schema link] | [producer-service] | [Handler.method()] |
+
+### Event Schema Example
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "[EventName]",
+  "type": "object",
+  "required": ["id", "timestamp", "payload"],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "payload": { "type": "object" }
+  }
+}
+```
+
+---
 
 ## Technical Dependencies *(for features with external integrations)*
 

@@ -475,6 +475,140 @@ FEATURE_NEW_UI=false
 
 ---
 
+## Security Gates (QG-SEC-xxx)
+
+> **Security by Design** gates ensure security is embedded throughout the development lifecycle.
+> See `memory/domains/security.md` for full Security by Design framework.
+
+### QG-SEC-001: Threat Model Required
+
+**Level**: MUST (for Confidential+ data classification)
+**Applies to**: Features handling Confidential or Restricted data
+
+A threat model MUST be completed before implementation begins for features handling sensitive data.
+
+**Threshold**: `threat-model.md` exists with all STRIDE categories addressed
+
+**Implementation**:
+```bash
+# Check threat model exists
+ls .speckit/threat-model.md
+
+# Validate STRIDE coverage
+grep -c "### 4\.[1-6]" .speckit/threat-model.md  # Should return 6
+```
+
+**Validation**: Threat model file exists with complete STRIDE analysis
+**Violations**: CRITICAL - Unknown security risks will reach production
+
+---
+
+### QG-SEC-002: OWASP Top 10 Addressed
+
+**Level**: MUST
+**Applies to**: All web applications and APIs
+
+All applicable OWASP Top 10 vulnerabilities MUST have documented mitigations.
+
+**Threshold**: Security checklist 100% complete for applicable items
+
+**Implementation**:
+```bash
+# Check OWASP checklist completion
+grep -c "\[x\]" .speckit/security-checklist.md
+grep -c "\[ \]" .speckit/security-checklist.md  # Should be 0
+```
+
+**Validation**: All applicable OWASP checklist items marked complete
+**Violations**: CRITICAL - Known vulnerability patterns not addressed
+
+---
+
+### QG-SEC-003: Dependency Scan Clean
+
+**Level**: MUST
+**Applies to**: All projects with dependencies
+
+All dependencies MUST pass security vulnerability scan with no critical or high severity issues.
+
+**Threshold**: 0 critical/high vulnerabilities
+
+**Implementation**:
+```bash
+# Node.js
+npm audit --audit-level=high
+
+# Python
+pip-audit --strict
+
+# Go
+govulncheck ./...
+
+# Multi-language
+snyk test --severity-threshold=high
+```
+
+**Validation**: Security scanner exit code 0
+**Violations**: CRITICAL - Known vulnerable dependencies
+
+---
+
+### QG-SEC-004: Secret Scanning
+
+**Level**: MUST
+**Applies to**: All repositories
+
+Codebase MUST NOT contain hardcoded secrets, API keys, or credentials.
+
+**Threshold**: 0 secrets found in codebase
+
+**Implementation**:
+```bash
+# Gitleaks
+gitleaks detect --source . --verbose
+
+# TruffleHog
+trufflehog filesystem --directory=. --only-verified
+
+# GitHub (if using)
+gh secret scanning alerts list
+```
+
+**Validation**: Secret scanner reports 0 findings
+**Violations**: CRITICAL - Credentials exposed in version control
+
+---
+
+### QG-SEC-005: Security Testing
+
+**Level**: SHOULD
+**Applies to**: Features with authentication or authorization
+
+Security-critical flows SHOULD have dedicated security tests.
+
+**Threshold**: Auth/authz tests exist and pass
+
+**Implementation**:
+```bash
+# Check for security tests
+find tests/ -name "*auth*" -o -name "*security*" | wc -l
+
+# Run security-focused tests
+npm test -- --grep "security\|auth"
+pytest -k "security or auth"
+```
+
+**Coverage Requirements**:
+- Authentication flows (login, logout, session)
+- Authorization checks (role-based access)
+- Input validation (injection prevention)
+- Rate limiting behavior
+
+**Validation**: Security tests exist and pass
+**Violations**: MEDIUM - Untested security controls
+
+---
+
 ## Gate Enforcement Matrix
 
 | Gate | Phase | Level | Threshold | Validation Command | Severity |
@@ -491,6 +625,11 @@ FEATURE_NEW_UI=false
 | QG-010 | Pre-Deploy | MUST | 100% pass | `npm test` | CRITICAL |
 | QG-011 | Pre-Deploy | MUST | 0 found | grep patterns | HIGH |
 | QG-012 | Pre-Deploy | MUST | 100% | env coverage script | HIGH |
+| QG-SEC-001 | Pre-Implement | MUST | threat-model.md | STRIDE coverage check | CRITICAL |
+| QG-SEC-002 | Pre-Implement | MUST | 100% checklist | OWASP checklist | CRITICAL |
+| QG-SEC-003 | Pre-Deploy | MUST | 0 critical/high | `npm audit` / `pip-audit` | CRITICAL |
+| QG-SEC-004 | Pre-Deploy | MUST | 0 secrets | `gitleaks` / `trufflehog` | CRITICAL |
+| QG-SEC-005 | Post-Implement | SHOULD | tests exist | security test grep | MEDIUM |
 
 ---
 
@@ -498,12 +637,13 @@ FEATURE_NEW_UI=false
 
 | Type | Count |
 |------|-------|
-| Pre-Implement Gates | 3 |
-| Post-Implement Gates | 6 |
-| Pre-Deploy Gates | 3 |
-| **Total QG Principles** | **12** |
-| MUST level | 9 |
-| SHOULD level | 3 |
+| Pre-Implement Gates | 5 |
+| Post-Implement Gates | 7 |
+| Pre-Deploy Gates | 5 |
+| Security Gates | 5 |
+| **Total QG Principles** | **17** |
+| MUST level | 13 |
+| SHOULD level | 4 |
 
 ---
 

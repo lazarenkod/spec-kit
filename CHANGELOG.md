@@ -7,6 +7,53 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.74] - 2026-01-03
+
+### Added
+
+- **Security by Design Framework v0.0.74** — Enterprise-grade security embedded into every spec phase
+
+  - **New**: `memory/domains/security.md` (~420 lines)
+    - 5 Core Security Principles (SBD-001 to SBD-005): Least Privilege, Defense in Depth, Secure Defaults, Minimize Attack Surface, Complete Mediation
+    - OWASP Top 10 (2021) mapping with prevention patterns and requirement templates
+    - Data Classification framework (Public → Internal → Confidential → Restricted)
+    - Authentication patterns: Session-based, JWT, API Keys with secure code examples
+    - Authorization patterns: RBAC and ABAC with policy definitions
+    - Encryption standards: AES-256-GCM, Argon2id, Ed25519, TLS 1.3
+
+  - **New**: `templates/shared/security/threat-model-template.md` (~305 lines)
+    - STRIDE-based threat analysis (Spoofing, Tampering, Repudiation, Info Disclosure, DoS, Elevation)
+    - Asset inventory with data classification
+    - Trust boundary identification with validation requirements
+    - DREAD risk scoring (Damage, Reproducibility, Exploitability, Affected Users, Discoverability)
+    - Security requirements derivation from threats (SEC-xxx requirement IDs)
+    - Residual risk documentation
+
+  - **New**: `templates/shared/security/owasp-checklist.md` (~600 lines)
+    - 100 security checklist items (SEC-001 to SEC-100)
+    - Covers all OWASP Top 10 categories with actionable checks
+    - Python, JavaScript, YAML code examples for secure implementations
+    - Priority levels and automation hints
+
+  - **Enhanced**: `memory/domains/quality-gates.md` (+50 lines)
+    - New Security Gates section (QG-SEC-001 to QG-SEC-005)
+    - QG-SEC-001: Threat Model Required (MUST) — STRIDE coverage before implementation
+    - QG-SEC-002: OWASP Checklist Passed (MUST) — 100% security checklist compliance
+    - QG-SEC-003: Dependency Vulnerability Scan (MUST) — Zero critical/high CVEs
+    - QG-SEC-004: Secret Scanning (MUST) — No hardcoded secrets
+    - QG-SEC-005: Security Tests Exist (SHOULD) — Auth, authz, input validation tests
+    - Updated enforcement matrix and summary (17 total gates, 13 MUST level)
+
+  - **Enhanced**: `templates/spec-template.md` (+95 lines)
+    - New **Non-Functional Requirements** section (mandatory)
+      - Performance Requirements with p99 targets and thresholds
+      - Security Requirements with data classification and OWASP considerations
+      - Compliance Requirements (PII, Audit, Retention, GDPR/CCPA, Industry Standards)
+    - New **Events** section (for event-driven features)
+      - Events Produced/Consumed tables with schema links
+      - Event Schema Example (JSON Schema format)
+
+
 ## [0.0.73] - 2026-01-03
 
 ### Added
