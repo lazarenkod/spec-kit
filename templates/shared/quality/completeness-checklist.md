@@ -28,6 +28,108 @@ Prevent incomplete specifications that miss critical aspects:
 
 ---
 
+## NFR Requirements Validation
+
+### Mandatory NFR Categories
+
+Every specification MUST include at least 3 NFRs with proper ID format:
+
+| Category | ID Prefix | Required | Example |
+|----------|-----------|:--------:|---------|
+| Performance | NFR-PERF- | ✅ MUST | NFR-PERF-001: API response <200ms p95 |
+| Security | NFR-SEC- | ✅ MUST | NFR-SEC-001: TLS 1.3 required |
+| Reliability | NFR-REL- | ✅ MUST | NFR-REL-001: 99.9% availability |
+| Scalability | NFR-SCAL- | Optional | NFR-SCAL-001: Horizontal scaling |
+| Observability | NFR-OBS- | Optional | NFR-OBS-001: Structured logging |
+| Accessibility | NFR-A11Y- | Optional | NFR-A11Y-001: WCAG 2.1 AA |
+| Compliance | NFR-CMP- | Optional | NFR-CMP-001: GDPR data retention |
+| Maintainability | NFR-MNT- | Optional | NFR-MNT-001: 80% code coverage |
+
+### NFR Check Algorithm
+
+```text
+CHECK_NFR_REQUIREMENTS(spec):
+
+  gaps = []
+
+  # Check for NFR section existence
+  IF NOT HAS_SECTION(spec, "Non-Functional Requirements"):
+    gaps.append({
+      category: "NFR_STRUCTURE",
+      missing_aspect: "No NFR section found",
+      explanation: "Specification MUST include Non-Functional Requirements section",
+      severity: "CRITICAL",
+      suggested_requirement: "Add NFR section with NFR-PERF-*, NFR-SEC-*, NFR-REL-* requirements"
+    })
+    RETURN gaps
+
+  nfr_section = GET_SECTION(spec, "Non-Functional Requirements")
+  nfr_ids = EXTRACT_IDS(nfr_section, pattern="NFR-[A-Z]+-\\d{3}")
+
+  # Check mandatory categories
+  MANDATORY_CATEGORIES = ["PERF", "SEC", "REL"]
+
+  FOR category IN MANDATORY_CATEGORIES:
+    pattern = "NFR-{category}-"
+    IF NOT ANY(id.startswith(pattern) FOR id IN nfr_ids):
+      gaps.append({
+        category: "NFR_MANDATORY",
+        missing_aspect: "Missing NFR-{category}-* requirement",
+        explanation: "{category} is mandatory for all specifications",
+        severity: "CRITICAL",
+        suggested_requirement: "Add at least one NFR-{category}-xxx requirement"
+      })
+
+  # Check minimum NFR count
+  IF len(nfr_ids) < 3:
+    gaps.append({
+      category: "NFR_COUNT",
+      missing_aspect: "Insufficient NFR count",
+      explanation: "Found {len(nfr_ids)} NFRs, minimum 3 required",
+      severity: "HIGH",
+      suggested_requirement: "Add NFRs to reach minimum of 3"
+    })
+
+  # Check NFR → AS traceability
+  FOR nfr_id IN nfr_ids:
+    as_pattern = "AS-{nfr_id.replace('NFR-', 'NFR-')}"
+    IF NOT HAS_ACCEPTANCE_SCENARIO(spec, nfr_id):
+      gaps.append({
+        category: "NFR_TRACEABILITY",
+        missing_aspect: "NFR without acceptance scenario",
+        explanation: "{nfr_id} has no linked AS-NFR-* scenario",
+        severity: "MEDIUM",
+        suggested_requirement: "Add acceptance scenario for {nfr_id}"
+      })
+
+  # Check for quantified metrics (no vague terms)
+  VAGUE_TERMS = ["fast", "quick", "good", "reasonable", "adequate", "secure", "reliable"]
+  nfr_text = nfr_section.lower()
+
+  FOR term IN VAGUE_TERMS:
+    IF term IN nfr_text AND NOT FOLLOWED_BY_NUMBER(nfr_text, term):
+      gaps.append({
+        category: "NFR_QUANTIFICATION",
+        missing_aspect: "Vague NFR term: '{term}'",
+        explanation: "NFRs must have quantified metrics, not vague descriptions",
+        severity: "HIGH",
+        suggested_requirement: "Replace '{term}' with specific metric (e.g., '<200ms p95')"
+      })
+
+  RETURN gaps
+```
+
+### NFR Scoring Integration
+
+| Check | Weight | Threshold |
+|-------|--------|-----------|
+| NFR section exists | 0.30 | MUST have section |
+| 3 mandatory categories | 0.40 | PERF + SEC + REL required |
+| NFR → AS traceability | 0.20 | Each NFR has AS-NFR-* |
+| Quantified metrics | 0.10 | No vague terms |
+
+---
+
 ## Error Handling Completeness
 
 ### Check Algorithm

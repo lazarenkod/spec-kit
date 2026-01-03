@@ -53,6 +53,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       - Events Produced/Consumed tables with schema links
       - Event Schema Example (JSON Schema format)
 
+  - **Enhanced**: `templates/shared/quality/sqs-rubric.md` — NFR ID enforcement
+    - CM-02 checkpoint now requires NFR-xxx IDs (NFR-PERF-*, NFR-SEC-*, NFR-REL-* mandatory)
+    - Updated completeness indicators with NFR category requirements
+
+  - **Enhanced**: `templates/shared/quality/completeness-checklist.md` (+90 lines)
+    - New **NFR Requirements Validation** section
+    - 8 NFR category prefixes defined (PERF, SEC, REL, SCAL, OBS, A11Y, CMP, MNT)
+    - CHECK_NFR_REQUIREMENTS algorithm for automated validation
+    - NFR → AS traceability checks
+    - Vague term detection (prevents "fast", "secure" without quantification)
+    - NFR scoring integration with weighted thresholds
+
 
 ## [0.0.73] - 2026-01-03
 

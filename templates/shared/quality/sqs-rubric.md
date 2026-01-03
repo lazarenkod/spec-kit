@@ -62,7 +62,7 @@ The Specification Quality Score (SQS) measures specification readiness for imple
 | ID | Checkpoint | Points | Scoring Guidance |
 |----|------------|--------|------------------|
 | CM-01 | **Functional Requirements Documented** | 5 | All user-facing functionality has corresponding FR-XXX entries |
-| CM-02 | **Non-Functional Requirements Specified** | 5 | Performance, security, reliability, scalability NFRs defined |
+| CM-02 | **Non-Functional Requirements Specified** | 5 | ≥3 NFRs with NFR-xxx IDs (MUST include: NFR-PERF-*, NFR-SEC-*, NFR-REL-*) |
 | CM-03 | **Edge Cases Listed** | 5 | Boundary conditions, empty states, maximum limits addressed |
 | CM-04 | **Dependencies Mapped** | 5 | External services, libraries, APIs explicitly listed with versions |
 | CM-05 | **Security Covered** | 5 | Authentication, authorization, data protection requirements specified |
@@ -80,7 +80,7 @@ The Specification Quality Score (SQS) measures specification readiness for imple
 | Indicator | Expected |
 |-----------|----------|
 | FR count | ≥5 for non-trivial features |
-| NFR count | ≥3 (performance, security, reliability minimum) |
+| NFR count | ≥3 mandatory (NFR-PERF-*, NFR-SEC-*, NFR-REL-*) + optional categories |
 | Edge cases | ≥3 per major flow |
 | Dependencies | All external systems listed |
 

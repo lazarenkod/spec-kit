@@ -294,6 +294,96 @@
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
+### Non-Functional Requirements *(mandatory)*
+
+<!--
+  NFRs define HOW the system should perform, not WHAT it does.
+  Every spec MUST include at least 3 NFRs covering:
+  - Performance (NFR-PERF-xxx)
+  - Security (NFR-SEC-xxx)
+  - Reliability (NFR-REL-xxx)
+
+  Additional categories (use as needed):
+  - Scalability (NFR-SCAL-xxx)
+  - Observability (NFR-OBS-xxx)
+  - Accessibility (NFR-A11Y-xxx)
+  - Compliance (NFR-CMP-xxx)
+  - Maintainability (NFR-MNT-xxx)
+
+  NFR ID Format: NFR-[CATEGORY]-[NUMBER]
+  Each NFR should have:
+  - Quantified metric (not "fast" but "<200ms p95")
+  - Measurement method
+  - Acceptance threshold
+-->
+
+#### Performance Requirements
+
+- **NFR-PERF-001**: API response time MUST be <[X]ms p95 under normal load
+  - *Measurement*: APM/Load testing
+  - *Threshold*: p95 < [X]ms, p99 < [Y]ms
+  - *Acceptance Scenarios*: AS-NFR-001
+
+- **NFR-PERF-002**: System MUST handle [X] concurrent users without degradation
+  - *Measurement*: Load testing with [tool]
+  - *Threshold*: [X] users with <5% error rate
+  - *Acceptance Scenarios*: AS-NFR-002
+
+#### Security Requirements
+
+- **NFR-SEC-001**: All data in transit MUST use TLS 1.3
+  - *Measurement*: SSL Labs scan
+  - *Threshold*: Grade A+
+  - *Acceptance Scenarios*: AS-NFR-003
+
+- **NFR-SEC-002**: Authentication tokens MUST expire within [X] hours
+  - *Measurement*: Security audit
+  - *Threshold*: Token TTL ≤ [X]h, refresh token ≤ [Y]d
+  - *Acceptance Scenarios*: AS-NFR-004
+
+#### Reliability Requirements
+
+- **NFR-REL-001**: System availability MUST be ≥[X]% ([N] nines)
+  - *Measurement*: Uptime monitoring
+  - *Threshold*: Monthly uptime ≥ [X]%
+  - *Acceptance Scenarios*: AS-NFR-005
+
+- **NFR-REL-002**: System MUST recover from failures within [RTO]
+  - *Measurement*: Chaos engineering / DR drill
+  - *Threshold*: RTO ≤ [X] minutes
+  - *Acceptance Scenarios*: AS-NFR-006
+
+#### [Optional: Additional NFR Categories]
+
+<!--
+  Add sections as needed:
+  - Scalability: horizontal/vertical scaling requirements
+  - Observability: logging, metrics, tracing requirements
+  - Accessibility: WCAG compliance level
+  - Compliance: regulatory requirements (GDPR, SOC2, etc.)
+  - Maintainability: code coverage, documentation requirements
+-->
+
+### NFR Acceptance Scenarios
+
+<!--
+  NFRs need acceptance scenarios just like FRs.
+  These scenarios are typically validated through:
+  - Load testing
+  - Security scanning
+  - Chaos engineering
+  - Compliance audits
+-->
+
+| ID | NFR | Given | When | Then | Validation Method |
+|----|-----|-------|------|------|-------------------|
+| AS-NFR-001 | NFR-PERF-001 | System under normal load | API request sent | Response in <[X]ms p95 | Load test |
+| AS-NFR-002 | NFR-PERF-002 | [X] concurrent users | All users perform actions | Error rate <5% | Load test |
+| AS-NFR-003 | NFR-SEC-001 | HTTPS connection attempted | TLS handshake | TLS 1.3, Grade A+ | SSL Labs |
+| AS-NFR-004 | NFR-SEC-002 | Valid auth token issued | [X] hours elapsed | Token expired | Security audit |
+| AS-NFR-005 | NFR-REL-001 | System running for 30 days | Uptime calculated | Availability ≥[X]% | Monitoring |
+| AS-NFR-006 | NFR-REL-002 | System component failed | Recovery initiated | Service restored within RTO | DR drill |
+
 ### Visual & Interaction Requirements *(for UI features)*
 
 <!--
