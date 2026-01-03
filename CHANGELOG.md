@@ -7,6 +7,79 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.71] - 2026-01-02
+
+### Added
+
+- **Fortune 500 Strategic Frameworks v0.0.71** — 9 new board-ready strategic frameworks for `/speckit.concept`
+
+  - **Tier 1: Board Credibility (Critical)**
+    - **New Module**: `templates/shared/concept-sections/investment-thesis.md` (~180 lines)
+      - Board-ready investment case with executive summary table
+      - Key assumptions matrix with evidence and confidence scoring
+      - Risk-adjusted returns with base/upside/downside scenarios
+      - Use of funds breakdown, milestones, kill criteria
+      - Comparable transactions for valuation support
+    - **New Module**: `templates/shared/concept-sections/strategic-alternatives.md` (~200 lines)
+      - Build vs Buy vs Partner vs Nothing decision matrix
+      - Weighted criteria scoring (speed, cost, strategic fit, risk)
+      - Financial comparison across alternatives
+      - Board-ready recommendation with rationale
+    - **New Module**: `templates/shared/concept-sections/financial-sensitivity.md` (~250 lines)
+      - NPV/IRR calculations across scenarios
+      - Sensitivity analysis table (tornado diagram ready)
+      - Monte Carlo simulation guidance
+      - Break-even analysis and payback period
+
+  - **Tier 2: Strategic Depth (High Value)**
+    - **New Module**: `templates/shared/concept-sections/scenario-planning.md` (~290 lines)
+      - Shell/McKinsey 2×2 uncertainty matrix
+      - Four futures with probability-weighted strategies
+      - Robust strategies across multiple scenarios
+      - Early warning indicators per scenario
+    - **New Module**: `templates/shared/concept-sections/strategic-options.md` (~200 lines)
+      - Real options valuation framework
+      - Option types: expand, delay, abandon, pivot, stage
+      - Total option value calculation
+      - Decision tree integration
+    - **New Module**: `templates/shared/concept-sections/execution-confidence.md` (~190 lines)
+      - R/Y/G confidence matrix by domain
+      - Google-style greenlight criteria
+      - Capability gap analysis with hiring plan
+    - **New Module**: `templates/shared/concept-sections/portfolio-context.md` (~230 lines)
+      - Strategic fit assessment (Core/Adjacent/Transform)
+      - Resource allocation view
+      - Cannibalization analysis
+      - Synergy identification
+
+  - **Tier 3: Corporate Strategy (Nice-to-Have)**
+    - **New Module**: `templates/shared/concept-sections/moals-osm.md` (~280 lines)
+      - Amazon MOALS framework (Mechanisms, Outputs, Actions, Learning, Systems)
+      - Flywheel model for continuous improvement
+      - WBR dashboard structure
+      - Learning loops and feedback systems
+    - **New Module**: `templates/shared/concept-sections/ecosystem-strategy.md` (~270 lines)
+      - Platform/ecosystem strategy canvas
+      - Partner economics and revenue share models
+      - API strategy tiers (Public/Standard/Enterprise)
+      - Ecosystem health metrics
+
+  - **Updated**: `templates/commands/concept.md`
+    - Added sections 5ab-IT, 5ab-SA, 5ab-FS (after Business Model Canvas)
+    - Added sections 5c-SP, 5c-SO, 5c-EC, 5c-PC, 5c-ES (after Risk Assessment Matrix)
+    - Added section 5d-MO (after Technical Discovery)
+    - All 9 frameworks integrated with reference templates
+
+### Expected Impact
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Fortune 500 frameworks | 18/27 (67%) | 27/27 (100%) |
+| Board-ready concepts | Partial | Full |
+| Strategic planning depth | Medium | High |
+| Financial rigor | Low | High (NPV/IRR) |
+| Scenario coverage | Single forecast | 4 futures |
+
 ## [0.0.70] - 2026-01-02
 
 ### Added

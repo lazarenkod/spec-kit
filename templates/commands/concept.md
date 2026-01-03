@@ -1079,6 +1079,104 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Reference template**: `templates/shared/concept-sections/business-model-canvas.md`
 
+5ab-IT. **Investment Thesis (Board-Ready)** — NEW:
+
+   Articulate a compelling, evidence-based investment case for executives and investors:
+
+   ```markdown
+   ## Investment Thesis
+
+   ### Executive Summary
+   | Element | Description |
+   |---------|-------------|
+   | **Opportunity** | [Market opportunity size in $ — reference TAM/SAM/SOM] |
+   | **Solution** | [One-sentence description of what we're building] |
+   | **Moat** | [Sustainable competitive advantage — why we win] |
+   | **Ask** | [Investment required: $X over Y months] |
+   | **Return** | [Expected ROI / multiples / payback period] |
+
+   ### Key Assumptions
+   | Assumption | Evidence | Confidence | Sensitivity |
+   |------------|----------|:----------:|:-----------:|
+   | [Market size] | [Source] | H/M/L | High/Med/Low |
+   | [Growth rate] | [Source] | H/M/L | High/Med/Low |
+
+   ### Risk-Adjusted Returns
+   | Scenario | Probability | Revenue Y3 | NPV | Key Drivers |
+   |----------|:-----------:|:----------:|:---:|-------------|
+   | Upside | [X]% | $[X]M | $[X]M | [Key assumption exceeds] |
+   | Base | [X]% | $[X]M | $[X]M | [Plan execution] |
+   | Downside | [X]% | $[X]M | $[X]M | [Key risk materializes] |
+   ```
+
+   **Purpose**: This is the "one-pager" that answers "Why should we invest?"
+   **Minimum requirement**: Executive summary table + 3 scenarios + 5 key assumptions.
+
+   **Reference template**: `templates/shared/concept-sections/investment-thesis.md`
+
+5ab-SA. **Strategic Alternatives Analysis (Build/Buy/Partner)** — NEW:
+
+   Evaluate all options before committing to "Build":
+
+   ```markdown
+   ## Strategic Alternatives
+
+   ### Options Comparison
+   | Option | Description | Pros | Cons | Est. Cost | Time |
+   |--------|-------------|------|------|:---------:|:----:|
+   | **BUILD** | Internal development | Control, IP | Time, risk | $[X] | [X]mo |
+   | **BUY** | Acquire capability | Speed | Integration | $[X] | [X]mo |
+   | **PARTNER** | Strategic alliance | Speed, low cost | Dependency | $[X] | [X]mo |
+   | **NOTHING** | Status quo | No cost | Opportunity cost | $0 | — |
+
+   ### Weighted Decision Matrix
+   | Criterion | Weight | BUILD | BUY | PARTNER | NOTHING |
+   |-----------|:------:|:-----:|:---:|:-------:|:-------:|
+   | Speed to market | 25% | 2 | 4 | 3 | 1 |
+   | Strategic fit | 30% | 5 | 3 | 3 | 1 |
+   | Total cost | 20% | 2 | 1 | 4 | 5 |
+   | Risk | 25% | 2 | 2 | 3 | 4 |
+   | **SCORE** | 100% | [X] | [X] | [X] | [X] |
+
+   **Recommendation**: [Option] because [rationale]
+   ```
+
+   **Purpose**: Justify "Build" decision to board — show alternatives were considered.
+
+   **Reference template**: `templates/shared/concept-sections/strategic-alternatives.md`
+
+5ab-FS. **Financial Sensitivity Analysis** — NEW:
+
+   Stress-test financial assumptions with NPV/IRR calculations:
+
+   ```markdown
+   ## Financial Sensitivity
+
+   ### NPV Calculation
+   | Scenario | Revenue Y1 | Revenue Y3 | NPV | IRR |
+   |----------|:----------:|:----------:|:---:|:---:|
+   | Base | $[X] | $[X] | $[X] | [X]% |
+   | Optimistic (+20%) | $[X] | $[X] | $[X] | [X]% |
+   | Pessimistic (-20%) | $[X] | $[X] | $[X] | [X]% |
+
+   ### Sensitivity Table (NPV impact)
+   | Variable | -20% | -10% | Base | +10% | +20% |
+   |----------|:----:|:----:|:----:|:----:|:----:|
+   | Market size | ($X) | ($X) | $X | $X | $X |
+   | Conversion rate | ($X) | ($X) | $X | $X | $X |
+   | ARPU | ($X) | ($X) | $X | $X | $X |
+   | CAC | ($X) | ($X) | $X | $X | $X |
+
+   ### Break-Even Analysis
+   - Units to break even: [X]
+   - Revenue to break even: $[X]
+   - Months to break even: [X]
+   ```
+
+   **Purpose**: Identify which assumptions have highest impact on returns.
+
+   **Reference template**: `templates/shared/concept-sections/financial-sensitivity.md`
+
 5b. **Extract UX Foundation Layer**:
 
    Generate foundation features based on detected project type.
@@ -1178,6 +1276,157 @@ This command captures the **complete vision and scope** of a service/product BEF
    **Minimum requirement**: At least 3 risks with mitigations documented.
 
    **Reference template**: `templates/shared/concept-sections/risk-matrix.md`
+
+5c-SP. **Scenario Planning (Shell/McKinsey 2×2)** — NEW:
+
+   Map possible futures to build robust strategies:
+
+   ```markdown
+   ## Scenario Planning Matrix
+
+   ### Uncertainty Axes
+   - **X-axis**: [Key uncertainty 1, e.g., Market growth: Slow ↔ Fast]
+   - **Y-axis**: [Key uncertainty 2, e.g., Competition: Fragmented ↔ Consolidated]
+
+   ### Four Futures
+   | Scenario | Quadrant | Probability | Strategy | Early Warning |
+   |----------|----------|:-----------:|----------|---------------|
+   | **Best Case** | Fast + Fragmented | [X]% | Aggressive expansion | [Signal] |
+   | **Niche Win** | Slow + Fragmented | [X]% | Deep specialization | [Signal] |
+   | **Race** | Fast + Consolidated | [X]% | Speed + partnerships | [Signal] |
+   | **Survival** | Slow + Consolidated | [X]% | Efficiency, pivots | [Signal] |
+
+   ### Robust Strategies
+   [Strategies that work across 3+ scenarios]
+   ```
+
+   **Purpose**: Prepare for multiple futures instead of betting on one forecast.
+
+   **Reference template**: `templates/shared/concept-sections/scenario-planning.md`
+
+5c-SO. **Strategic Options Valuation (Real Options)** — NEW:
+
+   Value flexibility and optionality in the investment:
+
+   ```markdown
+   ## Strategic Options
+
+   ### Option Inventory
+   | Option Type | Description | Trigger | Value | Cost to Maintain |
+   |-------------|-------------|---------|:-----:|:----------------:|
+   | **Expand** | Scale to new markets | Revenue > $X | $[X]M | $[X]K/yr |
+   | **Delay** | Wait for market clarity | If uncertainty > Y | $[X]M | Opportunity cost |
+   | **Abandon** | Exit gracefully | If loss > $X | $[X]M | Sunk costs only |
+   | **Pivot** | Change direction | If hypothesis invalid | $[X]M | $[X]K/yr |
+   | **Stage** | Phased investment | Each milestone | $[X]M | Minimal |
+
+   ### Total Option Value
+   NPV of base case: $[X]M
+   + Value of options: $[X]M
+   = **Total project value**: $[X]M
+   ```
+
+   **Purpose**: Justify "Build" over "Buy" by quantifying flexibility value.
+
+   **Reference template**: `templates/shared/concept-sections/strategic-options.md`
+
+5c-EC. **Execution Confidence Matrix** — NEW:
+
+   Assess organizational readiness to execute:
+
+   ```markdown
+   ## Execution Confidence Assessment
+
+   ### Confidence by Domain
+   | Domain | Score | Evidence | Key Risks |
+   |--------|:-----:|----------|-----------|
+   | **Technology** | 🟢/🟡/🔴 | [Track record] | [Gap] |
+   | **Go-to-Market** | 🟢/🟡/🔴 | [Experience] | [Gap] |
+   | **Operations** | 🟢/🟡/🔴 | [Capacity] | [Gap] |
+   | **Team** | 🟢/🟡/🔴 | [Skills match] | [Gap] |
+   | **Capital** | 🟢/🟡/🔴 | [Runway] | [Gap] |
+
+   ### Greenlight Criteria (Google-style)
+   - [ ] Tech lead assigned with relevant experience
+   - [ ] Prototype validates core assumption
+   - [ ] GTM channel identified and tested
+   - [ ] 12-month runway secured
+   - [ ] Team alignment confirmed (>80% buy-in)
+
+   **Overall Confidence**: 🟢 HIGH | 🟡 MEDIUM | 🔴 LOW
+   ```
+
+   **Purpose**: Surface capability gaps before committing resources.
+
+   **Reference template**: `templates/shared/concept-sections/execution-confidence.md`
+
+5c-PC. **Portfolio Context** — NEW:
+
+   Position this concept within the broader investment portfolio:
+
+   ```markdown
+   ## Portfolio Positioning
+
+   ### Strategic Fit
+   | Dimension | Assessment |
+   |-----------|------------|
+   | **Core vs Adjacent vs Transform** | [Category] |
+   | **Horizon** | H1 (0-12mo) / H2 (12-24mo) / H3 (24+mo) |
+   | **Investment Theme** | [Which strategic priority this serves] |
+
+   ### Resource Allocation
+   | Resource | This Concept | Portfolio Total | % of Total |
+   |----------|:------------:|:---------------:|:----------:|
+   | Budget | $[X]M | $[X]M | [X]% |
+   | Headcount | [N] FTE | [N] FTE | [X]% |
+   | Exec Attention | [H/M/L] | — | — |
+
+   ### Cannibalization Analysis
+   | Existing Product | Impact | Mitigation |
+   |------------------|:------:|------------|
+   | [Product A] | -[X]% revenue | [Strategy] |
+
+   ### Synergies
+   | With Product | Synergy Type | Value |
+   |--------------|--------------|:-----:|
+   | [Product B] | Shared infrastructure | $[X]K/yr saved |
+   ```
+
+   **Purpose**: Enable portfolio-level capital allocation decisions.
+
+   **Reference template**: `templates/shared/concept-sections/portfolio-context.md`
+
+5c-ES. **Ecosystem Strategy Canvas** — NEW:
+
+   Map platform/partnership strategy for network effects:
+
+   ```markdown
+   ## Ecosystem Strategy
+
+   ### Ecosystem Map
+   | Role | Players | Value Exchange | Our Strategy |
+   |------|---------|----------------|--------------|
+   | **Core Platform** | [Us] | [Value delivered] | [Build/Operate] |
+   | **Complementors** | [Partners] | [Value exchange] | [Enable/Integrate] |
+   | **Customers** | [Segments] | [Value received] | [Acquire/Retain] |
+   | **Suppliers** | [Vendors] | [Inputs] | [Contract/Partner] |
+
+   ### Partner Economics
+   | Partner Type | Revenue Share | Integration Cost | Break-Even |
+   |--------------|:-------------:|:----------------:|:----------:|
+   | [Type A] | [X]% | $[X]K | [X] months |
+
+   ### API Strategy
+   | API Tier | Access | Pricing | Purpose |
+   |----------|--------|:-------:|---------|
+   | Public | Open | Free | Adoption |
+   | Standard | Registered | $[X]/mo | Monetization |
+   | Enterprise | Contracted | Custom | Strategic |
+   ```
+
+   **Purpose**: Design for network effects and platform dynamics.
+
+   **Reference template**: `templates/shared/concept-sections/ecosystem-strategy.md`
 
 5c-HTL. **Hypothesis Testing Log (OpenAI-Style)** — NEW:
 
@@ -1312,6 +1561,50 @@ This command captures the **complete vision and scope** of a service/product BEF
    **Purpose**: Identify potential blockers and architectural decisions before specification.
 
    **Reference template**: `templates/shared/concept-sections/technical-hints.md`
+
+5d-MO. **MOALS/OSM Framework (Amazon Operating Model)** — NEW:
+
+   Define operational mechanisms for sustainable execution:
+
+   ```markdown
+   ## Amazon MOALS Framework
+
+   ### Mechanisms (Self-Reinforcing Systems)
+   | Mechanism | Description | Owner | Cadence |
+   |-----------|-------------|:-----:|:-------:|
+   | [Weekly Business Review] | Review metrics, identify issues | [Role] | Weekly |
+   | [Customer Obsession Review] | Review customer feedback trends | [Role] | Bi-weekly |
+   | [Operational Excellence Review] | Process improvements | [Role] | Monthly |
+
+   ### Outputs (Observable Results)
+   | Output | Metric | Current | Target | Owner |
+   |--------|--------|:-------:|:------:|:-----:|
+   | [Customer Satisfaction] | NPS | [X] | [X] | [Role] |
+   | [Operational Efficiency] | [Metric] | [X] | [X] | [Role] |
+
+   ### Actions (Daily Operations)
+   | Action | Trigger | SLA | Escalation |
+   |--------|---------|:---:|------------|
+   | [Customer inquiry response] | Inbound ticket | <4h | Manager at 6h |
+   | [Incident triage] | Alert fired | <15m | On-call chain |
+
+   ### Learning Systems (Flywheel)
+   | Flywheel Component | Input | Output | Metric |
+   |--------------------|-------|--------|--------|
+   | [Customer Feedback] | Surveys, tickets | Product improvements | Time-to-fix |
+   | [A/B Testing] | Experiment ideas | Validated learnings | Win rate |
+
+   ### Systems (Infrastructure)
+   | System | Purpose | Owner | Health Check |
+   |--------|---------|:-----:|--------------|
+   | [Monitoring] | Observability | [Team] | [Dashboard] |
+   | [Data Pipeline] | Analytics | [Team] | [Dashboard] |
+   ```
+
+   **Purpose**: Build sustainable operational excellence from day one.
+   **Origin**: Amazon's internal operating system that powers 6-pagers and WBRs.
+
+   **Reference template**: `templates/shared/concept-sections/moals-osm.md`
 
 6. **Build Feature Hierarchy**:
 
