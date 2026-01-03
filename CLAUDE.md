@@ -97,24 +97,54 @@ See `AGENTS.md` for detailed integration guide.
 
 ## Spec-Driven Development Workflow
 
-The toolkit implements a workflow where AI agents use slash commands:
+The toolkit implements a workflow where AI agents use slash commands.
 
-1. `/speckit.constitution` - Establish project principles
-2. `/speckit.concept` - Strategic product discovery & validation (for large projects, 50+ requirements)
-3. `/speckit.specify` - Create feature specification (what & why, not how)
-4. `/speckit.clarify` - Clarify ambiguous requirements (optional)
-5. `/speckit.plan` - Create technical implementation plan
-6. `/speckit.tasks` - Generate actionable task breakdown
-7. `/speckit.analyze` - Cross-artifact consistency check (optional)
-8. `/speckit.implement` - Execute implementation
+### Core Workflow (Primary Commands)
 
-**Concept Phase (Step 2)**: For larger projects, the concept phase captures the complete product vision with:
+| Phase | Command | Description |
+|-------|---------|-------------|
+| 1. Foundation | `/speckit.constitution` | Establish project principles and coding standards |
+| 2. Discovery | `/speckit.concept` | Strategic product discovery & validation (50+ requirements) |
+| 3. Validation | `/speckit.validate-concept` | Re-validate concept against current market conditions |
+| 4. Specification | `/speckit.specify` | Create feature specification (what & why, not how) |
+| 5. Clarification | `/speckit.clarify` | Clarify ambiguous requirements (optional) |
+| 6. Planning | `/speckit.plan` | Create technical implementation plan |
+| 7. Task Breakdown | `/speckit.tasks` | Generate actionable task breakdown |
+| 8. Quality Check | `/speckit.analyze` | Cross-artifact consistency check (optional) |
+| 9. Implementation | `/speckit.implement` | Execute implementation with self-healing |
+
+### Supporting Commands
+
+| Command | Description |
+|---------|-------------|
+| `/speckit.baseline` | Capture current state for brownfield projects |
+| `/speckit.checklist` | Generate custom checklist for current feature |
+| `/speckit.design` | Create visual specifications and design systems |
+| `/speckit.discover` | Run discovery experiments and validation |
+| `/speckit.extend` | Extend a merged feature with new capabilities |
+| `/speckit.integrate` | Integration and deployment planning |
+| `/speckit.launch` | Launch preparation and go-to-market |
+| `/speckit.list` | List all features with current status |
+| `/speckit.merge` | Finalize feature and update system specs after PR merge |
+| `/speckit.monitor` | Set up monitoring and observability |
+| `/speckit.preview` | Generate interactive previews from design specs |
+| `/speckit.ship` | Provision infrastructure and deploy |
+| `/speckit.switch` | Switch to a different feature branch |
+| `/speckit.taskstoissues` | Convert tasks to GitHub issues |
+
+### Quality Scores
+
+| Score | Full Name | Purpose |
+|-------|-----------|---------|
+| **CQS** | Concept Quality Score | Quality gate for concept readiness (0-120, threshold ≥80) |
+| **SQS** | Specification Quality Score | Quality gate for spec readiness (0-100, threshold ≥80) |
+
+**Concept Phase**: For larger projects, the concept phase captures complete product vision with:
 - TAM/SAM/SOM market sizing and competitive positioning
 - JTBD-enhanced personas with willingness-to-pay analysis
 - SMART-validated success metrics with North Star metric
 - Risk assessment matrix with pivot criteria
 - Technical discovery hints (domain entities, API surface)
-- **Concept Quality Score (CQS)**: Quality gate ensuring concept readiness before specification
 
 Templates in `templates/commands/` define these slash command behaviors.
 Modular concept sections in `templates/shared/concept-sections/` provide reusable frameworks.
