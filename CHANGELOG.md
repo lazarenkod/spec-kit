@@ -65,6 +65,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Vague term detection (prevents "fast", "secure" without quantification)
     - NFR scoring integration with weighted thresholds
 
+- **Architecture Decision Records (ADR) Integration** — Automatic ADR generation in /speckit.plan workflow
+
+  - **Enhanced**: `templates/plan-template.md` (+90 lines)
+    - New **Architecture Decisions** section with lightweight ADR format
+    - ADR-xxx identifier assignment for traceability
+    - Linked Requirements (FR-xxx, NFR-xxx) for bidirectional tracing
+    - ADR Summary table with status, impact, requirements columns
+    - Decision Patterns and Requirement Coverage tracking
+    - Integration with `specs/[feature]/adrs/` directory structure
+
+  - **Enhanced**: `templates/commands/plan.md` (+60 lines)
+    - New **ADR Generation Protocol** in Phase 0
+    - Automatic ADR identifier assignment logic
+    - Threshold detection for full ADR file creation (≥2 alternatives, High impact)
+    - Full ADR file generation for complex decisions
+    - ADR index (README.md) generation in adrs/ directory
+    - Three new self-review criteria: SR-PLAN-11 (ADR Coverage), SR-PLAN-12 (ADR Traceability), SR-PLAN-13 (Full ADR Files)
+    - Updated CRITERIA_SET to SR-PLAN-01 through SR-PLAN-13
+
+  - **Enhanced**: `memory/knowledge/templates/adr-template.md` (+10 lines)
+    - New **Linked Requirements** field in header metadata
+    - Bidirectional traceability: ADR → FR-xxx/NFR-xxx
+    - Example ADR updated with requirement references
+
 ## [0.0.73] - 2026-01-03
 
 ### Added

@@ -16,6 +16,10 @@
 
 **Technical Area**: [Infrastructure | Data | Security | API | Frontend | Backend | DevOps | Integration]
 
+**Linked Requirements**:
+- **Functional**: FR-xxx, FR-yyy — [How this decision satisfies them]
+- **Non-Functional**: NFR-xxx — [How this decision achieves them]
+
 ---
 
 ## Context
@@ -213,6 +217,10 @@
 **Decision Makers**: Platform Team, Security Lead
 
 **Technical Area**: Infrastructure
+
+**Linked Requirements**:
+- **Functional**: FR-012 (API Gateway), FR-015 (Auth centralization)
+- **Non-Functional**: NFR-PERF-003 (< 5ms latency), NFR-SEC-001 (Centralized auth)
 
 ---
 

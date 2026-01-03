@@ -306,26 +306,82 @@ For each technology decision in Technical Context:
    - Score against: Team expertise, Maintenance cost, Scalability, Time to implement
    - Document decision and alternatives in research.md
 
-3. **Decision Documentation Format**:
-   ```markdown
-   ## [Decision Area]: [Choice]
+3. **ADR Generation Protocol**:
 
-   **Recommendation**: [Chosen technology/approach]
+   FOR EACH significant decision:
 
-   **Why this approach**:
-   1. [Reason tied to project requirements]
-   2. [Reason tied to team capabilities]
-   3. [Reason tied to constraints]
+   ```text
+   # Step 1: Assign ADR identifier
+   ADR_NUMBER = next sequential number (ADR-001, ADR-002, etc.)
+   ADR_SLUG = slugify(decision_title)  # e.g., "database-selection"
 
-   **Alternatives considered**:
-   - Option A: [Why not — specific disqualifier]
-   - Option B: [Why not — specific disqualifier]
+   # Step 2: Link to requirements
+   LINKED_REQUIREMENTS = extract FR-xxx and NFR-xxx that drive this decision
+   IMPACT = assess_impact(decision)  # High | Medium | Low
 
-   **Reversibility**: [High/Medium/Low]
-   **Lock-in risk**: [What's committed vs changeable]
+   # Step 3: Determine if full ADR file needed
+   CREATE_FULL_ADR = (
+     alternatives_count >= 2 OR
+     IMPACT == "High" OR
+     trade_offs are non-trivial
+   )
    ```
 
-1. **Extract unknowns from Technical Context** above:
+4. **ADR Documentation Format** (inline in plan.md):
+   ```markdown
+   ### ADR-{NUMBER}: {Decision Title}
+
+   **Status**: Accepted
+   **Impact**: {High | Medium | Low}
+   **Linked Requirements**: {FR-xxx, NFR-xxx}
+   **Decision Date**: {YYYY-MM-DD}
+
+   **Decision**:
+   {One clear sentence describing what was decided}
+
+   **Context**:
+   {2-3 sentences: What problem does this solve? What constraints exist?}
+
+   **Rationale**:
+   {2-4 sentences: Why this approach? What makes it the best option?}
+
+   **Alternatives Considered**:
+   - **Option A**: {description} — Rejected because {reason}
+   - **Option B**: {chosen} — Selected because {reason}
+
+   **Trade-offs**:
+   - ✅ **Pros**: {benefits}
+   - ❌ **Cons**: {drawbacks}
+   - ⚠️ **Risks**: {what could go wrong}
+
+   **Implementation Notes**:
+   {Guidance for developers}
+
+   **Full ADR**: {link to adrs/ADR-xxx-slug.md if CREATE_FULL_ADR}
+   ```
+
+5. **Full ADR File Generation** (when threshold met):
+   ```text
+   IF CREATE_FULL_ADR:
+     # Create adrs/ directory if not exists
+     mkdir -p specs/[feature]/adrs
+
+     # Generate full ADR using template
+     TEMPLATE = memory/knowledge/templates/adr-template.md
+     OUTPUT = specs/[feature]/adrs/ADR-{NUMBER}-{SLUG}.md
+
+     # Populate template with:
+     - Full context from research
+     - Complete alternatives analysis
+     - Detailed consequences (positive, negative, neutral)
+     - Implementation guidance
+     - Linked requirements section
+
+     # Update ADR index
+     UPDATE specs/[feature]/adrs/README.md with new entry
+   ```
+
+6. **Extract unknowns from Technical Context** above:
    - For each NEEDS CLARIFICATION → research task
    - For each dependency → best practices task
    - For each integration → patterns task
@@ -344,7 +400,11 @@ For each technology decision in Technical Context:
    - Rationale: [why chosen]
    - Alternatives considered: [what else evaluated]
 
-**Output**: research.md with all NEEDS CLARIFICATION resolved
+**Output**:
+- `research.md` with all NEEDS CLARIFICATION resolved
+- `plan.md` Architecture Decisions section populated with inline ADRs
+- `specs/[feature]/adrs/ADR-xxx-slug.md` files for complex decisions (if threshold met)
+- `specs/[feature]/adrs/README.md` ADR index (if any full ADRs generated)
 
 ### Phase 0.5: API Verification
 
@@ -480,7 +540,7 @@ Read `templates/shared/validation/checkpoints.md` for checkpoint definitions.
 SELF_REVIEW_INPUT:
   ARTIFACTS = [plan.md, research.md, data-model.md, contracts/*]
   COMPLEXITY_TIER = from step 0
-  CRITERIA_SET = SR-PLAN-01 to SR-PLAN-10
+  CRITERIA_SET = SR-PLAN-01 to SR-PLAN-13
 
 EXECUTE self-review framework with up to 3 iterations
 GENERATE Self-Review Report
@@ -512,6 +572,9 @@ Answer each question by validating against the artifacts:
 | SR-PLAN-08 | Architecture Defined | Architecture decisions documented with rationale | HIGH |
 | SR-PLAN-09 | Data Model Generated | data-model.md exists (if entities in spec) | MEDIUM |
 | SR-PLAN-10 | Contracts Generated | API contracts in /contracts/ (if API endpoints in spec) | MEDIUM |
+| SR-PLAN-11 | ADR Coverage | All significant decisions have ADR-xxx | HIGH |
+| SR-PLAN-12 | ADR Traceability | All ADRs linked to ≥1 requirement | MEDIUM |
+| SR-PLAN-13 | Full ADR Files | High-impact decisions have full ADR | MEDIUM |
 
 ### Step 3: Dependency Verification
 
