@@ -1006,3 +1006,90 @@
 |--------|-------|---------------------|----------------|--------|
 | MIG-001 | [phase] | T040, T041 | T045 | ❌ Not started |
 | MIG-002 | [phase] | T042 | T046 | ❌ Not started |
+
+---
+
+## Quality Checklist (SQS Self-Assessment) *(optional)*
+
+<!--
+  Optional self-assessment section to verify specification quality before implementation.
+  Complete this checklist to estimate your SQS (Specification Quality Score).
+
+  Target: SQS ≥ 80 (Ready for Implementation)
+
+  Full rubric: templates/shared/quality/sqs-rubric.md
+  Run `/speckit.analyze --profile sqs` for automated assessment.
+-->
+
+### Clarity (25 points)
+
+| ID | Checkpoint | Score | Notes |
+|----|------------|-------|-------|
+| CL-01 | RFC 2119 Keywords (SHALL/SHOULD/MAY) used consistently | __/5 | |
+| CL-02 | No vague terms ("fast", "easy", "user-friendly", "robust") | __/5 | |
+| CL-03 | Specific numbers for all quantities, limits, thresholds | __/5 | |
+| CL-04 | Measurable success criteria with specific targets | __/5 | |
+| CL-05 | Failure scenarios explicitly defined with expected behavior | __/5 | |
+| **Subtotal** | | **__/25** | |
+
+### Completeness (25 points)
+
+| ID | Checkpoint | Score | Notes |
+|----|------------|-------|-------|
+| CM-01 | All functional requirements documented (FR-XXX) | __/5 | |
+| CM-02 | Non-functional requirements specified (performance, security) | __/5 | |
+| CM-03 | Edge cases listed (boundaries, empty states, limits) | __/5 | |
+| CM-04 | Dependencies mapped (external services, libraries, APIs) | __/5 | |
+| CM-05 | Security requirements covered (auth, data protection) | __/5 | |
+| **Subtotal** | | **__/25** | |
+
+### Testability (25 points)
+
+| ID | Checkpoint | Score | Notes |
+|----|------------|-------|-------|
+| TS-01 | Each FR has acceptance criteria (AS-XXX) | __/5 | |
+| TS-02 | Scenarios are concrete (Given/When/Then with specific values) | __/5 | |
+| TS-03 | Performance metrics defined (response times, throughput) | __/5 | |
+| TS-04 | Error conditions covered with expected behavior | __/5 | |
+| TS-05 | Integration points specified (API contracts, data formats) | __/5 | |
+| **Subtotal** | | **__/25** | |
+
+### Traceability (15 points)
+
+| ID | Checkpoint | Score | Notes |
+|----|------------|-------|-------|
+| TR-01 | Unique IDs assigned to all requirements (FR, NFR, AS) | __/3 | |
+| TR-02 | Concept cross-references (links to personas, goals, metrics) | __/3 | |
+| TR-03 | Feature dependencies documented | __/3 | |
+| TR-04 | FR → AC → Test chain established | __/3 | |
+| TR-05 | No orphan requirements (all FRs have tasks, all ACs have tests) | __/3 | |
+| **Subtotal** | | **__/15** | |
+
+### No Ambiguity (10 points)
+
+| ID | Checkpoint | Score | Notes |
+|----|------------|-------|-------|
+| AM-01 | No hedge words ("might", "could", "possibly", "maybe") | __/2 | |
+| AM-02 | Domain terms defined in glossary | __/2 | |
+| AM-03 | All [NEEDS CLARIFICATION] markers resolved | __/2 | |
+| AM-04 | Scope explicit (in-scope and out-of-scope listed) | __/2 | |
+| AM-05 | Assumptions documented | __/2 | |
+| **Subtotal** | | **__/10** | |
+
+### SQS Summary
+
+```
+Clarity:      __/25
+Completeness: __/25
+Testability:  __/25
+Traceability: __/15
+No Ambiguity: __/10
+─────────────────
+TOTAL SQS:    __/100
+```
+
+**Status**: [ ] Ready (≥80) | [ ] Needs Work (60-79) | [ ] Block (<60)
+
+**Next Steps**:
+- If SQS < 80: Run `/speckit.clarify` to address gaps
+- If SQS ≥ 80: Proceed to `/speckit.plan`

@@ -15,7 +15,7 @@
 | **Pre-Implement Gate** | Validates spec/plan quality before code generation begins |
 | **Post-Implement Gate** | Validates code quality after implementation completes |
 | **Pre-Deploy Gate** | Validates production readiness before deployment |
-| **SQS** | Spec Quality Score (0-100) measuring specification completeness |
+| **SQS** | Spec Quality Score (0-100) measuring specification quality via 25-checkpoint rubric across 5 dimensions (Clarity, Completeness, Testability, Traceability, No Ambiguity). See [sqs-rubric.md](../../templates/shared/quality/sqs-rubric.md) |
 | **Coverage** | Percentage of code exercised by tests (line, branch, path) |
 | **Type Coverage** | Percentage of code with static type annotations |
 
@@ -84,17 +84,30 @@ Implementation MUST NOT begin until Spec Quality Score (SQS) reaches minimum thr
 
 **Threshold**: SQS >= 80
 
-**SQS Components**:
-- FR Coverage (30%): All functional requirements have mapped tasks
-- AS Coverage (30%): All acceptance scenarios have test mappings
-- Traceability (20%): Code files have `@speckit` annotations
-- Constitution Compliance (20%): No CRITICAL principle violations
+**SQS Rubric v2.0** (25 checkpoints across 5 dimensions):
+
+| Dimension | Points | Key Checkpoints |
+|-----------|--------|-----------------|
+| **Clarity** | 25 | RFC 2119 keywords, no vague terms, specific numbers, measurable success, defined failures |
+| **Completeness** | 25 | FRs documented, NFRs specified, edge cases, dependencies, security |
+| **Testability** | 25 | Each FR has AC, concrete scenarios, performance metrics, error conditions, integration points |
+| **Traceability** | 15 | Unique IDs, concept cross-refs, feature dependencies, FR→AC→Test chain, no orphans |
+| **No Ambiguity** | 10 | No hedge words, terms defined, clarifications resolved, scope explicit, assumptions documented |
+
+**Formula**: `SQS = Clarity + Completeness + Testability + Traceability + NoAmbiguity`
+
+**Full Rubric**: See [templates/shared/quality/sqs-rubric.md](../../templates/shared/quality/sqs-rubric.md)
 
 **Validation**:
 ```bash
 /speckit.analyze --profile sqs
-# Output: SQS: 85/100 (FR: 90%, AS: 80%, Trace: 85%, Const: 85%)
+# Output: SQS: 85/100 (Clarity: 22, Complete: 23, Test: 20, Trace: 12, Ambig: 8)
 ```
+
+**Thresholds**:
+- **≥80**: Ready for implementation
+- **60-79**: Needs improvement (run `/speckit.clarify`)
+- **<60**: Major rework required (block implementation)
 
 **Violations**: CRITICAL - Spec not ready, implementation will fail or drift
 

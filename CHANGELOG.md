@@ -7,6 +7,52 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.73] - 2026-01-03
+
+### Added
+
+- **SQS Formalization & Quality Dashboard v0.0.73** — Formal 25-checkpoint specification quality scoring and unified quality metrics dashboard
+
+  - **New**: `templates/shared/quality/sqs-rubric.md` (~275 lines)
+    - Formal definition of 25-checkpoint SQS rubric (replaces old 4-factor formula)
+    - 5 dimensions: Clarity (25pts), Completeness (25pts), Testability (25pts), Traceability (15pts), No Ambiguity (10pts)
+    - Scoring scales per checkpoint with clear pass/fail guidance
+    - Anti-patterns table (bad vs good examples)
+    - Evidence requirements by tier (Tier 1/2/3)
+    - SQS calculation worksheet template
+
+  - **New**: `templates/shared/quality/quality-dashboard.md` (~275 lines)
+    - Unified Quality Dashboard aggregating all phase metrics
+    - Executive summary with CQS, SQS, Plan, Tasks, Implementation scores
+    - CQS breakdown with evidence tier distribution
+    - SQS breakdown with 25-checkpoint visualization
+    - Plan quality and clarification status tracking
+    - INVEST compliance for tasks with size distribution
+    - Implementation quality gates status (QG-002 through QG-011)
+    - Red flags section with critical/warning severity triggers
+    - Trend analysis with historical score tracking
+    - Quick commands reference for `/speckit.analyze` profiles
+
+  - **Enhanced**: `memory/domains/quality-gates.md`
+    - Updated SQS definition in Key Concepts to reference new rubric
+    - QG-001 now uses 5-dimension rubric table with checkpoint details
+    - Added link to formal `sqs-rubric.md` for full scoring guidance
+
+  - **Enhanced**: `templates/metrics-report-template.md`
+    - Replaced old 4-factor SQS formula with 25-checkpoint rubric format
+    - Added checkpoint visualization grid `[CL01][CL02]...`
+    - Improved quality level table with threshold indicators
+
+  - **Enhanced**: `templates/commands/analyze.md`
+    - Added `quality_dashboard` profile for unified quality reporting
+    - Profile includes all validation passes and outputs to `quality-dashboard.md`
+    - Updated Available Profiles table
+
+  - **Enhanced**: `templates/spec-template.md`
+    - Added optional `## Quality Checklist (SQS Self-Assessment)` section
+    - Inline 25-checkpoint scoring tables for manual pre-implementation QA
+    - SQS summary block with status indicators
+
 ## [0.0.72] - 2026-01-03
 
 ### Added

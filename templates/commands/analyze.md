@@ -200,6 +200,41 @@ validation_profiles:
         severity: CRITICAL
     timeout_seconds: 300
     output_mode: detailed
+  quality_dashboard:
+    description: "Unified Quality Dashboard aggregating CQS, SQS, Plan, Tasks, and Implementation metrics"
+    passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q, R, S, T, U, Z]
+    gates:
+      cqs_threshold:
+        pass: A
+        threshold: 80
+        severity: HIGH
+        message: "CQS below 80 - concept needs validation"
+      sqs_threshold:
+        pass: Z
+        threshold: 80
+        severity: CRITICAL
+        message: "SQS below 80 - spec not ready for implementation"
+      plan_complete:
+        pass: F
+        threshold: 90
+        severity: HIGH
+        message: "Plan less than 90% complete"
+      tasks_invest:
+        pass: H
+        threshold: 95
+        severity: HIGH
+        message: "Tasks INVEST compliance below 95%"
+    timeout_seconds: 300
+    output_mode: detailed
+    output_template: "templates/shared/quality/quality-dashboard.md"
+    includes:
+      - cqs_breakdown
+      - sqs_rubric_v2
+      - plan_completeness
+      - tasks_invest_compliance
+      - implementation_gates
+      - red_flags
+      - recommendations
   pre_deploy:
     description: "Pre-deployment gates validation (QG-010 to QG-012)"
     passes: [R, T, U]
@@ -418,6 +453,7 @@ When `OUTPUT_MODE = compact`, generate a condensed validation summary:
 | `tasks_validate` | G, H, J | Pre-implement task validation | 30s |
 | `sqs` | E, H, D, Z | SQS validation (QG-001 pre-implement) | 60s |
 | `quality_gates` | D, E, G, H, R, S, T, U, Z | Full quality gates (QG-001 to QG-012) | 300s |
+| `quality_dashboard` | A-U, Z | Unified dashboard (CQS, SQS, Plan, Tasks, Impl) | 300s |
 | `pre_deploy` | R, T, U | Pre-deployment gates (QG-010 to QG-012) | 120s |
 | `full` | A-Q, Z | Complete pre-implementation analysis | 300s |
 | `qa` | A-Z | Post-implementation QA verification | 600s |

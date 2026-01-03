@@ -21,19 +21,30 @@
 
 ## 1. Spec Quality Score (SQS)
 
-### Score Breakdown
+### Score Breakdown (25-Checkpoint Rubric v2.0)
 
-```text
-SQS = (FR_Coverage × 0.3 + AS_Coverage × 0.3 + Traceability × 0.2 + Constitution_Compliance × 0.2) × 100
+**Formula**: `SQS = Clarity + Completeness + Testability + Traceability + NoAmbiguity`
+
+| Dimension | Score | Max | Key Checkpoints | Status |
+|-----------|-------|-----|-----------------|--------|
+| **Clarity** | {{SQS_CLARITY}} | 25 | RFC keywords, specificity, measurability | {{CLARITY_STATUS}} |
+| **Completeness** | {{SQS_COMPLETE}} | 25 | FRs, NFRs, edge cases, dependencies | {{COMPLETE_STATUS}} |
+| **Testability** | {{SQS_TEST}} | 25 | ACs, scenarios, performance metrics | {{TEST_STATUS}} |
+| **Traceability** | {{SQS_TRACE}} | 15 | IDs, cross-refs, FR→AC→Test chain | {{TRACE_STATUS}} |
+| **No Ambiguity** | {{SQS_AMBIG}} | 10 | No hedge words, terms defined, scope explicit | {{AMBIG_STATUS}} |
+| **SQS Total** | **{{SQS}}** | **100** | | **{{SQS_LEVEL}}** |
+
+### Checkpoint Details
+
+```
+Clarity:      [{{CL01}}][{{CL02}}][{{CL03}}][{{CL04}}][{{CL05}}] = {{SQS_CLARITY}}/25
+Completeness: [{{CM01}}][{{CM02}}][{{CM03}}][{{CM04}}][{{CM05}}] = {{SQS_COMPLETE}}/25
+Testability:  [{{TS01}}][{{TS02}}][{{TS03}}][{{TS04}}][{{TS05}}] = {{SQS_TEST}}/25
+Traceability: [{{TR01}}][{{TR02}}][{{TR03}}][{{TR04}}][{{TR05}}] = {{SQS_TRACE}}/15
+No Ambiguity: [{{AM01}}][{{AM02}}][{{AM03}}][{{AM04}}][{{AM05}}] = {{SQS_AMBIG}}/10
 ```
 
-| Component | Score | Weight | Weighted | Status |
-|-----------|-------|--------|----------|--------|
-| FR Coverage | {{FR_COVERAGE}}% | 0.3 | {{FR_WEIGHTED}} | {{FR_STATUS}} |
-| AS Coverage | {{AS_COVERAGE}}% | 0.3 | {{AS_WEIGHTED}} | {{AS_STATUS}} |
-| Traceability | {{TRACEABILITY}}% | 0.2 | {{TRACE_WEIGHTED}} | {{TRACE_STATUS}} |
-| Constitution Compliance | {{CONSTITUTION}}% | 0.2 | {{CONST_WEIGHTED}} | {{CONST_STATUS}} |
-| **SQS Total** | | **1.0** | **{{SQS}}** | **{{SQS_LEVEL}}** |
+**Full Rubric**: See [templates/shared/quality/sqs-rubric.md](../shared/quality/sqs-rubric.md)
 
 ### Quality Level
 
