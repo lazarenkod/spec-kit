@@ -11,6 +11,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Enterprise Constitution Presets v0.0.73** — Compliance, security, governance, and SLA configuration for enterprise-grade projects
+
+  - **Enhanced**: `memory/constitution.md` (+130 lines)
+    - New **Compliance Requirements** section — GDPR, SOC 2 Type II, HIPAA, PCI-DSS, ISO 27001, FedRAMP, CCPA checkboxes with certification tracking
+    - New **Security Standards** section — Authentication (OAuth2/OIDC), Authorization (RBAC/ABAC), Encryption (TLS 1.3, AES-256), Secrets Management, MFA, SSO configuration + Security Contacts table
+    - New **Approval Matrix** section — Decision authority (Architecture Board, Security Team, Data Team, API Guild), approval requirements, escalation paths + Escalation SLA by priority (P0-P3)
+    - New **Technology Radar** section — Adopt/Trial/Assess/Hold categorization for Languages, Frameworks, Databases, Infrastructure, Observability, Security + Radar Definitions + Technology Decisions Log
+    - New **SLA Targets** section — Availability (99.9%), RTO (4h), RPO (1h), MTTR, P99 Latency, Error Rate + SLA Tiers by Environment + Breach Escalation matrix
+
+  - **New**: `memory/domains/enterprise.md` (~180 lines)
+    - 6 strengthened base principles (SEC-001, SEC-002, OBS-001, OBS-002, CMP-001, DOC-001)
+    - ENT-001: Compliance-Driven Design (MUST) — Design with compliance from day one
+    - ENT-002: Approval Workflow Enforcement (MUST) — Formal approvals with audit trail
+    - ENT-003: Technology Governance (SHOULD) — Radar assessment before adoption
+    - ENT-004: SLA Monitoring (MUST) — Continuous monitoring with automated escalation
+    - ENT-005: Data Classification (MUST) — Public/Internal/Confidential/Restricted levels
+    - ENT-006: Vendor Risk Assessment (SHOULD) — Security assessment for third-party integrations
+    - Compliance Framework Integration matrix (GDPR, SOC 2, HIPAA, PCI-DSS, ISO 27001)
+    - Domain combination guide (Production, FinTech, Healthcare, SaaS)
+
 - **SQS Formalization & Quality Dashboard v0.0.73** — Formal 25-checkpoint specification quality scoring and unified quality metrics dashboard
 
   - **New**: `templates/shared/quality/sqs-rubric.md` (~275 lines)

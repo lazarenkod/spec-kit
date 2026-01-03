@@ -125,6 +125,137 @@ Use format: PRJ-001, PRJ-002, etc.
 
 ---
 
+## Compliance Requirements
+
+<!-- Mark applicable compliance frameworks. These drive security and audit requirements. -->
+
+| Framework | Required | Scope | Certification Date |
+|-----------|:--------:|-------|:------------------:|
+| **GDPR** | [ ] | EU personal data processing | [DATE] |
+| **SOC 2 Type II** | [ ] | Security, availability, confidentiality | [DATE] |
+| **HIPAA** | [ ] | Protected health information (PHI) | [DATE] |
+| **PCI-DSS** | [ ] | Payment card data | [DATE] |
+| **ISO 27001** | [ ] | Information security management | [DATE] |
+| **FedRAMP** | [ ] | US federal cloud services | [DATE] |
+| **CCPA** | [ ] | California consumer privacy | [DATE] |
+
+### Compliance Notes
+
+[Document compliance scope, DPO contact, audit schedule]
+
+---
+
+## Security Standards
+
+<!-- Define security implementation requirements -->
+
+| Category | Standard | Implementation |
+|----------|----------|----------------|
+| **Authentication** | OAuth2/OIDC | [Provider: Auth0/Cognito/Keycloak] |
+| **Authorization** | RBAC/ABAC | [Implementation notes] |
+| **Encryption (Transit)** | TLS 1.3 | [Certificate management] |
+| **Encryption (Rest)** | AES-256 | [Key management] |
+| **Secrets Management** | Vault/Secrets Manager | [Provider] |
+| **MFA** | Required/Optional | [Scope: admin/all users] |
+| **SSO** | SAML 2.0/OIDC | [Provider] |
+
+### Security Contacts
+
+| Role | Contact | Escalation |
+|------|---------|------------|
+| Security Lead | [Name] | [Email] |
+| DPO (Data Protection Officer) | [Name] | [Email] |
+| Incident Response | [Team] | [Pager] |
+
+---
+
+## Approval Matrix
+
+<!-- Define decision authority and escalation paths -->
+
+| Decision Type | Authority | Approval Required | Escalation |
+|---------------|-----------|:-----------------:|------------|
+| Architecture breaking changes | Architecture Board | Yes | CTO |
+| Security exceptions | Security Team | Yes | CISO |
+| Data model changes | Data Team | Yes | Data Architect |
+| API breaking changes | API Guild | Yes | Tech Lead |
+| Dependency major upgrades | Tech Lead | No | Architecture Board |
+| New external integrations | Security Team | Yes | CTO |
+| Production deployment | DevOps Lead | No | On-call Engineer |
+
+### Escalation SLA
+
+| Priority | Initial Response | Resolution |
+|----------|-----------------|------------|
+| P0 (Critical) | 15 minutes | 4 hours |
+| P1 (High) | 1 hour | 24 hours |
+| P2 (Medium) | 4 hours | 72 hours |
+| P3 (Low) | 24 hours | 1 week |
+
+---
+
+## Technology Radar
+
+<!-- Categorize technologies by adoption status. Review quarterly. -->
+
+| Category | Adopt | Trial | Assess | Hold |
+|----------|-------|-------|--------|------|
+| **Languages** | [Current stack] | [Evaluating] | [Watching] | [Deprecated] |
+| **Frameworks** | | | | |
+| **Databases** | | | | |
+| **Infrastructure** | | | | |
+| **Observability** | | | | |
+| **Security** | | | | |
+
+### Radar Definitions
+
+| Status | Meaning | Action |
+|--------|---------|--------|
+| **Adopt** | Production-ready, recommended | Use in new projects |
+| **Trial** | Proven in PoC, ready for production pilot | Use with monitoring |
+| **Assess** | Worth exploring, not production-ready | Research only |
+| **Hold** | Deprecated or problematic | Migrate away |
+
+### Technology Decisions Log
+
+| Date | Technology | From | To | Rationale |
+|------|------------|------|-----|-----------|
+| [DATE] | [Tech] | [Status] | [Status] | [Why] |
+
+---
+
+## SLA Targets
+
+<!-- Define service level objectives -->
+
+| Metric | Target | Critical Threshold | Measurement |
+|--------|:------:|:------------------:|-------------|
+| **Availability** | 99.9% | 99.5% | Uptime monitoring |
+| **RTO (Recovery Time)** | 4 hours | 8 hours | Disaster recovery drill |
+| **RPO (Recovery Point)** | 1 hour | 4 hours | Backup verification |
+| **MTTR (Mean Time to Repair)** | 30 minutes | 2 hours | Incident log |
+| **P99 Latency** | 500ms | 2s | APM |
+| **Error Rate** | < 0.1% | < 1% | Error tracking |
+
+### SLA Tiers by Environment
+
+| Environment | Availability | Support Hours | RTO |
+|-------------|:------------:|---------------|:---:|
+| Production | 99.9% | 24/7 | 4h |
+| Staging | 99% | Business hours | 24h |
+| Development | Best effort | Business hours | 72h |
+
+### SLA Breach Escalation
+
+| Breach Duration | Action | Notification |
+|-----------------|--------|--------------|
+| < 15 min | Automated alert | On-call engineer |
+| 15-60 min | Incident declared | Team lead |
+| > 60 min | War room | Director/VP |
+| > 4 hours | Executive escalation | CTO |
+
+---
+
 ## Design System Configuration
 
 <!--
