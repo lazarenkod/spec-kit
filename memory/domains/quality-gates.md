@@ -16,6 +16,7 @@
 | **Post-Implement Gate** | Validates code quality after implementation completes |
 | **Pre-Deploy Gate** | Validates production readiness before deployment |
 | **SQS** | Spec Quality Score (0-100) measuring specification quality via 25-checkpoint rubric across 5 dimensions (Clarity, Completeness, Testability, Traceability, No Ambiguity). See [sqs-rubric.md](../../templates/shared/quality/sqs-rubric.md) |
+| **DQS** | Design Quality Score (0-100) measuring design specification quality via 25-checkpoint rubric across 5 dimensions (Visual Hierarchy, Consistency, Accessibility, Responsiveness, Interaction Design). See [dqs-rubric.md](../../templates/shared/quality/dqs-rubric.md) |
 | **Coverage** | Percentage of code exercised by tests (line, branch, path) |
 | **Type Coverage** | Percentage of code with static type annotations |
 
@@ -70,6 +71,92 @@ These principles from `constitution.base.md` are elevated for quality-gated proj
 | QUA-004 | SHOULD | MUST | Formatter/linter MUST run in CI |
 | TST-001 | SHOULD | MUST | Tests MUST map to acceptance scenarios |
 | SEC-001 | MUST | MUST (scanned) | Secrets MUST be detected via automated scanning |
+
+---
+
+## Design Quality Gates (QG-DQS-xxx)
+
+> **Design Quality Score (DQS)** gates ensure design specifications meet quality standards before implementation.
+> See `templates/shared/quality/dqs-rubric.md` for full rubric.
+
+### QG-DQS-001: Minimum Design Quality Score
+
+**Level**: MUST (for UI-heavy features)
+**Applies to**: All `/speckit.implement` invocations with design.md artifacts
+
+Design implementation MUST NOT begin until Design Quality Score (DQS) reaches minimum threshold.
+
+**Threshold**: DQS >= 70
+
+**DQS Rubric v1.0** (25 checkpoints across 5 dimensions):
+
+| Dimension | Points | Key Checkpoints |
+|-----------|--------|-----------------|
+| **Visual Hierarchy** | 25 | Clear CTAs, heading levels, white space, visual weight, content scanning |
+| **Consistency** | 20 | Token usage, component reuse, naming conventions, interaction patterns, icon system |
+| **Accessibility** | 25 | Color contrast, touch targets, focus indicators, screen reader support, reduced motion |
+| **Responsiveness** | 15 | Breakpoints, layout adaptation, touch vs pointer, content priority, image optimization |
+| **Interaction Design** | 15 | State definitions, animation timing, loading states, error handling, success feedback |
+
+**Formula**: `DQS = VisualHierarchy + Consistency + Accessibility + Responsiveness + InteractionDesign`
+
+**Full Rubric**: See [templates/shared/quality/dqs-rubric.md](../../templates/shared/quality/dqs-rubric.md)
+
+**Validation**:
+```bash
+/speckit.analyze --profile dqs
+# Output: DQS: 85/100 (Visual: 22, Consist: 18, A11y: 23, Resp: 12, Interact: 10)
+```
+
+**Thresholds**:
+- **≥70**: Ready for implementation
+- **50-69**: Needs improvement (iterate on design)
+- **<50**: Major rework required (block implementation)
+
+**Violations**: HIGH - Design not ready, implementation will have UX issues
+
+---
+
+### QG-DQS-002: Accessibility Compliance
+
+**Level**: MUST
+**Applies to**: All UI features
+
+Design MUST pass accessibility dimension with minimum score.
+
+**Threshold**: Accessibility dimension >= 60% (15/25 points)
+
+**Key Checks**:
+- Color contrast ratios (4.5:1 text, 3:1 UI)
+- Touch targets (44×44px minimum)
+- Focus indicators defined
+- Screen reader support documented
+- Reduced motion alternatives
+
+**Validation**:
+```bash
+/speckit.analyze --profile dqs --dimension accessibility
+```
+
+**Violations**: CRITICAL - Accessibility barriers for users
+
+---
+
+### QG-DQS-003: WCAG Compliance
+
+**Level**: MUST
+**Applies to**: All public-facing web applications
+
+Design MUST have zero WCAG 2.1 AA violations in color contrast.
+
+**Threshold**: All text colors meet WCAG 2.1 AA contrast requirements
+
+**Validation**:
+- Normal text: >= 4.5:1 contrast ratio
+- Large text (18px+ or 14px+ bold): >= 3:1 contrast ratio
+- UI components: >= 3:1 contrast ratio
+
+**Violations**: CRITICAL - Legal compliance risk, accessibility barriers
 
 ---
 
@@ -613,6 +700,9 @@ pytest -k "security or auth"
 
 | Gate | Phase | Level | Threshold | Validation Command | Severity |
 |------|-------|-------|-----------|-------------------|----------|
+| QG-DQS-001 | Pre-Implement | MUST | DQS >= 70 | `/speckit.analyze --profile dqs` | HIGH |
+| QG-DQS-002 | Pre-Implement | MUST | A11y >= 60% | `/speckit.analyze --profile dqs --dimension accessibility` | CRITICAL |
+| QG-DQS-003 | Pre-Implement | MUST | WCAG AA | Contrast ratio validation | CRITICAL |
 | QG-001 | Pre-Implement | MUST | SQS >= 80 | `/speckit.analyze --profile sqs` | CRITICAL |
 | QG-002 | Pre-Implement | MUST | 0 critical | `npm audit --audit-level=high` | CRITICAL |
 | QG-003 | Pre-Implement | SHOULD | < 2 major | `npx npm-check-updates` | HIGH |
@@ -637,12 +727,13 @@ pytest -k "security or auth"
 
 | Type | Count |
 |------|-------|
+| Design Quality Gates | 3 |
 | Pre-Implement Gates | 5 |
 | Post-Implement Gates | 7 |
 | Pre-Deploy Gates | 5 |
 | Security Gates | 5 |
-| **Total QG Principles** | **17** |
-| MUST level | 13 |
+| **Total QG Principles** | **20** |
+| MUST level | 16 |
 | SHOULD level | 4 |
 
 ---

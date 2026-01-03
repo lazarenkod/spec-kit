@@ -569,11 +569,37 @@ All animations must respect `prefers-reduced-motion`:
 
 ---
 
+## Design Quality Score (DQS)
+
+<!--
+  DQS measures design specification readiness across 5 dimensions.
+  See templates/shared/quality/dqs-rubric.md for full 25-checkpoint rubric.
+  Threshold: ≥70 to proceed to implementation.
+-->
+
+**DQS Target**: ≥70/100
+
+| Dimension | Score | Max | Notes |
+|-----------|-------|-----|-------|
+| Visual Hierarchy | __/25 | 25 | VH-01 to VH-05 |
+| Consistency | __/20 | 20 | CN-01 to CN-05 |
+| Accessibility | __/25 | 25 | AC-01 to AC-05 |
+| Responsiveness | __/15 | 15 | RS-01 to RS-05 |
+| Interaction Design | __/15 | 15 | ID-01 to ID-05 |
+| **TOTAL** | **__/100** | 100 | |
+
+**Status**: [ ] Ready (≥70) | [ ] Needs Work (50-69) | [ ] Block (<50)
+
+**Validation**: Run `/speckit.analyze --profile dqs` for automated scoring.
+
+---
+
 ## Accessibility Checklist
 
 <!--
   Validate against target WCAG level.
   Check all items before marking design complete.
+  See templates/shared/a11y/wcag-21-aa-requirements.md for detailed requirements.
 -->
 
 **Target Level**: WCAG 2.1 [A / AA / AAA]
@@ -667,6 +693,9 @@ All animations must respect `prefers-reduced-motion`:
 
 <!--
   Ready-to-use CSS variables for implementation.
+  For multi-format export (CSS, Tailwind, JSON, Figma), see:
+  - templates/shared/token-export-formats.md
+  - templates/skills/token-management.md
 -->
 
 ```css

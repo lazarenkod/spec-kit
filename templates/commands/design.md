@@ -401,6 +401,12 @@ skills:
   - name: stitch-generation
     trigger: "When generating visual mockups from wireframes via Google Stitch"
     usage: "Read templates/skills/stitch-generation.md for standalone mockup generation"
+  - name: token-management
+    trigger: "When extracting, validating, or exporting design tokens"
+    usage: "Read templates/skills/token-management.md for token operations (/token extract, /token validate, /token export)"
+  - name: storybook-generation
+    trigger: "When generating Storybook stories from component specifications"
+    usage: "Read templates/skills/storybook-generation.md for CSF 3.0 story generation"
 design_system_generation:
   enabled: true
   trigger: "--design-system OR no spec file exists"
@@ -2290,43 +2296,44 @@ When spec file exists (default mode), create visual specs for the feature.
     ```text
     DQS = Design Quality Score (0-100)
 
-    CALCULATE scores:
+    READ templates/shared/quality/dqs-rubric.md for full rubric.
 
-    # Visual Quality (40 points)
-    visual_score = 0
-    visual_score += 10 IF all_colors_have_contrast_ratios
-    visual_score += 10 IF typography_scale_complete
-    visual_score += 10 IF spacing_system_consistent
-    visual_score += 10 IF color_palette_has_semantic_tokens
+    CALCULATE scores using 25-checkpoint rubric:
 
-    # Accessibility (30 points)
-    a11y_score = 0
-    a11y_score += 10 IF wcag_level_met (A=5, AA=10, AAA=10)
-    a11y_score += 10 IF all_components_have_aria_roles
-    a11y_score += 10 IF keyboard_nav_documented
+    # Visual Hierarchy (25 points)
+    vh_score = SUM(VH-01 to VH-05)  # Clear CTAs, headings, whitespace, balance, scanning
 
     # Consistency (20 points)
-    consistency_score = 0
-    consistency_score += 10 IF no_hardcoded_colors
-    consistency_score += 5 IF no_hardcoded_fonts
-    consistency_score += 5 IF component_library_used
+    cn_score = SUM(CN-01 to CN-05)  # Token usage, component reuse, naming, patterns, icons
 
-    # Implementation Readiness (10 points)
-    impl_score = 0
-    impl_score += 5 IF css_variables_defined
-    impl_score += 5 IF component_code_generated
+    # Accessibility (25 points)
+    ac_score = SUM(AC-01 to AC-05)  # Contrast, touch targets, focus, screen reader, motion
 
-    DQS = visual_score + a11y_score + consistency_score + impl_score
+    # Responsiveness (15 points)
+    rs_score = SUM(RS-01 to RS-05)  # Breakpoints, layout, touch/pointer, priority, images
+
+    # Interaction Design (15 points)
+    id_score = SUM(ID-01 to ID-05)  # States, timing, loading, errors, success
+
+    DQS = vh_score + cn_score + ac_score + rs_score + id_score
+
+    # Quality Gates (from memory/domains/quality-gates.md)
+    QG-DQS-001: DQS >= 70 (Ready for implementation)
+    QG-DQS-002: ac_score >= 15 (60% accessibility minimum)
+    QG-DQS-003: AC-01 = 5 (WCAG AA contrast compliance)
 
     # Interpret score
-    IF DQS >= 90:
-      STATUS = "✓ Production Ready"
-    ELIF DQS >= 80:
-      STATUS = "⚠️ Minor Polish Needed"
+    IF DQS >= 70:
+      STATUS = "✓ Ready for Implementation"
+    ELIF DQS >= 50:
+      STATUS = "⚠️ Needs Improvement"
+      TRIGGER iteration
     ELSE:
-      STATUS = "✗ Requires Iteration"
-      TRIGGER self-correction loop
+      STATUS = "✗ Major Rework Required"
+      BLOCK implementation
     ```
+
+    **A11y Validation**: Reference `templates/shared/a11y/wcag-21-aa-requirements.md` for detailed WCAG checklist.
 
 15. **DQS Report Generation**:
 

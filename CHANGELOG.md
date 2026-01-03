@@ -7,6 +7,68 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.75] - 2026-01-03
+
+### Added
+
+- **Design Quality Framework v0.0.75** — World-class design specification quality with automated validation
+
+  - **New**: `templates/shared/quality/dqs-rubric.md` (~290 lines)
+    - 25-checkpoint Design Quality Score (DQS) rubric across 5 dimensions
+    - Visual Hierarchy (25 pts): VH-01 to VH-05 — CTAs, headings, whitespace, visual weight, scanning
+    - Consistency (20 pts): CN-01 to CN-05 — Tokens, components, naming, interactions, icons
+    - Accessibility (25 pts): AC-01 to AC-05 — Contrast, touch targets, focus, screen reader, motion
+    - Responsiveness (15 pts): RS-01 to RS-05 — Breakpoints, layout, touch/pointer, priority, images
+    - Interaction Design (15 pts): ID-01 to ID-05 — States, timing, loading, errors, success
+    - Thresholds: ≥70 Ready, 50-69 Needs Work, <50 Block
+
+  - **New**: `templates/shared/a11y/wcag-21-aa-requirements.md` (~414 lines)
+    - Comprehensive WCAG 2.1 AA checklist for design specifications
+    - Color contrast requirements (4.5:1 text, 3:1 UI components)
+    - Touch target minimums (44×44px)
+    - Keyboard navigation and focus indicator requirements
+    - Screen reader support and ARIA patterns
+    - Reduced motion alternatives
+
+  - **New**: `templates/skills/token-management.md` (~319 lines)
+    - Design token extraction, validation, and multi-format export
+    - Commands: `/token extract`, `/token validate`, `/token export`
+    - Semantic naming patterns: `{category}-{property}-{variant}`
+    - Theme support (light/dark mode)
+    - Token validation rules and naming conventions
+
+  - **New**: `templates/skills/storybook-generation.md` (~352 lines)
+    - CSF 3.0 compliant Storybook story generation from component specs
+    - TypeScript-first with `satisfies Meta<typeof Component>` pattern
+    - Automatic story generation for all component variants
+    - Play functions for interaction testing
+    - Accessibility addon integration (a11y)
+    - Autodocs generation
+
+  - **New**: `templates/shared/token-export-formats.md` (~161 lines)
+    - Multi-format token export templates
+    - CSS Custom Properties with light/dark theme support
+    - Tailwind CSS configuration generation
+    - JSON (Style Dictionary compatible) format
+    - Figma Variables REST API format
+
+  - **Enhanced**: `memory/domains/quality-gates.md` (+40 lines)
+    - New Design Quality Gates section (QG-DQS-001 to QG-DQS-003)
+    - QG-DQS-001: Minimum Design Quality Score (MUST) — DQS ≥ 70
+    - QG-DQS-002: Accessibility Compliance (MUST) — A11y dimension ≥ 60%
+    - QG-DQS-003: WCAG Compliance (SHOULD) — All text meets contrast requirements
+    - Updated enforcement matrix and summary (20 total gates, 16 MUST level)
+
+  - **Enhanced**: `templates/commands/design.md` (+30 lines)
+    - New skills: token-management, storybook-generation
+    - Updated DQS Calculation section with rubric reference
+    - A11y validation reference to WCAG requirements file
+
+  - **Enhanced**: `templates/design-template.md` (+25 lines)
+    - New DQS section with dimension score table
+    - Token export format references
+    - A11y checklist reference to detailed requirements
+
 ## [0.0.74] - 2026-01-03
 
 ### Added
