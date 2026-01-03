@@ -6,6 +6,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Spec Kit** is a toolkit for Spec-Driven Development (SDD) - a methodology where specifications drive code generation rather than the reverse. The main deliverable is the **Specify CLI** (`specify`), a Python CLI tool that bootstraps projects with templates, scripts, and AI agent integrations.
 
+## Agent Execution Strategy
+
+**CRITICAL**: Always execute tasks using parallel agents by default.
+
+### Default Behavior
+
+When performing any task that involves multiple operations:
+1. **ALWAYS launch multiple Task agents in a single message** when operations are independent
+2. Use `subagent_type=Explore` for all codebase searches
+3. Use `subagent_type=general-purpose` for complex multi-step tasks
+4. Set `run_in_background: true` for long-running operations
+
+### Parallel Execution Patterns
+
+| Task Type | Approach |
+|-----------|----------|
+| Code search | Launch 3-5 `Explore` agents for different patterns |
+| File reads | Batch multiple Read calls in single message |
+| Research | Launch multiple `general-purpose` agents |
+| Code review | Launch security, quality, style agents simultaneously |
+| Implementation | Plan agent + Explore agents in parallel |
+
+### Examples
+
+```
+✅ CORRECT: Single message with multiple agents
+- Task #1: "Search for authentication patterns"
+- Task #2: "Search for authorization patterns"
+- Task #3: "Search for session management"
+
+❌ WRONG: Sequential one-by-one execution
+- Task #1 → wait → Task #2 → wait → Task #3
+```
+
+### Model Selection for Agents
+
+- `haiku` — Simple searches, quick lookups (fastest, cheapest)
+- `sonnet` — Standard analysis, code review (default)
+- `opus` — Complex architecture, critical decisions (highest quality)
+
 ## Common Commands
 
 ### Development
