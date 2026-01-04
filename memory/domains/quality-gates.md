@@ -723,6 +723,101 @@ pytest -k "security or auth"
 
 ---
 
+## Migration Gates (QG-MIG-xxx)
+
+> **Migration Quality Gates** ensure migration plans are safe and reversible before execution.
+> See `templates/commands/migrate.md` for migration planning command.
+
+### QG-MIG-001: Rollback Plan Required
+
+**Level**: MUST
+**Applies to**: All `/speckit.migrate` generated plans
+
+Every migration phase (MIG-xxx) MUST have a documented rollback strategy.
+
+**Threshold**: 100% of MIG-xxx phases have rollback procedures
+
+**Validation**:
+```bash
+/speckit.analyze --profile migration
+# Validates: Each MIG-xxx has rollback_strategy defined
+```
+
+**Rollback Types**:
+| Type | Duration | Use Case |
+|------|----------|----------|
+| IMMEDIATE | < 5 min | Config changes, feature flags |
+| GRADUAL | 10-30 min | Traffic shifting, API versioning |
+| FULL | 30-60 min | Data migrations, schema changes |
+
+**Violations**: CRITICAL - Migration without rollback is unrecoverable
+
+---
+
+### QG-MIG-002: Risk Mitigation Required
+
+**Level**: MUST
+**Applies to**: All migration plans with HIGH or CRITICAL risks
+
+All HIGH (score ≥ 10) and CRITICAL (score ≥ 15) risks MUST have documented mitigations.
+
+**Threshold**: 100% of HIGH+ risks have mitigation strategies
+
+**Risk Score Calculation**: `probability (1-5) × impact (1-5)`
+
+**Severity Levels**:
+| Score | Severity | Mitigation Required |
+|-------|----------|---------------------|
+| 15-25 | CRITICAL | MUST (blocks planning) |
+| 10-14 | HIGH | MUST (blocks planning) |
+| 5-9 | MEDIUM | SHOULD |
+| 1-4 | LOW | Optional |
+
+**Validation**:
+```bash
+/speckit.analyze --profile migration-risks
+# Validates: All RISK-MIG-xxx with score >= 10 have mitigation field
+```
+
+**Violations**: CRITICAL - High-risk migration without mitigation
+
+---
+
+### QG-MIG-003: Coupling Analysis Complete
+
+**Level**: MUST
+**Applies to**: All `--from monolith` migrations
+
+Coupling analysis MUST be completed before phase planning for monolith decomposition.
+
+**Threshold**: All modules analyzed with instability index calculated
+
+**Required Metrics**:
+- Afferent coupling (Ca) - modules that depend on this
+- Efferent coupling (Ce) - modules this depends on
+- Instability index I = Ce / (Ca + Ce)
+- Coupling classification (TIGHT ≥ 10, LOOSE 3-9, MINIMAL 0-2)
+
+**Validation**:
+```bash
+/speckit.analyze --profile coupling
+# Output: N modules analyzed, M% classified as TIGHT
+```
+
+**Violations**: HIGH - Extraction order undefined, risk of cascading failures
+
+---
+
+### Migration Gate Summary
+
+| Gate ID | Phase | Level | Threshold | Validation | Violation |
+|---------|-------|-------|-----------|------------|-----------|
+| QG-MIG-001 | Pre-Plan | MUST | 100% phases | rollback check | CRITICAL |
+| QG-MIG-002 | Pre-Plan | MUST | HIGH+ mitigated | risk check | CRITICAL |
+| QG-MIG-003 | Pre-Plan | MUST | all modules | coupling check | HIGH |
+
+---
+
 ## Summary
 
 | Type | Count |
@@ -732,8 +827,9 @@ pytest -k "security or auth"
 | Post-Implement Gates | 7 |
 | Pre-Deploy Gates | 5 |
 | Security Gates | 5 |
-| **Total QG Principles** | **20** |
-| MUST level | 16 |
+| Migration Gates | 3 |
+| **Total QG Principles** | **23** |
+| MUST level | 19 |
 | SHOULD level | 4 |
 
 ---

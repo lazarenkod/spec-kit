@@ -7,6 +7,74 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.76] - 2026-01-03
+
+### Added
+
+- **Migration Planning Framework v0.0.76** — Spec-driven code migration between architectures, versions, and cloud providers
+
+  - **New**: `templates/commands/migrate.md` (~950 lines)
+    - Three migration scenarios: `--from monolith`, `--upgrade <target>`, `--to-cloud <provider>`
+    - MIG-xxx phase identifiers with dependency DAG
+    - Parallel subagents: codebase-scanner, coupling-analyzer, dependency-mapper, migration-strategist, risk-assessor, rollback-planner
+    - Self-review with SR-MIG-01 to SR-MIG-15 criteria
+    - Auto-handoff to /speckit.plan after successful planning
+
+  - **New**: `templates/shared/migration/coupling-analysis.md` (~170 lines)
+    - Module dependency detection with instability scoring
+    - Afferent/Efferent coupling calculation (Ca/Ce)
+    - Instability index I = Ce / (Ca + Ce)
+    - Migration candidate scoring (80-100: Phase1, 50-79: Phase2, 0-49: Phase3)
+    - Coupling classification: TIGHT (≥10), LOOSE (3-9), MINIMAL (0-2)
+
+  - **New**: `templates/shared/migration/strangler-fig.md` (~120 lines)
+    - Strangler Fig pattern for monolith decomposition
+    - Boundary identification and facade implementation
+    - Traffic shifting strategies (1-5% → 10-25% → 50% → 100%)
+    - Service mesh integration patterns
+
+  - **New**: `templates/shared/migration/upgrade-detection.md` (~140 lines)
+    - Version detection from package.json, requirements.txt, go.mod, Cargo.toml
+    - Breaking change fetching and impact analysis
+    - UPG-xxx upgrade item identifiers
+    - Upgrade path generation with priority levels
+
+  - **New**: `templates/shared/migration/cloud-mapping.md` (~180 lines)
+    - Service equivalents for AWS, GCP, Azure, VK Cloud
+    - Service discovery from docker-compose.yml and k8s manifests
+    - Network topology planning
+    - Cost estimation templates
+
+  - **New**: `templates/shared/migration/risk-matrix-migration.md` (~80 lines)
+    - Migration-specific risk assessment
+    - Risk categories: Technical, Operational, Business, Schedule
+    - 5×5 probability/impact matrix
+    - RISK-MIG-xxx identifier format
+
+  - **New**: `templates/shared/migration/rollback-strategy.md` (~90 lines)
+    - Per-phase rollback strategies
+    - Rollback triggers (>5% error rate, p99 > 2x baseline)
+    - Rollback types: Immediate (<5 min), Gradual (10-30 min), Full (30-60 min)
+    - Data rollback with PITR, log replay, backup restore
+
+  - **New**: `templates/shared/migration/migration-phases.md` (~100 lines)
+    - MIG-xxx phase template with full structure
+    - Phase status values: PLANNED, IN_PROGRESS, VALIDATING, COMPLETED, ROLLED_BACK
+    - Phase sequencing rules for dependency DAG
+    - Success metrics templates
+
+  - **New**: `templates/shared/migration/self-review-migration.md` (~80 lines)
+    - SR-MIG-01 to SR-MIG-15 criteria table
+    - Severity levels with weights (CRITICAL: 3, HIGH: 2, MEDIUM: 1)
+    - Verdict logic and self-correction loop (up to 3 iterations)
+
+  - **Enhanced**: `memory/domains/quality-gates.md` (+90 lines)
+    - New Migration Gates section (QG-MIG-001 to QG-MIG-003)
+    - QG-MIG-001: Rollback Plan Required (MUST) — 100% phases have rollback
+    - QG-MIG-002: Risk Mitigation Required (MUST) — HIGH+ risks mitigated
+    - QG-MIG-003: Coupling Analysis Complete (MUST) — All modules analyzed
+    - Updated summary (23 total gates, 19 MUST level)
+
 ## [0.0.75] - 2026-01-03
 
 ### Added
