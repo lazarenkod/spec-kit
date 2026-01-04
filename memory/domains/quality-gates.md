@@ -818,6 +818,39 @@ Coupling analysis MUST be completed before phase planning for monolith decomposi
 
 ---
 
+## Property-Based Testing Gates
+
+| Gate ID | Name | Threshold | Severity | Description |
+|---------|------|-----------|----------|-------------|
+| VG-PROP | Property Coverage | ≥80% | CRITICAL | FR/AS requirements covered by properties |
+| VG-PROP-SEC | Security Property Coverage | ≥95% | CRITICAL | EC-SEC-* covered by security properties |
+| VG-PROP-BOUND | Boundary Property Coverage | ≥90% | HIGH | EC-* edge cases covered |
+| VG-EARS | EARS Transformation | ≥85% | HIGH | Requirements in EARS canonical form |
+| VG-SHRUNK | Shrunk Examples | ≥3 per property | MEDIUM | Minimal counterexamples preserved |
+| VG-PGS | PGS Resolution | 100% | CRITICAL | All PGS iterations resolved |
+| VG-PQS | Property Quality Score | ≥70 | HIGH | Overall PBT quality metric |
+
+### PQS Calculation
+
+```
+PQS = (
+  Requirement_Coverage × 0.30 +
+  Type_Diversity × 0.20 +
+  Generator_Quality × 0.20 +
+  Shrunk_Examples × 0.15 +
+  EARS_Alignment × 0.15
+) × 100
+```
+
+### Gate Enforcement
+
+- **VG-PROP < 80%**: Block merge, require property addition
+- **VG-PROP-SEC < 95%**: Block merge, security review required
+- **VG-PGS < 100%**: Block merge, resolve counterexamples first
+- **VG-PQS < 70**: Warning, suggest improvements
+
+---
+
 ## Summary
 
 | Type | Count |
@@ -828,7 +861,8 @@ Coupling analysis MUST be completed before phase planning for monolith decomposi
 | Pre-Deploy Gates | 5 |
 | Security Gates | 5 |
 | Migration Gates | 3 |
-| **Total QG Principles** | **23** |
+| Property-Based Testing Gates | 7 |
+| **Total QG Principles** | **30** |
 | MUST level | 19 |
 | SHOULD level | 4 |
 

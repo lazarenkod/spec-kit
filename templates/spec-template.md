@@ -196,6 +196,26 @@
 **Gaps Identified**:
 - [Any missing coverage noted by edge-case-detector]
 
+### Property-Based Testing Hints
+
+> Auto-generated hints for `/speckit.properties`. Manual additions welcome.
+
+| ID | Type | Derived From | Formula | Generator Hint | Priority |
+|----|------|--------------|---------|----------------|----------|
+| PROP-001 | inverse | AS-1A | `delete(create(x)) == not_exists(x)` | valid_{{entity}} | P1 |
+| PROP-002 | idempotent | FR-xxx | `normalize(normalize(x)) == normalize(x)` | boundary_string | P2 |
+| PROP-003 | invariant | NFR-xxx | `len(result) <= MAX_SIZE` | any_input | P1 |
+| PROP-004 | boundary | EC-xxx | `validate(invalid) throws ValidationError` | invalid_{{field}} | P1 |
+
+#### Property Type Reference
+
+- **inverse**: Round-trip operations (create/delete, encode/decode, serialize/deserialize)
+- **idempotent**: Repeated application yields same result (save, normalize, format)
+- **invariant**: Conditions that always hold (size limits, type constraints)
+- **boundary**: Edge case behavior (empty, null, max values)
+- **commutative**: Order-independent operations (set union, addition)
+- **model**: State machine conformance (workflow transitions)
+
 ### Completeness Analysis
 
 <!--

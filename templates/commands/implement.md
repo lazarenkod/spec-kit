@@ -537,11 +537,56 @@ claude_code:
         - Tests run in CI environment
         - No flaky tests (deterministic)
       model_override: sonnet
+    - role: property-test-generator
+      role_group: TESTING
+      parallel: true
+      depends_on: [data-layer-builder, api-builder]
+      priority: 4
+      trigger: "when generating property-based tests"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Invariants: (from spec.md business rules)
+
+        ## Task
+        Generate property-based tests:
+        1. Identify invariants and properties from spec
+        2. Generate PBT suite with counterexample capture
+        3. Test domain models and business logic
+        4. Add @speckit:INV-xxx annotations for traceability
+
+        ## Execution Commands
+        ```yaml
+        python: |
+          pytest tests/properties/ -v --hypothesis-show-statistics
+          # Capture shrunk examples to properties.md
+        typescript: |
+          npm run test:properties
+          # fast-check with verbose output
+        go: |
+          go test -v ./... -run TestProperty -rapid.checks=100
+        java: |
+          mvn test -Dtest=*Property* -Djqwik.reporting.onlyFailures=false
+        kotlin: |
+          gradle test --tests '*Property*' --info
+        ```
+
+        ## On Failure
+        - Capture counterexample with full shrinking output
+        - Update shrunk examples in properties.md
+        - Flag for PGS iteration if invariant violated
+
+        ## Success Criteria
+        - All properties pass with 100+ examples
+        - No new counterexamples discovered
+        - Shrunk examples documented if found
+      model_override: sonnet
     # Wave 4: Review (sequential)
     - role: code-reviewer
       role_group: REVIEW
       parallel: false
-      depends_on: [unit-test-generator, integration-test-generator]
+      depends_on: [unit-test-generator, integration-test-generator, property-test-generator]
       priority: 3
       trigger: "when reviewing implementation"
       prompt: |

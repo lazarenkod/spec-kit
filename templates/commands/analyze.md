@@ -1493,6 +1493,150 @@ The following categories (R-U) are executed when `/speckit.analyze` runs after `
 
 ---
 
+#### W2. Property Coverage Analysis
+
+**Purpose**: Validate property-based test coverage meets thresholds and verify requirements transformation to EARS format.
+
+```yaml
+- pass: W2
+  name: Property Coverage Analysis
+  parallel: true
+  checks:
+    - id: PROP-COV
+      name: Property Coverage
+      description: Verify property-based test coverage meets thresholds
+      validations:
+        - fr_property_coverage >= 80%
+        - as_boundary_property_coverage >= 90%
+        - ec_security_property_coverage >= 95%
+        - all_properties_have_generators == true
+    - id: EARS-TRANS
+      name: EARS Transformation Coverage
+      description: Verify requirements transformed to EARS format
+      validations:
+        - ears_transformation_rate >= 85%
+        - no_ambiguous_ears_forms == true
+    - id: SHRUNK-REG
+      name: Shrunk Examples Registry
+      description: Verify counterexamples are preserved
+      validations:
+        - shrunk_examples_per_property >= 3
+        - shrunk_examples_documented == true
+    - id: PGS-RES
+      name: PGS Resolution
+      description: Verify PGS iterations resolved all issues
+      validations:
+        - pgs_unresolved_count == 0
+        - no_property_oscillation == true
+```
+
+**1. Property Coverage Validation (PROP-COV)**:
+
+```text
+1. FR Property Coverage:
+   FOR EACH FR-xxx in spec.md Functional Requirements:
+     Search for property tests covering FR-xxx
+     Calculate coverage percentage
+     IF coverage < 80%:
+       → HIGH: "FR-xxx property coverage {coverage}% below 80% threshold"
+
+2. AS Boundary Property Coverage:
+   FOR EACH AS-xxx in spec.md Acceptance Scenarios:
+     Search for boundary property tests
+     Calculate coverage percentage
+     IF coverage < 90%:
+       → HIGH: "AS-xxx boundary property coverage {coverage}% below 90% threshold"
+
+3. EC Security Property Coverage:
+   FOR EACH EC-xxx in spec.md Edge Cases where Security-related:
+     Search for security property tests
+     Calculate coverage percentage
+     IF coverage < 95%:
+       → CRITICAL: "EC-xxx security property coverage {coverage}% below 95% threshold"
+
+4. Generator Completeness:
+   FOR EACH property test file:
+     Extract property definitions
+     FOR EACH property:
+       Check if generator exists
+       IF no generator:
+         → MEDIUM: "Property {name} missing generator"
+   IF any properties missing generators:
+     → all_properties_have_generators = false
+```
+
+**2. EARS Transformation Coverage (EARS-TRANS)**:
+
+```text
+1. EARS Transformation Rate:
+   Count total requirements (FR + AS + EC)
+   Count requirements in EARS format
+   Calculate rate = ears_count / total_count * 100
+   IF rate < 85%:
+     → MEDIUM: "EARS transformation rate {rate}% below 85% threshold"
+
+2. EARS Format Validation:
+   FOR EACH requirement in EARS format:
+     Validate format: (WHEN|IF|WHILE) trigger THEN response
+     IF format ambiguous or malformed:
+       → MEDIUM: "Ambiguous EARS form in {req_id}: {issue}"
+   IF any ambiguous:
+     → no_ambiguous_ears_forms = false
+```
+
+**3. Shrunk Examples Registry (SHRUNK-REG)**:
+
+```text
+1. Shrunk Examples Count:
+   FOR EACH property test:
+     Count documented shrunk examples
+     IF count < 3:
+       → LOW: "Property {name} has only {count} shrunk examples (minimum 3)"
+
+2. Shrunk Documentation:
+   FOR EACH property test file:
+     Check for shrunk examples section
+     IF section missing or empty:
+       → MEDIUM: "Property test {file} missing shrunk examples documentation"
+   IF any undocumented:
+     → shrunk_examples_documented = false
+```
+
+**4. PGS Resolution (PGS-RES)**:
+
+```text
+1. Unresolved PGS Issues:
+   Count PGS issues still in OPEN state
+   IF count > 0:
+     → HIGH: "PGS has {count} unresolved issues"
+     FOR EACH unresolved:
+       → Report: "{issue_id}: {description}"
+
+2. Property Oscillation Detection:
+   FOR EACH property test:
+     Track pass/fail history over last 5 runs
+     IF alternating pattern detected (pass-fail-pass-fail):
+       → HIGH: "Property oscillation detected in {property_name}"
+   IF any oscillation:
+     → no_property_oscillation = false
+```
+
+**Severity Summary for Pass W2:**
+| Condition | Severity |
+|-----------|----------|
+| EC security property coverage < 95% | CRITICAL |
+| FR property coverage < 80% | HIGH |
+| AS boundary property coverage < 90% | HIGH |
+| PGS unresolved issues > 0 | HIGH |
+| Property oscillation detected | HIGH |
+| Property missing generator | MEDIUM |
+| EARS transformation rate < 85% | MEDIUM |
+| Ambiguous EARS form | MEDIUM |
+| Shrunk examples undocumented | MEDIUM |
+| Shrunk examples < 3 | LOW |
+
+---
+
 #### X. UXQ Domain Validation *(if UXQ domain active)*
 
 **Purpose**: Validate User Experience Quality principles when UXQ domain is active.

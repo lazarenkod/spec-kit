@@ -123,6 +123,45 @@ Calculate coverage requirements:
 | Low | FR-005 | 60% |
 ```
 
+## Property-Based Testing Strategy
+
+### When to Use PBT
+
+| Scenario | Property Type | Example |
+|----------|---------------|---------|
+| CRUD operations | Inverse | `delete(create(x)) == not_exists(x)` |
+| Data transformations | Idempotent | `format(format(x)) == format(x)` |
+| Business rules | Invariant | `order.total >= 0` always |
+| Input validation | Boundary | Invalid inputs rejected consistently |
+| Math/Set operations | Commutative | `merge(a, b) == merge(b, a)` |
+| Workflows | Model-based | State transitions match specification |
+
+### PBT Integration Points
+
+1. **From Spec**: Extract properties from AS-xxx (Given/When/Then) and EC-xxx (edge cases)
+2. **EARS Transform**: Convert requirements to EARS canonical form for property derivation
+3. **Generator Creation**: Build domain-specific generators from entity definitions
+4. **Shrunk Examples**: Preserve minimal counterexamples for regression testing
+
+### Framework Selection
+
+| Language | Framework | Key Features |
+|----------|-----------|--------------|
+| Python | Hypothesis | Stateful testing, health checks, profiles |
+| TypeScript | fast-check | Model-based, async support, race detection |
+| Go | rapid | Quick API, struct generators, check.Run |
+| Java | jqwik | Jupiter integration, domains, lifecycle |
+| Kotlin | Kotest | Coroutine support, Arb combinators |
+
+### Coverage Targets
+
+| Property Type | Minimum Coverage | Priority |
+|---------------|------------------|----------|
+| Security (EC-SEC-*) | 95% | P0 |
+| Boundary (EC-*) | 90% | P1 |
+| Inverse (AS-*) | 80% | P1 |
+| Invariant (NFR-*) | 80% | P2 |
+
 ### 6. Test Environment Requirements
 
 Document environment needs:

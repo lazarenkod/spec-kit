@@ -7,6 +7,25 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.77] - 2026-01-03
+
+### Added
+
+- **Property-Based Testing Integration** (`/speckit.properties` command)
+  - EARS transformation pipeline for requirements → testable properties
+  - 6 property types: inverse, idempotent, invariant, boundary, commutative, model-based
+  - PGS (Property-Generated Solver) iterative mode with anti-deception mechanism
+  - Multi-language code generation: Python (Hypothesis), TypeScript (fast-check), Go (rapid), Java (jqwik), Kotlin (Kotest)
+  - Security generators for SQL injection, XSS, path traversal, command injection
+  - Shrunk examples registry for counterexample preservation
+- **PQS (Property Quality Score)** rubric for PBT quality measurement
+- **New quality gates**: VG-PROP, VG-PROP-SEC, VG-EARS, VG-SHRUNK, VG-PGS, VG-PQS
+- PBT hints section in spec-template.md
+- PBT tasks section in tasks-template.md
+- PBT strategy section in test-strategy.md
+- W2 Property Coverage validation pass in analyze.md
+- PBT testing wave in implement.md
+
 ## [0.0.76] - 2026-01-03
 
 ### Added
