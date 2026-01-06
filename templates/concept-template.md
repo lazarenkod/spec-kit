@@ -1,8 +1,15 @@
 # Concept: [PROJECT_NAME]
 
-**Version**: 2.0 | **Template Version**: v2.0-alternatives | **Created**: [DATE] | **Status**: Draft
+**Version**: 2.0 | **Template Version**: v2.1-flow-optimized | **Created**: [DATE] | **Status**: Draft
 
 <!--
+  CHANGES in v2.1-flow-optimized:
+  - Reorganized section order for logical top-down flow (Strategy → Discovery → Features → Execution)
+  - Discovery & Research moved to position 4 (was 8) — Research informs features
+  - Execution Order moved to position 12 (was 7) — Plan WHEN after defining WHAT
+  - Section Completion Checklist moved to position 17 (was 4) — Meta content at end
+  - Added section flow rationale comments for clarity
+
   BREAKING CHANGES in v2.0:
   - Product Alternatives section (NEW) — Explore alternative product visions before committing
   - All 33 concept sections scaffolded for completeness
@@ -116,367 +123,10 @@ Full analysis with all 5 alternatives and scoring available in: `specs/concept-a
 
 ---
 
-## Section Completion Checklist
-
 <!--
-  Track progress on concept completeness. All 33 sections are scaffolded below.
-  Check off sections as you complete them. CQS score reflects completion percentage.
+  DISCOVERY PHASE (4-5): Research BEFORE features.
+  Rationale: Understand problem/market before designing solutions.
 -->
-
-### Core Sections (Required for CQS ≥60) — 13 sections
-
-- [ ] Vision Statement
-- [ ] Executive Summary
-- [ ] Product Alternatives
-- [ ] UX Foundation Layer (Personas + JTBD)
-- [ ] Feature Hierarchy (Epics → Features → Stories)
-- [ ] User Journeys (Primary paths through system)
-- [ ] Success Metrics (SMART-validated KPIs with North Star)
-- [ ] Market Opportunity (TAM/SAM/SOM with evidence)
-- [ ] Competitive Positioning (Matrix + differentiation)
-- [ ] Risk Assessment (Matrix with mitigations)
-- [ ] Technical Discovery Hints (Domain entities, API surface)
-- [ ] Ideas Backlog (Parking lot for future features)
-- [ ] CQS Score (Quality gate calculation)
-
-### Strategic Sections (Required for CQS ≥80) — 8 sections
-
-- [ ] PR/FAQ (Amazon Working Backwards press release)
-- [ ] Blue Ocean Canvas (ERRC grid for differentiation)
-- [ ] Business Model Canvas (Revenue streams, unit economics)
-- [ ] Porter's Five Forces (Competitive forces analysis)
-- [ ] Hypothesis Testing (Desirability/Feasibility/Viability)
-- [ ] Pre-Mortem Analysis (Failure scenario planning)
-- [ ] Strategic Trade-offs (Decision hierarchy)
-- [ ] Decision Log (Key decisions with rationale)
-
-### Advanced Sections (Required for CQS ≥90) — 12 sections
-
-- [ ] Investment Thesis (Investment justification)
-- [ ] Financial Sensitivity (Scenario analysis)
-- [ ] Scenario Planning (Strategic scenarios)
-- [ ] Three Horizons (Innovation portfolio allocation)
-- [ ] MOATS/OSM Analysis (Moats and operating system)
-- [ ] Ecosystem Strategy (Platform and ecosystem approach)
-- [ ] Portfolio Context (Multi-project positioning)
-- [ ] Execution Confidence (Readiness assessment)
-- [ ] Strategic Options (Real options analysis)
-- [ ] Strategic Alternatives (Build/Buy/Partner)
-- [ ] AI Responsibility (if applicable — AI ethics framework)
-- [ ] Reasoning Traces (Problem → JTBD → Feature chains)
-
-### Optional Sections
-
-- [ ] Concept Variants (MINIMAL/BALANCED/AMBITIOUS scope levels)
-- [ ] Multi-Agent Research Config (Research automation setup)
-
-**Completion**: [X]/33 core sections | **CQS Readiness**: [ ] READY (≥80) | [ ] NOT READY (<80)
-
----
-
-## Concept Variants (OPTIONAL)
-
-<!--
-  NOTE: This section is OPTIONAL in v2.0. It shows SCOPE variations (MINIMAL/BALANCED/AMBITIOUS)
-  of the selected product alternative.
-
-  To generate: Use /speckit.concept-variants command
-
-  IMPORTANT DISTINCTION:
-  - Product Alternatives (section above) = Different VISIONS (what to build)
-  - Concept Variants (this section) = Different SCOPE levels (how much to build) of SAME vision
-
-  Three variants represent scope trade-offs:
-  - MINIMAL: Speed to market, validate hypothesis (MUST_HAVE features only)
-  - BALANCED: Core value + differentiation (MUST_HAVE + SHOULD_HAVE)
-  - AMBITIOUS: Full vision, market leadership (all features)
-
-  Reference: templates/shared/concept-sections/concept-variants.md
--->
-
-**Status**: [ ] Not generated | [ ] Generated
-
-To generate scope variants, use:
-```
-/speckit.concept-variants
-```
-
-### Variant Comparison Matrix (if generated)
-
-| Dimension | MINIMAL | BALANCED | AMBITIOUS |
-|-----------|:-------:|:--------:|:---------:|
-| Time to MVP | [X] weeks | [Y] weeks | [Z] weeks |
-| Team Size | [N] FTEs | [N] FTEs | [N] FTEs |
-| Feature Count | [N] features | [N] features | [N] features |
-| Risk Level | Low | Medium | High |
-| Differentiation | Table stakes | Competitive | Market leader |
-| Estimated Cost | $[X]K | $[Y]K | $[Z]K |
-| JTBD Coverage | Primary only | Primary + Secondary | All JTBD |
-
-### Recommended Variant: [BALANCED]
-
-**Why this recommendation**:
-1. **[Timeline/Constraint fit]**: [How BALANCED aligns with constraints]
-2. **[Differentiation]**: [What BALANCED includes that makes us competitive]
-3. **[Risk balance]**: [What risky features BALANCED avoids vs AMBITIOUS]
-
-**When to choose differently**:
-- Choose MINIMAL if: [specific condition, e.g., "runway < 6 months"]
-- Choose AMBITIOUS if: [specific condition, e.g., "funding secured for 18 months"]
-
----
-
-### Variant: MINIMAL MVP
-
-**Philosophy**: Ship fastest, validate core hypothesis, iterate based on feedback
-
-**Target Timeline**: [X] weeks | **Team**: [N] FTEs | **Risk**: Low
-
-#### Included Features
-
-| Feature ID | Name | JTBD | Why Included |
-|------------|------|------|--------------|
-| EPIC-001.F01 | [Feature] | JTBD-FUNC-001 | Core value proposition |
-| EPIC-001.F02 | [Feature] | JTBD-FUNC-002 | Required for primary journey |
-
-#### What MINIMAL Sacrifices
-
-| Feature | JTBD Impact | Risk of Exclusion |
-|---------|-------------|-------------------|
-| [Feature A] | JTBD-FUNC-003 unaddressed | Users may not see differentiation |
-| [Feature B] | JTBD-SOC-001 unaddressed | Limited to solo users |
-
----
-
-### Variant: BALANCED (Recommended)
-
-**Philosophy**: Core value proposition + key differentiators
-
-**Target Timeline**: [Y] weeks | **Team**: [N] FTEs | **Risk**: Medium
-
-#### Included Features
-
-| Feature ID | Name | JTBD | Why Included |
-|------------|------|------|--------------|
-| [All MINIMAL features] | | | |
-| EPIC-002.F01 | [Feature] | JTBD-FUNC-003 | Key differentiator |
-| EPIC-002.F02 | [Feature] | JTBD-EMOT-001 | User delight |
-
-#### What BALANCED Adds Over MINIMAL
-
-| Feature ID | Name | Why Added | Effort |
-|------------|------|-----------|--------|
-| EPIC-002.F01 | [Feature] | Competitive parity with [Competitor] | M |
-
----
-
-### Variant: AMBITIOUS
-
-**Philosophy**: Full product vision, maximum differentiation
-
-**Target Timeline**: [Z] weeks | **Team**: [N] FTEs | **Risk**: High
-
-#### What AMBITIOUS Adds Over BALANCED
-
-| Feature ID | Name | Why Added | Risk |
-|------------|------|-----------|------|
-| EPIC-003.F01 | [Feature] | Market leadership differentiator | HIGH |
-
-#### Additional Risks
-
-| Risk | Likelihood | Impact | Mitigation |
-|------|:----------:|:------:|------------|
-| Technical feasibility | Medium | High | POC before full build |
-
----
-
-## UX Foundation Layer
-
-<!--
-  AUTO-POPULATED by /speckit.concept based on project type detection.
-  Foundations are prerequisite scenarios that must be implemented BEFORE
-  business features to ensure testable user journeys.
-
-  Reference: memory/knowledge/frameworks/ux-foundations.md
--->
-
-**Project Type**: [Web SPA | Web SSR | Mobile | CLI | API | Service | Desktop]
-**Detection Trigger**: [What codebase indicator triggered this classification]
-
-### Required Foundations
-
-| Foundation | Status | Wave | Stories | Notes |
-|------------|--------|------|---------|-------|
-| AUTH | [ ] Needed | 1 | - | Required for user identity |
-| ERROR | [ ] Needed | 1 | - | Required for failure handling |
-| LAYOUT | [ ] Needed | 1 | - | Required for visual consistency |
-| NAV | [ ] Needed | 2 | - | Required for multi-page apps |
-| FTUE | [ ] Needed | 2 | - | Required for user activation |
-| FEEDBACK | [ ] Needed | 2 | - | Required for user confirmation |
-| ADMIN | [ ] Needed | 2 | - | Required for admin capabilities |
-
-### Foundation Scenarios
-
-<!--
-  Maps UXF-xxx scenario IDs from ux-foundations.md to story IDs in this concept.
-  Ensures all required foundation scenarios have corresponding stories.
--->
-
-#### AUTH Foundation
-
-| UXF ID | Scenario | Defined In | Status |
-|--------|----------|------------|--------|
-| UXF-AUTH-001 | User signs up | [EPIC-001.F01.S01] | [ ] |
-| UXF-AUTH-002 | User signs in | [EPIC-001.F01.S02] | [ ] |
-| UXF-AUTH-003 | User signs out | [EPIC-001.F02.S01] | [ ] |
-
-#### ERROR Foundation
-
-| UXF ID | Scenario | Defined In | Status |
-|--------|----------|------------|--------|
-| UXF-ERR-001 | Network failure | [Infrastructure] | [ ] |
-| UXF-ERR-002 | Validation error | [Infrastructure] | [ ] |
-| UXF-ERR-003 | Server error | [Infrastructure] | [ ] |
-
-#### ADMIN Foundation
-
-| UXF ID | Scenario | Defined In | Status |
-|--------|----------|------------|--------|
-| UXF-ADMIN-001 | Admin accesses dashboard | [EPIC-00X.F01.S01] | [ ] |
-| UXF-ADMIN-002 | Admin lists users | [EPIC-00X.F02.S01] | [ ] |
-| UXF-ADMIN-003 | Admin edits user | [EPIC-00X.F02.S02] | [ ] |
-| UXF-ADMIN-004 | Admin changes user role | [EPIC-00X.F03.S01] | [ ] |
-| UXF-ADMIN-005 | Admin views audit log | [EPIC-00X.F04.S01] | [ ] |
-| UXF-ADMIN-006 | Non-admin denied access | [EPIC-00X.F01.S02] | [ ] |
-
----
-
-## Execution Order
-
-<!--
-  CRITICAL: This section defines BUILD ORDER, not just priority.
-
-  Wave = when to build (sequence)
-  Priority = how important (business value)
-
-  Wave 1 must complete before Wave 2 can be tested.
-  Wave 2 must complete before Wave 3 user journeys are testable.
--->
-
-> **Wave vs Priority**: P1a/P1b indicate importance. Wave indicates *when* to build.
-> Features in Wave 3 might be P1a (critical) but still require Wave 1-2 foundations first.
-
-### Wave 1: Foundation Layer
-
-| Feature ID | Name | Priority | Status | Blocks |
-|------------|------|----------|--------|--------|
-| EPIC-001.F01 | User Registration | P1a | [ ] | All user features |
-| EPIC-001.F02 | Authentication | P1a | [ ] | All protected features |
-| [INFRA] | Error Handling | P1a | [ ] | All user interactions |
-| [INFRA] | Layout Shell | P1a | [ ] | All UI features |
-
-**Wave 1 Completion Gate**: All items above must be IMPLEMENTED before proceeding.
-
-#### Wave 1 Rationale
-
-**Why these features are grouped together**:
-- [Explanation of technical dependencies that require these features first]
-- [Explanation of why these form the foundation]
-
-**What blocks Wave 2**:
-- [ ] [Specific capability that must exist before Wave 2 can begin]
-- [ ] [Data/API that Wave 2 features depend on]
-
-**Alternative groupings considered**:
-| Alternative | Why Not Chosen |
-|-------------|----------------|
-| [Alternative grouping] | [Reason — e.g., would create circular dependency] |
-
----
-
-### Wave 2: Experience Layer
-
-| Feature ID | Name | Priority | Status | Blocks |
-|------------|------|----------|--------|--------|
-| EPIC-001.F03 | Navigation | P1b | [ ] | Cross-feature navigation |
-| EPIC-001.F04 | Onboarding | P1b | [ ] | User activation |
-| [INFRA] | Feedback System | P1b | [ ] | User confirmation |
-| EPIC-00X.F01 | Admin Interface | P1b | [ ] | Admin management |
-
-**Wave 2 Completion Gate**: Golden Path must be testable.
-
-#### Wave 2 Rationale
-
-**Why these features are grouped together**:
-- [All require Wave 1 foundation (auth, layout) to function]
-- [Together enable the minimum user experience]
-
-**What blocks Wave 3**:
-- [ ] [User must be able to complete core journey]
-- [ ] [Feedback loops must be in place for iteration]
-
-**Dependency chain**:
-```text
-Wave 1 (Foundation) → Wave 2 (Experience) → Wave 3 (Business Value)
-     ↓                      ↓                      ↓
- Auth exists         User can navigate      User achieves goal
-```
-
----
-
-### Golden Path
-
-<!--
-  The minimum viable user journey that validates Wave 1-2 completion.
-  This journey must be fully testable before Wave 3 begins.
--->
-
-**Journey**: J000 New User Activation
-
-```text
-[Guest] → Home → Sign Up → Onboard → First Action → Success
-```
-
-| Step | Action | Feature | Wave | Status |
-|------|--------|---------|------|--------|
-| 1 | Views home page | LAYOUT | 1 | [ ] |
-| 2 | Clicks "Sign Up" | NAV | 2 | [ ] |
-| 3 | Registers account | EPIC-001.F01 | 1 | [ ] |
-| 4 | Completes onboarding | EPIC-001.F04 | 2 | [ ] |
-| 5 | Performs first action | [First P1a feature] | 3 | [ ] |
-| 6 | Sees confirmation | FEEDBACK | 2 | [ ] |
-
-**Golden Path Status**: [ ] Not testable (requires Wave 1-2 completion)
-
-### Wave 3+: Business Features
-
-| Feature ID | Name | Priority | Wave | Depends On | Status |
-|------------|------|----------|------|------------|--------|
-| EPIC-002.F01 | [Feature] | P1a | 3 | EPIC-001.F01, F02 | [ ] |
-| EPIC-002.F02 | [Feature] | P1b | 3 | EPIC-002.F01 | [ ] |
-| EPIC-003.F01 | [Feature] | P2a | 4 | EPIC-002.F01 | [ ] |
-
-#### Wave 3+ Rationale
-
-**Why Wave 3 features wait**:
-- [Require Golden Path to be testable first]
-- [Business value depends on user activation (Wave 2)]
-
-**Wave 3 vs Wave 4 distinction**:
-| Wave | Theme | Why This Order |
-|:----:|-------|----------------|
-| 3 | Core business value | Directly addresses primary JTBD |
-| 4 | Enhancement | Builds on Wave 3 data/patterns |
-| 5+ | Expansion | New personas, markets, or platforms |
-
-**Features deliberately pushed to later waves**:
-
-| Feature | Could Be Earlier? | Why Delayed |
-|---------|:-----------------:|-------------|
-| [Feature X] | Yes | [Risk reduction — validate Wave 3 first] |
-| [Feature Y] | No | [Hard dependency on Wave 3 data] |
-
----
 
 ## Discovery & Research
 
@@ -600,6 +250,72 @@ Wave 1 (Foundation) → Wave 2 (Experience) → Wave 3 (Business Value)
 - [Metric 1]: [Target value] by [Timeframe]
 - [Metric 2]: [Target value] by [Timeframe]
 - [Metric 3]: [Target value] by [Timeframe]
+
+---
+
+<!--
+  FOUNDATION PHASE (6): Technical prerequisites.
+  Rationale: UX foundations detected from project type.
+-->
+
+## UX Foundation Layer
+
+<!--
+  AUTO-POPULATED by /speckit.concept based on project type detection.
+  Foundations are prerequisite scenarios that must be implemented BEFORE
+  business features to ensure testable user journeys.
+
+  Reference: memory/knowledge/frameworks/ux-foundations.md
+-->
+
+**Project Type**: [Web SPA | Web SSR | Mobile | CLI | API | Service | Desktop]
+**Detection Trigger**: [What codebase indicator triggered this classification]
+
+### Required Foundations
+
+| Foundation | Status | Wave | Stories | Notes |
+|------------|--------|------|---------|-------|
+| AUTH | [ ] Needed | 1 | - | Required for user identity |
+| ERROR | [ ] Needed | 1 | - | Required for failure handling |
+| LAYOUT | [ ] Needed | 1 | - | Required for visual consistency |
+| NAV | [ ] Needed | 2 | - | Required for multi-page apps |
+| FTUE | [ ] Needed | 2 | - | Required for user activation |
+| FEEDBACK | [ ] Needed | 2 | - | Required for user confirmation |
+| ADMIN | [ ] Needed | 2 | - | Required for admin capabilities |
+
+### Foundation Scenarios
+
+<!--
+  Maps UXF-xxx scenario IDs from ux-foundations.md to story IDs in this concept.
+  Ensures all required foundation scenarios have corresponding stories.
+-->
+
+#### AUTH Foundation
+
+| UXF ID | Scenario | Defined In | Status |
+|--------|----------|------------|--------|
+| UXF-AUTH-001 | User signs up | [EPIC-001.F01.S01] | [ ] |
+| UXF-AUTH-002 | User signs in | [EPIC-001.F01.S02] | [ ] |
+| UXF-AUTH-003 | User signs out | [EPIC-001.F02.S01] | [ ] |
+
+#### ERROR Foundation
+
+| UXF ID | Scenario | Defined In | Status |
+|--------|----------|------------|--------|
+| UXF-ERR-001 | Network failure | [Infrastructure] | [ ] |
+| UXF-ERR-002 | Validation error | [Infrastructure] | [ ] |
+| UXF-ERR-003 | Server error | [Infrastructure] | [ ] |
+
+#### ADMIN Foundation
+
+| UXF ID | Scenario | Defined In | Status |
+|--------|----------|------------|--------|
+| UXF-ADMIN-001 | Admin accesses dashboard | [EPIC-00X.F01.S01] | [ ] |
+| UXF-ADMIN-002 | Admin lists users | [EPIC-00X.F02.S01] | [ ] |
+| UXF-ADMIN-003 | Admin edits user | [EPIC-00X.F02.S02] | [ ] |
+| UXF-ADMIN-004 | Admin changes user role | [EPIC-00X.F03.S01] | [ ] |
+| UXF-ADMIN-005 | Admin views audit log | [EPIC-00X.F04.S01] | [ ] |
+| UXF-ADMIN-006 | Non-admin denied access | [EPIC-00X.F01.S02] | [ ] |
 
 ---
 
@@ -828,6 +544,127 @@ Job Type: Functional (Primary)
 
 ---
 
+## Concept Variants (OPTIONAL)
+
+<!--
+  NOTE: This section is OPTIONAL in v2.0. It shows SCOPE variations (MINIMAL/BALANCED/AMBITIOUS)
+  of the selected product alternative.
+
+  To generate: Use /speckit.concept-variants command
+
+  IMPORTANT DISTINCTION:
+  - Product Alternatives (section above) = Different VISIONS (what to build)
+  - Concept Variants (this section) = Different SCOPE levels (how much to build) of SAME vision
+
+  Three variants represent scope trade-offs:
+  - MINIMAL: Speed to market, validate hypothesis (MUST_HAVE features only)
+  - BALANCED: Core value + differentiation (MUST_HAVE + SHOULD_HAVE)
+  - AMBITIOUS: Full vision, market leadership (all features)
+
+  Reference: templates/shared/concept-sections/concept-variants.md
+-->
+
+**Status**: [ ] Not generated | [ ] Generated
+
+To generate scope variants, use:
+```
+/speckit.concept-variants
+```
+
+### Variant Comparison Matrix (if generated)
+
+| Dimension | MINIMAL | BALANCED | AMBITIOUS |
+|-----------|:-------:|:--------:|:---------:|
+| Time to MVP | [X] weeks | [Y] weeks | [Z] weeks |
+| Team Size | [N] FTEs | [N] FTEs | [N] FTEs |
+| Feature Count | [N] features | [N] features | [N] features |
+| Risk Level | Low | Medium | High |
+| Differentiation | Table stakes | Competitive | Market leader |
+| Estimated Cost | $[X]K | $[Y]K | $[Z]K |
+| JTBD Coverage | Primary only | Primary + Secondary | All JTBD |
+
+### Recommended Variant: [BALANCED]
+
+**Why this recommendation**:
+1. **[Timeline/Constraint fit]**: [How BALANCED aligns with constraints]
+2. **[Differentiation]**: [What BALANCED includes that makes us competitive]
+3. **[Risk balance]**: [What risky features BALANCED avoids vs AMBITIOUS]
+
+**When to choose differently**:
+- Choose MINIMAL if: [specific condition, e.g., "runway < 6 months"]
+- Choose AMBITIOUS if: [specific condition, e.g., "funding secured for 18 months"]
+
+---
+
+### Variant: MINIMAL MVP
+
+**Philosophy**: Ship fastest, validate core hypothesis, iterate based on feedback
+
+**Target Timeline**: [X] weeks | **Team**: [N] FTEs | **Risk**: Low
+
+#### Included Features
+
+| Feature ID | Name | JTBD | Why Included |
+|------------|------|------|--------------|
+| EPIC-001.F01 | [Feature] | JTBD-FUNC-001 | Core value proposition |
+| EPIC-001.F02 | [Feature] | JTBD-FUNC-002 | Required for primary journey |
+
+#### What MINIMAL Sacrifices
+
+| Feature | JTBD Impact | Risk of Exclusion |
+|---------|-------------|-------------------|
+| [Feature A] | JTBD-FUNC-003 unaddressed | Users may not see differentiation |
+| [Feature B] | JTBD-SOC-001 unaddressed | Limited to solo users |
+
+---
+
+### Variant: BALANCED (Recommended)
+
+**Philosophy**: Core value proposition + key differentiators
+
+**Target Timeline**: [Y] weeks | **Team**: [N] FTEs | **Risk**: Medium
+
+#### Included Features
+
+| Feature ID | Name | JTBD | Why Included |
+|------------|------|------|--------------|
+| [All MINIMAL features] | | | |
+| EPIC-002.F01 | [Feature] | JTBD-FUNC-003 | Key differentiator |
+| EPIC-002.F02 | [Feature] | JTBD-EMOT-001 | User delight |
+
+#### What BALANCED Adds Over MINIMAL
+
+| Feature ID | Name | Why Added | Effort |
+|------------|------|-----------|--------|
+| EPIC-002.F01 | [Feature] | Competitive parity with [Competitor] | M |
+
+---
+
+### Variant: AMBITIOUS
+
+**Philosophy**: Full product vision, maximum differentiation
+
+**Target Timeline**: [Z] weeks | **Team**: [N] FTEs | **Risk**: High
+
+#### What AMBITIOUS Adds Over BALANCED
+
+| Feature ID | Name | Why Added | Risk |
+|------------|------|-----------|------|
+| EPIC-003.F01 | [Feature] | Market leadership differentiator | HIGH |
+
+#### Additional Risks
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|:----------:|:------:|------------|
+| Technical feasibility | Medium | High | POC before full build |
+
+---
+
+<!--
+  EXECUTION PHASE (10-12): Build planning AFTER features.
+  Rationale: Can't plan WHEN without knowing WHAT.
+-->
+
 ## User Journeys
 
 <!--
@@ -906,6 +743,133 @@ graph TD
 
 ---
 
+## Execution Order
+
+<!--
+  CRITICAL: This section defines BUILD ORDER, not just priority.
+
+  Wave = when to build (sequence)
+  Priority = how important (business value)
+
+  Wave 1 must complete before Wave 2 can be tested.
+  Wave 2 must complete before Wave 3 user journeys are testable.
+-->
+
+> **Wave vs Priority**: P1a/P1b indicate importance. Wave indicates *when* to build.
+> Features in Wave 3 might be P1a (critical) but still require Wave 1-2 foundations first.
+
+### Wave 1: Foundation Layer
+
+| Feature ID | Name | Priority | Status | Blocks |
+|------------|------|----------|--------|--------|
+| EPIC-001.F01 | User Registration | P1a | [ ] | All user features |
+| EPIC-001.F02 | Authentication | P1a | [ ] | All protected features |
+| [INFRA] | Error Handling | P1a | [ ] | All user interactions |
+| [INFRA] | Layout Shell | P1a | [ ] | All UI features |
+
+**Wave 1 Completion Gate**: All items above must be IMPLEMENTED before proceeding.
+
+#### Wave 1 Rationale
+
+**Why these features are grouped together**:
+- [Explanation of technical dependencies that require these features first]
+- [Explanation of why these form the foundation]
+
+**What blocks Wave 2**:
+- [ ] [Specific capability that must exist before Wave 2 can begin]
+- [ ] [Data/API that Wave 2 features depend on]
+
+**Alternative groupings considered**:
+| Alternative | Why Not Chosen |
+|-------------|----------------|
+| [Alternative grouping] | [Reason — e.g., would create circular dependency] |
+
+---
+
+### Wave 2: Experience Layer
+
+| Feature ID | Name | Priority | Status | Blocks |
+|------------|------|----------|--------|--------|
+| EPIC-001.F03 | Navigation | P1b | [ ] | Cross-feature navigation |
+| EPIC-001.F04 | Onboarding | P1b | [ ] | User activation |
+| [INFRA] | Feedback System | P1b | [ ] | User confirmation |
+| EPIC-00X.F01 | Admin Interface | P1b | [ ] | Admin management |
+
+**Wave 2 Completion Gate**: Golden Path must be testable.
+
+#### Wave 2 Rationale
+
+**Why these features are grouped together**:
+- [All require Wave 1 foundation (auth, layout) to function]
+- [Together enable the minimum user experience]
+
+**What blocks Wave 3**:
+- [ ] [User must be able to complete core journey]
+- [ ] [Feedback loops must be in place for iteration]
+
+**Dependency chain**:
+```text
+Wave 1 (Foundation) → Wave 2 (Experience) → Wave 3 (Business Value)
+     ↓                      ↓                      ↓
+ Auth exists         User can navigate      User achieves goal
+```
+
+---
+
+### Golden Path
+
+<!--
+  The minimum viable user journey that validates Wave 1-2 completion.
+  This journey must be fully testable before Wave 3 begins.
+-->
+
+**Journey**: J000 New User Activation
+
+```text
+[Guest] → Home → Sign Up → Onboard → First Action → Success
+```
+
+| Step | Action | Feature | Wave | Status |
+|------|--------|---------|------|--------|
+| 1 | Views home page | LAYOUT | 1 | [ ] |
+| 2 | Clicks "Sign Up" | NAV | 2 | [ ] |
+| 3 | Registers account | EPIC-001.F01 | 1 | [ ] |
+| 4 | Completes onboarding | EPIC-001.F04 | 2 | [ ] |
+| 5 | Performs first action | [First P1a feature] | 3 | [ ] |
+| 6 | Sees confirmation | FEEDBACK | 2 | [ ] |
+
+**Golden Path Status**: [ ] Not testable (requires Wave 1-2 completion)
+
+### Wave 3+: Business Features
+
+| Feature ID | Name | Priority | Wave | Depends On | Status |
+|------------|------|----------|------|------------|--------|
+| EPIC-002.F01 | [Feature] | P1a | 3 | EPIC-001.F01, F02 | [ ] |
+| EPIC-002.F02 | [Feature] | P1b | 3 | EPIC-002.F01 | [ ] |
+| EPIC-003.F01 | [Feature] | P2a | 4 | EPIC-002.F01 | [ ] |
+
+#### Wave 3+ Rationale
+
+**Why Wave 3 features wait**:
+- [Require Golden Path to be testable first]
+- [Business value depends on user activation (Wave 2)]
+
+**Wave 3 vs Wave 4 distinction**:
+| Wave | Theme | Why This Order |
+|:----:|-------|----------------|
+| 3 | Core business value | Directly addresses primary JTBD |
+| 4 | Enhancement | Builds on Wave 3 data/patterns |
+| 5+ | Expansion | New personas, markets, or platforms |
+
+**Features deliberately pushed to later waves**:
+
+| Feature | Could Be Earlier? | Why Delayed |
+|---------|:-----------------:|-------------|
+| [Feature X] | Yes | [Risk reduction — validate Wave 3 first] |
+| [Feature Y] | No | [Hard dependency on Wave 3 data] |
+
+---
+
 ## Ideas Backlog
 
 <!--
@@ -941,6 +905,11 @@ graph TD
 
 ---
 
+<!--
+  TRACEABILITY & META (15-17): Tracking and audit.
+  Rationale: Progress tracking for transparency.
+-->
+
 ## Glossary
 
 <!--
@@ -952,56 +921,6 @@ graph TD
 |------|------------|---------------------|
 | [Term 1] | [Canonical definition] | [Old names to avoid] |
 | [Term 2] | [Canonical definition] | - |
-
----
-
-## Traceability Skeleton
-
-<!--
-  AUTO-UPDATED by downstream commands:
-  - /speckit.specify → Sets "Spec Created" to [x], populates "Requirements"
-  - /speckit.tasks   → Populates "Tasks" column
-  - /speckit.implement → Populates "Tests", updates "Status"
-
-  Status progression:
-  - Not started → SPECIFIED → TASKED → IMPLEMENTING → IMPLEMENTED → VERIFIED
-
-  Do NOT manually edit this section - it is maintained by commands.
--->
-
-| Concept ID | Wave | Spec Created | Requirements | Tasks | Tests | Status |
-|------------|------|--------------|--------------|-------|-------|--------|
-| [EPIC-001.F01.S01] | 1 | [ ] | - | - | - | Not started |
-| [EPIC-001.F01.S02] | 1 | [ ] | - | - | - | Not started |
-| [EPIC-001.F02.S01] | 1 | [ ] | - | - | - | Not started |
-
-### Progress Rollup
-
-<!--
-  Auto-calculated summary of implementation progress.
-  Updated by /speckit.specify, /speckit.tasks, /speckit.implement.
--->
-
-| Status | Count | % |
-|--------|-------|---|
-| Not started | 3 | 100% |
-| SPECIFIED | 0 | 0% |
-| TASKED | 0 | 0% |
-| IMPLEMENTING | 0 | 0% |
-| IMPLEMENTED | 0 | 0% |
-| VERIFIED | 0 | 0% |
-| **Total** | **3** | |
-
-### Foundation Progress
-
-| Wave | Total | Implemented | Status |
-|------|-------|-------------|--------|
-| Wave 1 | 0 | 0 | [ ] Not started |
-| Wave 2 | 0 | 0 | [ ] Not started |
-| Wave 3+ | 0 | 0 | [ ] Blocked by Wave 1-2 |
-
-**Golden Path**: [ ] Not testable
-**Last Updated**: [date] by [command]
 
 ---
 
@@ -1129,6 +1048,114 @@ PREREQUISITE: [What must be true before building this]
 3. **[Decision 3]**: We prioritized [feature X] over [feature Y] because [rationale]
    - Evidence: [User research, competitive analysis]
    - Risk: [What could invalidate this decision]
+
+---
+
+## Traceability Skeleton
+
+<!--
+  AUTO-UPDATED by downstream commands:
+  - /speckit.specify → Sets "Spec Created" to [x], populates "Requirements"
+  - /speckit.tasks   → Populates "Tasks" column
+  - /speckit.implement → Populates "Tests", updates "Status"
+
+  Status progression:
+  - Not started → SPECIFIED → TASKED → IMPLEMENTING → IMPLEMENTED → VERIFIED
+
+  Do NOT manually edit this section - it is maintained by commands.
+-->
+
+| Concept ID | Wave | Spec Created | Requirements | Tasks | Tests | Status |
+|------------|------|--------------|--------------|-------|-------|--------|
+| [EPIC-001.F01.S01] | 1 | [ ] | - | - | - | Not started |
+| [EPIC-001.F01.S02] | 1 | [ ] | - | - | - | Not started |
+| [EPIC-001.F02.S01] | 1 | [ ] | - | - | - | Not started |
+
+### Progress Rollup
+
+<!--
+  Auto-calculated summary of implementation progress.
+  Updated by /speckit.specify, /speckit.tasks, /speckit.implement.
+-->
+
+| Status | Count | % |
+|--------|-------|---|
+| Not started | 3 | 100% |
+| SPECIFIED | 0 | 0% |
+| TASKED | 0 | 0% |
+| IMPLEMENTING | 0 | 0% |
+| IMPLEMENTED | 0 | 0% |
+| VERIFIED | 0 | 0% |
+| **Total** | **3** | |
+
+### Foundation Progress
+
+| Wave | Total | Implemented | Status |
+|------|-------|-------------|--------|
+| Wave 1 | 0 | 0 | [ ] Not started |
+| Wave 2 | 0 | 0 | [ ] Not started |
+| Wave 3+ | 0 | 0 | [ ] Blocked by Wave 1-2 |
+
+**Golden Path**: [ ] Not testable
+**Last Updated**: [date] by [command]
+
+---
+
+## Section Completion Checklist
+
+<!--
+  Track progress on concept completeness. All 33 sections are scaffolded below.
+  Check off sections as you complete them. CQS score reflects completion percentage.
+-->
+
+### Core Sections (Required for CQS ≥60) — 13 sections
+
+- [ ] Vision Statement (1)
+- [ ] Executive Summary (2)
+- [ ] Product Alternatives (3)
+- [ ] Discovery & Research (4) — Problem validation, market research
+- [ ] Business Context (5) — Target users, success metrics
+- [ ] UX Foundation Layer (6) — Technical foundations
+- [ ] Feature Hierarchy (7) — Core features to build
+- [ ] Feature Selection Rationale (8) — Why these features?
+- [ ] User Journeys (10) — Primary user paths
+- [ ] Execution Order (12) — Build sequence (waves)
+- [ ] Ideas Backlog (13) — Parking lot for future features
+- [ ] Glossary (14) — Domain terminology
+- [ ] CQS Score (Quality gate calculation)
+
+### Strategic Sections (Required for CQS ≥80) — 8 sections
+
+- [ ] PR/FAQ (Amazon Working Backwards press release)
+- [ ] Blue Ocean Canvas (ERRC grid for differentiation)
+- [ ] Business Model Canvas (Revenue streams, unit economics)
+- [ ] Porter's Five Forces (Competitive forces analysis)
+- [ ] Hypothesis Testing (Desirability/Feasibility/Viability)
+- [ ] Pre-Mortem Analysis (Failure scenario planning)
+- [ ] Strategic Trade-offs (Decision hierarchy)
+- [ ] Decision Log (Key decisions with rationale)
+
+### Advanced Sections (Required for CQS ≥90) — 12 sections
+
+- [ ] Investment Thesis (Investment justification)
+- [ ] Financial Sensitivity (Scenario analysis)
+- [ ] Scenario Planning (Strategic scenarios)
+- [ ] Three Horizons (Innovation portfolio allocation)
+- [ ] MOATS/OSM Analysis (Moats and operating system)
+- [ ] Ecosystem Strategy (Platform and ecosystem approach)
+- [ ] Portfolio Context (Multi-project positioning)
+- [ ] Execution Confidence (Readiness assessment)
+- [ ] Strategic Options (Real options analysis)
+- [ ] Strategic Alternatives (Build/Buy/Partner)
+- [ ] AI Responsibility (if applicable — AI ethics framework)
+- [ ] Reasoning Traces (Problem → JTBD → Feature chains)
+
+### Optional Sections
+
+- [ ] Concept Variants (MINIMAL/BALANCED/AMBITIOUS scope levels)
+- [ ] Multi-Agent Research Config (Research automation setup)
+
+**Completion**: [X]/33 core sections | **CQS Readiness**: [ ] READY (≥80) | [ ] NOT READY (<80)
 
 ---
 

@@ -82,6 +82,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - STEP 6 (NEW): VALIDATE COMPLETENESS - cross-check scenarios against predicted edge cases
   - STEP 7 (enhanced): SCORE COMPLETENESS - updated formula with 7 weighted components
   - Output schema updated with predicted_edge_cases, coverage_gaps, and completeness components
+- **Concept Template Section Reorganization** (`concept-template.md` v2.1-flow-optimized):
+  - Reorganized 19 sections to follow logical top-down flow (Strategy → Discovery → Features → Execution)
+  - **Discovery & Research** moved to position 4 (was 8) — Research must inform feature decisions
+  - **Execution Order** moved to position 12 (was 7) — Plan WHEN after defining WHAT
+  - **Section Completion Checklist** moved to position 17 (was 4) — Meta/tracking content at end
+  - Added 4 flow rationale comments explaining section groupings at key transitions
+  - Updated Section Completion Checklist to reflect new section positions
+  - Template version updated from v2.0-alternatives to v2.1-flow-optimized
 
 ### Technical Details
 
