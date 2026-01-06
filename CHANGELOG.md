@@ -7,6 +7,58 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.80] - 2026-01-06
+
+### Added
+
+- **Acceptance Criteria Enhancement**: AI-powered acceptance scenario generation with confidence scoring and edge case prediction
+  - **Confidence Scores (0.0-1.0)**: Each acceptance scenario includes AI confidence assessment of necessity
+    - 0.90-1.0: Critical scenario validating core functionality
+    - 0.70-0.89: Important scenario validating common path or significant error
+    - <0.70: Flagged for human review
+  - **Edge Case Prediction (STEP 4)**: Automatically predicts edge cases per entity type before scenario generation
+    - Detects 21 entity types (11 standard + 10 domain-specific)
+    - Assigns severity levels (CRITICAL/HIGH/MEDIUM/LOW) per edge case
+  - **Suggested Edge Cases**: Each scenario lists edge cases it should handle with cross-references
+  - **Coverage Gap Detection (STEP 6)**: Validates completeness by cross-checking scenarios against predicted edge cases
+  - **Enhanced Completeness Formula (STEP 7)**: Weighted scoring with 7 components
+    - Base coverage (60%): happy/error/boundary/security path coverage
+    - Edge case coverage (20%): entity-level edge case awareness
+    - Confidence bonus (10%): average scenario confidence score
+    - Reasoning quality (10%): scenarios with clear justification
+  - **10 Domain-Specific Entity Types** (`edge-case-heuristics.md`):
+    - Currency (amount, price, cost, fee) - 6 edge cases
+    - Percentage (rate, ratio, proportion) - 5 edge cases
+    - Coordinates (latitude, longitude, GPS) - 6 edge cases
+    - Timezone (tz, utc_offset) - 5 edge cases
+    - Version (semver, release) - 5 edge cases
+    - IP Address (IPv4/IPv6) - 6 edge cases
+    - MAC Address (hardware_address) - 4 edge cases
+    - Credit Card (cc_number, payment_card) - 5 edge cases
+    - SSN (social_security, tax_id) - 4 edge cases
+    - Locale (language, i18n) - 5 edge cases
+  - **Quality Gate SR-SPEC-22**: Validates all scenarios have confidence >= 0.70 (MEDIUM severity)
+  - **Spec Template Update** (`spec-template.md`):
+    - Added "Confidence" column to acceptance scenarios table
+    - Added "Predicted Edge Cases" subsection per user story
+    - Documentation of confidence scoring interpretation
+
+### Changed
+
+- **Acceptance Criteria Generator** (`specify.md` lines 183-445):
+  - Expanded from 5-step to 7-step RaT (Refine-and-Thought) prompting
+  - STEP 4 (NEW): PREDICT EDGE CASES - entity-type-based edge case prediction
+  - STEP 5 (enhanced): GENERATE SCENARIOS - now includes confidence_score and suggested_edge_cases fields
+  - STEP 6 (NEW): VALIDATE COMPLETENESS - cross-check scenarios against predicted edge cases
+  - STEP 7 (enhanced): SCORE COMPLETENESS - updated formula with 7 weighted components
+  - Output schema updated with predicted_edge_cases, coverage_gaps, and completeness components
+
+### Technical Details
+
+- Implementation approach: Template-based enhancement (no new Python modules)
+- Based on: AI_AUGMENTED_SPEC_ARCHITECTURE.md section 1.1
+- Backward compatible: Legacy specs without confidence scores receive WARN status, not FAIL
+
 ## [0.0.79] - 2026-01-06
 
 ### Fixed

@@ -38,6 +38,7 @@ Ensure specification artifacts meet quality standards for:
 | SR-SPEC-19 | Quality Score Pass | Overall G-Eval quality score >= 70 (Grade C+) | HIGH | ❌ |
 | SR-SPEC-20 | No Failing Dimensions | All quality dimensions score >= 0.50 | MEDIUM | ❌ |
 | SR-SPEC-21 | Consistency Check | No CRITICAL contradictions detected | CRITICAL | ❌ |
+| SR-SPEC-22 | Scenario Confidence | All acceptance scenarios have confidence >= 0.70 | MEDIUM | ❌ |
 
 ---
 
@@ -770,6 +771,82 @@ SR-SPEC-21:
 
 ---
 
+### SR-SPEC-22: Scenario Confidence (NEW v0.0.80)
+
+```text
+SR-SPEC-22:
+  severity: MEDIUM
+  auto_fixable: false
+  reference: "AI_AUGMENTED_SPEC_ARCHITECTURE.md section 1.1"
+
+  check_fn(artifact):
+    # Extract all acceptance scenarios with confidence scores
+    scenarios = EXTRACT_SCENARIOS(artifact)
+
+    IF scenarios.length == 0:
+      RETURN {status: SKIP, details: "No acceptance scenarios found"}
+
+    # Filter scenarios with confidence_score field
+    scenarios_with_confidence = FILTER(scenarios, s => s.confidence_score IS DEFINED)
+
+    IF scenarios_with_confidence.length == 0:
+      RETURN {
+        status: WARN,
+        details: "No scenarios have confidence_score field (legacy spec)"
+      }
+
+    # Check for low confidence scenarios
+    low_confidence = FILTER(
+      scenarios_with_confidence,
+      s => s.confidence_score < 0.70
+    )
+
+    IF low_confidence.length > 0:
+      scenario_ids = low_confidence.map(s => s.id).join(', ')
+      avg_confidence = SUM(low_confidence.map(s => s.confidence_score)) / low_confidence.length
+
+      RETURN {
+        status: FAIL,
+        details: "{low_confidence.length} scenarios with confidence < 0.70: {scenario_ids}",
+        avg_low_confidence: avg_confidence,
+        recommendation: "Review and clarify Given/When/Then, ensure measurable outcomes"
+      }
+
+    # Calculate overall confidence
+    avg_confidence = SUM(scenarios_with_confidence.map(s => s.confidence_score)) / scenarios_with_confidence.length
+
+    RETURN {
+      status: PASS,
+      details: "All {scenarios_with_confidence.length} scenarios have confidence >= 0.70 (avg: {avg_confidence:.2f})",
+      avg_confidence: avg_confidence
+    }
+
+  remediation:
+    """
+    For scenarios with confidence < 0.70:
+
+    1. **Review Given clause**: Is the initial state specific enough?
+       - ❌ "User on homepage"
+       - ✅ "User on homepage, logged in, cart contains 2 items"
+
+    2. **Review When clause**: Is the action clear and atomic?
+       - ❌ "User completes checkout"
+       - ✅ "User clicks 'Place Order' button"
+
+    3. **Review Then clause**: Is the outcome measurable?
+       - ❌ "Order is processed successfully"
+       - ✅ "Order confirmation displayed, confirmation email sent to user@example.com, order ID >= 1000"
+
+    4. **Check reasoning field**: Does it explain why this scenario is essential?
+       - If reasoning is vague or missing, add 1-2 sentences explaining the risk this scenario mitigates
+
+    5. **Consider splitting**: If scenario covers multiple concerns, split into separate scenarios
+       - Example: "User registration and profile update" → split into AS-1A (registration) and AS-1B (profile update)
+    """
+```
+
+---
+
 ## Integration with Self-Review Framework
 
 ```text
@@ -780,7 +857,8 @@ SPEC_CRITERIA = [
   SR-SPEC-06, SR-SPEC-07, SR-SPEC-08, SR-SPEC-09, SR-SPEC-10,
   SR-SPEC-11, SR-SPEC-12, SR-SPEC-13,  # AC completeness + Edge case coverage
   SR-SPEC-14, SR-SPEC-15, SR-SPEC-16, SR-SPEC-17, SR-SPEC-18,  # Ambiguity + Completeness
-  SR-SPEC-19, SR-SPEC-20, SR-SPEC-21  # G-Eval quality scoring + Consistency
+  SR-SPEC-19, SR-SPEC-20, SR-SPEC-21,  # G-Eval quality scoring + Consistency
+  SR-SPEC-22  # NEW v0.0.80: AI confidence scoring
 ]
 
 # Criteria activated by complexity tier:
@@ -788,7 +866,7 @@ TIER_CRITERIA = {
   TRIVIAL: [SR-SPEC-01, SR-SPEC-02, SR-SPEC-07],  # Critical only
   SIMPLE: [SR-SPEC-01..SR-SPEC-06, SR-SPEC-07],
   MODERATE: [SR-SPEC-01..SR-SPEC-13, SR-SPEC-14, SR-SPEC-15, SR-SPEC-16, SR-SPEC-19],  # + Quality score
-  COMPLEX: [SR-SPEC-01..SR-SPEC-21]  # All including G-Eval quality + consistency
+  COMPLEX: [SR-SPEC-01..SR-SPEC-22]  # All including G-Eval quality + consistency + AI confidence
 }
 ```
 

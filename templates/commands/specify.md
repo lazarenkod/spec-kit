@@ -230,7 +230,42 @@ claude_code:
 
         Mark critical entities (core to the feature's value proposition).
 
-        ## STEP 4: GENERATE Acceptance Scenarios
+        ## STEP 4: PREDICT EDGE CASES
+
+        For each entity detected in STEP 3, predict edge cases based on entity type.
+
+        **Entity Type → Edge Case Patterns**:
+
+        | Entity Type | Edge Cases to Consider |
+        |-------------|------------------------|
+        | email | Invalid format (missing @), duplicate email, very long local part (>64), internationalized domain (IDN), empty email |
+        | password | Too short (<8), no special chars, common password (top 10000), equals username, all lowercase, contains username |
+        | numeric | Negative (when positive required), zero, exceeds max safe integer (>9007199254740991), decimal places (if integer expected), NaN/Infinity |
+        | date | Past date (when future required), far future (>100 years), invalid date (Feb 30), timezone edge (DST transition), null/empty |
+        | file | Exceeds size limit, wrong file type, malicious content (virus/malware), path traversal (../), empty file, special chars in filename |
+        | string | Empty string, SQL injection attempt, XSS payload (<script>), exceeds max length, only whitespace, Unicode edge cases |
+        | URL | Invalid format, javascript: protocol (XSS), private IP (SSRF), very long URL (>2000 chars), missing protocol |
+        | phone | Invalid characters, missing country code, too short/long, empty |
+        | currency | Negative amount, zero amount, decimal precision edge (0.001), overflow (>MAX_SAFE_INTEGER), currency mismatch |
+        | percentage | Negative percentage (<0%), exceeds 100%, decimal precision, zero percent |
+
+        **Output for this step**:
+
+        ```yaml
+        predicted_edge_cases:
+          - entity: "email"
+            type: "email"
+            critical: true
+            edge_cases:
+              - condition: "Invalid email format (missing @)"
+                severity: "HIGH"
+              - condition: "Duplicate email (already registered)"
+                severity: "MEDIUM"
+              - condition: "Very long email (>254 chars)"
+                severity: "LOW"
+        ```
+
+        ## STEP 5: GENERATE Acceptance Scenarios
 
         Create scenarios with classification in table format:
 
@@ -245,21 +280,98 @@ claude_code:
         - P1/P1a stories also need: 1 BOUNDARY scenario
         - Security-related stories need: 1 SECURITY scenario
 
-        ## STEP 5: SCORE Completeness
+        **Enhanced Requirements** (AI Augmentation):
 
-        Calculate scenario completeness score (0.0 - 1.0):
+        For each scenario, include:
+
+        1. **Confidence Score (0.0-1.0)**: How confident are you this scenario is necessary for validation?
+           - 0.90-1.0: Critical scenario, directly validates core functionality
+           - 0.70-0.89: Important scenario, validates common path or significant error
+           - 0.50-0.69: Useful scenario, validates edge case or secondary flow
+           - <0.50: Nice-to-have scenario, may be optional
+
+        2. **Suggested Edge Cases**: Cross-reference predicted edge cases from STEP 4
+           - List edge cases this scenario should handle
+           - For BOUNDARY scenarios, reference specific entity edge cases
+           - For ERROR_PATH scenarios, list which error conditions are covered
+
+        3. **Reasoning**: Explain why this scenario is essential (1-2 sentences)
+           - What specific risk does it mitigate?
+           - What user value does it validate?
+
+        ## STEP 6: VALIDATE COMPLETENESS
+
+        Cross-check scenarios against predicted edge cases to identify coverage gaps.
+
+        **Entity Coverage Check**:
+        - For each critical entity (critical: true), ensure at least 1 BOUNDARY scenario exists
+        - For each security-sensitive entity (password, email, file, URL), ensure 1 SECURITY or ERROR_PATH scenario
+
+        **Edge Case Coverage Check**:
+        - For each predicted edge case with severity HIGH or CRITICAL:
+          - Is it covered by an existing scenario? (Check suggested_edge_cases field)
+          - If NOT covered, add to coverage_gaps with suggested scenario
+
+        **Output Format**:
+
+        ```yaml
+        coverage_gaps:
+          - entity: "email"
+            missing_edge_case: "Internationalized domain (IDN)"
+            severity: "MEDIUM"
+            suggested_scenario: "Add AS-1D: Given user enters email with IDN (тест@example.com), When submit, Then validate correctly or show clear error"
+          - entity: "password"
+            missing_edge_case: "Password equals username"
+            severity: "HIGH"
+            suggested_scenario: "Add AS-2C: Given password matches username, When submit, Then reject with error 'Password cannot match username'"
+        ```
+
+        **Validation Criteria**:
+        - No gaps with severity HIGH or CRITICAL → Coverage is excellent
+        - 1-2 gaps with severity MEDIUM → Coverage is acceptable (document gaps)
+        - 3+ gaps OR any CRITICAL gap → Coverage is insufficient (generate additional scenarios)
+
+        ## STEP 7: SCORE Completeness
+
+        Calculate enhanced scenario completeness score (0.0 - 1.0) with weighted components:
 
         ```text
-        completeness_score = (
-          (has_happy_path ? 0.30 : 0) +
-          (has_error_path ? 0.25 : 0) +
-          (has_boundary ? 0.20 : 0) +
-          (has_security IF security_trigger ELSE 0.15 : 0) +
-          (all_critical_entities_covered ? 0.10 : 0)
-        )
+        # Base Coverage (60%)
+        happy_coverage = MIN(1.0, happy_path_count / 1) * 0.20
+        expected_error_count = CEIL(happy_path_count / 2)  # Expect ~1 error per 2 happy paths
+        error_coverage = MIN(1.0, error_path_count / expected_error_count) * 0.20
+        boundary_coverage = MIN(1.0, boundary_count / critical_entity_count) * 0.10
+
+        # Security coverage: only count if security triggers detected (auth, input validation, file upload)
+        security_trigger_count = COUNT(entities WHERE type IN [password, email, file, URL])
+        security_coverage = IF security_trigger_count > 0 THEN MIN(1.0, security_count / security_trigger_count) * 0.10 ELSE 0.10
+
+        # Edge Case Awareness (20%)
+        entities_with_edge_cases = COUNT(scenarios WHERE suggested_edge_cases.length > 0)
+        total_entities = COUNT(entities_detected WHERE critical = true)
+        edge_case_coverage = (entities_with_edge_cases / total_entities) * 0.20
+
+        # Confidence Bonus (10%)
+        avg_confidence = SUM(scenario.confidence_score) / scenario_count
+        confidence_bonus = avg_confidence * 0.10
+
+        # Reasoning Quality (10%)
+        scenarios_with_reasoning = COUNT(scenarios WHERE reasoning.length > 20)
+        reasoning_quality = (scenarios_with_reasoning / total_scenarios) * 0.10
+
+        # Final Score
+        completeness_score = happy_coverage + error_coverage + boundary_coverage +
+                             security_coverage + edge_case_coverage +
+                             confidence_bonus + reasoning_quality
         ```
 
         **Threshold**: completeness_score >= 0.80 for PASS
+
+        **Scoring Interpretation**:
+        - 0.90-1.0: Excellent coverage, comprehensive scenarios
+        - 0.80-0.89: Good coverage, meets quality standards
+        - 0.70-0.79: Acceptable coverage, some gaps (review coverage_gaps)
+        - <0.70: Insufficient coverage, generate additional scenarios
 
         ## OUTPUT
 
@@ -287,9 +399,38 @@ claude_code:
             requires_test: true
             linked_fr: "FR-001"
             reasoning: "[why this scenario is essential]"
+            confidence_score: 0.95  # NEW: AI confidence in scenario necessity (0.0-1.0)
+            suggested_edge_cases:  # NEW: Edge cases this scenario should handle
+              - "Invalid format example"
+              - "Boundary condition example"
+
+        predicted_edge_cases:  # NEW: Output from STEP 4
+          - entity: "email"
+            type: "email"
+            critical: true
+            edge_cases:
+              - condition: "Invalid email format (missing @)"
+                severity: "HIGH"
+              - condition: "Duplicate email (already registered)"
+                severity: "MEDIUM"
+
+        coverage_gaps:  # NEW: Output from STEP 6
+          - entity: "email"
+            missing_edge_case: "Very long email (>254 chars)"
+            severity: "LOW"
+            suggested_scenario: "Add AS-1D: Given user enters email >254 chars, When submit, Then reject with clear error"
 
         completeness:
           score: 0.85
+          components:  # NEW: Breakdown by enhanced formula
+            happy_coverage: 0.20
+            error_coverage: 0.18
+            boundary_coverage: 0.08
+            security_coverage: 0.10
+            edge_case_coverage: 0.16
+            confidence_bonus: 0.09
+            reasoning_quality: 0.10
+          avg_confidence: 0.88  # NEW: Average scenario confidence
           gaps_identified:
             - "[any missing coverage areas]"
           coverage_by_type:

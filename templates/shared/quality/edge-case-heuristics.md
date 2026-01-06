@@ -59,6 +59,46 @@ DETECT_ENTITY_TYPE(field_name, context):
   IF field_lower MATCHES /id$|_id$|uuid|guid|ref|reference/:
     RETURN "id"
 
+  # Currency patterns (NEW v0.0.80)
+  IF field_lower MATCHES /amount|price|cost|fee|payment|refund|balance|subtotal|total|revenue/:
+    RETURN "currency"
+
+  # Percentage patterns (NEW v0.0.80)
+  IF field_lower MATCHES /percent|percentage|rate|ratio|proportion|discount/:
+    RETURN "percentage"
+
+  # Coordinates patterns (NEW v0.0.80)
+  IF field_lower MATCHES /latitude|lat|longitude|lng|lon|coords|location|gps|geolocation/:
+    RETURN "coordinates"
+
+  # Timezone patterns (NEW v0.0.80)
+  IF field_lower MATCHES /timezone|tz|utc_offset|zone|time_zone/:
+    RETURN "timezone"
+
+  # Version patterns (NEW v0.0.80)
+  IF field_lower MATCHES /version|release|semver|app_version|api_version/:
+    RETURN "version"
+
+  # IP address patterns (NEW v0.0.80)
+  IF field_lower MATCHES /ip|ip_address|ipv4|ipv6|remote_ip|client_ip/:
+    RETURN "ip_address"
+
+  # MAC address patterns (NEW v0.0.80)
+  IF field_lower MATCHES /mac|mac_address|hardware_address|physical_address/:
+    RETURN "mac_address"
+
+  # Credit card patterns (NEW v0.0.80)
+  IF field_lower MATCHES /credit_card|card_number|cc_number|payment_card/:
+    RETURN "credit_card"
+
+  # SSN patterns (NEW v0.0.80)
+  IF field_lower MATCHES /ssn|social_security|tax_id|national_id/:
+    RETURN "ssn"
+
+  # Locale patterns (NEW v0.0.80)
+  IF field_lower MATCHES /locale|language|lang|i18n|localization/:
+    RETURN "locale"
+
   # Default
   RETURN "string"
 ```
@@ -224,6 +264,151 @@ DETECT_ENTITY_TYPE(field_name, context):
 
 ---
 
+## Domain-Specific Entity Types
+
+> **NEW in v0.0.80**: Extended entity type detection for domain-specific fields
+
+### Currency Type
+
+**Detection patterns**: `amount|price|cost|fee|payment|refund|balance|subtotal|total|revenue`
+
+| ID Pattern | Condition | Expected Behavior | Severity |
+|------------|-----------|-------------------|----------|
+| EC-CURR-001 | Negative amount (when positive required) | Return validation error | HIGH |
+| EC-CURR-002 | Zero amount | Handle explicitly per business rule | HIGH |
+| EC-CURR-003 | Decimal precision edge (0.001, 0.999) | Round or reject based on currency | MEDIUM |
+| EC-CURR-004 | Exceeds max safe integer (>2^53-1) | Return validation error | CRITICAL |
+| EC-CURR-005 | Currency mismatch (USD vs EUR) | Convert or reject with clear error | HIGH |
+| EC-CURR-006 | Missing currency code | Default to system currency or require | MEDIUM |
+
+---
+
+### Percentage Type
+
+**Detection patterns**: `percent|percentage|rate|ratio|proportion|discount`
+
+| ID Pattern | Condition | Expected Behavior | Severity |
+|------------|-----------|-------------------|----------|
+| EC-PCT-001 | Negative percentage (<0%) | Return validation error | HIGH |
+| EC-PCT-002 | Zero percentage | Accept per business rule | LOW |
+| EC-PCT-003 | Exceeds 100% | Accept or reject per context | MEDIUM |
+| EC-PCT-004 | Decimal precision (0.01%, 99.99%) | Round or preserve precision | LOW |
+| EC-PCT-005 | Entered as decimal (0.15 vs 15%) | Clarify format or convert | MEDIUM |
+
+---
+
+### Coordinates Type (Latitude/Longitude)
+
+**Detection patterns**: `latitude|lat|longitude|lng|lon|coords|location|gps|geolocation`
+
+| ID Pattern | Condition | Expected Behavior | Severity |
+|------------|-----------|-------------------|----------|
+| EC-COORD-001 | Invalid latitude (>90 or <-90) | Return validation error | CRITICAL |
+| EC-COORD-002 | Invalid longitude (>180 or <-180) | Return validation error | CRITICAL |
+| EC-COORD-003 | Precision edge (6 decimals = ~0.1m) | Preserve or limit precision | MEDIUM |
+| EC-COORD-004 | Null island (0, 0) coordinates | Flag or accept per context | LOW |
+| EC-COORD-005 | North/South pole edge case (lat = ±90) | Handle special longitude case | LOW |
+| EC-COORD-006 | Missing lat or lng (incomplete pair) | Return validation error | HIGH |
+
+---
+
+### Timezone Type
+
+**Detection patterns**: `timezone|tz|utc_offset|zone|time_zone`
+
+| ID Pattern | Condition | Expected Behavior | Severity |
+|------------|-----------|-------------------|----------|
+| EC-TZ-001 | Invalid timezone code (e.g., "XYZ/Invalid") | Return validation error | HIGH |
+| EC-TZ-002 | DST transition edge (spring forward, fall back) | Handle time correctly per IANA db | CRITICAL |
+| EC-TZ-003 | UTC offset edge (+14:00, -12:00) | Validate within valid range | MEDIUM |
+| EC-TZ-004 | Deprecated timezone (e.g., "US/Pacific") | Convert to canonical (America/Los_Angeles) | LOW |
+| EC-TZ-005 | Missing timezone (naive datetime) | Assume UTC or require explicit | MEDIUM |
+
+---
+
+### Version Type (SemVer)
+
+**Detection patterns**: `version|release|semver|app_version|api_version`
+
+| ID Pattern | Condition | Expected Behavior | Severity |
+|------------|-----------|-------------------|----------|
+| EC-VER-001 | Invalid semver format (not X.Y.Z) | Return validation error | HIGH |
+| EC-VER-002 | Pre-release tags (1.0.0-alpha) | Accept per semver spec | LOW |
+| EC-VER-003 | Build metadata (1.0.0+build.123) | Accept per semver spec | LOW |
+| EC-VER-004 | Major version zero (0.x.y = unstable) | Flag or handle per policy | MEDIUM |
+| EC-VER-005 | Version comparison edge (1.0.0 vs 1.0) | Normalize and compare | MEDIUM |
+
+---
+
+### IP Address Type (IPv4/IPv6)
+
+**Detection patterns**: `ip|ip_address|ipv4|ipv6|remote_ip|client_ip`
+
+| ID Pattern | Condition | Expected Behavior | Severity |
+|------------|-----------|-------------------|----------|
+| EC-IP-001 | Invalid IPv4 format | Return validation error | HIGH |
+| EC-IP-002 | Invalid IPv6 format | Return validation error | HIGH |
+| EC-IP-003 | Private IP range (10.x, 192.168.x) | Accept or reject per policy | MEDIUM |
+| EC-IP-004 | Loopback address (127.0.0.1, ::1) | Accept or reject per context | MEDIUM |
+| EC-IP-005 | Reserved IP (0.0.0.0, 255.255.255.255) | Return validation error | HIGH |
+| EC-IP-006 | IPv6 abbreviation (::1 vs 0:0:0:0:0:0:0:1) | Normalize and accept | LOW |
+
+---
+
+### MAC Address Type
+
+**Detection patterns**: `mac|mac_address|hardware_address|physical_address`
+
+| ID Pattern | Condition | Expected Behavior | Severity |
+|------------|-----------|-------------------|----------|
+| EC-MAC-001 | Invalid format (wrong separators, length) | Return validation error | HIGH |
+| EC-MAC-002 | Multicast MAC (LSB of first octet = 1) | Accept or flag per context | MEDIUM |
+| EC-MAC-003 | Broadcast MAC (FF:FF:FF:FF:FF:FF) | Accept or reject per policy | MEDIUM |
+| EC-MAC-004 | All zeros (00:00:00:00:00:00) | Return validation error | HIGH |
+
+---
+
+### Credit Card Type
+
+**Detection patterns**: `credit_card|card_number|cc_number|payment_card`
+
+| ID Pattern | Condition | Expected Behavior | Severity |
+|------------|-----------|-------------------|----------|
+| EC-CC-001 | Invalid Luhn checksum | Return validation error | CRITICAL |
+| EC-CC-002 | Expired card | Return validation error with expiry date | HIGH |
+| EC-CC-003 | Test card number (4111 1111 1111 1111) | Accept in test mode only | MEDIUM |
+| EC-CC-004 | Invalid card type for merchant | Return unsupported card type error | HIGH |
+| EC-CC-005 | Spaces/dashes in number | Accept and normalize | LOW |
+
+---
+
+### Social Security Number Type (SSN)
+
+**Detection patterns**: `ssn|social_security|tax_id|national_id`
+
+| ID Pattern | Condition | Expected Behavior | Severity |
+|------------|-----------|-------------------|----------|
+| EC-SSN-001 | Invalid format (not XXX-XX-XXXX) | Return validation error | HIGH |
+| EC-SSN-002 | Reserved number (666-xx-xxxx, 000-xx-xxxx) | Return validation error | HIGH |
+| EC-SSN-003 | All same digits (111-11-1111) | Return validation error | MEDIUM |
+| EC-SSN-004 | Missing hyphens (123456789) | Accept and normalize | LOW |
+
+---
+
+### Locale Type
+
+**Detection patterns**: `locale|language|lang|i18n|localization`
+
+| ID Pattern | Condition | Expected Behavior | Severity |
+|------------|-----------|-------------------|----------|
+| EC-LOC-001 | Invalid locale code (not BCP 47) | Return validation error | HIGH |
+| EC-LOC-002 | Unsupported language | Return unsupported locale error | HIGH |
+| EC-LOC-003 | Missing region (en vs en-US) | Default to base language or require | MEDIUM |
+| EC-LOC-004 | RTL text (Arabic, Hebrew) | Handle right-to-left correctly | MEDIUM |
+| EC-LOC-005 | Deprecated locale code | Convert to modern code | LOW |
+
+---
+
 ## Generation Algorithm
 
 ```text
@@ -305,7 +490,17 @@ CALCULATE_ENTITY_COVERAGE(entities, edge_cases):
       "phone": 2,
       "array": 2,
       "boolean": 1,
-      "id": 2
+      "id": 2,
+      "currency": 3,        # NEW v0.0.80
+      "percentage": 2,      # NEW v0.0.80
+      "coordinates": 3,     # NEW v0.0.80
+      "timezone": 3,        # NEW v0.0.80
+      "version": 2,         # NEW v0.0.80
+      "ip_address": 3,      # NEW v0.0.80
+      "mac_address": 2,     # NEW v0.0.80
+      "credit_card": 3,     # NEW v0.0.80
+      "ssn": 3,             # NEW v0.0.80
+      "locale": 3           # NEW v0.0.80
     }[entity_type] OR 2
 
     IF ec_count >= min_expected:
