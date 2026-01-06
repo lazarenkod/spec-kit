@@ -741,6 +741,105 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Reference template**: `templates/shared/concept-sections/blue-ocean-canvas.md`
 
+3c. **Product Alternatives Generation** — NEW:
+
+   **Goal**: Generate 3-5 fundamentally different product visions solving the same problem.
+   Ensures exploration of design space before committing to one approach.
+
+   **When**: Always run in Discovery Mode. For Capture Mode, skip unless user requests alternatives.
+
+   **Five Generation Strategies**:
+
+   Apply these strategic lenses to generate alternatives:
+
+   1. **Conventional**: Industry standard approach (what competitors do)
+   2. **Minimal**: Simplest 80/20 solution (fastest to market)
+   3. **Disruptive**: Opposite/contrarian approach (differentiated)
+   4. **Premium**: Best-in-class, unlimited budget (quality-first)
+   5. **Platform**: Ecosystem/marketplace play (network effects)
+
+   **For EACH strategy**:
+   - Formulate 1-2 sentence vision statement
+   - List 5-7 core epics/features
+   - Define value proposition
+   - Identify key differentiators vs competitors
+   - List 3 pros and 3 cons
+   - Estimate effort (S/M/L/XL) and risk (Low/Med/High)
+   - Calculate Time to MVP estimate
+
+   **Scoring** (40 points total):
+   - Problem-Solution Fit (30%): 0-12 points
+   - Market Differentiation (25%): 0-10 points
+   - Feasibility (25%): 0-10 points
+   - Time to Market (20%): 0-8 points
+
+   **Use Brainstorm-Curate Protocol**:
+   ```text
+   IMPORT: templates/shared/quality/brainstorm-curate.md
+
+   BRAINSTORM Phase (divergent):
+   - Suspend judgment during generation
+   - Use provocative prompts:
+     * "What would [Innovative Company] do?"
+     * "What if we had zero/unlimited budget?"
+     * "What's the opposite of best practices?"
+   - Make alternatives concretely different (not just scope variations)
+
+   CURATE Phase (convergent):
+   - Score each alternative on 4 criteria
+   - Identify potential hybrids
+   - Document trade-offs explicitly
+   ```
+
+   **Output**: Create `specs/concept-alternatives.md` with:
+   - All 5 alternatives documented
+   - Comparison matrix with scores
+   - Quick summary (highest score, fastest, lowest risk, most differentiated)
+
+   **Quality Check**:
+   - At least 3 alternatives generated (5 preferred)
+   - Alternatives are meaningfully different (not just MINIMAL/BALANCED/AMBITIOUS scope variants)
+   - Each has concrete features, not vague descriptions
+   - Scores grounded in evidence from Phases 0a-0c
+
+   **Reference template**: `templates/shared/concept-sections/product-alternatives.md`
+
+3d. **User Selects Preferred Alternative** — NEW:
+
+   **Goal**: User reviews alternatives and selects one to expand into full concept.
+
+   **Interactive Flow**:
+
+   1. **Display Summary**:
+      ```markdown
+      ## Product Alternatives Summary
+
+      | Alternative | Strategy | Score | MVP Time | Risk | Highlights |
+      |-------------|----------|:-----:|:--------:|:----:|------------|
+      | 1. [Name] | [Type] | X/40 | X weeks | [L/M/H] | [Key differentiator] |
+      | 2. [Name] | [Type] | X/40 | X weeks | [L/M/H] | [Key differentiator] |
+      | 3. [Name] | [Type] | X/40 | X weeks | [L/M/H] | [Key differentiator] |
+      | 4. [Name] | [Type] | X/40 | X weeks | [L/M/H] | [Key differentiator] |
+      | 5. [Name] | [Type] | X/40 | X weeks | [L/M/H] | [Key differentiator] |
+      ```
+
+   2. **ASK USER**: "Which alternative would you like to expand into a full concept? (1-5, or ask questions)"
+
+   3. **Allow Questions**: User can ask for clarification about any alternative before deciding
+
+   4. **WAIT** for user selection
+
+   5. **Store Selection**: `SELECTED_ALT = [N]` for use in step 5 (Vision Extraction)
+
+   6. **Confirm**: "I'll expand Alternative [N]: [Name] ([Strategy] approach) into the full concept"
+
+   **Document in Concept**:
+   - Add "Product Alternatives" section with selected alternative highlighted
+   - Document selection rationale (why this alternative over others)
+   - Reference full analysis in `specs/concept-alternatives.md`
+
+   **Output**: Selected alternative index stored for Vision and Feature Hierarchy generation.
+
 4. **Transition: Discovery → Structure** (if Discovery Mode was used):
 
    **Synthesis step** before proceeding to structured capture:
@@ -845,76 +944,43 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Output**: Document clarifications in "Assumptions & Clarifications" section.
 
-4c. **Generate Concept Variants** (NEW — Transparency Enhancement):
+4c. **Scope Variants (OPTIONAL)** — MOVED TO STEP 12:
 
-   **Goal**: Generate 2-3 alternative concept variants to make feature selection transparent.
-   Users see not just "what" but "why this approach vs alternatives".
+   **NOTE**: Scope variant generation (MINIMAL/BALANCED/AMBITIOUS) has been moved to Step 12 and is now OPTIONAL.
 
-   **Reference template**: `templates/shared/concept-sections/concept-variants.md`
+   **Reason**: Product Alternatives (Phase 0d/0e) explore WHAT to build (different visions).
+   Scope Variants explore HOW MUCH to build (different scope levels of same vision).
 
-   **Variant Generation Algorithm**:
+   **When Generated**:
+   - OPTIONAL: Only if user requests with `--generate-variants` flag
+   - OR: After concept complete, via `/speckit.concept-variants` command
 
+   **See**: Step 12 for scope variant generation logic.
+   **Reference**: `templates/shared/concept-sections/concept-variants.md`
+
+5. **Extract Vision and Business Context**:
+
+   **Priority Order**:
+   1. **IF SELECTED_ALT exists** (from Phase 0e): Use selected alternative's vision
+   2. **ELSE IF** clear user input (Capture Mode): Extract from user description
+   3. **ELSE**: Use Discovery findings (Phase 0 outputs)
+
+   **From Selected Alternative** (if Phase 0e ran):
    ```text
-   INPUTS:
-     - Solution approaches from Phase 0c (Option 1-5)
-     - JTBD prioritization from persona analysis
-     - Technical hints from Phase 4
+   # Use Alternative [N]'s components:
+   - **Vision Statement**: Selected alternative's vision statement
+   - **Core Features**: Expand selected alternative's 5-7 epics into full Feature Hierarchy
+   - **Value Proposition**: Selected alternative's value proposition
+   - **Differentiation**: Selected alternative's differentiation points
+   - **Success Metrics**: Infer metrics from value proposition (what would prove this works?)
 
-   FOR EACH feature candidate:
-     1. Classify by JTBD priority:
-        - MUST_HAVE: Directly enables PRIMARY functional JTBD
-        - SHOULD_HAVE: Enables SECONDARY JTBD or emotional jobs
-        - COULD_HAVE: Enables social jobs or nice-to-have
-
-     2. Assign to variants:
-        MINIMAL:   MUST_HAVE only
-        BALANCED:  MUST_HAVE + SHOULD_HAVE (Impact/Effort > threshold)
-        AMBITIOUS: All features (MUST + SHOULD + COULD)
-
-     3. Calculate variant metrics:
-        - Feature count
-        - Estimated effort (sum of feature T-shirt sizes)
-        - Risk score (technical complexity weighted average)
-        - Differentiation score (from Blue Ocean analysis)
-
-     4. Generate recommendation:
-        DEFAULT: BALANCED (unless constraints dictate otherwise)
-        OVERRIDE if:
-          - Timeline < 8 weeks → recommend MINIMAL
-          - "Land and expand" strategy → recommend MINIMAL
-          - Competitive pressure high → recommend AMBITIOUS
+   # Document Selection:
+   - Add "Product Alternatives" section to concept.md
+   - Include selection rationale (why this alternative over others)
+   - Reference full analysis in specs/concept-alternatives.md
    ```
 
-   **Output for Concept Variants section**:
-
-   ```markdown
-   ### Variant Comparison Matrix
-
-   | Dimension | MINIMAL | BALANCED | AMBITIOUS |
-   |-----------|:-------:|:--------:|:---------:|
-   | Time to MVP | [X] weeks | [Y] weeks | [Z] weeks |
-   | Team Size | [N] FTEs | [N] FTEs | [N] FTEs |
-   | Feature Count | [N] | [N] | [N] |
-   | Risk Level | Low | Medium | High |
-   | Differentiation | Table stakes | Competitive | Market leader |
-   | JTBD Coverage | Primary only | Primary + Secondary | All JTBD |
-
-   ### Recommended Variant: [BALANCED]
-
-   **Why this recommendation**:
-   1. [Timeline/constraint fit]
-   2. [Differentiation reasoning]
-   3. [Risk balance rationale]
-
-   **When to choose differently**:
-   - MINIMAL if: [specific condition]
-   - AMBITIOUS if: [specific condition]
-   ```
-
-   **Integration**: Feed variant assignment into Feature Hierarchy (step 6) — each feature
-   should indicate which variants it belongs to (ALL, MINIMAL+, BALANCED+, AMBITIOUS only).
-
-5. **Extract Vision and Business Context** from user input:
+   **From User Input** (Capture Mode, no alternatives generated):
 
    Parse the user description to identify:
    - **Vision Statement**: What is this? Who is it for? What problem does it solve?
@@ -2052,7 +2118,110 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Validation**: At least 3 reasoning traces required (CQS criterion).
 
-11. **Write concept.md** to `specs/concept.md` using template structure.
+12. **Generate Scope Variants (OPTIONAL)** — Moved from Step 4c:
+
+   **Goal**: Generate MINIMAL/BALANCED/AMBITIOUS scope variations of the selected product alternative.
+
+   **When to Generate**:
+   - OPTIONAL: Only if user explicitly requests with `--generate-variants` flag
+   - OR: User asks during interaction: "Can you generate scope variants?"
+   - OTHERWISE: Skip this step (mark Concept Variants section as "Optional")
+
+   **Distinction**:
+   - **Product Alternatives** (Phase 0d): Different VISIONS (what to build)
+   - **Scope Variants** (this step): Different SCOPE levels (how much to build) of SAME vision
+
+   **Reference template**: `templates/shared/concept-sections/concept-variants.md`
+
+   **Variant Generation Algorithm**:
+
+   ```text
+   INPUTS:
+     - Features from Feature Hierarchy (step 6)
+     - JTBD prioritization from persona analysis (step 5)
+     - Effort estimates from step 6
+
+   FOR EACH feature candidate:
+     1. Classify by JTBD priority:
+        - MUST_HAVE: Directly enables PRIMARY functional JTBD
+        - SHOULD_HAVE: Enables SECONDARY JTBD or emotional jobs
+        - COULD_HAVE: Enables social jobs or nice-to-have
+
+     2. Assign to variants:
+        MINIMAL:   MUST_HAVE only
+        BALANCED:  MUST_HAVE + SHOULD_HAVE (Impact/Effort > threshold)
+        AMBITIOUS: All features (MUST + SHOULD + COULD)
+
+     3. Calculate variant metrics:
+        - Feature count
+        - Estimated effort (sum of feature T-shirt sizes)
+        - Risk score (technical complexity weighted average)
+        - Differentiation score (from Blue Ocean analysis if available)
+
+     4. Generate recommendation:
+        DEFAULT: BALANCED (unless constraints dictate otherwise)
+        OVERRIDE if:
+          - Timeline < 8 weeks → recommend MINIMAL
+          - "Land and expand" strategy → recommend MINIMAL
+          - Competitive pressure high → recommend AMBITIOUS
+   ```
+
+   **Output for Concept Variants section** (if generated):
+
+   ```markdown
+   ## Concept Variants (OPTIONAL)
+
+   **Status**: [x] Generated
+
+   ### Variant Comparison Matrix
+
+   | Dimension | MINIMAL | BALANCED | AMBITIOUS |
+   |-----------|:-------:|:--------:|:---------:|
+   | Time to MVP | [X] weeks | [Y] weeks | [Z] weeks |
+   | Team Size | [N] FTEs | [N] FTEs | [N] FTEs |
+   | Feature Count | [N] | [N] | [N] |
+   | Risk Level | Low | Medium | High |
+   | Differentiation | Table stakes | Competitive | Market leader |
+   | JTBD Coverage | Primary only | Primary + Secondary | All JTBD |
+
+   ### Recommended Variant: [BALANCED]
+
+   **Why this recommendation**:
+   1. [Timeline/constraint fit]
+   2. [Differentiation reasoning]
+   3. [Risk balance rationale]
+
+   **When to choose differently**:
+   - MINIMAL if: [specific condition]
+   - AMBITIOUS if: [specific condition]
+
+   [Detailed variant breakdowns...]
+   ```
+
+   **If Skipped**:
+
+   Mark Concept Variants section in concept.md as:
+   ```markdown
+   ## Concept Variants (OPTIONAL)
+
+   **Status**: [ ] Not generated
+
+   To generate scope variants (MINIMAL/BALANCED/AMBITIOUS), use:
+   ```
+   /speckit.concept-variants
+   ```
+
+   **Note**: Scope variants are different from Product Alternatives.
+   Product Alternatives explored different visions (what to build).
+   Scope variants explore different scope levels (how much to build) of the selected vision.
+   ```
+
+   **Integration**:
+   - If generated: Feed variant assignment into Feature Hierarchy — each feature
+     indicates which variants it belongs to (ALL, MINIMAL+, BALANCED+, AMBITIOUS only)
+   - If skipped: Features in hierarchy have no variant assignment (can be added later)
+
+13. **Write concept.md** to `specs/concept.md` using template structure.
 
 ## Validation Gates
 
@@ -2430,12 +2599,23 @@ ELSE:
 Verify transparency and explainability:
 
 ```text
-# SR-CONCEPT-23: Variants Generated
-VARIANTS_COUNT = count(sections matching "Variant: MINIMAL|BALANCED|AMBITIOUS")
-IF VARIANTS_COUNT < 3:
-  ERROR: "Only {VARIANTS_COUNT} concept variants documented, need 3"
-IF "Recommended Variant" section missing:
-  ERROR: "No recommended variant with rationale"
+# SR-CONCEPT-23: Scope Variants (OPTIONAL in v2.0)
+SCOPE_VARIANTS_COUNT = count(sections matching "Variant: MINIMAL|BALANCED|AMBITIOUS")
+IF SCOPE_VARIANTS_COUNT >= 3:
+  INFO: "Scope variants generated ({SCOPE_VARIANTS_COUNT} variants)"
+  IF "Recommended Variant" section missing:
+    WARN: "No recommended variant with rationale"
+ELSE:
+  INFO: "Scope variants not generated (optional in v2.0)"
+
+# SR-CONCEPT-27: Product Alternatives (NEW — REQUIRED in v2.0)
+PRODUCT_ALTERNATIVES_COUNT = count(sections matching "Alternative [0-9]+:")
+IF PRODUCT_ALTERNATIVES_COUNT < 3:
+  ERROR: "Only {PRODUCT_ALTERNATIVES_COUNT} product alternatives documented, need ≥3"
+IF NOT check("Selected Alternative:"):
+  WARN: "No selected alternative indicated — unclear which approach was chosen"
+IF NOT check("Selection Rationale:" OR "Why this alternative"):
+  WARN: "Missing selection rationale — why was this alternative chosen over others?"
 
 # SR-CONCEPT-24: Per-Feature Rationale
 FEATURES_WITH_JTBD = 0

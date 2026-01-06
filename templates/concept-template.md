@@ -1,6 +1,16 @@
 # Concept: [PROJECT_NAME]
 
-**Version**: 1.0 | **Created**: [DATE] | **Status**: Draft
+**Version**: 2.0 | **Template Version**: v2.0-alternatives | **Created**: [DATE] | **Status**: Draft
+
+<!--
+  BREAKING CHANGES in v2.0:
+  - Product Alternatives section (NEW) — Explore alternative product visions before committing
+  - All 33 concept sections scaffolded for completeness
+  - Scope Variants (MINIMAL/BALANCED/AMBITIOUS) now OPTIONAL
+  - Section Completion Checklist for tracking progress
+
+  Migration from v1.x: Existing concepts still work. New concepts use comprehensive v2.0 format.
+-->
 
 ## Vision Statement
 
@@ -57,25 +67,141 @@
 ### Recommendation
 [GO / NO-GO / CONDITIONAL] — CQS-E: [XX]/120
 
-**Concept Variant**: [BALANCED] — See "Concept Variants" section for alternatives and detailed comparison.
+**Selected Alternative**: [Alternative Name] — See "Product Alternatives" section for comparison of approaches considered.
 
 ---
 
-## Concept Variants
+## Product Alternatives
 
 <!--
-  PURPOSE: Make feature selection transparent by showing alternative approaches.
-  This section answers: "Why THIS set of features and not another?"
+  PURPOSE: Document alternative product visions explored before selecting this approach.
+  Shows strategic thinking and ensures design space was properly explored.
 
-  Three variants represent strategic trade-offs:
-  - MINIMAL: Speed to market, validate hypothesis
-  - BALANCED: Core value + differentiation (usually recommended)
-  - AMBITIOUS: Full vision, market leadership
+  Five Strategy Types:
+  1. Conventional: Industry standard approach
+  2. Minimal: Simplest 80/20 solution
+  3. Disruptive: Opposite/contrarian approach
+  4. Premium: Best-in-class, no constraints
+  5. Platform: Ecosystem/marketplace play
+
+  Reference: templates/shared/concept-sections/product-alternatives.md
+-->
+
+### Selected Alternative: [N]. [Alternative Name]
+
+**Strategy Type**: [Conventional/Minimal/Disruptive/Premium/Platform]
+
+**Why this alternative**:
+1. **[Reason 1]**: [e.g., "Best problem-solution fit (score: X/12) for primary persona"]
+2. **[Reason 2]**: [e.g., "Optimal balance of differentiation (X/10) and feasibility (X/10)"]
+3. **[Reason 3]**: [e.g., "Fastest path to MVP (X weeks) while maintaining competitive differentiation"]
+
+**Score**: [X]/40 (Problem Fit: [X]/12 | Differentiation: [X]/10 | Feasibility: [X]/10 | Time: [X]/8)
+
+### Alternatives Considered
+
+Full analysis with all 5 alternatives and scoring available in: `specs/concept-alternatives.md`
+
+**Quick Comparison**:
+
+| Alternative | Strategy | Score | MVP Time | Risk | Key Differentiator |
+|-------------|----------|:-----:|:--------:|:----:|-------------------|
+| 1. [Name] | [Type] | X/40 | X weeks | L/M/H | [Brief highlight] |
+| 2. [Name] | [Type] | X/40 | X weeks | L/M/H | [Brief highlight] |
+| 3. [Name] | [Type] | X/40 | X weeks | L/M/H | [Brief highlight] |
+| 4. [Name] | [Type] | X/40 | X weeks | L/M/H | [Brief highlight] |
+| 5. [Name] | [Type] | X/40 | X weeks | L/M/H | [Brief highlight] |
+
+**Decision Rationale**: [1-2 sentences explaining why this alternative was chosen over others, referencing specific evidence from discovery phase]
+
+---
+
+## Section Completion Checklist
+
+<!--
+  Track progress on concept completeness. All 33 sections are scaffolded below.
+  Check off sections as you complete them. CQS score reflects completion percentage.
+-->
+
+### Core Sections (Required for CQS ≥60) — 13 sections
+
+- [ ] Vision Statement
+- [ ] Executive Summary
+- [ ] Product Alternatives
+- [ ] UX Foundation Layer (Personas + JTBD)
+- [ ] Feature Hierarchy (Epics → Features → Stories)
+- [ ] User Journeys (Primary paths through system)
+- [ ] Success Metrics (SMART-validated KPIs with North Star)
+- [ ] Market Opportunity (TAM/SAM/SOM with evidence)
+- [ ] Competitive Positioning (Matrix + differentiation)
+- [ ] Risk Assessment (Matrix with mitigations)
+- [ ] Technical Discovery Hints (Domain entities, API surface)
+- [ ] Ideas Backlog (Parking lot for future features)
+- [ ] CQS Score (Quality gate calculation)
+
+### Strategic Sections (Required for CQS ≥80) — 8 sections
+
+- [ ] PR/FAQ (Amazon Working Backwards press release)
+- [ ] Blue Ocean Canvas (ERRC grid for differentiation)
+- [ ] Business Model Canvas (Revenue streams, unit economics)
+- [ ] Porter's Five Forces (Competitive forces analysis)
+- [ ] Hypothesis Testing (Desirability/Feasibility/Viability)
+- [ ] Pre-Mortem Analysis (Failure scenario planning)
+- [ ] Strategic Trade-offs (Decision hierarchy)
+- [ ] Decision Log (Key decisions with rationale)
+
+### Advanced Sections (Required for CQS ≥90) — 12 sections
+
+- [ ] Investment Thesis (Investment justification)
+- [ ] Financial Sensitivity (Scenario analysis)
+- [ ] Scenario Planning (Strategic scenarios)
+- [ ] Three Horizons (Innovation portfolio allocation)
+- [ ] MOATS/OSM Analysis (Moats and operating system)
+- [ ] Ecosystem Strategy (Platform and ecosystem approach)
+- [ ] Portfolio Context (Multi-project positioning)
+- [ ] Execution Confidence (Readiness assessment)
+- [ ] Strategic Options (Real options analysis)
+- [ ] Strategic Alternatives (Build/Buy/Partner)
+- [ ] AI Responsibility (if applicable — AI ethics framework)
+- [ ] Reasoning Traces (Problem → JTBD → Feature chains)
+
+### Optional Sections
+
+- [ ] Concept Variants (MINIMAL/BALANCED/AMBITIOUS scope levels)
+- [ ] Multi-Agent Research Config (Research automation setup)
+
+**Completion**: [X]/33 core sections | **CQS Readiness**: [ ] READY (≥80) | [ ] NOT READY (<80)
+
+---
+
+## Concept Variants (OPTIONAL)
+
+<!--
+  NOTE: This section is OPTIONAL in v2.0. It shows SCOPE variations (MINIMAL/BALANCED/AMBITIOUS)
+  of the selected product alternative.
+
+  To generate: Use /speckit.concept-variants command
+
+  IMPORTANT DISTINCTION:
+  - Product Alternatives (section above) = Different VISIONS (what to build)
+  - Concept Variants (this section) = Different SCOPE levels (how much to build) of SAME vision
+
+  Three variants represent scope trade-offs:
+  - MINIMAL: Speed to market, validate hypothesis (MUST_HAVE features only)
+  - BALANCED: Core value + differentiation (MUST_HAVE + SHOULD_HAVE)
+  - AMBITIOUS: Full vision, market leadership (all features)
 
   Reference: templates/shared/concept-sections/concept-variants.md
 -->
 
-### Variant Comparison Matrix
+**Status**: [ ] Not generated | [ ] Generated
+
+To generate scope variants, use:
+```
+/speckit.concept-variants
+```
+
+### Variant Comparison Matrix (if generated)
 
 | Dimension | MINIMAL | BALANCED | AMBITIOUS |
 |-----------|:-------:|:--------:|:---------:|

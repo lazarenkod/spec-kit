@@ -1,12 +1,28 @@
 # Concept Variants
 
-> **Purpose**: Generate 2-3 alternative concept variants to make feature selection transparent. Users see not just "what" but "why this approach vs alternatives".
+> **Purpose**: Generate scope variations (MINIMAL/BALANCED/AMBITIOUS) of the selected product alternative to make MVP planning transparent.
+
+> **IMPORTANT**: In v2.0, this is DIFFERENT from Product Alternatives (see product-alternatives.md)
+
+## Distinction: Product Alternatives vs Concept Variants
+
+| Aspect | Product Alternatives | Concept Variants (this file) |
+|--------|---------------------|------------------------------|
+| **What** | Different product VISIONS | Different SCOPE levels |
+| **Question** | "WHAT should we build?" | "HOW MUCH should we build?" |
+| **Phase** | Phase 0d (Discovery) | Step 12 (Optional) |
+| **Examples** | Chat app vs Doc app vs Visual workspace | Chat app with 5 vs 12 vs 25 features |
+| **Status** | REQUIRED in v2.0 | OPTIONAL in v2.0 |
+| **Command** | `/speckit.concept` (Phase 0d) | `/speckit.concept-variants` |
+| **CQS Impact** | Strategic Depth (30/100 pts) | Transparency (10/100 pts bonus) |
 
 ## Integration Notes
 
-- **Depends on**: Phase 0c Solution Ideation (5 approaches), persona-jtbd.md, market-framework.md
-- **Feeds into**: Feature Hierarchy, Executive Summary
-- **CQS Impact**: Transparency component (5% weight)
+- **Depends on**: Feature Hierarchy, persona-jtbd.md, effort estimates
+- **Feeds into**: Implementation planning, roadmap, release scoping
+- **CQS Impact**: Transparency component (10% bonus, OPTIONAL in v2.0)
+- **Status in v2.0**: OPTIONAL — Generated via `/speckit.concept-variants` command
+- **Relationship**: Scope variants are for the selected Product Alternative (from Phase 0d/0e)
 
 ---
 

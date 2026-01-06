@@ -248,17 +248,32 @@ When multiple sources provide contradictory information:
 
 | Criterion | Max Pts | Evidence Tier | Score | Sources |
 |-----------|:-------:|:-------------:|:-----:|---------|
-| PR/FAQ completed (Amazon format) | 25 | N/W/M/S/VS | | [Source IDs] |
-| Blue Ocean Canvas (ERRC grid) | 20 | N/W/M/S/VS | | [Source IDs] |
-| Business Model Canvas with unit economics | 20 | N/W/M/S/VS | | [Source IDs] |
-| Three Horizons allocation | 15 | N/W/M/S/VS | | [Source IDs] |
+| **Product Alternatives generated** ← NEW | **30** | N/W/M/S/VS | | [Source IDs] |
+| PR/FAQ completed (Amazon format) | 15 | N/W/M/S/VS | | [Source IDs] |
+| Blue Ocean Canvas (ERRC grid) | 15 | N/W/M/S/VS | | [Source IDs] |
+| Business Model Canvas with unit economics | 15 | N/W/M/S/VS | | [Source IDs] |
+| Three Horizons allocation | 10 | N/W/M/S/VS | | [Source IDs] |
 | Trade-off Resolution hierarchy | 10 | N/W/M/S/VS | | [Source IDs] |
-| Scope Exclusions documented | 10 | N/W/M/S/VS | | [Source IDs] |
+| Scope Exclusions documented | 5 | N/W/M/S/VS | | [Source IDs] |
 | **Subtotal** | 100 | | **/100** | |
 
 **Evidence Requirements**:
+- **Product Alternatives**: ≥3 alternatives documented with scoring (Problem Fit, Differentiation, Feasibility, Time)
+- **Selection Rationale**: Clear explanation of why chosen alternative over others
 - Unit economics: Based on actual cost data OR comparable company analysis
 - Blue Ocean: Competitive differentiation validated with users
+
+**Scoring Logic for Product Alternatives**:
+```
+IF alternatives_count >= 5 AND selected_alternative documented AND selection_rationale >= 3 reasons:
+    SCORE = 30 points
+ELIF alternatives_count >= 3 AND selected_alternative documented:
+    SCORE = 25 points
+ELIF alternatives_count >= 3:
+    SCORE = 15 points
+ELSE:
+    SCORE = 0 points
+```
 
 ### Validation Rigor (5% weight)
 
@@ -278,16 +293,17 @@ When multiple sources provide contradictory information:
 
 | Criterion | Max Pts | Evidence Tier | Score | Sources |
 |-----------|:-------:|:-------------:|:-----:|---------|
-| 3 concept variants documented | 25 | N/W/M/S/VS | | [Source IDs] |
-| Per-feature JTBD links (>80%) | 25 | N/W/M/S/VS | | [Source IDs] |
+| Per-feature JTBD links (>80%) | 30 | N/W/M/S/VS | | [Source IDs] |
+| At least 3 reasoning traces (Problem→JTBD→Feature) | 25 | N/W/M/S/VS | | [Source IDs] |
 | Wave rationale for each wave | 20 | N/W/M/S/VS | | [Source IDs] |
-| At least 3 reasoning traces | 15 | N/W/M/S/VS | | [Source IDs] |
 | Feature selection table complete | 15 | N/W/M/S/VS | | [Source IDs] |
+| 3 scope variants documented (OPTIONAL bonus) | 10 | N/W/M/S/VS | | [Source IDs] |
 | **Subtotal** | 100 | | **/100** | |
 
 **Evidence Requirements**:
-- Variants: Each variant has differentiated scope
 - JTBD links: Traced to user research evidence
+- Reasoning traces: Show decision chain from problem to feature
+- Scope variants: OPTIONAL in v2.0 (use /speckit.concept-variants to generate)
 
 ---
 

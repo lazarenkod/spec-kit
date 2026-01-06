@@ -7,6 +7,47 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.78] - 2026-01-06
+
+### Changed
+
+- **BREAKING**: `/speckit.concept` command now generates Product Alternatives instead of Scope Variants
+  - **Product Alternatives** (Phase 0d/0e): Generate 3-5 fundamentally different product visions (Conventional, Minimal, Disruptive, Premium, Platform)
+  - User selects preferred alternative before expanding to full concept
+  - Replaced scope-first approach with vision-first approach
+  - Scope Variants (MINIMAL/BALANCED/AMBITIOUS) now OPTIONAL (Step 12)
+
+- **Concept Template v2.0** (`concept-template.md`):
+  - New "Product Alternatives" section with selected alternative + comparison matrix
+  - "Concept Variants" section now marked OPTIONAL with status checkbox
+  - Section Completion Checklist added (tracks 33 sections)
+  - Version marker updated to v2.0-alternatives
+
+- **CQS Scoring Updates** (`cqs-score.md`):
+  - Strategic Depth: Added Product Alternatives (30 pts), reduced other criteria proportionally
+  - Transparency: Scope Variants now optional bonus (10 pts), increased JTBD links (30 pts)
+
+### Added
+
+- **NEW**: `templates/shared/concept-sections/product-alternatives.md` (~580 lines)
+  - 5 alternative generation strategies with scoring criteria (Problem Fit, Differentiation, Feasibility, Time to Market)
+  - Comparison matrix template
+  - Integration with Brainstorm-Curate protocol
+  - Selection rationale framework
+
+- **NEW**: `templates/commands/concept-variants.md` command (~270 lines)
+  - On-demand scope variant generation (MINIMAL/BALANCED/AMBITIOUS)
+  - Feature classification by JTBD priority
+  - Variant metrics calculation (effort, risk, differentiation)
+  - Comparison matrix and recommendation logic
+
+- **Validation**: Self-review check SR-CONCEPT-27 for Product Alternatives (≥3 alternatives required)
+
+### Fixed
+
+- Concept Variants section clarified: distinguishes Product Alternatives (WHAT to build) vs Scope Variants (HOW MUCH to build)
+- Updated `concept-variants.md` template with v2.0 status and relationship to Product Alternatives
+
 ## [0.0.77] - 2026-01-03
 
 ### Added
