@@ -7,6 +7,26 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.81] - 2026-01-06
+
+### Added
+
+- **Ready-to-Execute Commands Generation** (`/speckit.concept` command enhancement):
+  - Automatically generates copy-paste ready `/speckit.specify` commands at concept completion
+  - **4 execution strategies** with ready commands:
+    - **By Waves (RECOMMENDED)**: Separate commands for Wave 1 (Foundation), Wave 2 (Experience), Wave 3+ (Business)
+    - **By Epics**: One command per epic with all its stories
+    - **By Priorities**: Commands grouped by priority level (P1a, P1b, P2, P3)
+    - **Entire Concept**: Single command for all stories at once
+  - **Smart grouping**: Stories automatically grouped by feature within each command
+  - **Story counts**: Each command variant shows total stories included
+  - **Contextual guidance**: "When to use" explanations for each execution strategy
+  - **Edge case handling**: Empty waves, long commands (>500 chars), missing metadata
+  - **Step 7b**: New generation logic with parsing algorithms for story metadata extraction
+  - **Helper documentation**: Parse Story Metadata and Group Stories by Feature helpers
+  - Updated "Ready for Specification" section to reference new commands output
+  - Commands generated from Feature Hierarchy, Execution Order, and Priority metadata
+
 ## [0.0.80] - 2026-01-06
 
 ### Added

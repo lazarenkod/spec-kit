@@ -2779,9 +2779,246 @@ After passing self-review, output:
 Concept capture complete.
 
 **Recommended order** (Wave-based):
-1. Start with Wave 1 foundations: `/speckit.specify EPIC-001.F01.S01`
-2. Then Wave 2 experience: (after Wave 1 complete)
-3. Then Wave 3+ business features: (after Golden Path testable)
+See "Ready-to-Execute Commands" section below for copy-paste ready commands.
 
 **Golden Path status**: [ ] Not yet testable (requires Wave 1-2 completion)
 ```
+
+## Helper: Parse Story Metadata
+
+Extracts structured data from generated concept.md:
+- Story IDs from Feature Hierarchy section
+- Wave assignments from Execution Order section
+- Priorities from Feature Priority fields
+
+## Helper: Group Stories by Feature
+
+**CRITICAL**: Maintains feature-level grouping in all command variants.
+Stories of same feature always appear consecutively in output commands.
+
+**Example:**
+- ✓ Good: `/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02, EPIC-001.F02.S01`
+- ✗ Bad: `/speckit.specify EPIC-001.F01.S01, EPIC-001.F02.S01, EPIC-001.F01.S02`
+
+---
+
+### Step 7b: Generate Ready-to-Execute Commands
+
+After completing the self-review report, generate ready-to-execute `/speckit.specify` commands for all implementation strategies.
+
+**Process:**
+
+1. **Parse generated concept.md** to collect story metadata:
+
+   ```text
+   a. Scan "Feature Hierarchy" section:
+      - Extract all story IDs matching pattern: [EPIC-XXX.FXX.SXX]
+      - Extract parent feature_id (EPIC-XXX.FXX)
+      - Extract parent epic_id (EPIC-XXX)
+
+   b. Scan "Execution Order" section (Wave Planning tables):
+      - Find Wave 1, Wave 2, Wave 3+ feature assignments
+      - Map: feature_id → wave_number
+      - Assign wave to each story based on parent feature
+
+   c. Scan "Feature Hierarchy" for priorities:
+      - Extract "Priority: P1a" (or P1b, P2, P3) from each Feature
+      - Map: feature_id → priority
+      - Assign priority to each story based on parent feature
+
+   d. Build stories array:
+      [
+        {id: "EPIC-001.F01.S01", epic: "EPIC-001", feature: "EPIC-001.F01", wave: 1, priority: "P1a"},
+        {id: "EPIC-001.F01.S02", epic: "EPIC-001", feature: "EPIC-001.F01", wave: 1, priority: "P1a"},
+        ...
+      ]
+   ```
+
+2. **Generate 4 command variants**:
+
+   **VARIANT 1: BY WAVES (RECOMMENDED)**
+   ```text
+   - Group stories by wave (1, 2, 3+)
+   - Keep stories of same feature together (adjacent)
+   - Generate one command per wave
+   - Format: /speckit.specify STORY1, STORY2, STORY3, ...
+
+   Algorithm:
+   waves = {1: [], 2: [], 3: []}
+   FOR feature_id IN unique(stories.feature_id):
+     feature_stories = stories WHERE feature_id matches
+     wave = feature_stories[0].wave  # All stories in feature share same wave
+     waves[wave].extend(feature_stories.map(s => s.id))
+
+   FOR wave IN sorted(waves.keys()):
+     OUTPUT: "/speckit.specify " + ", ".join(waves[wave])
+   ```
+
+   **VARIANT 2: BY EPICS**
+   ```text
+   - Group all stories by epic_id
+   - Generate one command per epic
+   - Format: /speckit.specify STORY1, STORY2, ...
+
+   Algorithm:
+   epics = {}
+   FOR story IN stories:
+     epics[story.epic_id].append(story.id)
+
+   FOR epic_id IN sorted(epics.keys()):
+     OUTPUT: "/speckit.specify " + ", ".join(epics[epic_id])
+   ```
+
+   **VARIANT 3: BY PRIORITIES**
+   ```text
+   - Group stories by priority (P1a, P1b, P2, P3)
+   - Sort in priority order
+   - Generate one command per priority level
+   - Format: /speckit.specify STORY1, STORY2, ...
+
+   Algorithm:
+   priorities = {}
+   FOR feature_id IN unique(stories.feature_id):
+     feature_stories = stories WHERE feature_id matches
+     priority = feature_stories[0].priority
+     priorities[priority].extend(feature_stories.map(s => s.id))
+
+   FOR priority IN ["P1a", "P1b", "P1c", "P2a", "P2b", "P2c", "P3"]:
+     IF priority IN priorities:
+       OUTPUT: "/speckit.specify " + ", ".join(priorities[priority])
+   ```
+
+   **VARIANT 4: ENTIRE CONCEPT**
+   ```text
+   - Collect ALL story IDs
+   - Generate single command with all stories
+   - Format: /speckit.specify STORY1, STORY2, ..., STORYN
+
+   Algorithm:
+   all_story_ids = [story.id FOR story IN stories]
+   OUTPUT: "/speckit.specify " + ", ".join(all_story_ids)
+   ```
+
+3. **Handle edge cases**:
+
+   ```text
+   - Empty wave: Show "Wave X (0 stories - not applicable)", skip command generation
+   - Long command (>500 chars or >15 stories): Split into feature-group sub-commands
+   - Missing priority: Default to P3, log warning
+   - Missing wave: Infer from dependencies or default to Wave 1
+   - Wave 3+: If Wave 3, 4, 5 exist, group into "Wave 3+" section
+   ```
+
+4. **Format and output** the "Ready-to-Execute Commands" section:
+
+   ```text
+   - Include section header
+   - Add 4 option blocks (By Waves, By Epics, By Priorities, Entire Concept)
+   - Mark "By Waves" as RECOMMENDED
+   - Include story counts: ({N} stories)
+   - Include epic names: [Epic Name] from Feature Hierarchy
+   - Add "When to use" guidance for each option
+   - Add "Next Steps" guidance at end
+   - Use bash code blocks for commands
+   ```
+
+**Output:** Continue to "Ready-to-Execute Commands" section below.
+
+---
+
+### Ready-to-Execute Commands
+
+Concept capture complete. Use these ready-to-execute commands to begin specification.
+
+---
+
+#### Option 1: By Waves (RECOMMENDED)
+
+**Why this order:** Wave-based execution ensures dependencies are satisfied and enables incremental testing.
+
+**Wave 1: Foundation Layer** ({N} stories)
+```bash
+/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02, EPIC-001.F02.S01
+```
+
+**Wave 2: Experience Layer** ({N} stories)
+```bash
+/speckit.specify EPIC-001.F03.S01, EPIC-002.F01.S01, EPIC-002.F01.S02
+```
+
+**Wave 3+: Business Features** ({N} stories)
+```bash
+/speckit.specify EPIC-003.F01.S01, EPIC-003.F02.S01
+```
+
+**Sequential execution:**
+1. Execute Wave 1 command → Implement → Test
+2. After Wave 1 complete, execute Wave 2 command → Implement → Test
+3. After Golden Path testable, execute Wave 3+ command
+
+---
+
+#### Option 2: By Epics
+
+**When to use:** Execute one epic at a time for focused domain work.
+
+**EPIC-001: [Epic Name]** ({N} stories)
+```bash
+/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02, EPIC-001.F02.S01
+```
+
+**EPIC-002: [Epic Name]** ({N} stories)
+```bash
+/speckit.specify EPIC-002.F01.S01, EPIC-002.F01.S02
+```
+
+**EPIC-003: [Epic Name]** ({N} stories)
+```bash
+/speckit.specify EPIC-003.F01.S01, EPIC-003.F02.S01
+```
+
+---
+
+#### Option 3: By Priorities
+
+**When to use:** Maximize business value delivery by priority.
+
+**P1a: Critical Path** ({N} stories)
+```bash
+/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02, EPIC-002.F01.S01
+```
+
+**P1b: MVP Must-Haves** ({N} stories)
+```bash
+/speckit.specify EPIC-001.F02.S01, EPIC-002.F01.S02
+```
+
+**P2a: Post-MVP Important** ({N} stories)
+```bash
+/speckit.specify EPIC-003.F01.S01, EPIC-003.F02.S01
+```
+
+**P3: Future Enhancements** ({N} stories)
+```bash
+/speckit.specify EPIC-004.F01.S01
+```
+
+---
+
+#### Option 4: Entire Concept (All at Once)
+
+**When to use:** For comprehensive specification generation (recommended for experienced teams).
+
+**All Stories** ({N} total)
+```bash
+/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02, EPIC-001.F02.S01, EPIC-001.F03.S01, EPIC-002.F01.S01, EPIC-002.F01.S02, EPIC-003.F01.S01, EPIC-003.F02.S01, EPIC-004.F01.S01
+```
+
+---
+
+**Next Steps:**
+1. Choose your execution strategy (Option 1-4)
+2. Copy and execute the command(s)
+3. Review generated `specs/NNN-feature/spec.md`
+4. Run `/speckit.plan` to create implementation plan
+5. Run `/speckit.tasks` to generate task breakdown
