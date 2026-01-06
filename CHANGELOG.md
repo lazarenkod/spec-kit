@@ -27,6 +27,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated "Ready for Specification" section to reference new commands output
   - Commands generated from Feature Hierarchy, Execution Order, and Priority metadata
 
+- **Comprehensive Commands Guide** (`COMMANDS_GUIDE.md`):
+  - Complete documentation for all 25+ Spec-Kit commands in Russian
+  - **Workflow diagrams** for Greenfield and Brownfield projects
+  - **Detailed command descriptions** with arguments, flags, and when to use
+  - **Quick reference tables** by project phase and purpose
+  - **Model selection guide** showing default models and reasoning budgets
+  - **Troubleshooting section** for common issues (SQS < 80, circular dependencies, etc.)
+  - **Quality Gates reference** (QG-001 to QG-012) with thresholds
+  - **Examples** for each command with real-world use cases
+  - Covers core workflow, supporting commands, and special modes (migrate, discover, properties)
+  - Version 1.0.0 compatible with Spec-Kit v0.0.81+
+
 ## [0.0.80] - 2026-01-06
 
 ### Added
