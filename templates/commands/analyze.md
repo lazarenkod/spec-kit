@@ -1473,6 +1473,56 @@ The following categories (R-U) are executed when `/speckit.analyze` runs after `
        Search file for @speckit:AS: or @speckit:EC: annotations
        IF not found:
          → LOW: "Test file {file} missing @speckit annotations for traceability"
+
+8. Test Structure Completeness (section 4.1 enhancement):
+   FOR EACH [TEST:AS-xxx] task in tasks.md:
+     Search task description for "Test Structure" section
+     IF not found:
+       → MEDIUM: "Test task {task_id} lacks detailed test structure (ARRANGE/ACT/ASSERT)"
+     IF found:
+       Verify has "# ARRANGE", "# ACT", "# ASSERT" comments (or language equivalents)
+       IF missing any section:
+         → MEDIUM: "Test task {task_id} incomplete: missing {section} in test structure"
+
+     Search task description for "Test Data Suggestions" section
+     IF not found:
+       → LOW: "Test task {task_id} lacks test data suggestions (best practice)"
+
+     IF task description is generic (e.g., "Contract test for [endpoint]"):
+       → MEDIUM: "Test task {task_id} has generic description - should have specific assertions"
+
+9. Edge Case Test Coverage (section 1.1 & 4.1 integration):
+   IF spec.md has "suggested_edge_cases" fields (from section 1.1):
+     FOR EACH AS-xxx with suggested_edge_cases:
+       FOR EACH edge_case in suggested_edge_cases:
+         Search tasks.md for [TEST:AS-xxx:EDGE-n] marker
+         IF not found:
+           Search for [NO-TEST:AS-xxx:EDGE-n] with justification
+           IF not found:
+             → HIGH: "Edge case '{edge_case}' for AS-xxx has no test task or skip justification"
+           IF found with justification:
+             → INFO: "Edge case intentionally skipped: {edge_case} - {justification}"
+         IF found:
+           → OK: "Edge case covered: {edge_case} by [TEST:AS-xxx:EDGE-n]"
+
+10. Test Data Pattern Quality (section 4.1 enhancement):
+    FOR EACH [TEST:AS-xxx] task with test structure:
+      Scan test structure code for hardcoded patterns:
+      - Hardcoded emails: "test@example.com", "user@test.com"
+      - Hardcoded passwords: "password123", "SecurePass123!", literal password strings
+      - Hardcoded dates: "2024-01-01", "2025-12-31", ISO date literals
+      - Hardcoded IDs: user_id = 1, id = 123 (without faker/factory)
+
+      FOR EACH hardcoded pattern found:
+        IF in production code (not in test data suggestions):
+          → WARN: "Test task {task_id} uses hardcoded {type}: '{value}' - recommend using faker/factory"
+
+      Search for test data suggestions with anti-patterns:
+      - "Use test@example.com" (instead of faker.email())
+      - "Use password123" (instead of generate_secure_password())
+
+      IF anti-pattern found:
+        → WARN: "Test task {task_id} suggests hardcoded {type} - recommend dynamic generation"
 ```
 
 **Severity Summary for Pass W:**

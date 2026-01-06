@@ -424,6 +424,198 @@ Every task MUST strictly follow this format:
   - Each phase should be a complete, independently testable increment
 - **Final Phase**: Polish & Cross-Cutting Concerns
 
+### Test Task Generation (Enhanced)
+
+**When tests are requested**, generate detailed test task descriptions using the following process:
+
+#### Context
+Generate detailed test task descriptions from acceptance scenarios in the feature specification.
+
+#### Inputs
+- `acceptance_scenarios`: Array of scenarios from spec.md with Given/When/Then
+- `edge_cases`: Array of suggested edge cases (suggested_edge_cases from section 1.1, if available)
+- `technical_plan`: Implementation plan details (API endpoints, functions, components from plan.md)
+- `project_language`: Primary programming language (detected from language-loading.md)
+
+#### Process Steps
+
+**STEP 1: Classify Test Type per Scenario**
+
+For each acceptance scenario, determine optimal test type based on classification:
+
+```
+scenario.classification == "HAPPY_PATH":
+  test_type: "Integration Test"
+  scope: "End-to-end flow with real dependencies"
+  reasoning: "Validates complete user journey through system"
+
+scenario.classification == "ERROR_PATH":
+  test_type: "Unit Test + Contract Test"
+  scope: "Error handling logic + API error response"
+  reasoning: "Error paths typically isolated to validation/error handling logic"
+
+scenario.classification == "BOUNDARY":
+  test_type: "Unit Test"
+  scope: "Edge case validation"
+  reasoning: "Boundary conditions test specific validation rules"
+
+scenario.classification == "SECURITY":
+  test_type: "Security Test"
+  scope: "Auth bypass, injection, XSS, CSRF"
+  reasoning: "Security scenarios require dedicated security test suite"
+
+scenario.classification == "ALT_PATH":
+  test_type: "Unit Test"
+  scope: "Alternative logic branches"
+  reasoning: "Alternative paths test conditional logic"
+```
+
+**STEP 2: Map Given/When/Then to Test Structure**
+
+For each scenario, generate test structure mapping from Given/When/Then to ARRANGE/ACT/ASSERT:
+
+```
+GIVEN → Test Setup (Arrange):
+  - Extract preconditions from Given clause
+  - Identify required mocks, database seeds, auth setup
+  - Suggest specific setup code patterns
+
+WHEN → Test Execution (Act):
+  - Extract action from When clause
+  - Identify API endpoint, function call, or user interaction
+  - Suggest specific invocation pattern
+
+THEN → Assertions (Assert):
+  - Extract expected outcomes from Then clause
+  - Generate specific assertions (status codes, response fields, side effects)
+  - Suggest assertion patterns for the detected language
+```
+
+**STEP 3: Generate Test Data Suggestions**
+
+For each entity detected in the scenario, suggest test data patterns based on entity type and project language:
+
+**Python**:
+```
+email → "Use faker.email() for random valid emails. Avoid hardcoded test@example.com."
+password → "Use factory helper: generate_secure_password(). Never hardcode passwords."
+numeric (ID) → "Use factory_boy for realistic IDs. For boundary tests: -1, 0, sys.maxsize"
+date → "Use datetime.now() + timedelta for relative dates. Avoid hardcoded dates."
+```
+
+**TypeScript**:
+```
+email → "Use faker.internet.email() for random emails. Avoid hardcoded test@example.com."
+password → "Use helper: generateSecurePassword(). Never commit hardcoded passwords."
+numeric (ID) → "Use factories (factory-bot). For boundary: Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER"
+date → "Use new Date() for relative dates. Avoid hardcoded ISO strings."
+```
+
+**Go**:
+```
+email → "Use faker.Email() for random emails. Avoid hardcoded test@example.com."
+password → "Use helper: generateSecurePassword(). Never hardcode passwords."
+numeric (ID) → "Use factories or fixture builders. For boundary: math.MinInt64, math.MaxInt64"
+date → "Use time.Now() for relative dates. Avoid hardcoded RFC3339 strings."
+```
+
+**STEP 4: Generate Edge Case Test Tasks**
+
+For each edge case from spec.md's `suggested_edge_cases` field (from section 1.1):
+
+1. Check if edge case is already covered by an existing ERROR_PATH or BOUNDARY scenario
+2. If not covered, generate dedicated edge case test task
+3. Use [TEST:AS-xxx:EDGE-n] marker to link edge case test to parent scenario
+
+**Output Format**:
+```markdown
+#### Test: Edge Case - {edge_case_description}
+
+**Edge Case**: {specific_condition}
+
+**Test Structure**:
+```{language}
+# ARRANGE
+{specific_edge_case_setup}
+
+# ACT
+{action_that_triggers_edge_case}
+
+# ASSERT
+{expected_error_or_boundary_behavior}
+```
+
+**Estimated Effort**: {minutes_or_hours}
+```
+
+**STEP 5: Suggest Property-Based Testing (Optional)**
+
+For scenarios matching PBT criteria, suggest using `/speckit.properties`:
+- BOUNDARY classification + numeric/string entities
+- SECURITY classification + user input
+- High entity cardinality (many possible input values)
+
+**Suggestion Format**:
+```markdown
+💡 **Consider Property-Based Testing**: Run `/speckit.properties` for this scenario
+
+**Property**: {property_description}
+**Framework**: {Hypothesis|fast-check|rapid|jqwik|kotest (based on language)}
+**Why PBT**: {reasoning_for_property_based_approach}
+**Alternative**: Implement explicit test cases if PBT overhead too high for this feature
+```
+
+**STEP 6: Format Test Task Description**
+
+Combine all components into detailed test task with rich structure:
+
+**For each test task, use this format**:
+
+```markdown
+#### Test: {test_type} - {scenario_summary}
+
+**Scenario**: AS-{id} - {scenario_description}
+
+**Test Structure**:
+```{language}
+# ARRANGE (Given: {given_clause})
+{setup_code_suggestions}
+
+# ACT (When: {when_clause})
+{action_code_suggestion}
+
+# ASSERT (Then: {then_clause})
+{assertion_code_suggestions}
+```
+
+**Test Data Suggestions**:
+- {entity_1}: {suggestion_1}
+- {entity_2}: {suggestion_2}
+- {entity_3}: {suggestion_3}
+
+{IF edge_cases_exist:}
+**Edge Cases to Cover**: See edge case tests below (T###-T###)
+
+{IF pbt_applicable:}
+{pbt_suggestion_block}
+
+**Estimated Effort**: {effort_hours_or_minutes}
+```
+
+#### Output
+
+When generating test tasks, produce:
+- Main test task with [TEST:AS-xxx] marker
+- Detailed test structure with ARRANGE/ACT/ASSERT mapping
+- Test data suggestions specific to project language
+- Edge case test tasks with [TEST:AS-xxx:EDGE-n] markers
+- Optional PBT suggestions for applicable scenarios
+
+**Integration with existing workflow**:
+- Test tasks still follow checklist format: `- [ ] T### [P?] [US#] [TEST:AS-xxx] Description`
+- Test tasks still appear BEFORE implementation tasks in each story phase (TDD approach)
+- Test Traceability Matrix still tracks [TEST:] markers for coverage validation
+
 ### Dependency Detection Logic
 
 **Automatic [DEP:] generation based on file/component relationships**:

@@ -27,7 +27,7 @@ QualityDimension = {
 
 SpecQualityScore = {
   overall_score: float,                # 0-100 scale
-  dimensions: List[QualityDimension],  # All 5 dimension scores
+  dimensions: List[QualityDimension],  # All 6 dimension scores
   pass_threshold: float,               # 70.0 (Grade C)
   grade: "A" | "B" | "C" | "D" | "F",  # Letter grade
   recommendation: string,              # Action guidance
@@ -41,19 +41,21 @@ SpecQualityScore = {
 
 | Dimension | Weight | Rationale |
 |-----------|--------|-----------|
-| Clarity | 25% | Ambiguous specs cause 30% of code generation errors |
-| Completeness | 25% | Missing requirements cause 40% of rework |
+| Clarity | 20% | Ambiguous specs cause 30% of code generation errors |
+| Completeness | 20% | Missing requirements cause 40% of rework |
 | Testability | 20% | Untestable specs cannot be validated |
 | Consistency | 15% | Contradictions cause implementation deadlocks |
 | Traceability | 15% | Poor traceability breaks audit trails |
+| Test Task Quality | 10% | Low-quality test tasks reduce testing effectiveness |
 
 ```text
 DIMENSION_WEIGHTS = {
-  clarity: 0.25,
-  completeness: 0.25,
+  clarity: 0.20,
+  completeness: 0.20,
   testability: 0.20,
   consistency: 0.15,
-  traceability: 0.15
+  traceability: 0.15,
+  test_task_quality: 0.10
 }
 ```
 
@@ -135,6 +137,18 @@ TRACEABILITY_RUBRIC = {
 }
 ```
 
+### Test Task Quality Rubric
+
+```text
+TEST_TASK_QUALITY_RUBRIC = {
+  excellent: "All test tasks have detailed ARRANGE/ACT/ASSERT structure. Specific assertions defined. Language-specific test data suggestions. All edge cases covered.",
+  good: "Most test tasks detailed. 90%+ have test structure. Minor gaps in edge case coverage.",
+  acceptable: "Core test tasks have structure. Some generic descriptions. Edge case coverage 75%+.",
+  below_standard: "Many test tasks are generic. Missing test structure. Edge cases poorly covered.",
+  poor: "Test tasks lack detail. Generic descriptions like 'test endpoint'. No edge case tests."
+}
+```
+
 ---
 
 ## Main Algorithm
@@ -148,8 +162,9 @@ SCORE_SPECIFICATION(spec, context = {}):
   testability = EVALUATE_TESTABILITY(spec)
   consistency = EVALUATE_CONSISTENCY(spec)
   traceability = EVALUATE_TRACEABILITY(spec)
+  test_task_quality = EVALUATE_TEST_TASK_QUALITY(spec, context.tasks_md_content)
 
-  dimensions = [clarity, completeness, testability, consistency, traceability]
+  dimensions = [clarity, completeness, testability, consistency, traceability, test_task_quality]
 
   # Calculate weighted overall score
   overall_score = 0.0
@@ -489,6 +504,146 @@ EXTRACT_FR_REFERENCES(text_or_object):
   RETURN SET(matches)
 ```
 
+### EVALUATE_TEST_TASK_QUALITY
+
+```text
+EVALUATE_TEST_TASK_QUALITY(spec, tasks_md_content = null):
+
+  scenarios = spec.acceptance_scenarios OR []
+  edge_cases_from_spec = spec.suggested_edge_cases OR []
+
+  # If tasks.md not provided, skip this dimension (return neutral score)
+  IF tasks_md_content IS null:
+    RETURN QualityDimension(
+      name: "Test Task Quality",
+      score: 0.75,  # Neutral - assumes tasks will be generated
+      weight: 0.10,
+      explanation: "Tasks not yet generated - run /speckit.tasks",
+      improvement_suggestions: ["Generate test tasks with /speckit.tasks"]
+    )
+
+  # ===== Automated Component (100%) =====
+
+  # 1. Test Coverage (40%): scenarios with "Requires Test = YES" have test tasks
+  test_required_scenarios = []
+  FOR scenario IN scenarios:
+    IF scenario.requires_test == true OR scenario.requires_test == "YES":
+      test_required_scenarios.append(scenario.id)
+
+  scenarios_with_tests = []
+  FOR scenario_id IN test_required_scenarios:
+    # Check for [TEST:AS-xxx] marker in tasks.md
+    IF REGEX_SEARCH(tasks_md_content, r'\[TEST:' + scenario_id + r'(?:\]|:)'):
+      scenarios_with_tests.append(scenario_id)
+
+  test_coverage_ratio = len(scenarios_with_tests) / MAX(1, len(test_required_scenarios))
+  test_coverage_score = test_coverage_ratio * 0.40
+
+  # 2. Test Task Detail (30%): tasks have Test Structure, assertions, test data
+  test_task_blocks = REGEX_FINDALL(tasks_md_content, r'\[TEST:AS-\d+[A-Z]?\].*?(?=\n####|\n###|\Z)', DOTALL)
+
+  detailed_test_tasks = 0
+  FOR task_block IN test_task_blocks:
+    has_test_structure = ("Test Structure" IN task_block OR "ARRANGE" IN task_block OR "ACT" IN task_block OR "ASSERT" IN task_block)
+    has_test_data = "Test Data Suggestions" IN task_block
+    has_specific_assertions = (
+      "assert" IN task_block.lower() OR
+      "expect" IN task_block.lower() OR
+      "verify" IN task_block.lower() OR
+      "status" IN task_block.lower()
+    )
+
+    # Task is detailed if it has at least 2 of 3 components
+    detail_count = (1 IF has_test_structure ELSE 0) + (1 IF has_test_data ELSE 0) + (1 IF has_specific_assertions ELSE 0)
+    IF detail_count >= 2:
+      detailed_test_tasks += 1
+
+  test_detail_ratio = detailed_test_tasks / MAX(1, len(test_task_blocks))
+  test_detail_score = test_detail_ratio * 0.30
+
+  # 3. Test Type Appropriateness (20%): classification → correct test type
+  correctly_classified_tests = 0
+  total_classified_tests = 0
+
+  FOR scenario IN scenarios:
+    IF scenario.requires_test == true OR scenario.requires_test == "YES":
+      classification = scenario.classification OR "UNKNOWN"
+      scenario_id = scenario.id
+
+      # Find corresponding test task
+      test_task_match = REGEX_SEARCH(tasks_md_content, r'\[TEST:' + scenario_id + r'\].*?(?:Integration Test|Unit Test|Contract Test|Security Test)', DOTALL)
+
+      IF test_task_match:
+        total_classified_tests += 1
+        test_type = test_task_match.group(0)
+
+        # Check appropriateness based on classification
+        is_appropriate = false
+        IF classification == "HAPPY_PATH" AND "Integration Test" IN test_type:
+          is_appropriate = true
+        ELIF classification IN ["ERROR_PATH", "BOUNDARY", "ALT_PATH"] AND ("Unit Test" IN test_type OR "Contract Test" IN test_type):
+          is_appropriate = true
+        ELIF classification == "SECURITY" AND "Security Test" IN test_type:
+          is_appropriate = true
+
+        IF is_appropriate:
+          correctly_classified_tests += 1
+
+  test_type_ratio = correctly_classified_tests / MAX(1, total_classified_tests)
+  test_type_score = test_type_ratio * 0.20
+
+  # 4. Edge Case Coverage (10%): suggested_edge_cases have test tasks
+  edge_cases_with_tests = 0
+  total_edge_cases = 0
+
+  FOR scenario IN scenarios:
+    scenario_id = scenario.id
+    scenario_edge_cases = scenario.suggested_edge_cases OR []
+
+    FOR i, edge_case IN ENUMERATE(scenario_edge_cases):
+      total_edge_cases += 1
+      edge_marker = f"[TEST:{scenario_id}:EDGE-{i+1}]"
+
+      # Check for edge case test task or skip marker
+      IF edge_marker IN tasks_md_content OR f"[NO-TEST:{scenario_id}:EDGE-{i+1}]" IN tasks_md_content:
+        edge_cases_with_tests += 1
+
+  edge_case_ratio = edge_cases_with_tests / MAX(1, total_edge_cases) IF total_edge_cases > 0 ELSE 1.0
+  edge_case_score = edge_case_ratio * 0.10
+
+  # ===== Combine Scores =====
+  final_score = test_coverage_score + test_detail_score + test_type_score + edge_case_score
+
+  # Generate suggestions
+  suggestions = []
+  IF test_coverage_ratio < 1.0:
+    missing_count = len(test_required_scenarios) - len(scenarios_with_tests)
+    suggestions.append("Add test tasks for {missing_count} scenarios marked 'Requires Test = YES'")
+
+  IF test_detail_ratio < 0.8:
+    generic_count = len(test_task_blocks) - detailed_test_tasks
+    suggestions.append("Enhance {generic_count} test tasks with Test Structure and assertions")
+
+  IF edge_case_ratio < 1.0 AND total_edge_cases > 0:
+    missing_edge_count = total_edge_cases - edge_cases_with_tests
+    suggestions.append("Add {missing_edge_count} edge case test tasks from suggested_edge_cases")
+
+  IF test_type_ratio < 0.8 AND total_classified_tests > 0:
+    suggestions.append("Review test type classification - ensure HAPPY_PATH uses Integration tests")
+
+  # Generate explanation
+  explanation = f"Coverage: {PERCENT(test_coverage_ratio)}%, Detail: {PERCENT(test_detail_ratio)}%, "
+  explanation += f"Type: {PERCENT(test_type_ratio)}%, Edge: {PERCENT(edge_case_ratio)}%"
+
+  RETURN QualityDimension(
+    name: "Test Task Quality",
+    score: final_score,
+    weight: 0.10,
+    explanation: explanation,
+    improvement_suggestions: suggestions[:3]
+  )
+```
+
 ---
 
 ## LLM G-Eval Framework
@@ -646,11 +801,12 @@ STRINGIFY(obj):
 
 | Dimension | Score | Weight | Explanation |
 |-----------|-------|--------|-------------|
-| Clarity | X.XX | 25% | Ambiguities: N (X critical). LLM: X.XX |
-| Completeness | X.XX | 25% | N gaps (X critical, Y high) |
+| Clarity | X.XX | 20% | Ambiguities: N (X critical). LLM: X.XX |
+| Completeness | X.XX | 20% | N gaps (X critical, Y high) |
 | Testability | X.XX | 20% | Testable: X%, FR→AS: Y% |
 | Consistency | X.XX | 15% | N contradictions (X critical) |
 | Traceability | X.XX | 15% | FR→AS: X%, FR→EC: Y%, Orphans: N |
+| Test Task Quality | X.XX | 10% | Coverage: X%, Detail: Y%, Type: Z%, Edge: W% |
 
 **Improvement Suggestions**:
 1. [Highest priority suggestion from lowest-scoring dimension]

@@ -42,6 +42,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added "Confidence" column to acceptance scenarios table
     - Added "Predicted Edge Cases" subsection per user story
     - Documentation of confidence scoring interpretation
+- **Automatic Test Case Generation from Specs**: AI-powered test task generation in `/speckit.tasks` (section 4.1)
+  - **Detailed Test Structure**: ARRANGE/ACT/ASSERT mapping from Given/When/Then scenarios
+  - **Test Data Suggestions**: Language-specific test data patterns (Python, TypeScript, Go, Java, Kotlin)
+    - Entity-aware suggestions (email → faker.email(), password → secure generator)
+    - Anti-patterns detection (hardcoded test@example.com, password123)
+  - **Edge Case Test Tasks**: Automatic generation from section 1.1's `suggested_edge_cases`
+    - [TEST:AS-xxx:EDGE-n] markers for edge case traceability
+    - Dedicated test tasks for each predicted edge case
+  - **Test Type Classification**: AI classifies appropriate test type per scenario
+    - HAPPY_PATH → Integration Test
+    - ERROR_PATH/BOUNDARY/ALT_PATH → Unit Test
+    - SECURITY → Security Test
+  - **Property-Based Testing Suggestions**: Recommends `/speckit.properties` when applicable
+  - **Enhanced Pass W Validation** (`analyze.md`):
+    - Check 8: Test Structure Completeness validation
+    - Check 9: Edge Case Test Coverage validation
+    - Check 10: Test Data Pattern Quality warnings
+  - **Test Task Quality Dimension**: New SQS dimension (10% weight)
+    - Test Coverage (40%): All "Requires Test = YES" scenarios have tasks
+    - Test Task Detail (30%): Tasks have structure, assertions, data suggestions
+    - Test Type Appropriateness (20%): Correct test type per classification
+    - Edge Case Coverage (10%): All suggested edge cases have test tasks
+  - **Enhanced Tasks Template** (`tasks-template.md`):
+    - Rich test task format with Test Structure, Test Data Suggestions, Edge Cases
+    - Language-specific code examples in ARRANGE/ACT/ASSERT format
+    - Estimated effort per test task
+  - **Test Task Generator Subagent** (`tasks.md`):
+    - 6-step AI generation process in /speckit.tasks command
+    - Integration with section 1.1 edge case prediction
+    - Multi-language support with language detection
 
 ### Changed
 
