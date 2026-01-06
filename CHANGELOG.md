@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Detailed Test Structure**: ARRANGE/ACT/ASSERT mapping from Given/When/Then scenarios
   - **Test Data Suggestions**: Language-specific test data patterns (Python, TypeScript, Go, Java, Kotlin)
     - Entity-aware suggestions (email → faker.email(), password → secure generator)
-    - Anti-patterns detection (hardcoded test@example.com, password123)
+    - Anti-patterns detection (hardcoded `test@example.com`, `password123`)
   - **Edge Case Test Tasks**: Automatic generation from section 1.1's `suggested_edge_cases`
     - [TEST:AS-xxx:EDGE-n] markers for edge case traceability
     - Dedicated test tasks for each predicted edge case
