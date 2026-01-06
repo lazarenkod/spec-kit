@@ -879,4 +879,3 @@ graph TD
 **Версия:** 1.0.0 (совместим с Spec-Kit v0.0.81)
 **Дата:** 2026-01-06
 **Автор:** Auto-generated from command templates
-
