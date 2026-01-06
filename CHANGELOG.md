@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Helper documentation**: Parse Story Metadata and Group Stories by Feature helpers
   - Updated "Ready for Specification" section to reference new commands output
   - Commands generated from Feature Hierarchy, Execution Order, and Priority metadata
+  - **Infrastructure Prerequisites**: Added warning about INFRA-AUTH, INFRA-LAYOUT, INFRA-ERROR tasks before Wave 1 execution
+  - Updated Next Steps to include infrastructure prerequisites completion before implementation
 
 - **Comprehensive Commands Guide** (`COMMANDS_GUIDE.md`):
   - Complete documentation for all 25+ Spec-Kit commands in Russian

@@ -2915,10 +2915,11 @@ After completing the self-review report, generate ready-to-execute `/speckit.spe
    - Include section header
    - Add 4 option blocks (By Waves, By Epics, By Priorities, Entire Concept)
    - Mark "By Waves" as RECOMMENDED
+   - Include Infrastructure Prerequisites warning before Wave 1 (INFRA-AUTH, INFRA-LAYOUT, INFRA-ERROR)
    - Include story counts: ({N} stories)
    - Include epic names: [Epic Name] from Feature Hierarchy
    - Add "When to use" guidance for each option
-   - Add "Next Steps" guidance at end
+   - Add "Next Steps" guidance at end (including infrastructure prerequisites step)
    - Use bash code blocks for commands
    ```
 
@@ -2935,6 +2936,18 @@ Concept capture complete. Use these ready-to-execute commands to begin specifica
 #### Option 1: By Waves (RECOMMENDED)
 
 **Why this order:** Wave-based execution ensures dependencies are satisfied and enables incremental testing.
+
+**⚠️ Infrastructure Prerequisites:**
+
+Before executing Wave 1, ensure infrastructure foundation tasks are completed (if applicable):
+
+- **INFRA-AUTH**: Authentication infrastructure (session management, JWT, OAuth providers)
+- **INFRA-LAYOUT**: Base layout/shell components (header, footer, navigation, error boundaries)
+- **INFRA-ERROR**: Error handling infrastructure (logging, monitoring, error pages)
+
+These tasks typically come from `/speckit.plan` Phase 0 (Foundation) and should be implemented before feature stories.
+
+---
 
 **Wave 1: Foundation Layer** ({N} stories)
 ```bash
@@ -3022,3 +3035,4 @@ Concept capture complete. Use these ready-to-execute commands to begin specifica
 3. Review generated `specs/NNN-feature/spec.md`
 4. Run `/speckit.plan` to create implementation plan
 5. Run `/speckit.tasks` to generate task breakdown
+6. **Before implementation**: Complete infrastructure prerequisites (INFRA-AUTH, INFRA-LAYOUT, INFRA-ERROR) from Phase 0 if applicable
