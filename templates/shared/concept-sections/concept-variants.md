@@ -1,7 +1,7 @@
 # Concept Variants
 
 > **Purpose**: Generate scope variations (MINIMAL/BALANCED/AMBITIOUS) of the selected product alternative to make MVP planning transparent.
-
+>
 > **IMPORTANT**: In v2.0, this is DIFFERENT from Product Alternatives (see product-alternatives.md)
 
 ## Distinction: Product Alternatives vs Concept Variants

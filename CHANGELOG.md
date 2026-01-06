@@ -7,6 +7,18 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.79] - 2026-01-06
+
+### Fixed
+
+- **Markdownlint errors**: Resolved MD034 (bare URL) in wcag-21-aa-requirements.md and MD028 (blank line in blockquote) in concept-variants.md
+
+### Added
+
+- **Comprehensive Command Audit Report**: Audited all 26 spec-kit commands to ensure no section-skipping issues exist (SPEC-KIT-COMMAND-AUDIT-REPORT.md)
+- **Pre-commit workflow**: Added GitHub Actions workflow to run pre-commit checks on all PRs and pushes
+- **Hook installation script**: Added scripts/install-hooks.sh for easy local pre-commit setup
+
 ## [0.0.78] - 2026-01-06
 
 ### Changed

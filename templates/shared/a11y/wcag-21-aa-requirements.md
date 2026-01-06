@@ -33,7 +33,7 @@ WCAG 2.1 Level AA is the internationally recognized standard for web accessibili
 
 ### Recommended Contrast Checker Tools
 
-- **WebAIM Contrast Checker**: https://webaim.org/resources/contrastchecker/
+- **WebAIM Contrast Checker**: <https://webaim.org/resources/contrastchecker/>
 - **Stark (Figma plugin)**: Real-time contrast checking in design tools
 - **axe DevTools**: Browser extension for automated testing
 - **Colour Contrast Analyser (CCA)**: Desktop application for precise measurement
