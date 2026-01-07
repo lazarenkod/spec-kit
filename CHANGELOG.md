@@ -7,6 +7,26 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.85] - 2026-01-07
+
+### Added
+
+- **Automatic task status updates** during `/speckit.implement` execution:
+  - Task checkboxes automatically update from `[ ]` → `[x]` on success
+  - Failed tasks marked as `[!]` with error message comments
+  - Thread-safe file operations with platform-specific locking (fcntl/msvcrt)
+  - Graceful degradation when tasks.md not found (warning only, no crash)
+  - Real-time console feedback on update success/failure
+  - All task markers (`[P]`, `[US#]`, `[DEP:]`, `[FR:]`, etc.) preserved during updates
+- **New module**: `src/specify_cli/task_status_updater.py` with `TaskStatusUpdater` class
+- **Integration**: WaveScheduler callback system enhanced to update tasks.md after each task completion
+- **Documentation**: Updated `templates/tasks-template.md` with automatic updates section
+
+### Changed
+
+- **`/speckit.implement` behavior**: No longer requires manual checkbox marking - fully automatic
+- **Callback enhancement**: `on_task_complete` in `__init__.py` now updates tasks.md in real-time
+
 ## [0.0.84] - 2026-01-06
 
 ### Enhanced

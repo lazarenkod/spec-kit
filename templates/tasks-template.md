@@ -32,6 +32,18 @@ description: "Task list template for feature implementation"
 - **[VERSION:X.Y.Z]**: Explicit version constraint when task requires specific version
 - Include exact file paths in descriptions
 
+## Automatic Task Status Updates
+
+**During `/speckit.implement` execution, task statuses are automatically updated in real-time:**
+
+- ✅ **Success**: `- [ ] T001 Description` → `- [x] T001 Description`
+- ⚠️ **Failure**: `- [ ] T001 Description` → `- [!] T001 Description`
+  - Error message automatically added as indented comment: `  ⚠️ ERROR: {error_message}`
+- 🔄 **Thread-safe**: Concurrent task execution (parallel/overlapping waves) is fully supported
+- 📝 **Markers preserved**: All markers (`[P]`, `[US#]`, `[DEP:]`, `[FR:]`, etc.) are preserved during updates
+
+**No manual checkbox marking required** - the system handles all updates automatically when tasks complete.
+
 ### Marker Examples
 
 ```markdown

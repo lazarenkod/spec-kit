@@ -52,6 +52,9 @@ from rich.table import Table
 from rich.tree import Tree
 from typer.core import TyperGroup
 
+# Task status updater
+from .task_status_updater import TaskStatusUpdater, TaskUpdate
+
 # For cross-platform keyboard input
 import readchar
 import ssl
@@ -2816,6 +2819,26 @@ def orchestrate(
     console.print("[bold]Executing agents...[/bold]")
     console.print()
 
+    # Initialize task status updater
+    tasks_md_path = None
+    cwd = Path.cwd()
+
+    # Strategy 1: Look in specs/[feature]/ directory structure
+    spec_dirs = list(cwd.glob("specs/*/tasks.md"))
+    if spec_dirs:
+        tasks_md_path = spec_dirs[0]
+    else:
+        # Strategy 2: Look in current directory
+        if (cwd / "tasks.md").exists():
+            tasks_md_path = cwd / "tasks.md"
+
+    # Initialize updater if found
+    task_updater = TaskStatusUpdater(str(tasks_md_path)) if tasks_md_path else None
+
+    if not task_updater:
+        console.print("[yellow]Warning:[/yellow] tasks.md not found. Task status updates disabled.")
+        console.print()
+
     async def run_orchestration():
         # Set up progress tracking
         completed_count = 0
@@ -2833,6 +2856,38 @@ def orchestrate(
                 # Show first 200 chars of output
                 preview = result.output[:200] + "..." if len(result.output) > 200 else result.output
                 console.print(f"    [dim]{preview}[/dim]")
+
+            # Automatically update tasks.md
+            if task_updater:
+                try:
+                    # Read file to find task ID mapping
+                    with open(task_updater.tasks_file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+
+                    task_id = task_updater.find_task_id_from_name(name, content)
+
+                    if task_id:
+                        task_update = TaskUpdate(
+                            task_id=task_id,
+                            task_name=name,
+                            success=result.success,
+                            error_message=result.error if not result.success else None,
+                            duration_ms=result.duration_ms
+                        )
+
+                        success, error = task_updater.update_task_status(task_update)
+
+                        if success:
+                            checkbox = "[x]" if result.success else "[!]"
+                            console.print(f"    [dim]Updated tasks.md: {task_id} → {checkbox}[/dim]")
+                        else:
+                            console.print(f"    [yellow]Warning:[/yellow] Could not update tasks.md: {error}")
+                    else:
+                        if verbose:
+                            console.print(f"    [dim]Could not map '{name}' to task ID in tasks.md[/dim]")
+                except Exception as e:
+                    # Don't crash execution if update fails
+                    console.print(f"    [yellow]Warning:[/yellow] Task update failed: {e}")
 
         def on_wave_complete(wave):
             if verbose:
