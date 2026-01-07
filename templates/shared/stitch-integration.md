@@ -5,11 +5,12 @@
 ## Module Metadata
 
 ```yaml
-version: 3.0.0
-last_updated: 2025-01-01
+version: 3.1.0
+last_updated: 2026-01-06
 status: active
 anti_detection: enabled
 modes: [cdp, stealth, turbo, assisted]
+enhancements: [robust_selectors, interactive_fallback, clipboard_input, visibility_checks]
 ```
 
 ## Overview
@@ -47,6 +48,46 @@ Google detects browser automation through multiple vectors. This module implemen
 │     → 100% reliable when automation blocked                         │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
+```
+
+### Robustness Enhancements (v3.1.0)
+
+This version includes proven patterns from production Stitch automation:
+
+**1. Robust Element Finding with Visibility Checks**
+- Try primary selector + all fallbacks with 5s timeouts each (not 10s total)
+- Check `isVisible()` before using any element
+- Log which selector worked for debugging
+- Continue to next fallback if element found but hidden
+
+**2. Interactive Fallback Mode**
+- When all selectors fail, ask user to click the element
+- Use `:focus` selector to capture user's choice
+- Beautiful console UI guides user through the process
+- Enable with `--allow-interactive` flag
+
+**3. Clipboard-based Input (10x faster)**
+- Try clipboard paste first (instant vs ~140ms per char)
+- Automatic OS detection (Meta+V for Mac, Ctrl+V for Windows/Linux)
+- Fallback to typing if clipboard fails
+- Override with `--prefer-typing` if needed
+
+**4. Better Error Recovery**
+- Session re-authentication detection
+- Platform-aware keyboard shortcuts
+- Detailed logging of element finding process
+- Graceful degradation from fast to slow methods
+
+Example usage with new features:
+```bash
+# Standard mode (clipboard + auto-fallbacks)
+/speckit.design --mockup
+
+# Interactive mode (asks user to click elements if automation fails)
+/speckit.design --mockup --allow-interactive
+
+# Force typing mode (more human-like, useful in CDP mode)
+/speckit.design --mockup --prefer-typing
 ```
 
 ## Prerequisites
@@ -690,6 +731,194 @@ SELECTORS = {
 }
 ```
 
+### Helper Functions for Robust Element Finding
+
+```text
+FUNCTION stitch_find_element_robust(page, selector_config, options = {}):
+  """
+  Robustly find element using selector config with fallback strategies.
+  Tries primary + all fallbacks, checks visibility, logs which worked.
+
+  Based on proven patterns from production Stitch automation.
+
+  Args:
+    page: Playwright page object
+    selector_config: { primary, fallbacks[], description, required, timeout }
+    options: { allow_interactive_fallback: bool, log: bool }
+
+  Returns:
+    { element, selector_used, method } or null
+  """
+
+  LOG "🔍 Finding element: {selector_config.description}"
+
+  # Try primary selector first
+  TRY:
+    element = await page.waitForSelector(selector_config.primary, {
+      timeout: 5000,  # Short timeout per selector (not total)
+      state: 'attached'
+    })
+
+    IF element:
+      is_visible = await element.isVisible()
+      IF is_visible:
+        LOG "  ✅ PRIMARY works: {selector_config.primary}"
+        RETURN { element, selector_used: selector_config.primary, method: 'primary' }
+      ELSE:
+        LOG "  ⚠️  PRIMARY found but hidden: {selector_config.primary}"
+  CATCH error:
+    LOG "  ❌ PRIMARY failed: {selector_config.primary}"
+
+  # Try fallback selectors
+  FOR each fallback, index IN selector_config.fallbacks:
+    TRY:
+      element = await page.waitForSelector(fallback, {
+        timeout: 5000,
+        state: 'attached'
+      })
+
+      IF element:
+        is_visible = await element.isVisible()
+        IF is_visible:
+          LOG "  ✅ FALLBACK {index + 1} works: {fallback}"
+          RETURN { element, selector_used: fallback, method: 'fallback' }
+        ELSE:
+          LOG "  ⚠️  FALLBACK {index + 1} found but hidden: {fallback}"
+    CATCH error:
+      LOG "  ❌ FALLBACK {index + 1} failed: {fallback}"
+      CONTINUE
+
+  # All selectors failed - try interactive fallback if enabled
+  IF options.allow_interactive_fallback:
+    LOG "  ⚠️  All selectors failed. Switching to interactive mode..."
+    RETURN await stitch_wait_for_user_click(page, selector_config)
+
+  # No interactive fallback - fail if required
+  IF selector_config.required:
+    THROW {
+      code: 'SELECTOR_NOT_FOUND',
+      message: "Could not find {selector_config.description}",
+      selector_config: selector_config
+    }
+
+  RETURN null
+
+
+FUNCTION stitch_wait_for_user_click(page, selector_config):
+  """
+  Interactive fallback: Ask user to click the element.
+  Uses :focus selector to capture what user clicked.
+
+  Returns:
+    { element, selector_used: ':focus', method: 'interactive' }
+  """
+
+  console_print("╔════════════════════════════════════════════════════════╗")
+  console_print("║  🖱️  INTERACTIVE MODE                                  ║")
+  console_print("╠════════════════════════════════════════════════════════╣")
+  console_print("║                                                        ║")
+  console_print("║  Could not find: {selector_config.description}        ║")
+  console_print("║                                                        ║")
+  console_print("║  Please click the element in the browser window.      ║")
+  console_print("║  Then press Enter in this terminal...                 ║")
+  console_print("║                                                        ║")
+  console_print("╚════════════════════════════════════════════════════════╝")
+
+  # Wait for user to press Enter
+  await wait_for_enter_key()
+
+  # Get the focused element (what user clicked)
+  element = await page.waitForSelector(':focus', { timeout: 5000 })
+
+  IF element:
+    LOG "  ✅ User identified element via click"
+    RETURN { element, selector_used: ':focus', method: 'interactive' }
+  ELSE:
+    THROW {
+      code: 'INTERACTIVE_FAILED',
+      message: "User did not click any focusable element"
+    }
+
+
+FUNCTION stitch_enter_text_clipboard(page, element, text, options = {}):
+  """
+  Enter text using clipboard (fast) with typing fallback.
+
+  Clipboard method is 10x faster than typing (instant vs ~140ms per char).
+
+  Args:
+    page: Playwright page object
+    element: Target input element
+    text: Text to enter
+    options: { prefer_typing: bool, typing_delay_ms: int }
+
+  Returns:
+    { method: 'clipboard' | 'typing', chars_entered: int }
+  """
+
+  IF options.prefer_typing:
+    # User explicitly requested typing
+    await element.type(text, { delay: options.typing_delay_ms OR 2 })
+    RETURN { method: 'typing', chars_entered: text.length }
+
+  # Try clipboard method first (faster)
+  TRY:
+    # Write to clipboard
+    await page.evaluate(async (text_to_copy) => {
+      await navigator.clipboard.writeText(text_to_copy)
+    }, text)
+
+    # Click element to focus
+    await element.click()
+    await sleep(100)
+
+    # Paste with keyboard shortcut
+    # Detect OS from page context
+    platform = await page.evaluate(() => navigator.platform)
+
+    IF platform.includes('Mac'):
+      await page.keyboard.press('Meta+v')  # Cmd+V
+    ELSE:
+      await page.keyboard.press('Control+v')  # Ctrl+V
+
+    await sleep(500)  # Wait for paste to complete
+
+    LOG "  ✅ Text entered via clipboard (fast)"
+    RETURN { method: 'clipboard', chars_entered: text.length }
+
+  CATCH error:
+    # Clipboard failed - fallback to typing
+    LOG "  ⚠️  Clipboard paste failed, using typing fallback"
+    LOG "  Error: {error.message}"
+
+    await element.click()
+    await element.type(text, { delay: options.typing_delay_ms OR 2 })
+
+    LOG "  ✅ Text entered via typing (slow but reliable)"
+    RETURN { method: 'typing', chars_entered: text.length }
+
+
+FUNCTION wait_for_enter_key():
+  """
+  Wait for user to press Enter in the terminal.
+  Cross-platform implementation.
+  """
+
+  # Python readline implementation
+  RETURN NEW Promise((resolve) => {
+    readline = require_module('readline')
+    rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    })
+
+    rl.question('Press Enter when ready...', () => {
+      rl.close()
+      resolve()
+    })
+  })
+```
+
 ### Generate Single Mockup (Humanized)
 
 ```text
@@ -725,7 +954,19 @@ FUNCTION stitch_generate_mockup(page, prompt, output_dir, options = {}):
          await handle_captcha(page, { action: 'prompt' })
 
     3. FIND and interact with prompt input:
-       input = await page.waitForSelector(SELECTORS.promptInput, { timeout: 10000 })
+       # Load selector config from stitch-selectors.md
+       IMPORT SELECTORS FROM templates/shared/stitch-selectors.md
+
+       # Use robust element finding with visibility checks
+       find_result = await stitch_find_element_robust(page, SELECTORS.promptInput, {
+         allow_interactive_fallback: options.allow_interactive OR false
+       })
+
+       IF NOT find_result:
+         THROW { code: 'PROMPT_INPUT_NOT_FOUND', message: "Could not find prompt input field" }
+
+       input = find_result.element
+       LOG "  📍 Using selector: {find_result.selector_used} (method: {find_result.method})"
 
        # Scroll to input if needed
        await scroll_to_element(page, input)
@@ -740,24 +981,40 @@ FUNCTION stitch_generate_mockup(page, prompt, output_dir, options = {}):
 
     4. CLEAR previous prompt:
        # Select all with keyboard (more natural than triple-click)
-       await page.keyboard.press('Meta+a')  # Cmd+A on Mac
+       platform = await page.evaluate(() => navigator.platform)
+
+       IF platform.includes('Mac'):
+         await page.keyboard.press('Meta+a')  # Cmd+A on Mac
+       ELSE:
+         await page.keyboard.press('Control+a')  # Ctrl+A on Windows/Linux
+
        await random_wait(100 * speed_mult, 300 * speed_mult)
        await page.keyboard.press('Backspace')
        await random_wait(200 * speed_mult, 400 * speed_mult)
 
-    5. TYPE new prompt with humanization:
-       # Use humanize_typing for natural keystroke timing
-       await humanize_typing(input, prompt, {
-         mean_delay: 70 * speed_mult,
-         std_delay: 30,
-         typo_rate: speed === 'slow' ? 0.02 : 0.01  # More typos in slow mode
+    5. ENTER new prompt (clipboard-first with typing fallback):
+       # Try clipboard method first (10x faster than typing)
+       entry_result = await stitch_enter_text_clipboard(page, input, prompt, {
+         prefer_typing: options.prefer_typing OR false,
+         typing_delay_ms: 70 * speed_mult  # Used if clipboard fails
        })
 
-       # Pause after typing (human reviews what they typed)
+       LOG "  ⌨️  Text entry method: {entry_result.method} ({entry_result.chars_entered} chars)"
+
+       # Pause after entering text (human reviews what they typed)
        await random_wait(500 * speed_mult, 1500 * speed_mult)
 
     6. CLICK generate button:
-       generate_btn = await page.waitForSelector(SELECTORS.generateButton)
+       # Use robust element finding with visibility checks
+       button_result = await stitch_find_element_robust(page, SELECTORS.generateButton, {
+         allow_interactive_fallback: options.allow_interactive OR false
+       })
+
+       IF NOT button_result:
+         THROW { code: 'GENERATE_BUTTON_NOT_FOUND', message: "Could not find generate button" }
+
+       generate_btn = button_result.element
+       LOG "  🔘 Using selector: {button_result.selector_used} (method: {button_result.method})"
 
        # Scroll to button if needed
        await scroll_to_element(page, generate_btn)

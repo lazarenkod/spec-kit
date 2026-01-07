@@ -7,6 +7,59 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.84] - 2026-01-06
+
+### Enhanced
+
+- **Stitch Integration robustness** with proven patterns from production automation:
+  - **Robust element finding** (`stitch_find_element_robust()`):
+    - Try primary + all fallback selectors with 5s timeout each (not 10s total)
+    - Check `isVisible()` before using any element
+    - Log which selector worked for debugging
+    - Continue to next fallback if element found but hidden
+  - **Interactive fallback mode**:
+    - When all selectors fail, ask user to click the element manually
+    - Use `:focus` selector to capture user's selection
+    - Beautiful console UI guides user through process
+    - Enable with `--allow-interactive` flag
+  - **Clipboard-based input** (10x faster than typing):
+    - Try clipboard paste first (instant vs ~140ms per char typing)
+    - Automatic OS detection (Meta+V for Mac, Ctrl+V for Windows/Linux)
+    - Fallback to typing if clipboard permissions fail
+    - Override with `--prefer-typing` for more human-like behavior
+  - **Better error recovery**:
+    - Platform-aware keyboard shortcuts (Meta/Control detection)
+    - Session re-authentication detection
+    - Detailed element finding logging
+    - Graceful degradation from fast to slow methods
+
+### Changed
+
+- **Module version**: `templates/shared/stitch-integration.md` v3.0.0 → v3.1.0
+- **Selector resolution**: Updated `stitch_generate_mockup()` to use new robust element finder
+- **Text entry**: Replaced slow typing with clipboard-first approach (10x faster)
+- **Button finding**: Both prompt input and generate button now use robust finding with visibility checks
+
+### Added
+
+- **New helper functions** in `templates/shared/stitch-integration.md`:
+  - `stitch_find_element_robust()` - Robust element finding with visibility checks and logging
+  - `stitch_wait_for_user_click()` - Interactive element identification fallback
+  - `stitch_enter_text_clipboard()` - Clipboard-based text entry with typing fallback
+  - `wait_for_enter_key()` - Cross-platform user input helper
+- **New flags** for `/speckit.design`:
+  - `--allow-interactive` - Enable interactive fallback when selectors fail
+  - `--prefer-typing` - Force typing instead of clipboard (more human-like)
+- **Enhanced documentation** with usage examples for new features
+
+### Context
+
+These enhancements are based on analyzing production Stitch automation scripts from `/Users/dmitry.lazarenko/Documents/projects/ai/tm/.speckit/stitch-old/`:
+- `stitch-automation.js` (641 lines) - Production-tested selector strategies
+- `debug-stitch-ui.js` (208 lines) - Element discovery and visibility checks
+- `debug-shadow-dom.js` (210 lines) - Shadow DOM traversal patterns
+- `manual-workflow.sh` (134 lines) - Semi-automated workflow with clipboard
+
 ## [0.0.83] - 2026-01-06
 
 ### Fixed
