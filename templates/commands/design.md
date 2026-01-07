@@ -1829,7 +1829,7 @@ When selectors fail, debug screenshots are automatically saved:
 
 1. Review audit output to identify broken selectors
 2. Check debug screenshots to see current UI state
-3. Open https://stitch.withgoogle.com and inspect elements with DevTools
+3. Open <https://stitch.withgoogle.com> and inspect elements with DevTools
 4. Update `templates/shared/stitch-selectors.md` with new selectors
 5. Run `--audit-selectors` again to verify fixes
 
@@ -1945,7 +1945,7 @@ IF automation fails:
 
   Automation encountered issues. Follow these steps:
 
-  1. Open https://stitch.withgoogle.com
+  1. Open <https://stitch.withgoogle.com>
   2. Sign in with your Google account
   3. For each screen below, copy-paste the prompt and export results
 

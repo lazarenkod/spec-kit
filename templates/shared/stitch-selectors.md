@@ -689,7 +689,7 @@ This will test all 26 selectors and generate a report showing which ones are bro
 
 ### Step 2: Inspect Live Stitch UI
 
-1. Open https://stitch.withgoogle.com in Chrome
+1. Open <https://stitch.withgoogle.com> in Chrome
 2. Open DevTools (F12) → Elements panel
 3. For each broken selector (e.g., `promptInput`):
    - Locate the element visually on the page

@@ -76,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **For future Google Stitch UI changes:**
 1. Run `/speckit.design --mockup --audit-selectors` to identify broken selectors
-2. Inspect live UI at https://stitch.withgoogle.com with DevTools
+2. Inspect live UI at <https://stitch.withgoogle.com> with DevTools
 3. Update `templates/shared/stitch-selectors.md` with new selectors
 4. Increment version, update UI Change Log
 5. Test with `--audit-selectors` again to verify fix
