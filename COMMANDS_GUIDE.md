@@ -26,9 +26,10 @@ graph TD
     F --> G[/speckit.design]
     G --> H[/speckit.plan]
     H --> I[/speckit.tasks]
-    I --> J[/speckit.analyze]
-    J --> K[/speckit.implement]
-    K --> L[/speckit.merge]
+    I --> J[/speckit.staging]
+    J --> K[/speckit.analyze]
+    K --> L[/speckit.implement]
+    L --> M[/speckit.merge]
 ```
 
 ### Brownfield проекты (существующие кодовые базы)
@@ -39,8 +40,9 @@ graph TD
     B --> C[/speckit.specify]
     C --> D[/speckit.plan]
     D --> E[/speckit.tasks]
-    E --> F[/speckit.implement]
-    F --> G[/speckit.merge]
+    E --> F[/speckit.staging]
+    F --> G[/speckit.implement]
+    G --> H[/speckit.merge]
 ```
 
 ---
@@ -353,7 +355,73 @@ graph TD
 
 ---
 
-### 9. `/speckit.analyze`
+### 9. `/speckit.staging`
+
+**Назначение:** Provision Docker Compose staging environment ПЕРЕД имплементацией для TDD workflow
+
+**Аргументы:**
+```bash
+/speckit.staging [flags]
+```
+
+**Параметры:** Нет (автоматически определяет сервисы из spec/tasks)
+
+**Флаги:**
+- `--services <list>` - override сервисов (postgres,redis,playwright). Comma-separated
+- `--skip-playwright` - пропустить Playwright контейнер (для unit-test-only фич)
+- `--reset` - пересоздать все сервисы (down + up)
+- `--status` - показать текущий статус без изменений
+- `--down` - остановить все staging сервисы
+
+**Когда использовать:**
+- ✅ После `/speckit.tasks` (автоматически через handoff)
+- ✅ ПЕРЕД `/speckit.implement` для TDD
+- ✅ Тесты требуют PostgreSQL, Redis или Playwright
+- ⛔ НЕ для production деплоя (используйте `/speckit.ship`)
+
+**Сервисы по умолчанию:**
+| Сервис | Image | Port | Healthcheck |
+|--------|-------|------|-------------|
+| PostgreSQL | postgres:16-alpine | 5433 | pg_isready |
+| Redis | redis:7-alpine | 6380 | redis-cli ping |
+| Playwright | mcr.microsoft.com/playwright:v1.40.0 | - | npx playwright --version |
+
+**Пример:**
+```bash
+# Полный staging
+/speckit.staging
+
+# Только PostgreSQL и Redis (без Playwright)
+/speckit.staging --skip-playwright
+
+# Проверить статус
+/speckit.staging --status
+
+# Остановить
+/speckit.staging --down
+```
+
+**Выходные файлы:**
+- `.speckit/staging/docker-compose.yaml` - Docker Compose конфигурация
+- `.speckit/staging/test-config.env` - переменные окружения для тестов
+- `.speckit/state/staging/staging-status.json` - состояние сервисов
+
+**Модель:** `haiku` (быстрый provisioning)
+
+**Quality Gates:**
+- **QG-STAGING-001**: All services healthy (CRITICAL)
+
+**Отличие от `/speckit.ship`:**
+| Аспект | `/speckit.staging` | `/speckit.ship` |
+|--------|-------------------|-----------------|
+| **Когда** | ПЕРЕД имплементацией | ПОСЛЕ имплементации |
+| **Цель** | Тестовая инфра для TDD | Cloud деплой |
+| **Сервисы** | Docker Compose локально | Terraform + K8s |
+| **Порты** | 5433, 6380 (не конфликтуют) | По infra.yaml |
+
+---
+
+### 10. `/speckit.analyze`
 
 **Назначение:** Cross-artifact consistency, traceability, QA verification
 
@@ -402,9 +470,9 @@ graph TD
 
 ---
 
-### 10. `/speckit.implement`
+### 11. `/speckit.implement`
 
-**Назначение:** Выполнение implementation plan с самопроверкой
+**Назначение:** Выполнение TDD implementation plan с самопроверкой
 
 **Аргументы:**
 ```bash
@@ -448,7 +516,7 @@ graph TD
 
 ---
 
-### 11. `/speckit.merge`
+### 12. `/speckit.merge`
 
 **Назначение:** Финализация фичи и обновление system specs после PR merge
 
@@ -810,6 +878,7 @@ graph TD
 | **Design** | `/speckit.design` | ⚪ (UI-heavy фичи) |
 | **Planning** | `/speckit.plan` | ✅ |
 | **Tasks** | `/speckit.tasks` | ✅ |
+| **Staging** | `/speckit.staging` | ✅ (TDD инфраструктура) |
 | **Analysis** | `/speckit.analyze` | ✅ (автоматически) |
 | **Implementation** | `/speckit.implement` | ✅ |
 | **Finalization** | `/speckit.merge` | ✅ |
@@ -823,6 +892,7 @@ graph TD
 | **Requirements** | `specify`, `clarify`, `baseline` |
 | **Design** | `design`, `preview` |
 | **Planning** | `plan`, `tasks` |
+| **TDD Infrastructure** | `staging` |
 | **Quality** | `analyze`, `checklist`, `properties` |
 | **Implementation** | `implement` |
 | **Project Management** | `list`, `switch`, `extend`, `taskstoissues` |
@@ -841,6 +911,7 @@ graph TD
 | `design` | `opus` | 16000 |
 | `plan` | `opus` | 16000 |
 | `tasks` | `sonnet` | 8000 |
+| `staging` | `haiku` | 4000 |
 | `analyze` | `sonnet` | 16000 |
 | `implement` | `opus` | 16000 |
 | `list` | `haiku` | 4000 |
@@ -876,6 +947,12 @@ graph TD
 
 ## Версия документа
 
-**Версия:** 1.0.0 (совместим с Spec-Kit v0.0.81)
-**Дата:** 2026-01-06
+**Версия:** 1.1.0 (совместим с Spec-Kit v0.0.86)
+**Дата:** 2026-01-07
 **Автор:** Auto-generated from command templates
+
+### Изменения в 1.1.0
+
+- Добавлена команда `/speckit.staging` для TDD workflow
+- Обновлены workflow диаграммы (staging между tasks и analyze)
+- Добавлен раздел "TDD Infrastructure" в Quick Reference

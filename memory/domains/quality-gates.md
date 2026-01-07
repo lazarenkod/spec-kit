@@ -160,6 +160,160 @@ Design MUST have zero WCAG 2.1 AA violations in color contrast.
 
 ---
 
+## Test-First Development Gates (QG-STAGING-xxx, QG-TEST-xxx)
+
+> **Test-First Development** gates ensure staging infrastructure is ready and tests exist before implementation.
+> Tests MUST exist and FAIL before code is written (TDD).
+
+### QG-STAGING-001: Staging Environment Ready
+
+**Level**: MUST
+**Applies to**: All `/speckit.implement` invocations
+**Phase**: Pre-Implement
+
+Local staging environment MUST be provisioned and healthy before implementation begins.
+
+**Threshold**: All staging services pass health checks
+
+**Validation**:
+```bash
+docker-compose -f .speckit/staging/docker-compose.yaml ps --format json
+# All services must show "running" and "healthy"
+```
+
+**Required Services**:
+| Service | Health Check | Required |
+|---------|-------------|----------|
+| test-db (postgres) | `pg_isready` | YES |
+| test-redis | `redis-cli ping` | YES |
+| playwright | Container running | For E2E features |
+
+**Violations**: CRITICAL - Cannot run tests without infrastructure
+
+---
+
+### QG-TEST-001: Test Completeness
+
+**Level**: MUST
+**Applies to**: All `/speckit.tasks` outputs
+**Phase**: Pre-Implement
+
+Every Acceptance Scenario (AS-xxx) marked "Requires Test = YES" MUST have a corresponding test task.
+
+**Threshold**: 100% coverage of required test scenarios
+
+**Validation**:
+```bash
+/speckit.analyze --profile test-completeness
+# Parses tasks.md TTM, compares against spec.md AS list
+```
+
+**Formula**:
+```
+Test Completeness = (AS with [TEST:] markers) / (AS with "Requires Test = YES") × 100
+```
+
+**Thresholds**:
+- **100%**: Ready for implementation
+- **<100%**: BLOCK - Add missing test tasks
+
+**Violations**: CRITICAL - Untested acceptance scenarios
+
+---
+
+### QG-TEST-002: Test Infrastructure Ready
+
+**Level**: MUST
+**Applies to**: All `/speckit.implement` invocations
+**Phase**: Pre-Implement
+
+Test framework MUST be configured and executable before implementation begins.
+
+**Threshold**: Test command runs successfully (even with 0 tests)
+
+**Validation by Language**:
+
+| Language | Package File | Test Command | Config File |
+|----------|-------------|--------------|-------------|
+| TypeScript | package.json | `npm test` | jest.config.js / vitest.config.ts |
+| Python | pyproject.toml | `pytest` | pytest.ini / pyproject.toml |
+| Go | go.mod | `go test ./...` | - |
+
+**Implementation**:
+```bash
+# Node.js
+npm test -- --passWithNoTests --coverage
+
+# Python
+pytest --collect-only || pytest --co
+
+# Go
+go test ./... -count=0
+```
+
+**Violations**: CRITICAL - Cannot verify implementation without test infrastructure
+
+---
+
+### QG-TEST-003: TDD Red-Green Verification
+
+**Level**: MUST
+**Applies to**: Wave 2 (Test Scaffolding) completion
+**Phase**: During-Implement
+
+All test tasks MUST have tests that FAIL initially (Red phase of TDD).
+
+**Threshold**: 100% of new tests fail on first run (before implementation)
+
+**Validation**:
+```bash
+# Run tests expecting failures
+npm test -- --passWithNoTests=false
+# Expected: All tests fail
+
+# After implementation
+npm test
+# Expected: All tests pass
+```
+
+**Rationale**: Confirms tests are actually testing new functionality, not passing trivially.
+
+**Violations**: HIGH - Tests may not be testing real behavior
+
+---
+
+### QG-TEST-004: Per-Story Test Coverage
+
+**Level**: MUST
+**Applies to**: Each story phase completion
+**Phase**: Post-Story
+
+Code coverage MUST meet minimum threshold after each story implementation.
+
+**Threshold**: >= 80% line coverage for new code
+
+**Validation**:
+```bash
+# Jest
+jest --coverage --coverageThreshold='{"global":{"lines":80}}'
+
+# Pytest
+pytest --cov=src --cov-fail-under=80
+
+# Go
+go test -coverprofile=coverage.out && go tool cover -func=coverage.out
+```
+
+**Per-Story Tracking**:
+| Story | Files Changed | Coverage Before | Coverage After | Delta |
+|-------|--------------|-----------------|----------------|-------|
+| US1 | 5 | N/A | 85% | +85% |
+| US2 | 3 | 85% | 82% | -3% |
+
+**Violations**: CRITICAL if < 70%, HIGH if 70-80%
+
+---
+
 ## Pre-Implement Gates
 
 ### QG-001: Minimum Spec Quality Score

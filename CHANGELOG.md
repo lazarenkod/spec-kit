@@ -7,6 +7,53 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.86] - 2026-01-07
+
+### Added
+
+- **New command `/speckit.staging`**: Provision Docker Compose staging environment BEFORE implementation
+  - Creates `.speckit/staging/docker-compose.yaml` with PostgreSQL 16, Redis 7, Playwright
+  - Generates `test-config.env` with connection strings
+  - Validates QG-STAGING-001 quality gate (all services healthy)
+  - Script: `scripts/bash/staging-provision.sh` with `--services`, `--reset`, `--status` flags
+
+- **TDD workflow enforcement**: Tests are now REQUIRED (not optional)
+  - Every AS-xxx with "Requires Test = YES" must have a corresponding [TEST:AS-xxx] task
+  - Test Traceability Matrix (TTM) is mandatory in tasks.md
+  - Quality Gate QG-TEST-001 blocks if any AS lacks a test task
+  - No `--skip-tests` flag available
+
+- **TDD wave ordering in `/speckit.implement`**:
+  - Wave 0: Staging Validation (`staging-validator` agent)
+  - Wave 2: Test Scaffolding (`test-scaffolder`, `e2e-test-scaffolder` agents) - TDD Red Phase
+  - Wave 4: Test Verification (`test-verifier` agent) - TDD Green Phase
+  - Tests created BEFORE implementation code
+
+- **New Quality Gates** for TDD workflow:
+  - QG-STAGING-001: All Docker services healthy (CRITICAL)
+  - QG-TEST-001: 100% AS coverage with test tasks (CRITICAL)
+  - QG-TEST-002: Test framework configured (CRITICAL)
+  - QG-TEST-003: Tests fail first - TDD red (HIGH)
+  - QG-TEST-004: Coverage >= 80% (CRITICAL)
+
+- **CI/CD templates** for TDD pipeline in `templates/shared/ci-templates.md`:
+  - GitHub Actions workflow (`tdd-pipeline.yml`) with staging, tests, quality gates
+  - GitLab CI configuration with TDD stages
+  - Local TDD runner: `scripts/bash/run-tdd-pipeline.sh`
+
+### Changed
+
+- **`/speckit.tasks`**: Tests changed from OPTIONAL to REQUIRED
+  - SR-TASK-06 severity upgraded from HIGH to CRITICAL
+  - TTM section now mandatory with QG-TEST-001 reference
+
+- **`/speckit.implement`**: Restructured wave execution for TDD
+  - Added staging-validator, test-scaffolder, e2e-test-scaffolder, test-verifier agents
+  - ui-foundation-builder now depends on test-scaffolder
+  - Wave numbering shifted to accommodate TDD phases
+
+- **Core workflow order**: `/speckit.staging` now runs between `/speckit.tasks` and `/speckit.analyze`
+
 ## [0.0.85] - 2026-01-07
 
 ### Added

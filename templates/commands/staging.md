@@ -1,0 +1,419 @@
+---
+description: Provision Docker Compose staging environment before implementation
+persona: devops-agent
+handoff:
+  requires: tasks.md  # Must have tasks before staging
+  template: templates/handoff-template.md
+handoffs:
+  - label: Start Implementation
+    agent: speckit.implement
+    prompt: |
+      Staging environment is ready. Start TDD implementation:
+      - Wave 2: Create failing tests first
+      - Wave 3: Implement to make tests pass
+    auto: true
+    condition:
+      - "All staging services pass health checks"
+      - "QG-STAGING-001 passed"
+    gates:
+      - name: "Staging Ready Gate"
+        check: "docker-compose services are healthy"
+        block_if: "Any service failed health check"
+        message: "Fix staging services before implementation"
+pre_gates:
+  - name: "Tasks Exist Gate"
+    check: "tasks.md exists in FEATURE_DIR"
+    block_if: "No tasks.md found"
+    message: "Run /speckit.tasks first to generate task breakdown"
+  - name: "Docker Available Gate"
+    check: "docker and docker-compose commands available"
+    block_if: "Docker not installed or not running"
+    message: "Install Docker Desktop and ensure it is running"
+scripts:
+  sh: scripts/bash/staging-provision.sh
+  ps: scripts/powershell/staging-provision.ps1
+claude_code:
+  model: haiku
+  reasoning_mode: standard
+  thinking_budget: 4000
+  subagents:
+    - role: docker-provisioner
+      role_group: INFRA
+      parallel: false
+      depends_on: []
+      priority: 10
+      model_override: haiku
+      prompt: |
+        Provision Docker Compose staging environment for testing.
+
+        Tasks:
+        1. Check Docker is running
+        2. Generate docker-compose.yaml with test services
+        3. Start services and wait for health checks
+        4. Generate test-config.env with connection strings
+        5. Validate QG-STAGING-001
+
+        Output:
+        - .speckit/staging/docker-compose.yaml
+        - .speckit/staging/test-config.env
+        - Health check results
+---
+
+## User Input
+
+```text
+$ARGUMENTS
+```
+
+Parse arguments for:
+- `--services <list>`: Override default services (postgres,redis,playwright). Comma-separated.
+- `--skip-playwright`: Skip Playwright container (useful for unit-test-only features)
+- `--reset`: Tear down and recreate all services
+- `--status`: Show current staging status without changes
+- `--down`: Stop all staging services
+
+## Outline
+
+### Phase 0: Prerequisites Check
+
+1. Run `{SCRIPT} --json` from repo root and parse:
+   - `FEATURE_DIR`: Current feature directory
+   - `PROJECT_ROOT`: Repository root
+
+2. Verify prerequisites:
+   ```bash
+   # Check Docker is available and running
+   docker info > /dev/null 2>&1 || {
+     echo "ERROR: Docker is not running"
+     exit 1
+   }
+
+   # Check docker-compose is available
+   docker-compose --version > /dev/null 2>&1 || docker compose version > /dev/null 2>&1 || {
+     echo "ERROR: docker-compose not found"
+     exit 1
+   }
+   ```
+
+3. Load feature context:
+   - **IF EXISTS**: Read tasks.md for test requirements
+   - **IF EXISTS**: Read spec.md for infrastructure hints (database type, cache needs)
+
+### Phase 1: Service Configuration
+
+1. **Detect required services from spec.md and tasks.md:**
+   ```text
+   services = ["postgres"]  # Default database
+
+   IF spec.md mentions "Redis" OR "cache" OR "session":
+     services.append("redis")
+
+   IF tasks.md has "[TEST:AS-xxx]" with type="e2e" OR type="playwright":
+     services.append("playwright")
+
+   IF --services specified:
+     services = parse_comma_separated(--services)
+
+   IF --skip-playwright:
+     services.remove("playwright")
+   ```
+
+2. **Generate docker-compose.yaml:**
+   ```yaml
+   # .speckit/staging/docker-compose.yaml
+   version: '3.8'
+
+   services:
+     test-db:
+       image: postgres:16-alpine
+       container_name: speckit-test-db
+       ports:
+         - "5433:5432"
+       environment:
+         POSTGRES_USER: test
+         POSTGRES_PASSWORD: test
+         POSTGRES_DB: test_db
+       healthcheck:
+         test: ["CMD-SHELL", "pg_isready -U test -d test_db"]
+         interval: 5s
+         timeout: 5s
+         retries: 5
+       volumes:
+         - test-db-data:/var/lib/postgresql/data
+
+     test-redis:
+       image: redis:7-alpine
+       container_name: speckit-test-redis
+       ports:
+         - "6380:6379"
+       healthcheck:
+         test: ["CMD", "redis-cli", "ping"]
+         interval: 5s
+         timeout: 5s
+         retries: 5
+       profiles:
+         - redis
+
+     playwright:
+       image: mcr.microsoft.com/playwright:v1.40.0-jammy
+       container_name: speckit-playwright
+       working_dir: /app
+       volumes:
+         - ${PROJECT_ROOT:-.}:/app
+       environment:
+         - CI=true
+       profiles:
+         - e2e
+       depends_on:
+         test-db:
+           condition: service_healthy
+
+   volumes:
+     test-db-data:
+
+   networks:
+     default:
+       name: speckit-staging
+   ```
+
+3. **Generate test-config.env:**
+   ```env
+   # .speckit/staging/test-config.env
+   # Auto-generated by /speckit.staging - DO NOT EDIT
+
+   # Database
+   DATABASE_URL=postgresql://test:test@localhost:5433/test_db
+   TEST_DATABASE_HOST=localhost
+   TEST_DATABASE_PORT=5433
+   TEST_DATABASE_USER=test
+   TEST_DATABASE_PASSWORD=test
+   TEST_DATABASE_NAME=test_db
+
+   # Redis (if enabled)
+   REDIS_URL=redis://localhost:6380
+   TEST_REDIS_HOST=localhost
+   TEST_REDIS_PORT=6380
+
+   # Playwright (if enabled)
+   PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+   CI=true
+
+   # Test Configuration
+   NODE_ENV=test
+   LOG_LEVEL=error
+   ```
+
+### Phase 2: Service Provisioning
+
+1. **Handle --down flag:**
+   ```bash
+   IF --down:
+     docker-compose -f .speckit/staging/docker-compose.yaml down -v
+     echo "Staging services stopped and volumes removed"
+     EXIT 0
+   ```
+
+2. **Handle --reset flag:**
+   ```bash
+   IF --reset:
+     docker-compose -f .speckit/staging/docker-compose.yaml down -v
+     # Continue to start fresh
+   ```
+
+3. **Handle --status flag:**
+   ```bash
+   IF --status:
+     docker-compose -f .speckit/staging/docker-compose.yaml ps
+     EXIT 0
+   ```
+
+4. **Start services with appropriate profiles:**
+   ```bash
+   COMPOSE_PROFILES=""
+
+   IF "redis" in services:
+     COMPOSE_PROFILES="${COMPOSE_PROFILES},redis"
+
+   IF "playwright" in services:
+     COMPOSE_PROFILES="${COMPOSE_PROFILES},e2e"
+
+   # Remove leading comma
+   COMPOSE_PROFILES=${COMPOSE_PROFILES#,}
+
+   # Start services
+   COMPOSE_PROFILES=$COMPOSE_PROFILES docker-compose \
+     -f .speckit/staging/docker-compose.yaml \
+     up -d --wait
+   ```
+
+5. **Wait for health checks:**
+   ```bash
+   echo "Waiting for services to be healthy..."
+
+   MAX_WAIT=60
+   WAITED=0
+
+   while [ $WAITED -lt $MAX_WAIT ]; do
+     ALL_HEALTHY=true
+
+     # Check each service
+     for service in test-db test-redis; do
+       if docker ps --filter "name=speckit-$service" --filter "health=healthy" | grep -q $service; then
+         echo "  $service: healthy"
+       else
+         ALL_HEALTHY=false
+       fi
+     done
+
+     if $ALL_HEALTHY; then
+       break
+     fi
+
+     sleep 2
+     WAITED=$((WAITED + 2))
+   done
+
+   if [ $WAITED -ge $MAX_WAIT ]; then
+     echo "ERROR: Services did not become healthy within ${MAX_WAIT}s"
+     docker-compose -f .speckit/staging/docker-compose.yaml logs
+     exit 1
+   fi
+   ```
+
+### Phase 3: Quality Gate Validation
+
+1. **Validate QG-STAGING-001:**
+   ```text
+   GATE: QG-STAGING-001 - Staging Environment Ready
+
+   checks = []
+
+   # Check PostgreSQL
+   result = docker exec speckit-test-db pg_isready -U test -d test_db
+   checks.append({
+     service: "postgres",
+     status: result.exit_code == 0 ? "PASS" : "FAIL",
+     port: 5433
+   })
+
+   # Check Redis (if enabled)
+   IF "redis" in services:
+     result = docker exec speckit-test-redis redis-cli ping
+     checks.append({
+       service: "redis",
+       status: result.output == "PONG" ? "PASS" : "FAIL",
+       port: 6380
+     })
+
+   # Check Playwright (if enabled)
+   IF "playwright" in services:
+     result = docker exec speckit-playwright npx playwright --version
+     checks.append({
+       service: "playwright",
+       status: result.exit_code == 0 ? "PASS" : "FAIL"
+     })
+
+   # Gate verdict
+   all_passed = all(c.status == "PASS" for c in checks)
+
+   IF NOT all_passed:
+     LOG "QG-STAGING-001: FAILED"
+     FOR check IN checks WHERE check.status == "FAIL":
+       LOG f"  - {check.service}: FAILED"
+     EXIT 1
+
+   LOG "QG-STAGING-001: PASSED"
+   ```
+
+2. **Write staging state:**
+   ```bash
+   mkdir -p .speckit/state/staging
+
+   cat > .speckit/state/staging/staging-status.json << EOF
+   {
+     "status": "ready",
+     "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+     "services": {
+       "postgres": {"port": 5433, "healthy": true},
+       "redis": {"port": 6380, "healthy": true},
+       "playwright": {"enabled": true}
+     },
+     "gate": {
+       "QG-STAGING-001": "PASSED"
+     }
+   }
+   EOF
+   ```
+
+---
+
+## Output Summary
+
+After successful provisioning:
+
+```markdown
+## Staging Environment Ready
+
+**Status**: All services healthy
+**Quality Gate**: QG-STAGING-001 PASSED
+
+### Services
+
+| Service | Container | Port | Status |
+|---------|-----------|------|--------|
+| PostgreSQL | speckit-test-db | 5433 | Healthy |
+| Redis | speckit-test-redis | 6380 | Healthy |
+| Playwright | speckit-playwright | - | Ready |
+
+### Configuration Files
+
+- Docker Compose: `.speckit/staging/docker-compose.yaml`
+- Test Config: `.speckit/staging/test-config.env`
+
+### Usage
+
+Load environment variables in your tests:
+```bash
+source .speckit/staging/test-config.env
+npm test
+```
+
+Or with dotenv:
+```javascript
+require('dotenv').config({ path: '.speckit/staging/test-config.env' })
+```
+
+### Commands
+
+- Check status: `/speckit.staging --status`
+- Stop services: `/speckit.staging --down`
+- Reset (recreate): `/speckit.staging --reset`
+
+**Next Step**: Run `/speckit.implement` to start TDD implementation
+```
+
+---
+
+## Self-Review
+
+Before completing, verify:
+
+1. **Docker State**:
+   - [ ] All containers are running
+   - [ ] All health checks pass
+   - [ ] Ports are not conflicting with other services
+
+2. **Configuration**:
+   - [ ] docker-compose.yaml is valid
+   - [ ] test-config.env has correct connection strings
+   - [ ] Volumes are created for data persistence
+
+3. **Quality Gates**:
+   - [ ] QG-STAGING-001 passed
+   - [ ] staging-status.json written
+
+4. **Cleanup Info**:
+   - [ ] User informed how to stop services
+   - [ ] User informed about port mappings
+
+**If any check fails, report the issue and suggest remediation steps.**

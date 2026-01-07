@@ -149,9 +149,41 @@ The toolkit implements a workflow where AI agents use slash commands.
 | 4. Specification | `/speckit.specify` | Create feature specification (what & why, not how) |
 | 5. Clarification | `/speckit.clarify` | Clarify ambiguous requirements (optional) |
 | 6. Planning | `/speckit.plan` | Create technical implementation plan |
-| 7. Task Breakdown | `/speckit.tasks` | Generate actionable task breakdown |
-| 8. Quality Check | `/speckit.analyze` | Cross-artifact consistency check (optional) |
-| 9. Implementation | `/speckit.implement` | Execute implementation with self-healing |
+| 7. Task Breakdown | `/speckit.tasks` | Generate actionable task breakdown (tests REQUIRED) |
+| 8. Staging | `/speckit.staging` | Provision Docker Compose staging environment |
+| 9. Quality Check | `/speckit.analyze` | Cross-artifact consistency check (optional) |
+| 10. Implementation | `/speckit.implement` | Execute TDD implementation (tests first, then code) |
+
+### TDD Workflow
+
+The toolkit enforces Test-Driven Development with these key features:
+
+1. **Tests are REQUIRED**: Every acceptance scenario (AS-xxx) must have a corresponding test task
+2. **Staging before implementation**: `/speckit.staging` provisions local Docker services (PostgreSQL, Redis, Playwright)
+3. **TDD wave ordering in `/speckit.implement`**:
+   - Wave 0: Staging Validation (QG-STAGING-001)
+   - Wave 1: Infrastructure setup
+   - Wave 2: Test Scaffolding (TDD Red - failing tests first)
+   - Wave 3: Core Implementation (TDD Green - make tests pass)
+   - Wave 4: Test Verification
+   - Wave 5: Polish
+
+### Quality Gates (TDD)
+
+| Gate | Phase | Purpose |
+|------|-------|---------|
+| QG-STAGING-001 | Pre-Implement | All Docker services healthy |
+| QG-TEST-001 | Pre-Implement | 100% AS coverage with test tasks |
+| QG-TEST-002 | Pre-Implement | Test framework configured |
+| QG-TEST-003 | Wave 2 | Tests fail first (TDD red) |
+| QG-TEST-004 | Post-Story | Coverage >= 80% |
+
+### CI/CD Integration
+
+TDD pipeline templates available in `templates/shared/ci-templates.md`:
+- **GitHub Actions**: `.github/workflows/tdd-pipeline.yml`
+- **GitLab CI**: `.gitlab-ci.yml` with TDD stages
+- **Local runner**: `scripts/bash/run-tdd-pipeline.sh`
 
 ### Supporting Commands
 

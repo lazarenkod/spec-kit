@@ -346,7 +346,12 @@ The tasks.md should be immediately executable - each task must be specific enoug
 
 **CRITICAL**: Tasks MUST be organized by user story to enable independent implementation and testing.
 
-**Tests are OPTIONAL**: Only generate test tasks if explicitly requested in the feature specification or if user requests TDD approach.
+**Tests are REQUIRED**: Generate test tasks for ALL acceptance scenarios. This is mandatory for TDD workflow.
+
+- Every AS-xxx with "Requires Test = YES" MUST have a corresponding [TEST:AS-xxx] task
+- Test tasks MUST appear BEFORE implementation tasks in each story phase
+- No `--skip-tests` flag is available - tests are always generated
+- Quality Gate QG-TEST-001 blocks if any AS lacks a test task
 
 ### Checklist Format (REQUIRED)
 
@@ -686,10 +691,10 @@ Before completing tasks.md generation, validate:
      - At least one task has [FR:FR-xxx] marker
      - If no task found: Add to "Gaps Identified"
 
-2. AS Coverage (if tests requested):
-   FOR EACH AS in spec.md:
-     - At least one test task has [TEST:AS-xxx] marker
-     - If no test found: Add to "Gaps Identified"
+2. AS Coverage (MANDATORY - QG-TEST-001):
+   FOR EACH AS in spec.md WHERE "Requires Test = YES":
+     - MUST have at least one test task with [TEST:AS-xxx] marker
+     - If no test found: BLOCK with "QG-TEST-001 FAILED: AS-xxx has no test task"
 
 3. Orphan Task Check:
    FOR EACH implementation task in User Story phase:
@@ -793,7 +798,7 @@ Apply criteria based on complexity tier (from framework.md):
 | SR-TASK-03 | File Paths Present | Implementation tasks include file paths | HIGH |
 | SR-TASK-04 | Story Labels Valid | User story phase tasks have [US#] markers | MEDIUM |
 | SR-TASK-05 | FR Coverage Complete | Every FR-xxx from spec.md has at least one [FR:FR-xxx] task | CRITICAL |
-| SR-TASK-06 | AS Coverage Complete | Every AS-xxx from spec.md has at least one [TEST:AS-xxx] task (if tests requested) | HIGH |
+| SR-TASK-06 | AS Coverage Complete | Every AS-xxx from spec.md has at least one [TEST:AS-xxx] task (MANDATORY) | CRITICAL |
 | SR-TASK-07 | DEP References Valid | All [DEP:T###] reference existing task IDs | CRITICAL |
 | SR-TASK-08 | No Circular Dependencies | Dependency graph has no cycles | CRITICAL |
 | SR-TASK-09 | RTM Table Complete | Requirements Traceability Matrix lists all FRs with linked tasks | MEDIUM |

@@ -241,7 +241,7 @@ Examples of foundational tasks (adjust based on your project):
 
 **Acceptance Scenarios Covered**: AS-1A, AS-1B
 
-### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 1 (REQUIRED - TDD First) ⚠️
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation (TDD)**
 
@@ -366,7 +366,7 @@ Examples of foundational tasks (adjust based on your project):
 
 **Acceptance Scenarios Covered**: AS-2A
 
-### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 2 (REQUIRED - TDD First) ⚠️
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation (TDD)**
 
@@ -415,7 +415,7 @@ Examples of foundational tasks (adjust based on your project):
 
 **Acceptance Scenarios Covered**: AS-3A
 
-### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 3 (REQUIRED - TDD First) ⚠️
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation (TDD)**
 
@@ -640,13 +640,17 @@ graph TD
 
 ---
 
-## Test Traceability Matrix (TTM)
+## Test Traceability Matrix (TTM) - MANDATORY
+
+> **Quality Gate QG-TEST-001**: Every AS with "Requires Test = YES" MUST have a corresponding test task.
+> This matrix is used by `/speckit.analyze` to validate test coverage before implementation.
 
 <!--
   Bidirectional traceability between specs and tests.
   - Links each testable spec ID (AS/EC) to its test task and implementation
   - Enables Pass W validation in /speckit.analyze
   - Updated during implementation as tests are written
+  - QG-TEST-001 blocks if any AS lacks a test task
 
   Columns:
   - Spec ID: AS-xxx or EC-xxx from spec.md

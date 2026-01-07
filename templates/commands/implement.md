@@ -345,6 +345,35 @@ claude_code:
     skip_flag: "--no-adaptive-model"
     complexity_tier: "${COMPLEXITY_TIER}"  # TRIVIAL, SIMPLE, MODERATE, COMPLEX
   subagents:
+    # Wave 0: Staging Validation (verify test infrastructure is ready)
+    - role: staging-validator
+      role_group: INFRA
+      parallel: false
+      depends_on: []
+      priority: 11
+      trigger: "before any implementation starts"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Staging: .speckit/staging/docker-compose.yaml
+
+        ## Task
+        Validate staging environment is ready for TDD:
+        1. Check if .speckit/staging/docker-compose.yaml exists
+        2. If not exists, prompt user to run /speckit.staging first
+        3. Verify all services are healthy (postgres, redis if enabled)
+        4. Validate QG-STAGING-001 passes
+
+        ## Success Criteria
+        - docker-compose.yaml exists
+        - All staging services pass health checks
+        - QG-STAGING-001: PASSED
+        - Test database is accessible
+
+        ## On Failure
+        - Output: "Run /speckit.staging to provision test infrastructure"
+        - Block implementation until staging is ready
+      model_override: haiku
     # Wave 1: Infrastructure (no deps)
     - role: project-scaffolder
       role_group: INFRA
@@ -393,11 +422,88 @@ claude_code:
         - Lock file generated (package-lock.json, poetry.lock)
         - No security vulnerabilities in major dependencies
       model_override: haiku
-    # Wave 2: Core Implementation (parallel by role_group)
+    # Wave 2: Test Scaffolding - TDD Red Phase (create failing tests FIRST)
+    - role: test-scaffolder
+      role_group: TESTING
+      parallel: true
+      depends_on: [staging-validator, dependency-installer]
+      priority: 9
+      trigger: "after dependencies installed, before implementation"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Tasks: {{FEATURE_DIR}}/tasks.md
+        Staging Config: .speckit/staging/test-config.env
+
+        ## Task - TDD RED PHASE
+        Create failing test scaffolds BEFORE implementation:
+        1. Read tasks.md for all [TEST:AS-xxx] markers
+        2. Create test files with proper structure but failing assertions
+        3. Configure test framework to use staging database (port 5433)
+        4. Run tests - they MUST FAIL (validates TDD approach)
+
+        ## Test File Structure
+        For each AS-xxx with "Requires Test = YES":
+        1. Create test file at path from tasks.md
+        2. Add describe/it blocks matching AS Given/When/Then
+        3. Add @speckit:AS-xxx annotation for traceability
+        4. Write assertions that WILL FAIL until implementation
+
+        ## Success Criteria (QG-TEST-003)
+        - All AS-xxx with tests have corresponding test files
+        - Test command runs successfully (npm test / pytest)
+        - 100% of new tests FAIL (TDD red phase verified)
+        - Tests connect to staging database correctly
+
+        ## Output
+        - Test files created in tests/ directory
+        - Test run summary: X tests, X failures (expected)
+        - QG-TEST-003: PASSED (tests fail as expected)
+      model_override: sonnet
+    - role: e2e-test-scaffolder
+      role_group: TESTING
+      parallel: true
+      depends_on: [staging-validator, dependency-installer]
+      priority: 9
+      trigger: "when feature has e2e/playwright tests"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Tasks: {{FEATURE_DIR}}/tasks.md
+        Playwright Container: speckit-playwright
+
+        ## Task - E2E Test Scaffolding
+        Create Playwright test scaffolds:
+        1. Find AS-xxx requiring e2e/playwright tests
+        2. Create test files in tests/e2e/ or e2e/
+        3. Configure Playwright to use staging services
+        4. Create page objects for main screens
+
+        ## Playwright Config
+        ```typescript
+        // playwright.config.ts
+        export default defineConfig({
+          use: {
+            baseURL: process.env.BASE_URL || 'http://localhost:3000',
+          },
+          projects: [
+            { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+          ],
+        });
+        ```
+
+        ## Success Criteria
+        - E2E test files created with proper structure
+        - Playwright config uses staging services
+        - Tests can be run in CI mode
+      model_override: sonnet
+    # Wave 3: Core Implementation - TDD Green Phase (make tests pass)
     - role: data-layer-builder
       role_group: BACKEND
       parallel: true
-      depends_on: [dependency-installer]
+      depends_on: [test-scaffolder]
       priority: 8
       trigger: "when implementing data models"
       prompt: |
@@ -420,7 +526,7 @@ claude_code:
     - role: ui-foundation-builder
       role_group: FRONTEND
       parallel: true
-      depends_on: [dependency-installer]
+      depends_on: [test-scaffolder]
       priority: 8
       trigger: "when implementing UI foundation"
       prompt: |
@@ -488,23 +594,55 @@ claude_code:
         - Each user story has corresponding UI
         - Forms validate input before submission
         - API errors display user-friendly messages
-    # Wave 3: Testing (parallel per test type)
+    # Wave 4: Test Verification - TDD Green Phase (verify tests pass after implementation)
+    - role: test-verifier
+      role_group: TESTING
+      parallel: false
+      depends_on: [data-layer-builder, api-builder, ui-feature-builder]
+      priority: 5
+      trigger: "after core implementation complete"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Tests: tests/ (created in Wave 2)
+        Staging: .speckit/staging/test-config.env
+
+        ## Task - TDD GREEN PHASE VERIFICATION
+        Run tests and verify implementation makes them pass:
+        1. Load staging environment variables
+        2. Run all unit tests (npm test / pytest)
+        3. Verify tests that failed in Wave 2 now PASS
+        4. Calculate coverage and validate QG-TEST-004
+
+        ## Success Criteria (QG-TEST-004)
+        - All tests from Wave 2 now pass
+        - Coverage >= 80% for new code
+        - No test regressions
+        - Staging database used for integration tests
+
+        ## Output
+        - Test run summary: X tests, X passed, 0 failed
+        - Coverage report: XX% line coverage
+        - QG-TEST-004: PASSED if coverage >= 80%
+      model_override: sonnet
     - role: unit-test-generator
       role_group: TESTING
       parallel: true
-      depends_on: [data-layer-builder, api-builder]
-      priority: 5
-      trigger: "when generating unit tests"
+      depends_on: [test-verifier]
+      priority: 4
+      trigger: "when adding additional unit tests for coverage"
       prompt: |
         ## Context
         Feature: {{FEATURE_DIR}}
         Spec: {{FEATURE_DIR}}/spec.md
         Acceptance Scenarios: AS-xxx from spec.md
+        Current Coverage: (from test-verifier)
 
         ## Task
-        Generate unit tests:
-        1. Test each service method with happy path
-        2. Test edge cases and error conditions
+        Add unit tests to improve coverage:
+        1. Identify untested code paths from coverage report
+        2. Add tests for edge cases and error conditions
         3. Mock external dependencies
         4. Add @speckit:AS-xxx annotations for traceability
 
