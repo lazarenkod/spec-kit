@@ -129,6 +129,34 @@ IMPORT * FROM templates/shared/stitch-anti-detection.md:
 
 # Load selectors from versioned file
 IMPORT SELECTORS FROM templates/shared/stitch-selectors.md
+
+# Load output processor functions for enhanced exports
+IMPORT * FROM templates/shared/stitch-output-processor.md:
+  - stitch_export_screenshots_enhanced
+  - convert_screenshots_to_webp
+  - generate_interactive_preview
+  - GENERATE_INTERACTIVE_JS
+  - INTERACTIVE_CSS
+  - OUTPUT_PROCESSOR_CONFIG
+
+# Load parallel engine for concurrent generation
+IMPORT * FROM templates/shared/stitch-parallel-engine.md:
+  - stitch_generate_mockups_parallel
+  - create_browser_pool
+  - create_progress_tracker
+  - PARALLEL_ENGINE_CONFIG
+
+# Load cache manager for incremental generation and session reuse
+IMPORT * FROM templates/shared/stitch-cache-manager.md:
+  - cache_prompt
+  - get_cached_prompt
+  - detect_incremental_screens
+  - hash_design_context
+  - save_browser_session
+  - load_browser_session
+  - restore_browser_session
+  - clear_cached_session
+  - CACHE_MANAGER_CONFIG
 ```
 
 ---
@@ -1397,6 +1425,80 @@ FUNCTION stitch_main(options):
     stitch_generate_master_gallery(results)
     RETURN { mode: 'assisted', phase: 'collect', results }
 
+  # Handle --audit-selectors (diagnostic mode - test selectors without mockup generation)
+  IF options.audit_selectors:
+    LOG "Selector Audit Mode: Testing all Stitch UI selectors (no mockup generation)"
+    LOG ""
+
+    # Load debug utilities
+    IMPORT * FROM templates/shared/stitch-debug-utils.md:
+      - audit_all_selectors
+      - test_selector
+      - inspect_element_at_selector
+      - ENSURE_DIRECTORY_EXISTS
+
+    # Preflight check (need browser for audit)
+    preflight = stitch_preflight_check()
+    IF NOT preflight.playwright_ready OR NOT preflight.browser_ready:
+      THROW Error("Playwright not ready. Run: npx playwright install chromium")
+
+    # Select mode and create browser context
+    mode_result = stitch_select_mode({
+      preferred: options.mode OR 'stealth',
+      speed: options.speed OR 'normal'
+    })
+
+    LOG "Using {mode_result.mode} mode for selector audit"
+    LOG ""
+
+    browser_context = stitch_create_browser_context(mode_result, options)
+    browser = browser_context.browser
+    page = browser_context.page
+
+    # Authenticate to access Stitch UI
+    TRY:
+      auth_result = stitch_authenticate(browser, page, options)
+
+      IF NOT auth_result.authenticated:
+        LOG "❌ Authentication failed. Cannot audit selectors without access to Stitch."
+        await browser.close()
+        RETURN { mode: 'audit', success: false, error: 'authentication_failed' }
+
+      # Run selector audit
+      audit_result = await audit_all_selectors(page, {
+        verbose: options.log_level === 'debug' OR options.verbose,
+        screenshot_failures: true,
+        categories: options.audit_categories  # Optional: filter by category
+      })
+
+      # Cleanup
+      await browser.close()
+
+      # Return audit results
+      RETURN {
+        mode: 'audit',
+        success: audit_result.summary.all_working,
+        audit_results: audit_result,
+        total: audit_result.total,
+        working: audit_result.working,
+        broken: audit_result.broken,
+        critical_failures: audit_result.summary.critical_failures
+      }
+
+    CATCH error:
+      LOG "❌ Audit failed: {error.message}"
+
+      TRY:
+        await browser.close()
+      CATCH:
+        # Ignore cleanup errors
+
+      RETURN {
+        mode: 'audit',
+        success: false,
+        error: error.message
+      }
+
   # Phase 0: Preflight with mode selection
   preflight = stitch_preflight_check()
   IF NOT preflight.playwright_ready OR NOT preflight.browser_ready:
@@ -1447,14 +1549,46 @@ FUNCTION stitch_main(options):
   context = context_result.context
   active_mode = mode_result.mode
 
-  # Phase 1b: Authentication with humanization
-  auth_result = stitch_authenticate(context, { speed_mult })
-  IF NOT auth_result.authenticated:
-    ERROR "Authentication failed: {auth_result.error}"
-    await context.close()
-    RETURN { mode: active_mode, error: 'auth_failed' }
+  # Phase 1b: Session restoration or Authentication
+  page = null
 
-  page = auth_result.page
+  # Try to restore cached session first (if enabled)
+  IF options.reuse_session !== false:
+    session_load_result = load_browser_session()
+
+    IF session_load_result.valid:
+      LOG "🔄 Attempting to restore cached session..."
+
+      # Navigate to Stitch first
+      temp_page = await context.newPage()
+      await temp_page.goto("https://stitch.withgoogle.com")
+
+      # Restore session
+      restore_result = await restore_browser_session(
+        context,
+        temp_page,
+        session_load_result.session_state
+      )
+
+      IF restore_result.authenticated:
+        LOG "✅ Session restored successfully (~30s saved)"
+        page = temp_page
+      ELSE:
+        LOG "⚠️  Session restore failed, falling back to authentication"
+        await temp_page.close()
+    ELSE:
+      LOG "⏭️  No valid session cache: {session_load_result.reason}"
+
+  # If session not restored, authenticate normally
+  IF NOT page:
+    LOG "🔐 Authenticating with Google..."
+    auth_result = stitch_authenticate(context, { speed_mult })
+    IF NOT auth_result.authenticated:
+      ERROR "Authentication failed: {auth_result.error}"
+      await context.close()
+      RETURN { mode: active_mode, error: 'auth_failed' }
+
+    page = auth_result.page
 
   # Phase 2: Discover wireframes
   scope = options.all ? "app" : "feature"
@@ -1469,15 +1603,94 @@ FUNCTION stitch_main(options):
     await context.close()
     RETURN { mode: active_mode, error: 'no_wireframes' }
 
-  # Phase 3: Load design context
-  design_context = stitch_load_design_context()
+  # Phase 2b: Incremental detection (skip unchanged screens)
+  skipped_screens = []
+  incremental_stats = { skip_count: 0, time_saved_est_seconds: 0 }
 
-  # Phase 4-5: Generate and export each (with anti-detection)
+  IF options.incremental !== false AND NOT options.force:
+    LOG "🔍 Checking for unchanged screens (incremental mode)..."
+
+    # Load design context early for hash calculation
+    design_context = stitch_load_design_context()
+    design_context_hash = hash_design_context(design_context)
+
+    # Detect which screens can be skipped
+    incremental_result = detect_incremental_screens(wireframes, design_context, {
+      force: options.force,
+      incremental: options.incremental
+    })
+
+    # Update wireframes list to only those needing generation
+    wireframes = incremental_result.to_generate
+    skipped_screens = incremental_result.to_skip
+    incremental_stats = incremental_result.stats
+
+    # Early exit if nothing to generate
+    IF wireframes.length == 0:
+      LOG "✅ All {skipped_screens.length} screens up-to-date. Nothing to generate!"
+      await context.close()
+
+      RETURN {
+        mode: active_mode,
+        results: [],
+        skipped: skipped_screens.length,
+        incremental_stats: incremental_stats,
+        message: "All screens unchanged (incremental mode)"
+      }
+  ELSE:
+    # Load design context normally (not loaded yet in non-incremental mode)
+    design_context = stitch_load_design_context()
+    design_context_hash = hash_design_context(design_context)
+
+  # Phase 3: Design context loaded (either in Phase 2b or above)
+  # (no additional action needed, design_context and design_context_hash already set)
+
+  # Phase 4-5: Generate and export (PARALLEL or SEQUENTIAL)
   results = []
-  captcha_count = 0
-  MAX_CAPTCHA_BEFORE_FALLBACK = 2
+  generation_stats = null
 
-  FOR each wireframe, index IN wireframes:
+  # BRANCH: Parallel vs Sequential mode
+  IF options.parallel !== false:
+    # ========================================
+    # PARALLEL MODE (default, 3-5x faster)
+    # ========================================
+
+    LOG "⚡ Using parallel generation (max {options.max_parallel OR 3} concurrent)"
+    LOG "   Rate limit protection: {options.batch_delay OR 5000}ms between batches"
+
+    # Close single-context browser (we'll use pool instead)
+    await context.close()
+
+    # Generate all mockups in parallel
+    parallel_result = await stitch_generate_mockups_parallel(wireframes, design_context, {
+      max_parallel: options.max_parallel OR 3,
+      batch_delay: options.batch_delay OR 5000,
+      speed_mult: speed_mult,
+      mode: active_mode,
+      viewports: options.viewports,
+      no_webp: options.no_webp,
+      no_optimize: options.no_optimize,
+      interactive: options.interactive,
+      no_figma: options.no_figma
+    })
+
+    results = parallel_result.results
+    generation_stats = parallel_result.stats
+
+    # Note: Browser pool is cleaned up inside parallel function
+    # Skip to Phase 6 (galleries)
+
+  ELSE:
+    # ========================================
+    # SEQUENTIAL MODE (legacy, for debugging)
+    # ========================================
+
+    LOG "🐌 Using sequential generation (--no-parallel flag detected)"
+
+    captcha_count = 0
+    MAX_CAPTCHA_BEFORE_FALLBACK = 2
+
+    FOR each wireframe, index IN wireframes:
     LOG "Processing [{index + 1}/{wireframes.length}]: {wireframe.screen_name}"
 
     # Create output directory
@@ -1487,6 +1700,9 @@ FUNCTION stitch_main(options):
     # Generate prompt
     prompt = stitch_generate_prompt(wireframe, design_context)
     WRITE prompt TO {output_dir}/prompt.txt
+
+    # Cache prompt for reuse (retry/manual mode)
+    cache_prompt(wireframe, prompt, design_context_hash)
 
     # Generate mockup with humanization
     gen_result = stitch_generate_mockup(page, prompt, output_dir, {
@@ -1536,11 +1752,31 @@ FUNCTION stitch_main(options):
         CONTINUE
 
     IF gen_result.success:
-      # Export all formats with humanization
+      # Export HTML/CSS (standard)
       html_result = stitch_export_html(page, output_dir, { speed_mult })
-      screenshot_result = stitch_export_screenshots(page, output_dir, { speed_mult })
 
-      # Figma export optional
+      # Export screenshots with multi-viewport and WebP (ENHANCED)
+      screenshot_result = stitch_export_screenshots_enhanced(page, output_dir, {
+        speed_mult: speed_mult,
+        viewports: options.viewports OR ['desktop', 'tablet', 'mobile'],
+        no_webp: options.no_webp,
+        no_optimize: options.no_optimize
+      })
+
+      # Generate interactive preview (NEW)
+      interactive_result = { success: false }
+      IF options.interactive !== false AND html_result.success:
+        # Extract HTML/CSS content for interactive preview
+        html_content = READ_FILE("{output_dir}/stitch-output.html")
+        css_content = READ_FILE("{output_dir}/stitch-output.css") OR ""
+
+        interactive_result = generate_interactive_preview(
+          html_content,
+          css_content,
+          output_dir
+        )
+
+      # Figma export optional (standard)
       figma_result = { success: false }
       IF NOT options.no_figma:
         figma_result = stitch_export_figma(page, output_dir, { speed_mult })
@@ -1552,9 +1788,13 @@ FUNCTION stitch_main(options):
         exports: {
           html: html_result.success,
           desktop: screenshot_result.success,
+          tablet: screenshot_result.success,  // NEW
           mobile: screenshot_result.success,
+          webp: !options.no_webp && screenshot_result.success,  // NEW
+          interactive: interactive_result.success,  // NEW
           figma: figma_result.success
-        }
+        },
+        stats: screenshot_result.stats  // WebP compression stats
       })
 
       # Random delay between screens (humanization)
@@ -1568,6 +1808,18 @@ FUNCTION stitch_main(options):
         success: false,
         error: gen_result.error
       })
+
+    # Save browser session for reuse (sequential mode only)
+    IF options.reuse_session !== false:
+      save_result = await save_browser_session(context, page)
+      IF save_result.success:
+        LOG "💾 Session saved for next run (~30s saved)"
+
+    # Close browser context (sequential mode only)
+    await context.close()
+
+  # END BRANCH (parallel/sequential)
+  # Note: Parallel mode manages its own browser pool and session saving
 
   # Phase 6: Generate galleries
   features = group_by_feature(results)

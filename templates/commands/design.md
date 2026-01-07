@@ -1621,7 +1621,7 @@ IF MODE == "mockup_generation":
 ### CLI Usage
 
 ```bash
-# Generate mockups for current feature
+# Basic mockup generation for current feature
 /speckit.design --mockup
 
 # Generate for entire app (from concept design)
@@ -1635,7 +1635,205 @@ IF MODE == "mockup_generation":
 
 # Re-authenticate (if session expired)
 /speckit.design --mockup --reauth
+
+# ========================================
+# OUTPUT CONTROL FLAGS (NEW)
+# ========================================
+
+# Control viewport screenshots (default: desktop,tablet,mobile)
+/speckit.design --mockup --viewports "desktop,tablet,mobile"
+/speckit.design --mockup --viewports "desktop,mobile"  # Skip tablet
+
+# Disable WebP optimization (keep PNG only)
+/speckit.design --mockup --no-webp
+
+# Disable all output optimizations
+/speckit.design --mockup --no-optimize
+
+# Disable interactive HTML preview generation
+/speckit.design --mockup --interactive false
+
+# ========================================
+# PERFORMANCE FLAGS (Phase 2 - Coming Soon)
+# ========================================
+
+# Enable parallel generation (default: true, 3 concurrent)
+/speckit.design --mockup --parallel --max-parallel 5
+
+# Disable parallel generation (sequential processing)
+/speckit.design --mockup --no-parallel
+
+# Adjust delay between batches (default: 5000ms)
+/speckit.design --mockup --batch-delay 10000
+
+# ========================================
+# CACHING FLAGS (Phase 3 - Coming Soon)
+# ========================================
+
+# Enable incremental generation (skip unchanged screens, default: true)
+/speckit.design --mockup --incremental
+
+# Force regeneration of all screens (ignore cache)
+/speckit.design --mockup --force
+
+# Disable browser session reuse
+/speckit.design --mockup --no-reuse-session
+
+# ========================================
+# DEVELOPER FLAGS
+# ========================================
+
+# Audit all Stitch UI selectors (diagnostic mode, no mockup generation)
+/speckit.design --mockup --audit-selectors
+
+# Dry-run mode (preview without executing)
+/speckit.design --mockup --dry-run
+
+# Enable debug logging and screenshots
+/speckit.design --mockup --debug
+
+# Set log level (debug|info|warn|error, default: info)
+/speckit.design --mockup --log-level debug
+
+# Configure retry attempts (default: 2)
+/speckit.design --mockup --retry-max 5
+
+# Set retry backoff strategy (exponential|linear|fixed)
+/speckit.design --mockup --retry-backoff exponential
+
+# Allow manual intervention at pause points
+/speckit.design --mockup --allow-manual-intervention
 ```
+
+### Available Flags Reference
+
+| Category | Flag | Default | Description |
+|----------|------|---------|-------------|
+| **Output** | `--viewports` | `"desktop,tablet,mobile"` | Comma-separated viewport names to capture |
+| | `--no-webp` | `false` | Disable WebP conversion (PNG only) |
+| | `--no-optimize` | `false` | Skip all output optimizations |
+| | `--interactive` | `true` | Generate interactive HTML preview |
+| **Performance** | `--parallel` | `true` | Enable parallel mockup generation |
+| | `--max-parallel` | `3` | Max concurrent generations (1-5) |
+| | `--batch-delay` | `5000` | Delay between batches (ms) |
+| | `--no-parallel` | - | Disable parallel (sequential only) |
+| **Caching** | `--incremental` | `true` | Skip unchanged screens |
+| | `--force` | `false` | Force regeneration (ignore cache) |
+| | `--reuse-session` | `true` | Reuse browser session |
+| | `--no-reuse-session` | - | Disable session reuse |
+| **Developer** | `--audit-selectors` | `false` | Test all Stitch selectors (diagnostic mode) |
+| | `--dry-run` | `false` | Preview without executing |
+| | `--debug` | `false` | Enable debug logging |
+| | `--log-level` | `info` | Log verbosity level |
+| | `--retry-max` | `2` | Maximum retry attempts |
+| | `--retry-backoff` | `exponential` | Retry backoff strategy |
+| | `--allow-manual-intervention` | `false` | Pause for manual input |
+| **Gallery** | `--gallery-mode` | `basic` | Gallery type (basic\|comparison\|annotated) |
+| | `--no-gallery` | `false` | Skip gallery generation |
+| **Scope** | `--all` | `false` | Process entire app |
+| | `--screens` | - | Specific screens (comma-separated) |
+| **Mode** | `--manual` | `false` | Manual mode (no automation) |
+| | `--reauth` | `false` | Force re-authentication |
+| | `--no-figma` | `false` | Skip Figma export |
+```
+
+### Selector Audit Mode (`--audit-selectors`)
+
+The `--audit-selectors` flag runs a diagnostic mode that tests all Stitch UI selectors without generating mockups. This is useful for:
+
+- **Troubleshooting**: When mockup generation fails, identify which selectors are broken
+- **UI Change Detection**: After Google updates Stitch, quickly see what changed
+- **Maintenance**: Periodically verify all selectors are still working
+- **Debugging**: Get detailed info about which selector variants work
+
+#### Usage
+
+```bash
+# Basic audit (tests all 26 selectors)
+/speckit.design --mockup --audit-selectors
+
+# With debug mode for verbose output
+/speckit.design --mockup --audit-selectors --debug
+```
+
+#### Example Output
+
+```text
+╔══════════════════════════════════════════════════════════════════╗
+║  STITCH SELECTOR AUDIT - 2026-01-06T15:30:00Z                    ║
+╚══════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔍 Testing selector: promptInput
+   Description: Main textarea for design prompt input
+   Required: YES
+   Trying PRIMARY [1]: textarea[placeholder*="Describe"]
+   ❌ PRIMARY failed
+   Trying FALLBACK [2]: .prompt-input
+   ❌ FALLBACK 1 failed
+   Trying FALLBACK [3]: [data-testid="prompt-input"]
+   ✅ FALLBACK 2 works: [data-testid="prompt-input"]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔍 Testing selector: generateButton
+   Description: Generate/Create button for starting mockup generation
+   Required: YES
+   Trying PRIMARY [1]: button:has-text("Generate")
+   ✅ PRIMARY works: button:has-text("Generate")
+
+[... 24 more selectors tested ...]
+
+╔══════════════════════════════════════════════════════════════════╗
+║  AUDIT SUMMARY                                                   ║
+╠══════════════════════════════════════════════════════════════════╣
+║  Total Selectors Tested: 26                                      ║
+║  ✅ Working: 25 (96.2%)                                           ║
+║  ❌ Broken:  1 (3.8%)                                             ║
+╚══════════════════════════════════════════════════════════════════╝
+
+📊 Breakdown by Category:
+
+  ✅ authentication:
+     Working: 3/3
+
+  ⚠️ prompt_input:
+     Working: 0/4
+     Broken:  4/4
+
+  ✅ loading_states:
+     Working: 3/3
+
+  [... other categories ...]
+
+❌ Broken Selectors (require update):
+
+  • promptInput [REQUIRED]
+    Category: prompt_input
+    Description: Main textarea for design prompt input
+    Variants tried: 7
+    Screenshot: .speckit/debug/selector-failures/promptInput-2026-01-06T15-30-15.png
+```
+
+#### Output Artifacts
+
+When selectors fail, debug screenshots are automatically saved:
+
+```text
+.speckit/debug/selector-failures/
+├── promptInput-2026-01-06T15-30-15.png
+├── generateButton-2026-01-06T15-31-02.png
+└── exportButton-2026-01-06T15-31-45.png
+```
+
+#### Fixing Broken Selectors
+
+1. Review audit output to identify broken selectors
+2. Check debug screenshots to see current UI state
+3. Open https://stitch.withgoogle.com and inspect elements with DevTools
+4. Update `templates/shared/stitch-selectors.md` with new selectors
+5. Run `--audit-selectors` again to verify fixes
+
+See `templates/shared/stitch-debug-utils.md` for detailed debugging utilities.
 
 ### Error Handling
 
@@ -1679,10 +1877,19 @@ IF MODE == "mockup_generation":
 │  ⚠️  Skipped: {skip_count}                                           │
 │  ❌ Failed: {fail_count}                                             │
 │                                                                     │
-│  Exports:                                                           │
+│  Exports (ENHANCED):                                                │
 │    HTML/CSS: {html_count} files                                     │
-│    Screenshots: {screenshot_count} (desktop + mobile)               │
+│    Interactive HTML: {interactive_count} files (NEW)                │
+│    Screenshots (PNG): {screenshot_count} × 3 viewports              │
+│      → Desktop (1440px), Tablet (768px), Mobile (375px)            │
+│    Screenshots (WebP): {webp_count} files (NEW, ~40% smaller)       │
 │    Figma: {figma_count} clipboard files                             │
+│                                                                     │
+│  📊 Optimization Stats:                                             │
+│    WebP Compression: {compression_ratio}% size reduction            │
+│    PNG Total: {png_size_mb} MB                                      │
+│    WebP Total: {webp_size_mb} MB                                    │
+│    Space Saved: {saved_mb} MB                                       │
 │                                                                     │
 │  📁 Output: .preview/stitch-mockups/                                │
 │  📊 Gallery: .preview/stitch-mockups/index.html                     │
@@ -1692,9 +1899,37 @@ IF MODE == "mockup_generation":
 ├─────────────────────────────────────────────────────────────────────┤
 │  Next Steps:                                                        │
 │   1. Preview: Open .preview/stitch-mockups/index.html               │
-│   2. Figma: Paste from figma-clipboard.json files                   │
-│   3. Retry: /speckit.design --mockup --screens "{failed}"           │
+│   2. Interactive: Open preview-interactive.html files               │
+│   3. Figma: Paste from figma-clipboard.json files                   │
+│   4. Retry: /speckit.design --mockup --screens "{failed}"           │
 └─────────────────────────────────────────────────────────────────────┘
+```
+
+### Output Directory Structure (Enhanced)
+
+After running `/speckit.design --mockup` with output processor enhancements:
+
+```
+.preview/stitch-mockups/
+├── index.html                        # Master gallery (all features)
+├── {feature_1}/
+│   ├── index.html                    # Feature gallery
+│   ├── {screen_1}/
+│   │   ├── screenshot-desktop.png    # Desktop viewport (1440px)
+│   │   ├── screenshot-desktop.webp   # WebP version (~40% smaller) [NEW]
+│   │   ├── screenshot-tablet.png     # Tablet viewport (768px) [NEW]
+│   │   ├── screenshot-tablet.webp    # WebP version (~40% smaller) [NEW]
+│   │   ├── screenshot-mobile.png     # Mobile viewport (375px)
+│   │   ├── screenshot-mobile.webp    # WebP version (~40% smaller) [NEW]
+│   │   ├── stitch-output.html        # Generated HTML
+│   │   ├── stitch-output.css         # Generated CSS (if separate)
+│   │   ├── preview-interactive.html  # Interactive preview with JS [NEW]
+│   │   ├── figma-clipboard.json      # Figma import data (optional)
+│   │   └── prompt.txt                # Original prompt used
+│   └── {screen_2}/
+│       └── ... (same structure)
+└── {feature_2}/
+    └── ... (same structure)
 ```
 
 ### Manual Fallback Guide

@@ -2,11 +2,31 @@
 
 > Versioned DOM selectors for Google Stitch browser automation. Update this file when Stitch UI changes.
 
-## Selector Registry
+## Version History
 
-| Version | Last Verified | Status |
-|---------|---------------|--------|
-| 1.0.0 | 2025-01-01 | Current |
+**Current Version**: v2.0.0
+**Last Verified**: 2026-01-06
+
+### UI Change Log
+
+| Version | Date | Changes | Status |
+|---------|------|---------|--------|
+| **2.0.0** | **2026-01-06** | **Google Stitch UI update - prompt input migrated to TipTap editor** | **Active** |
+| 1.0.0 | 2025-01-01 | Initial selector configuration | Deprecated |
+
+### Known UI Patterns by Version
+
+#### v2.0.0 (2026-01-06+)
+- **Prompt input**: `div[contenteditable="true"][role="textbox"]` - Changed from `<textarea>` to TipTap editor (contenteditable `<div>`)
+- **Generate button**: `button:has-text("Generate")` - No change from v1.0.0
+- **Export buttons**: `button:has-text("Export")` - No change from v1.0.0
+
+**Key Change**: Google migrated from standard HTML `<textarea>` to TipTap rich text editor (contenteditable div). This is a significant architectural change that affects text input interaction (now uses `.textContent` instead of `.value`).
+
+#### v1.0.0 (2025-01-01 - 2026-01-05)
+- **Prompt input**: `textarea[placeholder*="Describe"]` (deprecated)
+- **Generate button**: `button:has-text("Generate")`
+- **Export button**: `button:has-text("Export")`
 
 ---
 
@@ -65,18 +85,21 @@ SELECTORS.auth = {
 
 ```javascript
 SELECTORS.input = {
-  // Main prompt input textarea
+  // Main prompt input (changed from textarea to contenteditable div in v2.0.0)
   promptInput: {
-    primary: 'textarea[placeholder*="Describe"]',
+    primary: 'div[contenteditable="true"][role="textbox"]',  // v2.0.0 - verified 2026-01-06
     fallbacks: [
-      '.prompt-input',
-      '[data-testid="prompt-input"]',
-      'textarea[aria-label*="prompt"]',
-      'textarea[name="prompt"]',
-      '.input-area textarea',
-      '[contenteditable="true"].prompt'
+      'div.tiptap.ProseMirror[contenteditable="true"]',      // v2.0.0 - with TipTap classes
+      '[role="textbox"][contenteditable="true"]',            // v2.0.0 - generic role-based
+      'div[contenteditable="true"]',                         // v2.0.0 - very generic
+      'textarea[placeholder*="Describe"]',                   // v1.0.0 - old primary (kept for rollback)
+      '.prompt-input',                                       // v1.0.0 - old fallback
+      '[data-testid="prompt-input"]',                        // v1.0.0 - old fallback
+      'textarea[aria-label*="prompt"]',                      // v1.0.0 - old fallback
+      'textarea[name="prompt"]',                             // v1.0.0 - old fallback
+      '[contenteditable="true"].prompt'                      // Generic contenteditable
     ],
-    description: 'Main prompt input textarea',
+    description: 'Main prompt input field (contenteditable div with TipTap editor)',
     required: true,
     timeout: 10000
   },
@@ -647,3 +670,124 @@ await generateBtn.click()
 
 await waitForElement(page, SELECTORS.loading.loadingComplete)
 ```
+
+---
+
+## UI Change Detection Strategy
+
+When Google updates the Stitch UI and selectors start failing, follow this process:
+
+### Step 1: Identify Broken Selectors
+
+Run the selector audit command:
+
+```bash
+/speckit.design --mockup --audit-selectors
+```
+
+This will test all 26 selectors and generate a report showing which ones are broken.
+
+### Step 2: Inspect Live Stitch UI
+
+1. Open https://stitch.withgoogle.com in Chrome
+2. Open DevTools (F12) → Elements panel
+3. For each broken selector (e.g., `promptInput`):
+   - Locate the element visually on the page
+   - Right-click → Inspect Element
+   - Examine the DOM structure, classes, and attributes
+   - Note parent/sibling elements for context
+
+### Step 3: Test New Selectors
+
+In DevTools Console, test potential selectors:
+
+```javascript
+// Test if selector finds the element
+document.querySelector('YOUR_NEW_SELECTOR_HERE')
+
+// Should return the element, not null
+// Try multiple variations to find the most stable one
+```
+
+### Step 4: Update This File
+
+For each broken selector:
+
+1. **Add new selector as primary**:
+   ```javascript
+   promptInput: {
+     primary: 'NEW_DISCOVERED_SELECTOR',  // ← Most specific, verified 2026-01-06
+     fallbacks: [
+       'SECOND_NEW_SELECTOR',              // ← Backup from same UI version
+       'textarea[placeholder*="Describe"]', // ← Old primary (v1.0.0) - keep for rollback
+       // ... keep all old fallbacks
+     ]
+   }
+   ```
+
+2. **Update version history** at the top of this file
+3. **Document UI patterns** in the "Known UI Patterns by Version" section
+
+### Step 5: Verify Fix
+
+Run audit again to confirm all selectors working:
+
+```bash
+/speckit.design --mockup --audit-selectors
+```
+
+Expected output: `✅ Working: 26 (100%)`
+
+### Step 6: Test Real Generation
+
+Test with a simple mockup generation:
+
+```bash
+/speckit.design --mockup
+```
+
+### Selector Maintenance Best Practices
+
+#### Keep 8-10 Fallbacks Per Selector
+- More fallbacks = more resilience to UI changes
+- Old selectors serve as rollback options if Google reverts UI
+- Balance: Too many = slower (tests each in order), too few = fragile
+
+#### Prioritize Stable Selector Patterns
+
+**Most Stable → Least Stable:**
+
+1. `[data-testid="..."]` - Explicit test IDs (rare in Stitch)
+2. `[aria-label="..."]` - Accessibility attributes
+3. `[data-attribute="..."]` - Custom data attributes
+4. `.specific-class-name` - Semantic class names
+5. `button:has-text("Label")` - Text-based (fragile, locale-dependent)
+6. Tag + attribute combos - Generic patterns
+
+#### Version Tracking
+
+When updating selectors:
+
+- Increment version (2.0.0 → 2.1.0 for minor UI changes, → 3.0.0 for major redesigns)
+- Update "Last Verified" date
+- Document what changed in UI Change Log
+- Keep old version patterns for reference
+
+#### Automated Monitoring (Future Enhancement)
+
+Consider periodic selector health checks:
+
+```bash
+# Weekly cron job
+0 2 * * 1 /speckit.design --mockup --audit-selectors --quiet > /var/log/stitch-audit.log
+```
+
+Alert if success rate drops below 95%.
+
+---
+
+## Need Help?
+
+- **Audit failing?**: Run `/speckit.design --mockup --audit-selectors --debug` for verbose output
+- **Can't find element?**: Check `templates/shared/stitch-debug-utils.md` for element inspection tools
+- **Google changed everything?**: Consider switching to manual mode temporarily: `--manual`
