@@ -7,6 +7,33 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.91] - 2026-01-08
+
+### Added
+
+- **Preview 2.0: Full Interactive Device Mockups** for `/speckit.preview`:
+  - New `device-profiles.md` with 20+ device profiles (iPhone, iPad, Pixel, Samsung, MacBook, watches)
+  - Device Frame Generator: Wraps previews in realistic device frames with bezels, notches, status bars
+  - Gesture Simulator: Touch gesture injection (tap, swipe, long-press, pinch, pull-to-refresh)
+  - Safe Area Injector: CSS env() polyfills for notches and home indicators
+  - Touch Target Validator: WCAG 2.1 AAA compliance checking (44x44px minimum)
+  - Multi-Device Gallery: Side-by-side comparison, synchronized scroll, device carousel, breakpoint slider
+  - Shareable Preview Deployer: Deploy to Firebase/Vercel/Cloudflare/Surge with QR codes
+
+- **New CLI flags** for `/speckit.preview`:
+  - `--device <id>` / `--devices <category>`: Target specific devices or categories
+  - `--framed` / `--debug`: Add device frames with optional safe area overlay
+  - `--gestures`: Enable touch gesture simulation
+  - `--validate-touch-targets`: Run WCAG touch target validation
+  - `--gallery` / `--sync-scroll` / `--responsive`: Multi-device comparison views
+  - `--deploy <platform>` / `--password` / `--expires`: Shareable preview deployment
+  - `--orientation portrait|landscape|both`: Device orientation support
+
+### Changed
+
+- **screenshot-capturer** now depends on device-frame-generator for framed screenshots
+- **design-quality-validator** enhanced with device-specific checks (touch targets, safe areas)
+
 ## [0.0.90] - 2026-01-08
 
 ### Added
