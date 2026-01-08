@@ -106,6 +106,13 @@ pre_gates:
       block_if: "SQS < 80"
       message: "SQS below MVP threshold (80). Improve FR coverage, AS coverage, or resolve constitution violations before implementation. See memory/domains/quality-gates.md"
       domain_ref: "QG-001"
+    - name: "Properties Available Gate"
+      tier: 1  # SYNTAX - INFO ONLY
+      check: "properties.md exists in FEATURE_DIR"
+      block_if: false  # Never blocks - informational only
+      info_only: true
+      on_exists: "PBT JIT mode enabled - property tests will run after each related task"
+      on_missing: "No properties.md - PBT JIT mode disabled (use /speckit.properties to enable)"
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
@@ -339,6 +346,18 @@ claude_code:
       skip_flag: "--sequential-waves"
       overlap_threshold: 0.80  # Start next wave at 80% completion
       critical_deps_only: true
+    # PBT Just-in-Time testing: Run property tests after each related task
+    pbt_jit:
+      enabled: true
+      skip_flag: "--skip-pbt-jit"
+      trigger: "after each task that maps to PROP-xxx"
+      max_fix_attempts: 3
+      auto_fix: true
+      block_on_failure: true
+      metrics:
+        - properties_validated
+        - auto_fixes_applied
+        - shrunk_examples_found
   # Complexity-adaptive model selection: See templates/shared/implement/model-selection.md
   model_selection:
     enabled: true
@@ -594,6 +613,91 @@ claude_code:
         - Each user story has corresponding UI
         - Forms validate input before submission
         - API errors display user-friendly messages
+    # Wave 3.5: PBT Just-in-Time Validation (if properties.md exists)
+    - role: pbt-jit-runner
+      role_group: IMPLEMENT_VALIDATION
+      parallel: false
+      depends_on: [data-layer-builder, api-builder, ui-feature-builder]
+      priority: 5
+      trigger: "after Wave 3 tasks that map to PROP-xxx (if properties.md exists)"
+      skip_if: "properties.md does not exist in FEATURE_DIR"
+      prompt: |
+        ## PBT Just-in-Time Runner
+
+        ### Pre-check
+        1. Verify properties.md exists at {{FEATURE_DIR}}/properties.md
+        2. If not exists → skip this role entirely (no PBT for this feature)
+
+        ### Task-to-Property Mapping
+        Build mapping from completed Wave 3 tasks to PROP-xxx:
+        1. Read tasks.md to get completed tasks with their [FR:xxx] and [AS:xxx] markers
+        2. Read properties.md to get PROP-xxx with source_artifacts
+        3. For each completed task:
+           - Find matching PROP-xxx where source_artifacts overlaps with task markers
+           - Add to validation queue
+
+        ### Property Validation Loop
+        ```
+        FOR EACH prop IN validation_queue:
+          attempt = 0
+          WHILE attempt < 3:
+            1. Run property test:
+               python: pytest tests/properties/ -k "prop_{prop.id}" -v
+               typescript: npm test -- --testPathPattern=property --testNamePattern="{prop.id}"
+               go: go test -v -run TestProp{prop.id}
+               java: mvn test -Dtest=*PropertyTest#prop*{prop.id}*
+               kotlin: gradle test --tests '*PropertyTest.prop*{prop.id}*'
+
+            2. IF test PASSES:
+               - Log: "✓ {prop.id} validated for {task.id}"
+               - BREAK (continue to next property)
+
+            3. IF test FAILS:
+               a. Capture shrunk counterexample
+               b. Analyze failure:
+                  - PROPERTY_TOO_STRICT: Log warning, flag for /speckit.clarify, continue
+                  - IMPLEMENTATION_BUG: Apply auto-fix, increment attempt
+                  - GENERATOR_ISSUE: Log warning, continue (not impl problem)
+               c. IF IMPLEMENTATION_BUG AND attempt < 3:
+                  - Read counterexample details
+                  - Identify failing code path in implementation
+                  - Apply targeted fix
+                  - Re-run test
+               d. attempt++
+
+            4. IF attempt >= 3:
+               - Block: "❌ {prop.id} failed after 3 fix attempts"
+               - Report counterexample to user
+               - Suggest: Manual review or /speckit.clarify
+        ```
+
+        ### Auto-Fix Strategies
+        Based on counterexample analysis:
+        - **Off-by-one errors**: Adjust boundary conditions
+        - **Missing validation**: Add input validation
+        - **Null/undefined handling**: Add null checks
+        - **Type mismatches**: Fix type coercion
+        - **State mutation bugs**: Fix immutability issues
+
+        ### Metrics Output
+        ```yaml
+        pbt_jit_results:
+          properties_validated: N
+          properties_passed: N
+          auto_fixes_applied: N
+          shrunk_examples_found: N
+          failures_requiring_manual_review: N
+        ```
+
+        ### Success Criteria
+        - All mapped PROP-xxx tests pass (or flagged for clarify)
+        - No unresolved IMPLEMENTATION_BUG failures
+        - Shrunk examples saved to properties.md
+
+        ### On Complete
+        - Update properties.md with new shrunk examples (if any)
+        - Proceed to Wave 4 test verification
+      model_override: sonnet
     # Wave 4: Test Verification - TDD Green Phase (verify tests pass after implementation)
     - role: test-verifier
       role_group: TESTING
@@ -678,30 +782,43 @@ claude_code:
     - role: property-test-generator
       role_group: TESTING
       parallel: true
-      depends_on: [data-layer-builder, api-builder]
+      depends_on: [data-layer-builder, api-builder, pbt-jit-runner]
       priority: 4
-      trigger: "when generating property-based tests"
+      trigger: "when running final property validation (full suite after JIT)"
+      skip_if: "properties.md does not exist in FEATURE_DIR"
       prompt: |
         ## Context
         Feature: {{FEATURE_DIR}}
         Spec: {{FEATURE_DIR}}/spec.md
-        Invariants: (from spec.md business rules)
+        Properties: {{FEATURE_DIR}}/properties.md
+
+        ## Pre-check
+        IF properties.md does not exist:
+          - Log: "No properties.md - skipping final PBT validation"
+          - Skip this role
+
+        ## Purpose
+        This is FINAL VALIDATION after JIT mode ran incremental tests.
+        - JIT already validated individual properties after each task
+        - Final validation catches cross-property interactions
+        - Full shrinking and comprehensive statistics
 
         ## Task
-        Generate property-based tests:
-        1. Identify invariants and properties from spec
-        2. Generate PBT suite with counterexample capture
-        3. Test domain models and business logic
-        4. Add @speckit:INV-xxx annotations for traceability
+        Run complete property test suite:
+        1. Execute ALL property tests from properties.md
+        2. Collect cross-property statistics
+        3. Capture any new counterexamples found
+        4. Validate shrunk examples still trigger failures
+        5. Generate final PQS (Property Quality Score) report
 
         ## Execution Commands
         ```yaml
         python: |
           pytest tests/properties/ -v --hypothesis-show-statistics
-          # Capture shrunk examples to properties.md
+          # Full suite, not filtered by PROP-xxx
         typescript: |
           npm run test:properties
-          # fast-check with verbose output
+          # fast-check with all properties
         go: |
           go test -v ./... -run TestProperty -rapid.checks=100
         java: |
@@ -714,11 +831,24 @@ claude_code:
         - Capture counterexample with full shrinking output
         - Update shrunk examples in properties.md
         - Flag for PGS iteration if invariant violated
+        - Report: "Final PBT validation failed - review cross-property interactions"
 
         ## Success Criteria
         - All properties pass with 100+ examples
         - No new counterexamples discovered
         - Shrunk examples documented if found
+        - PQS maintained at >= 80
+
+        ## Metrics Output
+        ```
+        Final PBT Validation Report:
+        - Total properties: N
+        - JIT-validated: N (from pbt-jit-runner)
+        - Final-validated: N
+        - New counterexamples: N
+        - Cross-property issues: N
+        - Final PQS: NN
+        ```
       model_override: sonnet
     # Wave 4: Review (sequential)
     - role: code-reviewer

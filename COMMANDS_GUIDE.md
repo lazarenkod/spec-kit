@@ -25,11 +25,14 @@ graph TD
     D --> F[/speckit.clarify]
     F --> G[/speckit.design]
     G --> H[/speckit.plan]
-    H --> I[/speckit.tasks]
-    I --> J[/speckit.staging]
-    J --> K[/speckit.analyze]
-    K --> L[/speckit.implement]
-    L --> M[/speckit.merge]
+    H --> I{PBT нужен?}
+    I -->|Да| J[/speckit.properties]
+    I -->|Нет| K[/speckit.tasks]
+    J --> K
+    K --> L[/speckit.staging]
+    L --> M[/speckit.analyze]
+    M --> N[/speckit.implement]
+    N --> O[/speckit.merge]
 ```
 
 ### Brownfield проекты (существующие кодовые базы)
@@ -39,10 +42,13 @@ graph TD
     A[/speckit.constitution] --> B[/speckit.baseline]
     B --> C[/speckit.specify]
     C --> D[/speckit.plan]
-    D --> E[/speckit.tasks]
-    E --> F[/speckit.staging]
-    F --> G[/speckit.implement]
-    G --> H[/speckit.merge]
+    D --> E{PBT нужен?}
+    E -->|Да| F[/speckit.properties]
+    E -->|Нет| G[/speckit.tasks]
+    F --> G
+    G --> H[/speckit.staging]
+    H --> I[/speckit.implement]
+    I --> J[/speckit.merge]
 ```
 
 ---
@@ -816,31 +822,158 @@ graph TD
 
 ### `/speckit.properties`
 
-**Назначение:** Генерация property-based tests через EARS transformation
+**Назначение:** Извлечение тестируемых свойств из спецификации и генерация property-based тестов через EARS-трансформацию
 
 **Аргументы:**
 ```bash
-/speckit.properties [language-targets]
+/speckit.properties [OPTIONS] [FEATURE_PATH]
+
+OPTIONS:
+  --language <lang>    Целевые языки: python|typescript|go|java|kotlin|all
+                       Default: all (определяется по проекту)
+
+  --profile <name>     Профиль выполнения:
+                       - quick: Только извлечение свойств (без генерации кода)
+                       - full: Полное извлечение и генерация (default)
+                       - pgs: PGS режим с итеративным уточнением
+
+  --iterations <n>     Макс итераций PGS для разрешения counterexamples
+                       Default: 5 (только для pgs профиля)
+
+  --coverage <n>       Минимальный % покрытия свойствами
+                       Default: 80
+
+  --dry-run            Показать извлечённые свойства без генерации кода
+
+  --verbose            Включить детали EARS-трансформации
 ```
 
-**Параметры:**
-- `[language-targets]` - языки для генерации (Python, TypeScript и т.д.)
+**Примеры:**
+```bash
+/speckit.properties                              # Full extraction для активной фичи
+/speckit.properties --language python            # Только Python Hypothesis
+/speckit.properties --profile pgs --iterations 10  # PGS режим
+/speckit.properties specs/001-user-auth/         # Конкретная фича
+/speckit.properties --dry-run                    # Preview свойств
+```
 
 **Когда использовать:**
-- ✅ После `/speckit.specify`
-- ✅ Comprehensive edge case discovery
+- ✅ После `/speckit.plan` (нужна архитектура для генераторов)
+- ✅ До `/speckit.tasks` (PBT-задачи добавятся в tasks.md)
+- ✅ Критичная надёжность валидации (fintech, healthcare)
+- ✅ Много edge cases в EC-xxx
+- ✅ Security-фокус (SQL injection, XSS тесты)
+- ⛔ Простой CRUD без сложной логики
+- ⛔ MVP без требований к качеству
 
-**Что генерирует:**
-- PROP-xxx properties из AS/EC/FR/NFR
-- PGS (Property-Generated Solver) тесты
+**Место в workflow:**
+```
+/speckit.specify → /speckit.plan → /speckit.properties → /speckit.tasks → /speckit.implement
+      ↓                 ↓                  ↓                    ↓
+   spec.md          plan.md         properties.md           tasks.md
+   (ЧТО)            (КАК)          (КАК ТЕСТИТЬ)         (ЧТО ДЕЛАТЬ)
+```
+
+**EARS-трансформация:**
+
+Команда преобразует требования в EARS (Easy Approach to Requirements Syntax) формат:
+
+| EARS Type | Паттерн | Источник |
+|-----------|---------|----------|
+| **Event-Driven** | WHEN trigger → action | AS-xxx (Given/When/Then) |
+| **State-Driven** | WHILE condition → behavior | NFR-xxx (constraints) |
+| **Unwanted** | IF bad_input → rejection | EC-xxx (edge cases) |
+| **Ubiquitous** | The system SHALL | FR-xxx (без триггера) |
+| **Option** | WHERE feature → action | Feature flags |
+
+**Типы свойств:**
+
+| Тип | Формула | Пример | Источник |
+|-----|---------|--------|----------|
+| **Inverse** | `delete(create(x)) == initial` | CRUD round-trip | AS-xxx пары |
+| **Idempotent** | `f(f(x)) == f(x)` | Нормализация email | PUT/UPDATE операции |
+| **Invariant** | `forall x: constraint(x)` | Balance >= 0 | NFR-xxx, бизнес-правила |
+| **Commutative** | `f(a,b) == f(b,a)` | add_to_cart order | Set-операции |
+| **Boundary** | `forall x in edge: expect(x)` | Invalid email rejection | EC-xxx |
+| **Model-Based** | `transitions ⊆ model` | Order state machine | STATE-xxx |
+
+**Генерация кода:**
+
+| Язык | Framework | Файл |
+|------|-----------|------|
+| Python | Hypothesis | `tests/properties/test_[feature]_properties.py` |
+| TypeScript | fast-check | `tests/properties/[feature].property.test.ts` |
+| Go | rapid | `[package]_property_test.go` |
+| Java | jqwik | `src/test/java/.../[Feature]PropertyTest.java` |
+| Kotlin | kotest-property | `src/test/kotlin/.../[Feature]PropertyTest.kt` |
+
+**PGS режим (Property-Generated Solver):**
+
+Итеративное уточнение на основе counterexamples:
+1. Выполнение property тестов
+2. Shrinking counterexamples до минимальных
+3. Анализ: PROPERTY_TOO_STRICT / IMPLEMENTATION_BUG / SPEC_AMBIGUITY / GENERATOR_ISSUE
+4. Anti-deception проверки (oscillation, stagnation)
+5. Применение исправлений и регенерация
 
 **Выходные файлы:**
-- `specs/NNN-feature/properties.md`
+- `specs/NNN-feature/properties.md` - все свойства с traceability
+- `specs/NNN-feature/ears-intermediate.yaml` - EARS-трансформации
+- `tests/properties/` - сгенерированные тесты
 
 **Quality Gates:**
-- PQS (Property Quality Score) ≥ 80
+| Gate | Проверка | Threshold |
+|------|----------|-----------|
+| VG-PROP | Property coverage | ≥ 80% |
+| VG-EARS | EARS transformation | ≥ 85% |
+| VG-SHRUNK | Shrunk examples | ≥ 3 |
+| VG-PGS | Unresolved counterexamples | 0 (pgs mode) |
 
-**Модель:** `sonnet`
+**PQS (Property Quality Score):**
+```
+PQS = (
+  Requirement_Coverage × 0.30 +
+  Type_Diversity × 0.20 +
+  Generator_Quality × 0.20 +
+  Shrunk_Examples × 0.15 +
+  EARS_Alignment × 0.15
+) × 100
+```
+
+**Интеграция с другими командами:**
+- `/speckit.tasks`: PBT-задачи добавляются как TASK-PBT-xxx
+- `/speckit.specify`: Новые EC-xxx из обнаруженных edge cases
+- `/speckit.analyze`: VG-PROP gate и PQS в метриках
+- `/speckit.implement`: **PBT JIT mode** - автоматический запуск после каждой связанной задачи
+
+**PBT Just-in-Time Mode:**
+
+После завершения `/speckit.properties` происходит автоматический переход к `/speckit.implement` с включённым JIT режимом:
+
+```
+TASK-001 (implements FR-001) → pbt-jit-runner → PROP-001, PROP-003
+    │
+    ├─ PASS → продолжить
+    └─ FAIL → Auto-Fix Loop (max 3 попытки)
+           │
+           ├─ SUCCESS → продолжить
+           └─ BLOCK → репорт пользователю
+```
+
+**Преимущества JIT mode:**
+- ✅ Немедленный feedback при ошибках
+- ✅ Auto-fix для типичных багов (off-by-one, null pointer, boundary)
+- ✅ Инкрементальная валидация вместо "всё в конце"
+- ✅ Shrunk counterexamples сохраняются для регрессии
+
+**Отключение JIT:**
+```bash
+/speckit.implement --skip-pbt-jit    # Без JIT валидации
+```
+
+**Протокол:** `templates/shared/pbt/just-in-time-protocol.md`
+
+**Модель:** `sonnet` (extended reasoning: 16000)
 
 ---
 
@@ -899,6 +1032,7 @@ graph TD
 | **Clarification** | `/speckit.clarify` | ⚪ (автоматически при SQS<80) |
 | **Design** | `/speckit.design` | ⚪ (UI-heavy фичи) |
 | **Planning** | `/speckit.plan` | ✅ |
+| **PBT Testing** | `/speckit.properties` | ⚪ (fintech, security, complex validation) |
 | **Tasks** | `/speckit.tasks` | ✅ |
 | **Staging** | `/speckit.staging` | ✅ (TDD инфраструктура) |
 | **Analysis** | `/speckit.analyze` | ✅ (автоматически) |
@@ -932,6 +1066,7 @@ graph TD
 | `clarify` | `sonnet` | 16000 |
 | `design` | `opus` | 16000 |
 | `plan` | `opus` | 16000 |
+| `properties` | `sonnet` | 16000 |
 | `tasks` | `sonnet` | 8000 |
 | `staging` | `haiku` | 4000 |
 | `analyze` | `sonnet` | 16000 |
@@ -965,13 +1100,46 @@ graph TD
 2. Исправить указанную проблему
 3. Использовать `--skip-validate` для bypass (не рекомендуется)
 
+### PQS < 80 (Property Quality Score низкий)
+
+**Решение:**
+1. Проверить FR coverage (все ли functional requirements имеют свойства)
+2. Увеличить Type Diversity (использовать ≥ 3 типа свойств)
+3. Добавить shrunk examples через `--profile pgs`
+4. Проверить EARS transformation coverage
+
+### PGS режим не сходится
+
+**Решение:**
+1. Проверить oscillation (история итераций: A→B→A)
+2. Убедиться, что генераторы создают валидные domain inputs
+3. Проверить, нет ли inherently ambiguous требований
+4. Уменьшить `--iterations` и проверить вручную
+
+### Generator Issues
+
+**Решение:**
+1. Убедиться, что entity attributes имеют чёткие constraints
+2. Проверить circular dependencies в генераторах
+3. Добавить explicit boundary exclusions
+4. Проверить сгенерированные генераторы в properties.md
+
 ---
 
 ## Версия документа
 
-**Версия:** 1.1.0 (совместим с Spec-Kit v0.0.86)
+**Версия:** 1.2.0 (совместим с Spec-Kit v0.0.87)
 **Дата:** 2026-01-07
 **Автор:** Auto-generated from command templates
+
+### Изменения в 1.2.0
+
+- Расширено описание `/speckit.properties` с EARS-трансформацией и PGS режимом
+- Добавлено место properties в workflow (после plan, до tasks)
+- Обновлены workflow диаграммы с опциональной веткой PBT
+- Добавлена таблица типов свойств (inverse, idempotent, invariant, etc.)
+- Добавлена информация о генерации кода для 5 языков/фреймворков
+- Добавлен PQS (Property Quality Score) в документацию
 
 ### Изменения в 1.1.0
 

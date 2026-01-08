@@ -7,19 +7,18 @@ handoff:
   generates: specs/[feature]/properties.md
 
 handoffs:
-  - label: "Generate Property Tests"
+  - label: "Continue to Implementation with PBT JIT"
     agent: speckit.implement
-    prompt: "Implement property-based tests from generated properties.md"
-    auto: false
+    prompt: "Execute implementation with PBT just-in-time testing. Properties from properties.md will be validated incrementally after each related task. Auto-fix loop enabled for implementation bugs."
+    auto: true
     condition:
       - "Properties extracted successfully"
-      - "Language targets specified"
       - "PQS >= 80"
     gates:
       - name: "Property Quality Gate"
         check: "PQS >= 80"
         block_if: "PQS < 80"
-        message: "Property Quality Score too low. Review and improve properties."
+        message: "Property Quality Score too low. Review and improve properties before implementation."
 
   - label: "Update Specification"
     agent: speckit.specify

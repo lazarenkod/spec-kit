@@ -7,6 +7,39 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.88] - 2026-01-07
+
+### Added
+
+- **PBT Just-in-Time Mode** for `/speckit.implement`:
+  - Automatic property test execution after each related task
+  - Auto-fix loop (max 3 attempts) for implementation bugs
+  - Task-to-Property mapping via FR/AS traceability
+  - Shrunk counterexamples captured for regression testing
+  - New `pbt-jit-runner` subagent in Wave 3.5
+  - Skip flag: `--skip-pbt-jit`
+
+- **New file**: `templates/shared/pbt/just-in-time-protocol.md`
+  - Complete JIT protocol documentation
+  - Execution commands per language
+  - Auto-fix strategies for common bugs
+  - Metrics collection format
+
+### Changed
+
+- **`/speckit.properties`**: Auto-handoff to implement (`auto: true`)
+  - After successful properties extraction, automatically continues to implement
+  - PBT JIT mode enabled when properties.md exists
+
+- **`/speckit.implement`**: Enhanced with PBT integration
+  - New `pbt_jit` orchestration config
+  - Properties Available Gate (informational)
+  - Updated `property-test-generator` with JIT dependency
+  - Final validation runs full suite after JIT checks
+
+- Updated COMMANDS_GUIDE.md with JIT PBT documentation
+- Updated CLAUDE.md with PBT Just-in-Time Workflow section
+
 ## [0.0.87] - 2026-01-07
 
 ### Changed

@@ -165,8 +165,21 @@ The toolkit enforces Test-Driven Development with these key features:
    - Wave 1: Infrastructure setup
    - Wave 2: Test Scaffolding (TDD Red - failing tests first)
    - Wave 3: Core Implementation (TDD Green - make tests pass)
+   - Wave 3.5: **PBT JIT Validation** (if properties.md exists)
    - Wave 4: Test Verification
    - Wave 5: Polish
+
+### PBT Just-in-Time Workflow
+
+When `/speckit.properties` is run before implementation, PBT tests execute incrementally:
+
+1. **Auto-handoff**: After properties extraction, automatically continues to `/speckit.implement`
+2. **JIT validation**: After each task that maps to PROP-xxx, run corresponding property test
+3. **Auto-fix loop**: On failure, attempt up to 3 automatic fixes
+4. **Traceability**: PROP-xxx → FR-xxx/AS-xxx → TASK-xxx mapping
+5. **Final validation**: Full property suite runs in Wave 4 after all JIT checks
+
+**Skip JIT mode**: `--skip-pbt-jit` flag on implement command
 
 ### Quality Gates (TDD)
 
