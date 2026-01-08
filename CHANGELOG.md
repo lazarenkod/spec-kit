@@ -7,6 +7,22 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.90] - 2026-01-08
+
+### Added
+
+- **Changelog Updater** for `/speckit.implement`:
+  - New `changelog_update` orchestration config
+  - New `changelog-updater` subagent in Wave 5 (after code-reviewer)
+  - Automatically updates project CHANGELOG.md after feature completion
+  - Creates Keep a Changelog format entry with story ID, AS-xxx, FR-xxx
+  - Skip markers: `[INTERNAL]`, `[NO-CHANGELOG]`
+  - Skip conditions: Infrastructure-only waves (1-2)
+
+### Changed
+
+- **documentation-generator** now depends on changelog-updater (changelog first, then docs)
+
 ## [0.0.89] - 2026-01-07
 
 ### Added

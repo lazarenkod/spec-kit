@@ -372,6 +372,13 @@ claude_code:
         5. Save tasks.md
         6. ONLY THEN proceed to next task
       enforcement: "Each subagent MUST update tasks.md before returning"
+    # Changelog update: Ensure CHANGELOG.md is updated after feature completion
+    changelog_update:
+      enabled: true
+      trigger: "after code review in Wave 5"
+      skip_markers: ["[INTERNAL]", "[NO-CHANGELOG]"]
+      skip_waves: [1, 2]  # Infrastructure-only waves don't need changelog
+      format: "keep-a-changelog"  # https://keepachangelog.com
   # Complexity-adaptive model selection: See templates/shared/implement/model-selection.md
   model_selection:
     enabled: true
@@ -953,10 +960,87 @@ claude_code:
         - All FRs traceable via @speckit:FR-xxx
         - Lint passes with 0 errors
         - No security vulnerabilities (no hardcoded secrets)
+    - role: changelog-updater
+      role_group: DOCUMENTATION
+      parallel: false
+      depends_on: [code-reviewer]
+      priority: 2
+      trigger: "after code review passes"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Tasks: {{FEATURE_DIR}}/tasks.md
+
+        ## Your Role
+        You ensure CHANGELOG.md is updated with the completed feature.
+
+        ## Pre-check
+        1. Read spec.md to get feature title and acceptance scenarios (AS-xxx)
+        2. Read tasks.md to get story ID and FR-xxx markers
+        3. Check if CHANGELOG.md exists at project root
+
+        ## Skip Conditions
+        Return early if ANY of these conditions are met:
+        - Story title contains [INTERNAL] or [NO-CHANGELOG]
+        - All tasks are Wave 1-2 only (infrastructure tasks)
+        - No FR-xxx markers found in tasks.md
+
+        ## Action
+        1. IF CHANGELOG.md does not exist:
+           - Create it with Keep a Changelog header:
+             ```markdown
+             # Changelog
+
+             All notable changes to this project will be documented in this file.
+
+             The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+             and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+             ## [Unreleased]
+             ```
+
+        2. Extract from artifacts:
+           - Story ID and title from tasks.md header
+           - AS-xxx descriptions from spec.md acceptance scenarios
+           - FR-xxx markers from completed tasks
+
+        3. Generate entry under ## [Unreleased] → ### Added:
+           ```markdown
+           - **[{story_id}] {story_title}** (spec: {feature_dir}/spec.md)
+             - {AS-1A description}
+             - {AS-1B description}
+             - Implements: FR-001, FR-002
+             - Tests: AS-1A ✅, AS-1B ✅
+           ```
+
+        4. Prepend to existing ### Added section (or create section if missing)
+
+        ## Success Criteria
+        - CHANGELOG.md exists with valid Keep a Changelog format
+        - New feature entry appears under ## [Unreleased] → ### Added
+        - Entry includes story ID, title, AS-xxx descriptions, and FR-xxx markers
+
+        ## Output
+        Report one of:
+        ```
+        📝 Changelog Updated:
+        - Feature: {story_title}
+        - Acceptance scenarios: N
+        - Requirements: FR-001, FR-002
+        → CHANGELOG.md updated ✅
+        ```
+
+        OR if skipped:
+        ```
+        📝 Changelog Skipped:
+        - Reason: {reason}
+        ```
+      model_override: haiku
     - role: documentation-generator
       role_group: DOCS
       parallel: true
-      depends_on: [code-reviewer]
+      depends_on: [code-reviewer, changelog-updater]
       priority: 2
       trigger: "when generating documentation"
       prompt: |
