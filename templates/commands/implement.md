@@ -358,6 +358,20 @@ claude_code:
         - properties_validated
         - auto_fixes_applied
         - shrunk_examples_found
+    # Task status enforcement: Ensure tasks.md is updated after each task
+    task_status_enforcement:
+      enabled: true
+      trigger: "after each Wave 3 task completion"
+      blocking: true
+      action: |
+        AFTER completing any implementation task:
+        1. STOP before proceeding to next task
+        2. Read tasks.md
+        3. Find the task ID (T001, T002, etc.) that was just completed
+        4. Change `- [ ] T00x...` → `- [X] T00x...`
+        5. Save tasks.md
+        6. ONLY THEN proceed to next task
+      enforcement: "Each subagent MUST update tasks.md before returning"
   # Complexity-adaptive model selection: See templates/shared/implement/model-selection.md
   model_selection:
     enabled: true
@@ -542,6 +556,12 @@ claude_code:
         - All entities from spec.md have corresponding models
         - Relationships match data-model.md
         - Types are fully annotated (@speckit:FR-xxx)
+
+        ## ⚠️ MANDATORY: Update tasks.md
+        BEFORE returning from this task:
+        1. Identify which TASK-xxx was implemented (e.g., T001, T002)
+        2. Edit tasks.md: change `- [ ] T00x...` → `- [X] T00x...`
+        3. This is BLOCKING - do not return without updating tasks.md
     - role: ui-foundation-builder
       role_group: FRONTEND
       parallel: true
@@ -589,6 +609,12 @@ claude_code:
         - All spec FRs have corresponding endpoints
         - Endpoints return correct status codes
         - Request/response types match contracts
+
+        ## ⚠️ MANDATORY: Update tasks.md
+        BEFORE returning from this task:
+        1. Identify which TASK-xxx was implemented (e.g., T001, T002)
+        2. Edit tasks.md: change `- [ ] T00x...` → `- [X] T00x...`
+        3. This is BLOCKING - do not return without updating tasks.md
     - role: ui-feature-builder
       role_group: FRONTEND
       parallel: true
@@ -613,6 +639,12 @@ claude_code:
         - Each user story has corresponding UI
         - Forms validate input before submission
         - API errors display user-friendly messages
+
+        ## ⚠️ MANDATORY: Update tasks.md
+        BEFORE returning from this task:
+        1. Identify which TASK-xxx was implemented (e.g., T001, T002)
+        2. Edit tasks.md: change `- [ ] T00x...` → `- [X] T00x...`
+        3. This is BLOCKING - do not return without updating tasks.md
     # Wave 3.5: PBT Just-in-Time Validation (if properties.md exists)
     - role: pbt-jit-runner
       role_group: IMPLEMENT_VALIDATION
@@ -698,11 +730,58 @@ claude_code:
         - Update properties.md with new shrunk examples (if any)
         - Proceed to Wave 4 test verification
       model_override: sonnet
+    # Wave 3.6: Task Status Enforcement Checkpoint
+    - role: task-status-enforcer
+      role_group: ORCHESTRATION
+      parallel: false
+      depends_on: [data-layer-builder, api-builder, ui-feature-builder, pbt-jit-runner]
+      priority: 10
+      trigger: "Wave 3 completion checkpoint"
+      prompt: |
+        ## Task Status Enforcer - Wave 3 Checkpoint
+
+        ### Your Role
+        You are the mandatory checkpoint that ensures tasks.md is fully up to date
+        before proceeding to Wave 4 (testing).
+
+        ### Action
+        1. Read tasks.md from {{FEATURE_DIR}}/tasks.md
+        2. Identify all Wave 3 tasks (infrastructure, data, API, UI)
+        3. For EACH task that should be completed by now:
+           - Check if it shows `[X]` (completed)
+           - If still shows `[ ]` but work was done, update to `[X]`
+        4. Report summary
+
+        ### Verification Criteria
+        - All data layer tasks: [X]
+        - All API endpoint tasks: [X]
+        - All UI component tasks: [X]
+        - All foundation/setup tasks: [X]
+
+        ### Output Format
+        ```
+        Task Status Checkpoint Report:
+        - Total Wave 3 tasks: N
+        - Already marked [X]: N
+        - Fixed in this checkpoint: N
+        - Tasks fixed: T001, T003, T005 (if any)
+        ```
+
+        ### CRITICAL
+        If you find tasks marked `[ ]` that were clearly completed:
+        - Update them immediately using Edit tool
+        - Change `- [ ] T00x...` → `- [X] T00x...`
+        - This ensures accurate progress tracking
+
+        ### On Complete
+        - Confirm all Wave 3 tasks are marked [X]
+        - Proceed to Wave 4 test verification
+      model_override: haiku
     # Wave 4: Test Verification - TDD Green Phase (verify tests pass after implementation)
     - role: test-verifier
       role_group: TESTING
       parallel: false
-      depends_on: [data-layer-builder, api-builder, ui-feature-builder]
+      depends_on: [data-layer-builder, api-builder, ui-feature-builder, task-status-enforcer]
       priority: 5
       trigger: "after core implementation complete"
       prompt: |

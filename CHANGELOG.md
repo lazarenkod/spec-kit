@@ -7,6 +7,21 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.89] - 2026-01-07
+
+### Added
+
+- **Task Status Enforcement** for `/speckit.implement`:
+  - New `task_status_enforcement` orchestration config
+  - MANDATORY task update instructions in all Wave 3 subagents (data-layer-builder, api-builder, ui-feature-builder)
+  - New `task-status-enforcer` checkpoint subagent (Wave 3.6)
+  - Ensures 100% of completed tasks are marked `[X]` in tasks.md
+
+### Changed
+
+- **Wave 3 subagents** now include explicit task update requirement
+- **test-verifier** depends on task-status-enforcer (ensures tasks updated before testing)
+
 ## [0.0.88] - 2026-01-07
 
 ### Added
