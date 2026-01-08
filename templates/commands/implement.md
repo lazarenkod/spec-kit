@@ -547,6 +547,20 @@ claude_code:
       priority: 8
       trigger: "when implementing data models"
       prompt: |
+        ═══════════════════════════════════════════════════════════════
+        ⚠️  TASK STATUS UPDATE PROTOCOL - MANDATORY ⚠️
+        ═══════════════════════════════════════════════════════════════
+
+        AFTER EACH TASK YOU COMPLETE:
+          1. ✅ Complete the implementation work
+          2. ✅ Edit tasks.md: change `- [ ] T00x...` → `- [X] T00x...`
+          3. ✅ Verify the edit succeeded
+          4. ✅ ONLY THEN proceed to next task
+
+        ⛔ BLOCKER: If you skip the update, the entire workflow FAILS ⛔
+
+        ═══════════════════════════════════════════════════════════════
+
         ## Context
         Feature: {{FEATURE_DIR}}
         Spec: {{FEATURE_DIR}}/spec.md
@@ -563,12 +577,6 @@ claude_code:
         - All entities from spec.md have corresponding models
         - Relationships match data-model.md
         - Types are fully annotated (@speckit:FR-xxx)
-
-        ## ⚠️ MANDATORY: Update tasks.md
-        BEFORE returning from this task:
-        1. Identify which TASK-xxx was implemented (e.g., T001, T002)
-        2. Edit tasks.md: change `- [ ] T00x...` → `- [X] T00x...`
-        3. This is BLOCKING - do not return without updating tasks.md
     - role: ui-foundation-builder
       role_group: FRONTEND
       parallel: true
@@ -599,6 +607,20 @@ claude_code:
       priority: 7
       trigger: "when implementing API endpoints"
       prompt: |
+        ═══════════════════════════════════════════════════════════════
+        ⚠️  TASK STATUS UPDATE PROTOCOL - MANDATORY ⚠️
+        ═══════════════════════════════════════════════════════════════
+
+        AFTER EACH TASK YOU COMPLETE:
+          1. ✅ Complete the implementation work
+          2. ✅ Edit tasks.md: change `- [ ] T00x...` → `- [X] T00x...`
+          3. ✅ Verify the edit succeeded
+          4. ✅ ONLY THEN proceed to next task
+
+        ⛔ BLOCKER: If you skip the update, the entire workflow FAILS ⛔
+
+        ═══════════════════════════════════════════════════════════════
+
         ## Context
         Feature: {{FEATURE_DIR}}
         Spec: {{FEATURE_DIR}}/spec.md
@@ -616,12 +638,6 @@ claude_code:
         - All spec FRs have corresponding endpoints
         - Endpoints return correct status codes
         - Request/response types match contracts
-
-        ## ⚠️ MANDATORY: Update tasks.md
-        BEFORE returning from this task:
-        1. Identify which TASK-xxx was implemented (e.g., T001, T002)
-        2. Edit tasks.md: change `- [ ] T00x...` → `- [X] T00x...`
-        3. This is BLOCKING - do not return without updating tasks.md
     - role: ui-feature-builder
       role_group: FRONTEND
       parallel: true
@@ -629,6 +645,20 @@ claude_code:
       priority: 6
       trigger: "when implementing feature UI"
       prompt: |
+        ═══════════════════════════════════════════════════════════════
+        ⚠️  TASK STATUS UPDATE PROTOCOL - MANDATORY ⚠️
+        ═══════════════════════════════════════════════════════════════
+
+        AFTER EACH TASK YOU COMPLETE:
+          1. ✅ Complete the implementation work
+          2. ✅ Edit tasks.md: change `- [ ] T00x...` → `- [X] T00x...`
+          3. ✅ Verify the edit succeeded
+          4. ✅ ONLY THEN proceed to next task
+
+        ⛔ BLOCKER: If you skip the update, the entire workflow FAILS ⛔
+
+        ═══════════════════════════════════════════════════════════════
+
         ## Context
         Feature: {{FEATURE_DIR}}
         Spec: {{FEATURE_DIR}}/spec.md
@@ -646,12 +676,6 @@ claude_code:
         - Each user story has corresponding UI
         - Forms validate input before submission
         - API errors display user-friendly messages
-
-        ## ⚠️ MANDATORY: Update tasks.md
-        BEFORE returning from this task:
-        1. Identify which TASK-xxx was implemented (e.g., T001, T002)
-        2. Edit tasks.md: change `- [ ] T00x...` → `- [X] T00x...`
-        3. This is BLOCKING - do not return without updating tasks.md
     # Wave 3.5: PBT Just-in-Time Validation (if properties.md exists)
     - role: pbt-jit-runner
       role_group: IMPLEMENT_VALIDATION
@@ -1545,9 +1569,20 @@ During parallel execution, apply streaming output for real-time visibility:
    func validatePassword(password string) error {
    ```
 
-9. **Task Completion Protocol** (MANDATORY after each task):
+9. **Task Completion Protocol** (⛔ BLOCKING ⛔):
 
-   **CRITICAL**: After completing EACH task, you MUST immediately update tasks.md:
+   ┌──────────────────────────────────────────────────────────────┐
+   │  🚨 THIS IS THE MOST IMPORTANT STEP - DO NOT SKIP  🚨        │
+   │                                                              │
+   │  After completing EACH task, you MUST:                       │
+   │  1. ✅ Complete the task implementation                      │
+   │  2. ✅ Edit tasks.md: `[ ]` → `[X]`                          │
+   │  3. ✅ Verify the edit succeeded                             │
+   │  4. ✅ Report completion to user                             │
+   │  5. ⚠️  ONLY THEN proceed to next task                       │
+   │                                                              │
+   │  ⛔ NEVER proceed without updating tasks.md first ⛔          │
+   └──────────────────────────────────────────────────────────────┘
 
    a) **Mark task as complete**:
       ```text
@@ -1587,8 +1622,6 @@ During parallel execution, apply streaming output for real-time visibility:
       ├── Blocked: none
       └── Next: T006 - Create API endpoints
       ```
-
-   **NEVER proceed to the next task without marking the current task as [X] in tasks.md.**
 
 10. **Definition of Done (DoD)** — Per User Story:
 

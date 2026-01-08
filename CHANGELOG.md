@@ -7,6 +7,27 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.94] - 2026-01-08
+
+### Fixed
+
+- **Task Status Updates in `/speckit.implement`**: Restructured agent prompts to make task status update requirements impossible to miss
+  - Moved critical "⚠️ TASK STATUS UPDATE PROTOCOL" instructions to TOP of each Wave 3 agent prompt (was at bottom)
+  - Added visual separator boxes (═══) around mandatory update protocol
+  - Enhanced Step 9 protocol with prominent blocking visual box (🚨 DO NOT SKIP)
+  - Modified agents: `data-layer-builder`, `api-builder`, `ui-feature-builder`
+  - Ensures 100% task status update compliance before proceeding to next task
+  - Fixes issue where agents would skip updating tasks.md and move to new tasks
+
+### Technical Details
+
+- Modified `templates/commands/implement.md`:
+  - Lines 549-579: data-layer-builder prompt restructured
+  - Lines 609-640: api-builder prompt restructured
+  - Lines 647-678: ui-feature-builder prompt restructured
+  - Lines 1572-1624: Step 9 enhanced with blocking visual box
+- Changes from reactive enforcement (checkpoint after wave) to proactive prevention (visual prominence before task)
+
 ## [0.0.93] - 2026-01-08
 
 ### Changed
