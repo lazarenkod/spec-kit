@@ -22,11 +22,27 @@ claude_code:
       enabled: true
       overlap_threshold: 0.80
   subagents:
-    # Wave 1: Analysis (parallel)
+    # Wave 0: Interactive Questionnaire (if no input)
+    - role: questionnaire-agent
+      role_group: DISCOVERY
+      parallel: false
+      depends_on: []
+      priority: 5
+      model_override: haiku
+      prompt: |
+        Check if $ARGUMENTS is empty or whitespace-only.
+        If empty, ask user 3 questions using AskUserQuestion tool:
+        1. Application type (Web/Mobile/API/CLI/Desktop/Other)
+        2. Domain (SaaS/E-commerce/Fintech/Healthcare/Gaming/General/Other)
+        3. Language (English/Russian/Other)
+        Return structured answers for constitution generation.
+        If $ARGUMENTS is NOT empty, skip and pass through to analysis.
+
+    # Wave 1: Analysis (parallel, after questionnaire)
     - role: layer-analyzer
       role_group: ANALYSIS
       parallel: true
-      depends_on: []
+      depends_on: [questionnaire-agent]
       priority: 10
       model_override: haiku
       prompt: |
@@ -40,7 +56,7 @@ claude_code:
     - role: principle-extractor
       role_group: ANALYSIS
       parallel: true
-      depends_on: []
+      depends_on: [questionnaire-agent]
       priority: 10
       model_override: sonnet
       prompt: |
@@ -75,6 +91,75 @@ $ARGUMENTS
 ```
 
 You **MUST** consider the user input before proceeding (if not empty).
+
+---
+
+## Phase 0: Interactive Questionnaire (if no arguments)
+
+**IMPORTANT**: If `$ARGUMENTS` is empty or whitespace-only, you MUST ask the user 3 questions
+to determine the project context before proceeding. Use the `AskUserQuestion` tool.
+
+### Question 1: Application Type
+
+Ask: "What type of application are you building?"
+
+| Option | Description | Resulting Principles |
+|--------|-------------|---------------------|
+| Web Application | SPA, SSR, static site | DSS-001-003, SEC-001-008, WEB-001-004 |
+| Mobile Application | iOS, Android, cross-platform | mobile.md principles, SEC, offline-first |
+| API/Backend Service | REST, GraphQL, gRPC | API-001-006, SEC, REL-001-003 |
+| CLI Tool | Command-line utility | CLI-001-003, minimal security |
+| Desktop Application | Electron, native | DSS + SEC + desktop-specific |
+| Other | (user describes) | Derive from description |
+
+### Question 2: Domain
+
+Ask: "What domain does your project belong to?"
+
+| Option | Description | Domain File | Key Principles |
+|--------|-------------|-------------|----------------|
+| SaaS | Multi-tenant B2B platform | saas.md | Multi-tenancy, auth, billing, tenant isolation |
+| E-commerce | Online store, marketplace | e-commerce.md | PCI-DSS, inventory, checkout, payments |
+| Fintech | Payments, banking, trading | fintech.md | SOC2, audit trail, transaction safety |
+| Healthcare | Patient data, HIPAA | healthcare.md | HIPAA, PHI protection, consent management |
+| Gaming | Real-time, multiplayer | gaming.md | Real-time, anti-cheat, leaderboards |
+| General/Minimal | No specific domain | (none) | Base layer only |
+| Other | (user describes) | Derive from description |
+
+### Question 3: Language
+
+Ask: "What language should be used for specifications and documentation?"
+
+| Option | Code | Effect |
+|--------|------|--------|
+| English | `en` | All artifacts in English (default) |
+| Russian | `ru` | All prose content in Russian |
+| Other | (user specifies) | Validate against supported languages list |
+
+### After Collecting Answers
+
+1. **Map App Type → Principles**: Apply relevant principle sets based on application type
+2. **Map Domain → Domain Layer**: Copy appropriate domain file to `constitution.domain.md`
+3. **Set Language**: Update Project Settings table with language preference
+4. **Generate Constitution**: Merge all layers and generate complete constitution
+
+**Example Flow**:
+```text
+User runs: /speckit.constitution
+(No arguments provided)
+
+AI asks Question 1 → User selects "Web Application"
+AI asks Question 2 → User selects "SaaS"
+AI asks Question 3 → User selects "Russian"
+
+AI then:
+1. Copies memory/domains/saas.md → memory/constitution.domain.md
+2. Adds WEB-001-004 principles to project layer
+3. Sets language = "ru" in Project Settings
+4. Generates complete constitution with SYNC REPORT
+```
+
+---
 
 ## Layered Constitution Architecture
 
@@ -113,17 +198,24 @@ When combining domains, copy both to `constitution.domain.md` and merge principl
 
 ## Execution Flow
 
+### 0. Check for Interactive Mode
+
+**FIRST**, check if `$ARGUMENTS` is empty or whitespace-only:
+- If **empty** → Execute Phase 0 (ask 3 questions via AskUserQuestion)
+- If **not empty** → Skip to step 1 and parse the input
+
 ### 1. Determine Operation Mode
 
-Parse user input for operation:
+Parse user input (from `$ARGUMENTS` or Phase 0 questionnaire results):
 
 | User Says | Operation |
 |-----------|-----------|
+| (empty input) | Interactive questionnaire (Phase 0) |
 | "set domain fintech" | Select domain layer |
 | "add principle" / "strengthen" | Modify project layer |
 | "set language ru" / "язык русский" | Configure artifact language |
 | "--merge" / "show effective" | Generate merged view |
-| (no specific flag) | Interactive edit of project layer |
+| (other text) | Interactive edit of project layer |
 
 ### 2. Load Existing Layers
 

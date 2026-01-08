@@ -51,26 +51,48 @@ graph TD
 
 ### 1. `/speckit.constitution`
 
-**Назначение:** Создание или обновление проектной конституции (принципы, стандарты кодирования)
+**Назначение:** Создание или обновление проектной конституции с интерактивным опросником
 
 **Аргументы:**
 ```bash
-/speckit.constitution <free-text-description>
+/speckit.constitution                    # Интерактивный режим (3 вопроса)
+/speckit.constitution set domain fintech # Установка домена
+/speckit.constitution set language ru    # Установка языка
+/speckit.constitution --merge            # Показать объединённую конституцию
 ```
 
-**Параметры:**
-- `<free-text-description>` - описание принципов проекта, стандартов, требований
+**Интерактивный режим (если без аргументов):**
 
-**Флаги:** Нет
+При запуске без аргументов, команда задаёт 3 вопроса:
+
+1. **Тип приложения**: Web / Mobile / API / CLI / Desktop / Other
+2. **Домен**: SaaS / E-commerce / Fintech / Healthcare / Gaming / General
+3. **Язык артефактов**: English (en) / Russian (ru) / Other
+
+На основе ответов:
+- Применяются соответствующие принципы (WEB, API, SEC, etc.)
+- Копируется доменный файл в `constitution.domain.md`
+- Устанавливается язык в Project Settings
 
 **Когда использовать:**
-- ✅ В начале проекта (первая команда)
+- ✅ Сразу после `specify init` (первая команда)
 - ✅ При изменении архитектурных принципов
 - ✅ При добавлении новых стандартов качества
+- ✅ При смене домена проекта
 
-**Пример:**
+**Примеры:**
 ```bash
-/speckit.constitution Create a TypeScript project with strict typing, 80% test coverage, and accessibility-first approach
+# Интерактивный режим - AI задаёт 3 вопроса
+/speckit.constitution
+
+# Прямая установка домена
+/speckit.constitution set domain fintech
+
+# Усиление принципа
+/speckit.constitution strengthen QUA-001 to MUST with 95% coverage
+
+# Добавление принципа
+/speckit.constitution add principle: all API responses must include request-id header
 ```
 
 **Выходные файлы:**

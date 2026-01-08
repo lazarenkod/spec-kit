@@ -7,6 +7,39 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.87] - 2026-01-07
+
+### Changed
+
+- **`specify init`**: No longer asks for template selection
+  - Default behavior now creates minimal project structure
+  - `--template` flag deprecated (shows warning, still works for backward compatibility)
+  - Users should run `/speckit.constitution` after init to configure project
+
+- **`/speckit.constitution`**: Now has interactive questionnaire mode
+  - When called without arguments, asks 3 questions:
+    1. Application Type (Web/Mobile/API/CLI/Desktop)
+    2. Domain (SaaS/E-commerce/Fintech/Healthcare/Gaming/General)
+    3. Language (English/Russian/Other)
+  - Maps answers to appropriate principles and domain layers
+  - Generates complete constitution based on responses
+  - Existing direct commands still work (set domain, strengthen, --merge)
+
+### Added
+
+- **Tests for CLI init command** (`tests/test_cli_init.py`):
+  - 9 test cases covering template deprecation and backward compatibility
+  - Tests for deprecation warnings, invalid templates, help text
+  - Verification that `select_template_with_descriptions` was removed
+
+### Removed
+
+- Interactive template selection UI from `specify init`
+- `REQUIREMENTS_CHECKLIST.md` generation (templates deprecated)
+- Template-specific notices and quick start steps
+
+---
+
 ## [0.0.86] - 2026-01-07
 
 ### Added

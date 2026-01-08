@@ -143,7 +143,7 @@ The toolkit implements a workflow where AI agents use slash commands.
 
 | Phase | Command | Description |
 |-------|---------|-------------|
-| 1. Foundation | `/speckit.constitution` | Establish project principles and coding standards |
+| 1. Foundation | `/speckit.constitution` | Interactive setup: app type, domain, language → generates constitution |
 | 2. Discovery | `/speckit.concept` | Strategic product discovery & validation (50+ requirements) |
 | 3. Validation | `/speckit.validate-concept` | Re-validate concept against current market conditions |
 | 4. Specification | `/speckit.specify` | Create feature specification (what & why, not how) |

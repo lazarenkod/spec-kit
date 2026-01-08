@@ -38,7 +38,7 @@ description: "Task list template for feature implementation"
 
 - ✅ **Success**: `- [ ] T001 Description` → `- [x] T001 Description`
 - ⚠️ **Failure**: `- [ ] T001 Description` → `- [!] T001 Description`
-  - Error message automatically added as indented comment: `  ⚠️ ERROR: {error_message}`
+  - Error message automatically added as indented comment: `⚠️ ERROR: {error_message}`
 - 🔄 **Thread-safe**: Concurrent task execution (parallel/overlapping waves) is fully supported
 - 📝 **Markers preserved**: All markers (`[P]`, `[US#]`, `[DEP:]`, `[FR:]`, etc.) are preserved during updates
 

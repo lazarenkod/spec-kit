@@ -191,7 +191,7 @@
 
 | ADR | Title | Status | Impact | Requirements | Full Doc |
 |-----|-------|--------|--------|--------------|----------|
-| ADR-001 | [Title] | Accepted | High | FR-xxx, NFR-xxx | [Link](adrs/ADR-001-slug.md) |
+| ADR-001 | [Title] | Accepted | High | FR-xxx, NFR-xxx | [ADR-001](adrs/ADR-001-slug.md) |
 
 **Decision Patterns Applied**:
 - [Pattern]: Used in ADR-xxx, ADR-yyy
