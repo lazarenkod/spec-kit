@@ -1046,6 +1046,1224 @@ claude_code:
         - Tablet View: {url}?viewport=tablet
         ```
 
+    # =========================================================================
+    # WAVE 5: QUALITY VALIDATION (NEW - v0.0.92)
+    # =========================================================================
+    # These subagents form the Mockup Quality Engine for Figma-quality mockups.
+    # They provide automated quality validation, scoring, and improvement loops.
+    #
+    # Run with: speckit preview --validate-quality
+    # =========================================================================
+
+    - role: mockup-quality-analyzer
+      role_group: REVIEW
+      parallel: true
+      depends_on: [wireframe-converter, component-previewer, screenshot-capturer]
+      priority: 6
+      model_override: sonnet
+      prompt: |
+        ## Mockup Quality Analyzer
+
+        ### Your Role
+        Analyze generated mockups using Claude Vision API for quality issues.
+        You are the primary quality gatekeeper for visual output.
+
+        ### Skip Condition
+        Skip if --skip-quality flag is set or no screenshots exist.
+
+        ### Analysis Dimensions
+
+        #### 1. Visual Polish Check (25 points max)
+        Analyze each screenshot for:
+        - **Consistent spacing and alignment** (8 pts)
+          - Elements aligned to grid
+          - Uniform margins/padding
+          - No orphaned elements
+        - **Shadow and border consistency** (5 pts)
+          - Same shadow style throughout
+          - Consistent border radii
+          - Unified elevation system
+        - **Color harmony and palette adherence** (5 pts)
+          - Colors from design system
+          - No clashing combinations
+          - Proper contrast ratios
+        - **Typography hierarchy clarity** (4 pts)
+          - Clear heading levels
+          - Consistent font sizes
+          - Proper line heights
+        - **Professional, non-"AI" appearance** (3 pts)
+          - No generic look
+          - Unique visual identity
+          - Polished details
+
+        #### 2. Design Token Compliance (20 points max)
+        Cross-reference with design.md:
+        - Compare colors to defined palette (6 pts)
+        - Verify spacing follows grid system (6 pts)
+        - Check typography matches scale (5 pts)
+        - Flag hardcoded values (3 pts)
+
+        #### 3. Component Consistency (15 points max)
+        Check across all screenshots:
+        - Similar components styled consistently (5 pts)
+        - Button/input styles match throughout (4 pts)
+        - Icon style consistency (3 pts)
+        - State styling uniformity (3 pts)
+
+        #### 4. Layout Analysis (15 points max)
+        Visual structure assessment:
+        - Visual balance and weight distribution (5 pts)
+        - White space usage (4 pts)
+        - Content hierarchy clarity (3 pts)
+        - Responsive adaptation quality (3 pts)
+
+        ### Vision API Prompts
+
+        For each screenshot, use these analysis prompts:
+
+        ```text
+        VISUAL_POLISH_PROMPT:
+          Analyze this UI mockup for visual polish.
+
+          Rate each dimension 0-10:
+          1. Spacing consistency (are margins/padding uniform?)
+          2. Alignment (are elements properly aligned to a grid?)
+          3. Shadow/elevation (consistent shadow styles?)
+          4. Color harmony (do colors work well together?)
+          5. Typography (clear hierarchy, readable fonts?)
+          6. Professional appearance (polished, not generic AI look?)
+
+          Return JSON:
+          {
+            "spacing_score": number,
+            "alignment_score": number,
+            "shadow_score": number,
+            "color_score": number,
+            "typography_score": number,
+            "professionalism_score": number,
+            "issues": [
+              {
+                "type": string,
+                "location": string,
+                "description": string,
+                "severity": "critical"|"warning"|"info"
+              }
+            ],
+            "suggestions": string[]
+          }
+        ```
+
+        ### Output
+        Generate `.preview/reports/mqs-analysis.md`:
+
+        ```markdown
+        # Mockup Quality Analysis
+
+        **Analyzed**: {timestamp}
+        **Screenshots**: {count}
+
+        ## Visual Fidelity Score: {score}/25
+
+        ### Breakdown
+        | Criterion | Score | Max | Notes |
+        |-----------|-------|-----|-------|
+        | Spacing & Alignment | {s} | 8 | {notes} |
+        | Shadows & Borders | {s} | 5 | {notes} |
+        | Color Harmony | {s} | 5 | {notes} |
+        | Typography | {s} | 4 | {notes} |
+        | Professionalism | {s} | 3 | {notes} |
+
+        ## Issues Found
+
+        ### Critical
+        {list of critical issues with screenshots}
+
+        ### Warnings
+        {list of warnings}
+
+        ## Improvement Suggestions
+        1. {suggestion with specific location}
+        2. {suggestion}
+        ```
+
+        Also generate annotated screenshots in `.preview/reports/annotated/`
+        with issue locations marked.
+
+    - role: token-compliance-validator
+      role_group: REVIEW
+      parallel: true
+      depends_on: [wireframe-converter, component-previewer]
+      priority: 7
+      model_override: haiku
+      prompt: |
+        ## Token Compliance Validator
+
+        ### Your Role
+        Parse generated HTML/CSS and verify all values match design tokens.
+        Ensure design system integrity by detecting hardcoded values.
+
+        ### Skip Condition
+        Skip if no design.md exists or --skip-token-check flag is set.
+
+        ### Reference Document
+        Read `templates/shared/token-patterns.md` for detection patterns.
+        Read `templates/shared/mqs-rubric.md` for scoring rubric.
+
+        ### Process
+
+        1. **Extract Tokens from design.md**
+           Parse design.md to find defined tokens:
+           ```yaml
+           color_tokens:
+             - pattern: "--color-*"
+             - values: ["--color-primary", "--color-secondary", ...]
+
+           spacing_tokens:
+             - pattern: "--space-*"
+             - values: ["--space-1", "--space-2", ...]
+
+           typography_tokens:
+             - pattern: "--text-*, --font-*, --leading-*"
+             - values: [...]
+           ```
+
+        2. **Scan Generated Files**
+           Parse all files in `.preview/`:
+           - `**/*.css` - CSS stylesheets
+           - `**/*.html` - Inline styles
+           - `**/*.tsx` - styled-components/Tailwind classes
+
+        3. **Detect Violations**
+           Using patterns from token-patterns.md:
+
+           **Color Violations**:
+           ```regex
+           # Hex colors
+           #[0-9a-fA-F]{3,8}\b
+
+           # RGB/RGBA
+           rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)
+           rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d.]+\s*\)
+
+           # HSL/HSLA
+           hsl\(\s*\d+\s*,\s*[\d.]+%\s*,\s*[\d.]+%\s*\)
+           ```
+
+           **Spacing Violations**:
+           ```regex
+           # Hardcoded pixels (not 0)
+           :\s*[1-9]\d*px(?:\s|;|$)
+
+           # Magic numbers in margin/padding
+           (margin|padding):\s*\d+px
+           ```
+
+           **Typography Violations**:
+           ```regex
+           font-size:\s*\d+(px|rem|em)
+           font-weight:\s*\d{3}
+           line-height:\s*[\d.]+
+           ```
+
+        4. **Calculate Compliance Score**
+           ```
+           compliance_rate = compliant_values / total_values
+           token_score = compliance_rate × 20  # Max 20 points
+           ```
+
+        5. **Generate Auto-Fix Suggestions**
+           For each violation, find nearest token:
+           - Color: Find closest by deltaE color difference
+           - Spacing: Find nearest value in scale
+           - Typography: Map to type scale
+
+        ### Output
+        Generate `.preview/reports/token-compliance.md`:
+
+        ```markdown
+        ## Token Compliance Report
+
+        **Scanned**: {file_count} files
+        **Total Values**: {total_values}
+        **Compliant**: {compliant_count} ({percentage}%)
+
+        ### Score: {score}/20
+
+        ### Summary by Category
+
+        | Category | Compliant | Violations | Compliance |
+        |----------|-----------|------------|------------|
+        | Colors | {c_ok}/{c_total} | {c_violations} | {c_pct}% |
+        | Spacing | {s_ok}/{s_total} | {s_violations} | {s_pct}% |
+        | Typography | {t_ok}/{t_total} | {t_violations} | {t_pct}% |
+        | Borders/Shadows | {b_ok}/{b_total} | {b_violations} | {b_pct}% |
+
+        ### Violations
+
+        #### Critical (Must Fix)
+
+        | File | Line | Property | Found | Suggested Token |
+        |------|------|----------|-------|-----------------|
+        | button.css | 12 | color | #3b82f6 | var(--color-primary) |
+        | card.css | 45 | padding | 13px | var(--space-3) |
+
+        #### Warning (Should Fix)
+
+        | File | Line | Property | Found | Suggested Token |
+        |------|------|----------|-------|-----------------|
+        | ... | ... | ... | ... | ... |
+
+        ### Auto-Fix Available
+
+        Run to apply automatic fixes:
+        ```bash
+        .preview/reports/token-fixes.sh
+        ```
+
+        Fixes that can be applied automatically:
+        - [ ] button.css:12 - Replace #3b82f6 with var(--color-primary)
+        - [ ] card.css:45 - Replace 13px with var(--space-3)
+        ```
+
+        Also generate `.preview/reports/token-fixes.sh` with sed commands.
+
+    - role: accessibility-overlay-generator
+      role_group: REVIEW
+      parallel: true
+      depends_on: [screenshot-capturer, touch-target-validator]
+      priority: 5
+      model_override: haiku
+      prompt: |
+        ## Accessibility Overlay Generator
+
+        ### Your Role
+        Generate annotated screenshots showing accessibility issues visually.
+        Create overlays that make a11y issues immediately visible.
+
+        ### Skip Condition
+        Skip if --skip-a11y-overlay flag is set.
+
+        ### Reference Document
+        Read `templates/shared/a11y-overlay-styles.md` for overlay CSS.
+        Read `templates/shared/mqs-rubric.md` for accessibility scoring.
+
+        ### Overlay Types
+
+        #### 1. Contrast Overlay
+        Analyze text contrast and generate visual overlay:
+        - **Red boxes**: Failed contrast (< 4.5:1 for text)
+        - **Orange boxes**: Warning (4.5-7:1)
+        - **Green checkmarks**: Passing (≥ 7:1)
+        - Show actual ratio as label
+
+        Implementation:
+        ```javascript
+        // For each text element
+        function analyzeContrast(element) {
+          const textColor = getComputedStyle(element).color;
+          const bgColor = getEffectiveBackgroundColor(element);
+          const ratio = calculateContrastRatio(textColor, bgColor);
+
+          return {
+            element: element,
+            ratio: ratio.toFixed(2),
+            status: ratio >= 7 ? 'pass' : ratio >= 4.5 ? 'warning' : 'fail',
+            bounds: element.getBoundingClientRect()
+          };
+        }
+        ```
+
+        #### 2. Touch Target Overlay
+        Visualize interactive element sizes:
+        - **Red boxes**: Critical (< 24px)
+        - **Orange boxes**: Too small (24-44px)
+        - **Blue outlines**: Passing (≥ 44px)
+        - Show dimensions as label
+        - Draw 44px ghost box for small targets
+
+        #### 3. Focus Indicator Overlay
+        Check keyboard accessibility:
+        - **Red dashed outline**: Missing focus state
+        - **Orange outline**: Weak focus (low contrast)
+        - **Green outline**: Good focus
+        - Show tab order numbers
+
+        #### 4. ARIA Overlay
+        Validate semantic markup:
+        - **Red badge "No label"**: Missing accessible name
+        - **Orange badge "No role"**: Missing role attribute
+        - **Green badge with role**: Correct implementation
+        - Outline landmark regions (nav, main, footer)
+
+        ### SVG Overlay Generation
+
+        Generate SVG overlays that can be composited onto screenshots:
+
+        ```xml
+        <svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}">
+          <defs>
+            <filter id="shadow">
+              <feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.2"/>
+            </filter>
+          </defs>
+
+          <!-- Contrast issues -->
+          <g id="contrast-layer">
+            <rect x="{x}" y="{y}" width="{w}" height="{h}"
+                  fill="none" stroke="#ef4444" stroke-width="2"/>
+            <rect x="{x}" y="{y-18}" width="40" height="14"
+                  fill="#ef4444" rx="2" filter="url(#shadow)"/>
+            <text x="{x+4}" y="{y-7}" fill="white"
+                  font-size="9" font-family="system-ui">3.2:1</text>
+          </g>
+
+          <!-- Touch targets -->
+          <g id="touch-layer">
+            <!-- 44px ghost for small targets -->
+            <rect x="{cx-22}" y="{cy-22}" width="44" height="44"
+                  fill="none" stroke="#94a3b8" stroke-dasharray="2,2"/>
+          </g>
+        </svg>
+        ```
+
+        ### Output Structure
+
+        ```text
+        .preview/accessibility/
+        ├── {screen}-contrast.png       # Screenshot + contrast overlay
+        ├── {screen}-contrast.svg       # Just the overlay
+        ├── {screen}-touch-targets.png
+        ├── {screen}-touch-targets.svg
+        ├── {screen}-focus.png
+        ├── {screen}-focus.svg
+        ├── {screen}-aria.png
+        ├── {screen}-aria.svg
+        ├── {screen}-combined.png       # All overlays together
+        ├── issues.json                 # Machine-readable issues
+        └── report.html                 # Interactive report
+        ```
+
+        ### Interactive Report
+
+        Generate HTML report with layer toggles:
+        - Buttons to show/hide each overlay type
+        - Summary cards showing issue counts
+        - Clickable issues that highlight on screenshot
+        - Export options (PNG, PDF)
+
+        See `templates/shared/a11y-overlay-styles.md` for full HTML template.
+
+        ### Accessibility Score Calculation
+
+        ```
+        a11y_score = (
+          contrast_score +      # 0-6 points
+          touch_target_score +  # 0-5 points
+          focus_score +         # 0-4 points
+          aria_score +          # 0-3 points
+          motion_score          # 0-2 points
+        )
+        # Max: 20 points
+        ```
+
+    - role: state-matrix-generator
+      role_group: FRONTEND
+      parallel: true
+      depends_on: [component-previewer]
+      priority: 8
+      prompt: |
+        ## State Matrix Generator
+
+        ### Your Role
+        Generate preview pages showing all component states simultaneously.
+        Create comprehensive visual testing surfaces for design QA.
+
+        ### Skip Condition
+        Skip if --skip-state-matrix flag is set or no components found.
+
+        ### Matrix Layout Concept
+
+        For each component, create a grid showing all combinations:
+
+        ```text
+        ┌─────────────────────────────────────────────────────────────┐
+        │ Button Component - All States                                │
+        ├─────────┬─────────┬─────────┬─────────┬─────────┬──────────┤
+        │ Default │ Hover   │ Active  │ Focus   │Disabled │ Loading  │
+        ├─────────┼─────────┼─────────┼─────────┼─────────┼──────────┤
+        │Primary  │ [btn]   │ [btn]   │ [btn]   │ [btn]   │ [btn]    │
+        │Secondary│ [btn]   │ [btn]   │ [btn]   │ [btn]   │ [btn]    │
+        │Ghost    │ [btn]   │ [btn]   │ [btn]   │ [btn]   │ [btn]    │
+        │Danger   │ [btn]   │ [btn]   │ [btn]   │ [btn]   │ [btn]    │
+        ├─────────┴─────────┴─────────┴─────────┴─────────┴──────────┤
+        │ Size Variants: sm | md | lg | xl                            │
+        └─────────────────────────────────────────────────────────────┘
+        ```
+
+        ### Process
+
+        1. **Parse Component Spec from design.md**
+           Extract:
+           - Component name
+           - Variants (primary, secondary, ghost, etc.)
+           - States (default, hover, active, focus, disabled, loading)
+           - Sizes (sm, md, lg, xl)
+           - Props that affect appearance
+
+        2. **Generate State-Forcing CSS**
+           Create CSS classes that force each state:
+
+           ```css
+           /* Force hover state */
+           .force-hover:hover,
+           .force-hover.--force-state {
+             background: var(--color-primary-hover);
+             /* ... hover styles */
+           }
+
+           /* Force active state */
+           .force-active:active,
+           .force-active.--force-state {
+             background: var(--color-primary-active);
+           }
+
+           /* Force focus state */
+           .force-focus:focus,
+           .force-focus.--force-state {
+             outline: 2px solid var(--color-focus);
+             outline-offset: 2px;
+           }
+
+           /* Force disabled state */
+           .force-disabled {
+             opacity: 0.5;
+             cursor: not-allowed;
+             pointer-events: none;
+           }
+
+           /* Force loading state */
+           .force-loading::after {
+             content: "";
+             /* spinner animation */
+           }
+           ```
+
+        3. **Generate Matrix HTML**
+           Create responsive grid layout:
+
+           ```html
+           <div class="state-matrix">
+             <header class="matrix-header">
+               <h1>{Component} - State Matrix</h1>
+               <div class="controls">
+                 <label><input type="checkbox" id="dark-mode"> Dark Mode</label>
+                 <select id="size-filter">
+                   <option value="all">All Sizes</option>
+                   <option value="sm">Small</option>
+                   <option value="md">Medium</option>
+                   <option value="lg">Large</option>
+                 </select>
+               </div>
+             </header>
+
+             <table class="matrix-table">
+               <thead>
+                 <tr>
+                   <th>Variant</th>
+                   <th>Default</th>
+                   <th>Hover</th>
+                   <th>Active</th>
+                   <th>Focus</th>
+                   <th>Disabled</th>
+                   <th>Loading</th>
+                 </tr>
+               </thead>
+               <tbody>
+                 <tr data-variant="primary">
+                   <td>Primary</td>
+                   <td><Button variant="primary" /></td>
+                   <td><Button variant="primary" class="force-hover --force-state" /></td>
+                   <!-- ... -->
+                 </tr>
+               </tbody>
+             </table>
+
+             <section class="size-variants">
+               <h2>Size Variants</h2>
+               <div class="size-row">
+                 <Button size="sm">Small</Button>
+                 <Button size="md">Medium</Button>
+                 <Button size="lg">Large</Button>
+                 <Button size="xl">Extra Large</Button>
+               </div>
+             </section>
+           </div>
+           ```
+
+        4. **Add Interactive Controls**
+           - Toggle between light/dark mode
+           - Filter by size
+           - Highlight specific states
+           - Copy component code
+
+        ### Output Structure
+
+        ```text
+        .preview/components/{name}/
+        ├── matrix.html           # Full state matrix
+        ├── matrix-screenshot.png # Screenshot of matrix
+        ├── matrix.css            # State-forcing styles
+        ├── states/
+        │   ├── default.html      # Individual state pages
+        │   ├── hover.html
+        │   ├── active.html
+        │   ├── focus.html
+        │   ├── disabled.html
+        │   └── loading.html
+        └── variants/
+            ├── primary.html      # Individual variant pages
+            ├── secondary.html
+            └── ...
+        ```
+
+        ### Interaction Score Calculation
+
+        Based on state coverage:
+        ```
+        required_states = [default, hover, active, focus, disabled]
+        optional_states = [loading, error, success]
+
+        coverage = implemented_states / required_states
+        interaction_score = coverage × 10  # Max 10 points
+        ```
+
+    - role: visual-regression-validator
+      role_group: TESTING
+      parallel: false
+      depends_on: [screenshot-capturer]
+      priority: 4
+      prompt: |
+        ## Visual Regression Validator
+
+        ### Your Role
+        Compare new screenshots against baseline for unexpected changes.
+        Detect visual drift and prevent design regressions.
+
+        ### Skip Condition
+        Skip if --skip-regression flag is set or no baseline exists.
+
+        ### Reference Document
+        Read `templates/shared/visual-regression.md` for comparison algorithms.
+
+        ### Process
+
+        1. **Check for Baseline**
+           ```bash
+           if [ ! -d ".preview/baseline" ]; then
+             echo "No baseline found. Creating initial baseline..."
+             mkdir -p .preview/baseline
+             cp .preview/screenshots/*.png .preview/baseline/
+             echo "Baseline created. Run again to compare."
+             exit 0
+           fi
+           ```
+
+        2. **Compare Screenshots**
+           For each current screenshot, find matching baseline:
+
+           ```javascript
+           async function compareScreenshots(currentPath, baselinePath) {
+             const current = await loadImage(currentPath);
+             const baseline = await loadImage(baselinePath);
+
+             // Check dimensions
+             if (current.width !== baseline.width ||
+                 current.height !== baseline.height) {
+               return {
+                 match: false,
+                 error: 'DIMENSION_MISMATCH',
+                 current: { width: current.width, height: current.height },
+                 baseline: { width: baseline.width, height: baseline.height }
+               };
+             }
+
+             // Pixel comparison with threshold
+             const threshold = 0.1;  // Color threshold
+             let diffPixels = 0;
+             const totalPixels = current.width * current.height;
+             const diffData = new Uint8ClampedArray(totalPixels * 4);
+
+             for (let i = 0; i < current.data.length; i += 4) {
+               const colorDiff = colorDelta(
+                 current.data.slice(i, i + 4),
+                 baseline.data.slice(i, i + 4)
+               );
+
+               if (colorDiff > threshold) {
+                 diffPixels++;
+                 // Mark as different (magenta)
+                 diffData[i] = 255;
+                 diffData[i + 1] = 0;
+                 diffData[i + 2] = 255;
+                 diffData[i + 3] = 255;
+               } else {
+                 // Fade unchanged pixels
+                 diffData[i] = current.data[i] * 0.3;
+                 diffData[i + 1] = current.data[i + 1] * 0.3;
+                 diffData[i + 2] = current.data[i + 2] * 0.3;
+                 diffData[i + 3] = 255;
+               }
+             }
+
+             const diffPercentage = (diffPixels / totalPixels) * 100;
+
+             return {
+               match: diffPercentage < 1,
+               diffPixels,
+               totalPixels,
+               diffPercentage: diffPercentage.toFixed(2),
+               diffImageData: diffData
+             };
+           }
+           ```
+
+        3. **Classify Changes**
+           Based on diff percentage and region analysis:
+
+           | Classification | Threshold | Action |
+           |----------------|-----------|--------|
+           | IDENTICAL | < 0.1% | Auto-pass |
+           | RENDERING_VARIATION | 0.1-1% | Auto-pass (anti-aliasing, fonts) |
+           | MINOR_CHANGE | 1-5% | Review recommended |
+           | SIGNIFICANT_CHANGE | 5-20% | Block, require approval |
+           | MAJOR_CHANGE | > 20% | Block, likely regression |
+
+        4. **Generate Diff Images**
+           Create visual diff for each changed screenshot:
+           - Side-by-side: [Baseline] | [Current] | [Diff]
+           - Overlay: Slider comparison
+           - Highlighted: Bounding boxes around changes
+
+        5. **Determine Overall Status**
+           ```javascript
+           function determineStatus(results) {
+             const blocked = results.filter(r =>
+               r.classification === 'SIGNIFICANT_CHANGE' ||
+               r.classification === 'MAJOR_CHANGE'
+             );
+
+             if (blocked.length > 0) {
+               return {
+                 status: 'BLOCKED',
+                 message: `${blocked.length} screenshots require approval`,
+                 blockedScreenshots: blocked
+               };
+             }
+
+             const warnings = results.filter(r =>
+               r.classification === 'MINOR_CHANGE'
+             );
+
+             if (warnings.length > 0) {
+               return {
+                 status: 'WARNING',
+                 message: `${warnings.length} screenshots have minor changes`,
+                 warnings
+               };
+             }
+
+             return {
+               status: 'PASS',
+               message: 'No visual regression detected'
+             };
+           }
+           ```
+
+        ### Output Structure
+
+        ```text
+        .preview/regression/
+        ├── summary.md            # Overview of all changes
+        ├── report.html           # Interactive comparison viewer
+        ├── {screen}/
+        │   ├── baseline.png      # Original baseline
+        │   ├── current.png       # Current screenshot
+        │   ├── diff.png          # Highlighted differences
+        │   ├── side-by-side.png  # Three-way comparison
+        │   └── analysis.json     # Detailed analysis
+        └── approve.sh            # Script to accept changes
+        ```
+
+        ### Approval Script
+
+        Generate shell script to accept changes as new baseline:
+        ```bash
+        #!/bin/bash
+        # approve.sh - Accept current screenshots as new baseline
+
+        echo "Updating baseline with current screenshots..."
+
+        for screen in dashboard login settings; do
+          if [ -f ".preview/regression/$screen/current.png" ]; then
+            cp ".preview/regression/$screen/current.png" ".preview/baseline/$screen.png"
+            echo "✓ Updated: $screen"
+          fi
+        done
+
+        rm -rf .preview/regression
+        echo "Baseline updated. Run preview again to verify."
+        ```
+
+        ### Thresholds (Configurable)
+
+        ```yaml
+        regression_thresholds:
+          auto_pass: 1          # < 1% = auto approve
+          review: 5             # 1-5% = flag for review
+          block: 5              # > 5% = block and require approval
+        ```
+
+    - role: fidelity-scorer
+      role_group: REVIEW
+      parallel: true
+      depends_on: [mockup-quality-analyzer, token-compliance-validator, accessibility-overlay-generator]
+      priority: 3
+      model_override: sonnet
+      prompt: |
+        ## Fidelity Scorer
+
+        ### Your Role
+        Calculate final Mockup Quality Score (MQS) from all validation results.
+        You are the aggregator that produces the final quality verdict.
+
+        ### Skip Condition
+        Skip if --skip-mqs flag is set.
+
+        ### Reference Document
+        Read `templates/shared/mqs-rubric.md` for complete scoring rubric.
+
+        ### MQS Formula
+
+        ```
+        MQS = (
+          visual_fidelity_score × 0.25 +     # 0-25 points
+          token_compliance_score × 0.20 +     # 0-20 points
+          accessibility_score × 0.20 +        # 0-20 points
+          responsiveness_score × 0.15 +       # 0-15 points
+          interaction_score × 0.10 +          # 0-10 points
+          polish_score × 0.10                 # 0-10 points
+        )
+        ```
+
+        ### Input Sources
+
+        Collect scores from other validators:
+
+        ```yaml
+        input_files:
+          mockup-quality-analyzer:
+            file: .preview/reports/mqs-analysis.md
+            provides:
+              - visual_fidelity_score
+              - polish_score
+
+          token-compliance-validator:
+            file: .preview/reports/token-compliance.md
+            provides:
+              - token_compliance_score
+              - violation_list
+
+          accessibility-overlay-generator:
+            file: .preview/accessibility/issues.json
+            provides:
+              - contrast_score
+              - touch_target_score
+              - focus_score
+              - aria_score
+
+          touch-target-validator:
+            file: .preview/reports/touch-targets.md
+            provides:
+              - touch_target_details
+
+          state-matrix-generator:
+            file: .preview/components/*/matrix.html
+            provides:
+              - interaction_score
+              - state_coverage
+
+          screenshot-capturer:
+            files: .preview/screenshots/
+            provides:
+              - responsiveness_score (compare across viewports)
+        ```
+
+        ### Score Extraction
+
+        ```javascript
+        async function collectScores() {
+          const scores = {};
+
+          // Visual Fidelity (from mockup-quality-analyzer)
+          const mqsAnalysis = await readMarkdown('.preview/reports/mqs-analysis.md');
+          scores.visual_fidelity = extractScore(mqsAnalysis, 'Visual Fidelity Score');
+
+          // Token Compliance
+          const tokenReport = await readMarkdown('.preview/reports/token-compliance.md');
+          scores.token_compliance = extractScore(tokenReport, 'Score:');
+
+          // Accessibility (aggregate from overlay generator)
+          const a11yIssues = await readJSON('.preview/accessibility/issues.json');
+          scores.accessibility = calculateA11yScore(a11yIssues);
+
+          // Responsiveness (compare viewport screenshots)
+          scores.responsiveness = await calculateResponsivenessScore();
+
+          // Interaction (from state matrix coverage)
+          scores.interaction = await calculateInteractionScore();
+
+          // Polish (from mockup-quality-analyzer)
+          scores.polish = extractScore(mqsAnalysis, 'Polish Score');
+
+          return scores;
+        }
+        ```
+
+        ### Responsiveness Calculation
+
+        Compare screenshots across viewports:
+        ```javascript
+        function calculateResponsivenessScore() {
+          const viewports = ['mobile', 'tablet', 'desktop'];
+          let score = 15;  // Start with max
+
+          for (const viewport of viewports) {
+            const screenshots = glob(`.preview/screenshots/*-${viewport}.png`);
+
+            for (const screenshot of screenshots) {
+              // Check for layout issues
+              const issues = analyzeLayoutForViewport(screenshot, viewport);
+
+              if (issues.horizontalScroll) score -= 3;
+              if (issues.overlappingElements) score -= 2;
+              if (issues.textTooSmall) score -= 2;
+              if (issues.touchTargetsTooSmall) score -= 2;
+            }
+          }
+
+          return Math.max(0, score);
+        }
+        ```
+
+        ### Quality Gates
+
+        ```yaml
+        gates:
+          production_ready:
+            threshold: 80
+            message: "MQS ≥ 80: Production Ready ✓"
+            action: proceed
+
+          needs_polish:
+            threshold: 60
+            message: "MQS 60-79: Needs Polish"
+            action: warn
+
+          major_issues:
+            threshold: 40
+            message: "MQS 40-59: Major Issues"
+            action: block
+
+          regenerate:
+            threshold: 0
+            message: "MQS < 40: Regenerate"
+            action: fail
+        ```
+
+        ### Output Report
+
+        Generate `.preview/reports/mqs-report.md`:
+
+        ```markdown
+        # Mockup Quality Report
+
+        **Generated**: {timestamp}
+        **Feature**: {feature_name}
+        **Screens Analyzed**: {count}
+
+        ## Overall Score: {score}/100 ({status})
+
+        ┌────────────────────┬───────┬────────┬─────────────────────┐
+        │ Dimension          │ Score │ Weight │ Status              │
+        ├────────────────────┼───────┼────────┼─────────────────────┤
+        │ Visual Fidelity    │ {vf}  │ 25%    │ {vf_status}         │
+        │ Token Compliance   │ {tc}  │ 20%    │ {tc_status}         │
+        │ Accessibility      │ {a11y}│ 20%    │ {a11y_status}       │
+        │ Responsiveness     │ {resp}│ 15%    │ {resp_status}       │
+        │ Interaction Design │ {int} │ 10%    │ {int_status}        │
+        │ Polish             │ {pol} │ 10%    │ {pol_status}        │
+        ├────────────────────┼───────┼────────┼─────────────────────┤
+        │ **TOTAL**          │ **{t}**│100%   │ {overall_status}    │
+        └────────────────────┴───────┴────────┴─────────────────────┘
+
+        ## Top Issues
+
+        1. **{issue_1}** ({dimension}, -{points} pts)
+           - Location: {file}:{line}
+           - Fix: {suggestion}
+
+        2. **{issue_2}** ({dimension}, -{points} pts)
+           - Location: {file}:{line}
+           - Fix: {suggestion}
+
+        3. **{issue_3}** ({dimension}, -{points} pts)
+           - Location: {file}:{line}
+           - Fix: {suggestion}
+
+        ## Auto-Fixable Issues
+
+        | Issue | Location | Auto-Fix |
+        |-------|----------|----------|
+        | Hardcoded color | button.css:12 | → var(--color-primary) |
+        | Touch target 32px | nav.css:45 | → min-height: 44px |
+        | Missing hover | card.css:78 | → Add :hover rule |
+
+        ## Quality Gate: {PASSED/FAILED}
+
+        {gate_message}
+
+        ---
+
+        **Run `speckit preview --auto-improve` to automatically fix issues.**
+        ```
+
+        Also generate `.preview/reports/mqs-score.json` for CI integration.
+
+    - role: mockup-improver
+      role_group: GENERATION
+      parallel: false
+      depends_on: [fidelity-scorer]
+      priority: 2
+      prompt: |
+        ## Mockup Improver
+
+        ### Your Role
+        Automatically fix common quality issues when MQS < 80.
+        You are the auto-fix agent that improves mockup quality.
+
+        ### Skip Condition
+        Skip if --skip-auto-improve flag is set or MQS ≥ 80.
+
+        ### Activation Condition
+
+        ```javascript
+        const mqsReport = await readJSON('.preview/reports/mqs-score.json');
+
+        if (mqsReport.score >= 80) {
+          console.log('MQS ≥ 80, skipping auto-improvement');
+          return;
+        }
+
+        console.log(`MQS ${mqsReport.score} < 80, starting improvement loop`);
+        ```
+
+        ### Auto-Fix Categories
+
+        #### 1. Token Replacement
+        Replace hardcoded values with design tokens:
+
+        ```javascript
+        async function fixTokenViolations() {
+          const violations = await readJSON('.preview/reports/token-violations.json');
+
+          for (const violation of violations) {
+            if (violation.autoFixable) {
+              const { file, line, found, suggested } = violation;
+
+              // Read file
+              let content = await readFile(file);
+
+              // Replace value
+              content = content.replace(found, suggested);
+
+              // Write back
+              await writeFile(file, content);
+
+              console.log(`Fixed: ${file}:${line} - ${found} → ${suggested}`);
+            }
+          }
+        }
+        ```
+
+        #### 2. Accessibility Fixes
+        Add missing accessibility features:
+
+        ```javascript
+        async function fixAccessibilityIssues() {
+          const issues = await readJSON('.preview/accessibility/issues.json');
+
+          for (const issue of issues) {
+            switch (issue.type) {
+              case 'touch-target-small':
+                // Add min-height/min-width
+                injectCSS(issue.selector, {
+                  'min-height': '44px',
+                  'min-width': '44px'
+                });
+                break;
+
+              case 'missing-focus':
+                // Add focus-visible styles
+                injectCSS(`${issue.selector}:focus-visible`, {
+                  'outline': '2px solid var(--color-focus)',
+                  'outline-offset': '2px'
+                });
+                break;
+
+              case 'low-contrast':
+                // Suggest darker/lighter color
+                // (requires manual review)
+                break;
+            }
+          }
+        }
+        ```
+
+        #### 3. Consistency Fixes
+        Normalize styling across components:
+
+        ```javascript
+        async function fixConsistencyIssues() {
+          // Normalize button padding
+          const buttons = await findAll('.preview/**/*.css', /\.btn-/);
+          const paddingValues = extractPaddingValues(buttons);
+
+          if (paddingValues.length > 1) {
+            const mostCommon = mode(paddingValues);
+            for (const button of buttons) {
+              if (button.padding !== mostCommon) {
+                replaceValue(button.file, button.padding, mostCommon);
+              }
+            }
+          }
+
+          // Normalize border radii
+          // Normalize icon sizes
+          // etc.
+        }
+        ```
+
+        #### 4. Polish Enhancements
+        Add missing polish details:
+
+        ```javascript
+        async function addPolishEnhancements() {
+          // Add missing hover states
+          const interactiveElements = await findAll('.preview/**/*.css',
+            /button|a\[href\]|input|select/);
+
+          for (const element of interactiveElements) {
+            if (!hasHoverState(element)) {
+              injectHoverState(element, {
+                'opacity': '0.9',
+                'transform': 'translateY(-1px)'
+              });
+            }
+          }
+
+          // Add transitions
+          const animatableElements = await findAll('.preview/**/*.css',
+            /background|color|opacity|transform/);
+
+          for (const element of animatableElements) {
+            if (!hasTransition(element)) {
+              injectCSS(element.selector, {
+                'transition': 'all 0.15s ease'
+              });
+            }
+          }
+        }
+        ```
+
+        ### Improvement Loop
+
+        Run up to 3 improvement cycles:
+
+        ```javascript
+        const MAX_ATTEMPTS = 3;
+        let attempt = 0;
+        let currentMQS = await getMQS();
+
+        while (currentMQS < 80 && attempt < MAX_ATTEMPTS) {
+          attempt++;
+          console.log(`Improvement attempt ${attempt}/${MAX_ATTEMPTS}`);
+
+          // Apply fixes
+          await fixTokenViolations();
+          await fixAccessibilityIssues();
+          await fixConsistencyIssues();
+          await addPolishEnhancements();
+
+          // Re-capture screenshots
+          await captureScreenshots();
+
+          // Re-calculate MQS
+          currentMQS = await recalculateMQS();
+
+          console.log(`MQS after attempt ${attempt}: ${currentMQS}`);
+
+          if (currentMQS >= 80) {
+            console.log('✓ MQS threshold reached!');
+            break;
+          }
+        }
+
+        if (currentMQS < 80) {
+          console.log('⚠ Could not reach MQS 80 after 3 attempts');
+          console.log('Manual intervention required');
+        }
+        ```
+
+        ### Output
+
+        Generate improvement report:
+
+        ```markdown
+        ## Mockup Improvement Report
+
+        **Initial MQS**: {initial_score}
+        **Final MQS**: {final_score}
+        **Improvement**: +{delta} points
+        **Attempts**: {attempts}
+
+        ### Fixes Applied
+
+        | Category | Count | Impact |
+        |----------|-------|--------|
+        | Token Replacement | {n} | +{pts} pts |
+        | Accessibility | {n} | +{pts} pts |
+        | Consistency | {n} | +{pts} pts |
+        | Polish | {n} | +{pts} pts |
+
+        ### Before/After Comparison
+
+        | Screen | Before | After |
+        |--------|--------|-------|
+        | Dashboard | ![](before/dashboard.png) | ![](after/dashboard.png) |
+        | Login | ![](before/login.png) | ![](after/login.png) |
+
+        ### Remaining Issues (Manual Fix Required)
+
+        1. {issue_description} - {file}:{line}
+        2. {issue_description} - {file}:{line}
+
+        ### Recommendation
+
+        {recommendation based on final MQS}
+        ```
+
+        Save before/after screenshots for comparison.
+
 skills:
   - name: wireframe-preview
     trigger: "When converting ASCII wireframes to visual HTML"
@@ -1605,147 +2823,111 @@ After completion:
 {ENDIF}
 ```
 
-## CLI Flags
+## CLI API
+
+### Presets
 
 ```bash
+# Default: Full preview with quality, gallery, frames
+speckit preview
+
+# Quick iteration (skip quality, gallery, deploy)
+speckit preview --quick
+
+# CI/CD mode (headless, baseline check, strict gates)
+speckit preview --ci
+
+# Stakeholder review package (deploy, all devices)
+speckit preview --review
+```
+
+### Core Flags
+
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--component <name>` | Preview specific component | `--component Button` |
+| `--screen <name>` | Preview specific screen | `--screen Dashboard` |
+| `--device <id>` | Target device(s) | `--device iphone-15-pro` or `--device mobile` or `--device all` |
+| `--theme <mode>` | Color theme | `--theme dark` |
+| `--output <dir>` | Custom output directory | `--output ./preview` |
+| `--port <num>` | Server port | `--port 4000` |
+| `--deploy <platform>` | Deploy for sharing | `--deploy vercel` or `--deploy firebase` |
+| `--password <secret>` | Password protect deployment | `--password review2026` |
+| `--gate <score>` | Minimum MQS threshold | `--gate 80` (default) |
+| `--skip <features>` | Skip specific features | `--skip quality,gallery` |
+| `--only <features>` | Run only specific features | `--only storybook` |
+| `--baseline <action>` | Baseline management | `--baseline update` or `--baseline check` |
+
+### Feature Keywords
+
+Use with `--skip` and `--only` flags:
+
+| Keyword | What It Controls |
+|---------|------------------|
+| `quality` | MQS scoring, token check, a11y overlays, auto-improve |
+| `gallery` | Multi-device comparison gallery |
+| `frames` | Device bezels, notches, status bars |
+| `gestures` | Touch gesture simulation |
+| `deploy` | Shareable preview deployment |
+| `storybook` | Component storybook generation |
+| `mockups` | Stitch/v0 mockup gallery |
+| `screenshots` | Screenshot capture |
+| `regression` | Visual regression testing |
+| `states` | Component state matrix |
+
+### Usage Examples
+
+```bash
+# Full preview (default)
+speckit preview
+
+# Quick local iteration
+speckit preview --quick
+
 # Preview specific component
 speckit preview --component Button
 
-# Preview specific screen
-speckit preview --screen Dashboard
+# Preview on specific device with frames
+speckit preview --device iphone-15-pro
 
-# Skip screenshot capture (faster)
-speckit preview --no-screenshots
+# Multi-device preview
+speckit preview --device mobile,tablet
 
-# Skip DQS validation
-speckit preview --no-validation
+# CI pipeline with strict quality gate
+speckit preview --ci --gate 85
 
-# Generate Storybook only
-speckit preview --storybook-only
+# Stakeholder review with deploy
+speckit preview --review
 
-# Specify output directory
-speckit preview --output ./my-preview
+# Skip quality validation (faster)
+speckit preview --skip quality
 
-# Specify port
-speckit preview --port 4000
+# Skip gallery and frames
+speckit preview --skip gallery,frames
 
-# Don't auto-open browser
-speckit preview --no-open
+# Only generate storybook
+speckit preview --only storybook
+
+# Deploy with password protection
+speckit preview --deploy vercel --password review2026
+
+# Update visual regression baseline
+speckit preview --baseline update
+
+# Check against baseline (CI mode)
+speckit preview --baseline check
 
 # Dark mode only
 speckit preview --theme dark
-
-# Specific viewport only
-speckit preview --viewport mobile
-
-# Serve Stitch mockups gallery only
-speckit preview --mockups
-
-# Serve mockups with comparison view
-speckit preview --mockups --compare
-
-# Filter mockups by feature
-speckit preview --mockups --feature onboarding
-
-# === Device-Specific Preview (NEW) ===
-
-# Preview on specific device
-speckit preview --device iphone-14-pro
-speckit preview --device pixel-8
-
-# Preview on multiple devices
-speckit preview --device iphone-14-pro,pixel-8,ipad-pro
-
-# Preview on device category (all devices in category)
-speckit preview --devices mobile          # All mobile devices
-speckit preview --devices tablet          # All tablets
-speckit preview --devices desktop         # All desktop devices
-speckit preview --devices all             # Every device in registry
-
-# Add device frames (bezels, status bar, notch)
-speckit preview --framed
-speckit preview --device iphone-14-pro --framed
-
-# Show safe area debug overlay
-speckit preview --framed --debug
-
-# === Touch & Gestures (NEW) ===
-
-# Enable gesture simulator (tap, swipe, pinch, etc.)
-speckit preview --gestures
-speckit preview --device mobile --gestures
-
-# Disable gestures (for desktop-only previews)
-speckit preview --no-gestures
-
-# === Touch Target Validation (NEW) ===
-
-# Run touch target validation
-speckit preview --validate-touch-targets
-
-# Skip touch target validation
-speckit preview --no-touch-validation
-
-# Set custom minimum touch target size (default: 44px)
-speckit preview --min-touch-target 48
-
-# === Multi-Device Gallery (NEW) ===
-
-# Generate device comparison gallery
-speckit preview --gallery
-
-# Gallery with synchronized scrolling
-speckit preview --gallery --sync-scroll
-
-# Gallery with responsive breakpoint slider
-speckit preview --gallery --responsive
-
-# Skip gallery generation
-speckit preview --no-gallery
-
-# === Preview Deployment (NEW) ===
-
-# Deploy preview for sharing
-speckit preview --deploy
-speckit preview --deploy firebase
-speckit preview --deploy vercel
-speckit preview --deploy cloudflare
-speckit preview --deploy surge
-
-# Deploy with password protection
-speckit preview --deploy --password secret123
-
-# Set deployment expiration (default: 7d)
-speckit preview --deploy --expires 14d
-
-# Skip deployment
-speckit preview --no-deploy
-
-# === Orientation (NEW) ===
-
-# Generate both orientations
-speckit preview --orientation both
-
-# Portrait only (default for mobile)
-speckit preview --orientation portrait
-
-# Landscape only
-speckit preview --orientation landscape
-
-# === Combined Examples ===
-
-# Full mobile-focused preview with frames and gestures
-speckit preview --device iphone-14-pro --framed --gestures
-
-# Multi-device comparison with deployment
-speckit preview --devices mobile --gallery --deploy firebase
-
-# Quick local preview without extras
-speckit preview --no-framed --no-gestures --no-gallery
-
-# Complete stakeholder review package
-speckit preview --devices all --framed --gallery --deploy --password review2026
 ```
+
+### Preset Equivalents
+
+| Preset | Equivalent Flags |
+|--------|------------------|
+| `--quick` | `--skip quality,gallery,deploy,frames` |
+| `--ci` | `--no-open --baseline check --gate 80 --skip deploy` |
+| `--review` | `--deploy --device all --gate 80` |
 
 ## Example
 

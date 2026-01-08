@@ -736,26 +736,80 @@ graph TD
 
 ### `/speckit.preview`
 
-**Назначение:** Генерация интерактивных preview из design specs
+**Назначение:** Генерация интерактивных preview с quality validation и MQS scoring
 
-**Аргументы:**
+**Presets:**
+
+| Preset | Описание |
+|--------|----------|
+| (default) | Полный preview с quality, gallery, frames |
+| `--quick` | Быстрая итерация (без quality, gallery, deploy) |
+| `--ci` | CI/CD режим (headless, baseline check, strict gates) |
+| `--review` | Пакет для stakeholder review (deploy, all devices) |
+
+**Core Flags:**
+
+| Flag | Описание |
+|------|----------|
+| `--component <name>` | Preview конкретного компонента |
+| `--screen <name>` | Preview конкретного экрана |
+| `--device <id>` | Устройство: `iphone-15-pro`, `mobile`, `tablet`, `all` |
+| `--theme <mode>` | Тема: `dark`, `light` |
+| `--output <dir>` | Директория вывода |
+| `--port <num>` | Порт сервера |
+| `--deploy <platform>` | Deploy: `vercel`, `firebase`, `cloudflare`, `surge` |
+| `--password <secret>` | Password protection для deploy |
+| `--gate <score>` | Минимальный MQS (default: 80) |
+| `--skip <features>` | Пропустить фичи (comma-separated) |
+| `--only <features>` | Только указанные фичи (comma-separated) |
+| `--baseline <action>` | Baseline: `update`, `check`, `ignore` |
+
+**Feature Keywords** (для `--skip` и `--only`):
+
+`quality`, `gallery`, `frames`, `gestures`, `deploy`, `storybook`, `mockups`, `screenshots`, `regression`, `states`
+
+**Примеры:**
 ```bash
+# Полный preview (default)
 /speckit.preview
+
+# Быстрая итерация
+/speckit.preview --quick
+
+# Конкретный компонент
+/speckit.preview --component Button
+
+# CI pipeline с повышенным порогом
+/speckit.preview --ci --gate 85
+
+# Пакет для review
+/speckit.preview --review
+
+# Без quality validation
+/speckit.preview --skip quality
+
+# Только storybook
+/speckit.preview --only storybook
+
+# Deploy с паролем
+/speckit.preview --deploy vercel --password review2026
 ```
-
-**Параметры:** Нет (использует `design.md`)
-
-**Флаги:** Нет
 
 **Когда использовать:**
 - ✅ После `/speckit.design`
 - ✅ Визуализация wireframes → HTML
-- ✅ Component previews
+- ✅ Component previews с state matrix
+- ✅ Quality validation (MQS ≥ 80)
+- ✅ Visual regression testing
+- ✅ Accessibility overlays
 
 **Выходные файлы:**
 - `.preview/wireframes/` - HTML из ASCII wireframes
 - `.preview/components/` - component previews
 - `.preview/screenshots/` - captured screenshots
+- `.preview/reports/mqs-report.md` - MQS quality report
+- `.preview/accessibility/` - a11y overlays
+- `.preview/regression/` - visual regression diffs
 
 **Модель:** `opus`
 
@@ -1128,9 +1182,15 @@ TASK-001 (implements FR-001) → pbt-jit-runner → PROP-001, PROP-003
 
 ## Версия документа
 
-**Версия:** 1.2.0 (совместим с Spec-Kit v0.0.87)
-**Дата:** 2026-01-07
+**Версия:** 1.3.0 (совместим с Spec-Kit v0.0.93)
+**Дата:** 2026-01-08
 **Автор:** Auto-generated from command templates
+
+### Изменения в 1.3.0
+
+- Перенесён в `docs/` директорию
+- Обновлён `/speckit.preview` с минимизированным API (4 presets, 12 core flags, 10 feature keywords)
+- Удалены ~45 индивидуальных флагов в пользу `--skip`/`--only` с feature keywords
 
 ### Изменения в 1.2.0
 

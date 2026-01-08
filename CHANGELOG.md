@@ -7,6 +7,52 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.93] - 2026-01-08
+
+### Changed
+
+- **Minimized `/speckit.preview` CLI API**: Reduced ~45 flags to 12 core flags + 4 presets
+  - New presets: `--quick`, `--ci`, `--review` (default is full preview)
+  - New `--skip <features>` and `--only <features>` flags with 10 feature keywords
+  - New `--baseline <action>` flag consolidating baseline management
+  - Feature keywords: `quality`, `gallery`, `frames`, `gestures`, `deploy`, `storybook`, `mockups`, `screenshots`, `regression`, `states`
+
+- **Moved `COMMANDS_GUIDE.md`** from root to `docs/` directory
+  - Updated `/speckit.preview` section with new minimal API
+  - Document version 1.3.0
+
+## [0.0.92] - 2026-01-08
+
+### Added
+
+- **Mockup Quality Engine** for `/speckit.preview`:
+  - New **MQS (Mockup Quality Score)**: 0-100 metric with 6 dimensions (Visual Fidelity 25%, Token Compliance 20%, Accessibility 20%, Responsiveness 15%, Interaction 10%, Polish 10%)
+  - Quality gates: ≥80 Production Ready, 60-79 Needs Polish, 40-59 Major Issues, <40 Regenerate
+  - 7 new quality-focused subagents:
+    - `mockup-quality-analyzer`: Claude Vision-based visual quality analysis
+    - `token-compliance-validator`: Detect hardcoded values vs design tokens
+    - `accessibility-overlay-generator`: Visual a11y annotations (contrast, touch, focus, ARIA)
+    - `state-matrix-generator`: Component state × variant grid visualization
+    - `visual-regression-validator`: Pixelmatch-based baseline comparison
+    - `fidelity-scorer`: Aggregate MQS calculation with quality gates
+    - `mockup-improver`: Auto-fix loop (up to 3 cycles) when MQS < threshold
+
+- **New supporting templates**:
+  - `templates/shared/mqs-rubric.md`: Complete MQS scoring system with dimension breakdowns
+  - `templates/shared/token-patterns.md`: Regex patterns for token violation detection
+  - `templates/shared/a11y-overlay-styles.md`: CSS/JS for accessibility overlay generation
+
+- **New CLI flags** for `/speckit.preview`:
+  - `--validate-quality` / `--mqs`: Run full MQS analysis
+  - `--token-check`: Token compliance validation only
+  - `--a11y-overlay`: Generate accessibility overlays
+  - `--state-matrix` / `--all-states`: Generate component state matrices
+  - `--regression` / `--update-baseline` / `--diff-threshold`: Visual regression testing
+  - `--mqs-gate <threshold>`: Set minimum MQS score (default: 80)
+  - `--auto-improve` / `--max-cycles`: Auto-fix when MQS below threshold
+  - `--quality-full`: Run all quality checks
+  - `--no-quality`: Skip quality validation
+
 ## [0.0.91] - 2026-01-08
 
 ### Added
