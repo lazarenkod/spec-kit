@@ -14,6 +14,16 @@ modes:
     output_dir: "specs/app-design/"
     waves: true
     journeys: true
+  alternative_design:
+    trigger: "--all-alternatives OR --alternative N"
+    purpose: "Generate design for concept alternatives"
+    output_dir: "specs/app-design/alternatives/"
+    requires: "concept.md with Product Alternatives section"
+  variant_design:
+    trigger: "--all-variants OR --variant NAME"
+    purpose: "Generate design for concept variants (MINIMAL/BALANCED/AMBITIOUS)"
+    output_dir: "specs/app-design/variants/"
+    requires: "concept.md with Concept Variants section"
   mockup_generation:
     trigger: "--mockup flag AND design artifacts exist"
     purpose: "Generate high-fidelity visual mockups from wireframes via Google Stitch"
@@ -601,6 +611,66 @@ IF MODE == "design_system_generation":
   2. IF brand inputs not provided interactively:
      READ constitution.md → design_system block
      EXTRACT brand values
+
+  3. COLLECT extended design preferences (interactive):
+     {{include: shared/design-questionnaire.md}}
+
+     Use AskUserQuestion tool to collect preferences in batches:
+
+     BATCH 1 (Visual Foundation):
+       Question 1: "What theme mode should the design system support?"
+       - Header: "Theme"
+       - Options: ["Light only", "Dark only", "Both (with system toggle) (Recommended)"]
+
+       Question 2: "What color palette strategy do you prefer?"
+       - Header: "Palette"
+       - Options: ["Monochromatic (single hue)", "Complementary (Recommended)",
+                   "Analogous (adjacent)", "Triadic (3 colors)"]
+
+       Question 3: "What overall visual style fits your brand?"
+       - Header: "Style"
+       - Options: ["Minimal & Clean (Recommended)", "Bold & Vibrant",
+                   "Soft & Friendly", "Professional & Corporate"]
+
+       Question 4: "What corner radius style do you prefer?"
+       - Header: "Corners"
+       - Options: ["Sharp (0-2px)", "Soft (4-8px) (Recommended)",
+                   "Rounded (12-16px)", "Pill (fully rounded)"]
+
+     BATCH 2 (Density & Typography):
+       Question 5: "What visual density suits your users?"
+       - Header: "Density"
+       - Options: ["Compact (data-heavy)", "Comfortable (Recommended)", "Spacious"]
+
+       Question 6: "What shadow style should components have?"
+       - Header: "Shadows"
+       - Options: ["None (flat)", "Subtle (Recommended)", "Elevated", "Dramatic"]
+
+       Question 7: "What icon style fits your product?"
+       - Header: "Icons"
+       - Options: ["Outlined (Recommended)", "Filled", "Duotone"]
+
+       Question 8: "What level of animation/motion?"
+       - Header: "Motion"
+       - Options: ["Minimal", "Standard (Recommended)", "Rich"]
+
+     SKIP questionnaire if:
+       - `--quick` or `--defaults` flag passed
+       - All values already defined in constitution.md design_system block
+
+  4. STORE responses in design_preferences object:
+     design_preferences = {
+       theme_mode: q1_response,
+       color_strategy: q2_response,
+       visual_style: q3_response,
+       corner_radius: q4_response,
+       visual_density: q5_response,
+       shadow_style: q6_response,
+       icon_style: q7_response,
+       animation_level: q8_response
+     }
+
+  5. APPLY preferences to token generation (see design-questionnaire.md for mappings)
 ```
 
 ### Product Type Presets
@@ -1466,6 +1536,243 @@ ALWAYS (after any wave completion):
 │   2. Preview: Run /speckit.preview for interactive preview          │
 │   3. Continue: Run /speckit.design --concept --wave {N+1}           │
 │   4. Plan: Run /speckit.plan to create technical implementation     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Alternative Design Mode
+
+When `--all-alternatives` or `--alternative N` flag is passed, generate design specifications for concept alternatives. This enables visual comparison of different product strategies before committing to implementation.
+
+{{include: shared/alternative-parser.md}}
+
+### CLI Arguments
+
+```text
+Parse arguments for:
+- `--alternative <N>` — Generate design for specific alternative (1-5)
+- `--all-alternatives` — Generate designs for ALL alternatives from concept.md
+- `--variant <name>` — Generate design for variant (MINIMAL/BALANCED/AMBITIOUS)
+- `--all-variants` — Generate designs for all 3 scope variants
+- `--compare` — Generate visual comparison matrix alongside designs
+- `--quick` — Use default design preferences, skip questionnaire
+```
+
+### Output Structure
+
+```text
+specs/app-design/alternatives/
+├── comparison.md               # Side-by-side feature/score matrix
+├── alt-1-conventional/
+│   ├── design-system.md        # Design tokens for this alternative
+│   ├── overview.md             # Strategy summary, score breakdown
+│   ├── features/               # Per-epic design specs
+│   │   ├── EPIC-001-design.md
+│   │   └── EPIC-002-design.md
+│   └── screens/                # Key screen wireframes
+├── alt-2-disruptive/
+│   ├── design-system.md
+│   ├── overview.md
+│   ├── features/
+│   └── screens/
+└── ...
+
+specs/app-design/variants/
+├── comparison.md               # MINIMAL vs BALANCED vs AMBITIOUS
+├── MINIMAL/
+│   ├── design-system.md
+│   ├── features/               # Only P1 features
+│   └── screens/
+├── BALANCED/
+│   ├── design-system.md
+│   ├── features/               # P1 + selected P2
+│   └── screens/
+└── AMBITIOUS/
+    ├── design-system.md
+    ├── features/               # All features
+    └── screens/
+```
+
+### Workflow: All Alternatives
+
+```text
+IF MODE == "alternative_design" AND --all-alternatives:
+
+  1. LOCATE and PARSE concept.md:
+     concept_path = find_concept_md()  # specs/concept.md or ./concept.md
+     IF NOT exists(concept_path):
+       ERROR "concept.md not found. Run /speckit.concept first."
+
+     alternatives = parse_alternatives(concept_content)
+     IF alternatives.length == 0:
+       ERROR "No Product Alternatives found in concept.md."
+
+  2. COLLECT design preferences (once, apply to all):
+     IF NOT --quick:
+       design_preferences = collect_design_questionnaire()
+     ELSE:
+       design_preferences = DEFAULT_PREFERENCES
+
+  3. FOR each alternative in alternatives:
+     strategy_slug = slugify(alternative.strategy_type)  # e.g., "conventional"
+     output_dir = "specs/app-design/alternatives/alt-{N}-{strategy_slug}/"
+
+     a) GENERATE overview.md:
+        - Alternative name and vision
+        - Strategy type explanation
+        - Score breakdown (4 dimensions /40)
+        - Core features list (5-7 epics)
+        - Pros/Cons summary
+
+     b) GENERATE design-system.md:
+        - Apply design_preferences tokens
+        - Customize based on strategy type:
+          * "Disruptive" → bolder colors, larger contrast
+          * "Minimal" → minimal palette, smaller spacing
+          * "Premium" → richer shadows, refined typography
+          * "Platform" → modular, extensible tokens
+
+     c) FOR each epic in alternative.core_features:
+        GENERATE features/{epic_id}-design.md:
+          - Feature overview with traceability to EPIC-xxx
+          - Key screens wireframes (ASCII or visual)
+          - Component specifications
+          - User flow diagram
+
+     d) GENERATE screens/:
+        - Home/Dashboard screen
+        - Key feature screens
+        - Common patterns (auth, errors, empty states)
+
+  4. GENERATE comparison.md:
+     - Side-by-side comparison table
+     - Feature matrix (which alternative has what)
+     - Score comparison chart
+     - Visual style comparison thumbnails
+     - Recommendation based on scores
+```
+
+### Workflow: Single Alternative
+
+```text
+IF MODE == "alternative_design" AND --alternative N:
+
+  1. PARSE alternatives from concept.md
+  2. FIND alternative with number == N
+     IF NOT found:
+       ERROR "Alternative {N} not found. Available: 1-{max}"
+
+  3. GENERATE design for single alternative:
+     - Same process as all-alternatives but for one
+     - Output to: specs/app-design/alternatives/alt-{N}-{strategy}/
+```
+
+### Workflow: Variants (MINIMAL/BALANCED/AMBITIOUS)
+
+```text
+IF MODE == "variant_design":
+
+  1. PARSE variants from concept.md:
+     variants = parse_variants(concept_content)
+     IF variants.length == 0:
+       ERROR "No Concept Variants found. Ensure MINIMAL/BALANCED/AMBITIOUS sections exist."
+
+  2. FOR each variant in [MINIMAL, BALANCED, AMBITIOUS]:
+     output_dir = "specs/app-design/variants/{variant.name}/"
+
+     a) EXTRACT features for this variant:
+        - MINIMAL: MUST_HAVE features only
+        - BALANCED: MUST_HAVE + high-impact SHOULD_HAVE
+        - AMBITIOUS: All features
+
+     b) GENERATE design-system.md:
+        - Same base tokens
+        - Variant-specific component set
+
+     c) FOR each feature in variant.features:
+        GENERATE feature design spec
+
+  3. GENERATE comparison.md:
+     | Dimension | MINIMAL | BALANCED | AMBITIOUS |
+     |-----------|:-------:|:--------:|:---------:|
+     | Features | 8 | 14 | 22 |
+     | Screens | 12 | 24 | 40 |
+     | Complexity | Low | Medium | High |
+```
+
+### Comparison Matrix Template
+
+```markdown
+# Alternative Comparison
+
+## Strategy Overview
+
+| Alternative | Strategy | Vision | Score |
+|-------------|----------|--------|:-----:|
+| 1. {Name} | {Type} | {Vision...} | {N}/40 |
+| 2. {Name} | {Type} | {Vision...} | {N}/40 |
+| 3. {Name} | {Type} | {Vision...} | {N}/40 |
+
+## Score Breakdown
+
+| Dimension | Alt 1 | Alt 2 | Alt 3 |
+|-----------|:-----:|:-----:|:-----:|
+| Problem-Solution Fit (/12) | {N} | {N} | {N} |
+| Market Differentiation (/10) | {N} | {N} | {N} |
+| Feasibility (/10) | {N} | {N} | {N} |
+| Time to Market (/8) | {N} | {N} | {N} |
+| **Total** | **{N}** | **{N}** | **{N}** |
+
+## Feature Matrix
+
+| Epic | Description | Alt 1 | Alt 2 | Alt 3 |
+|------|-------------|:-----:|:-----:|:-----:|
+| EPIC-001 | User Authentication | ✓ | ✓ | ✓ |
+| EPIC-002 | Dashboard | ✓ | | ✓ |
+| EPIC-003 | Analytics | | ✓ | ✓ |
+
+## Effort & Risk
+
+| Metric | Alt 1 | Alt 2 | Alt 3 |
+|--------|:-----:|:-----:|:-----:|
+| Effort | {S/M/L/XL} | {S/M/L/XL} | {S/M/L/XL} |
+| Technical Risk | {Low/Med/High} | {Low/Med/High} | {Low/Med/High} |
+| Time to MVP | {N} weeks | {N} weeks | {N} weeks |
+
+## Recommendation
+
+Based on scores and analysis:
+
+**Recommended Alternative**: Alt {N} — {Name}
+
+**Rationale**:
+1. {Reason 1}
+2. {Reason 2}
+3. {Reason 3}
+```
+
+### Completion Summary
+
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│  ✅ Alternative Design Complete                                     │
+│                                                                     │
+│  Alternatives Generated: {N}                                        │
+│  Output Directory: specs/app-design/alternatives/                   │
+│                                                                     │
+│  Files Created:                                                     │
+│   - comparison.md (comparison matrix)                               │
+│   - alt-1-{strategy}/... ({M} files)                                │
+│   - alt-2-{strategy}/... ({M} files)                                │
+│   - ...                                                             │
+│                                                                     │
+├─────────────────────────────────────────────────────────────────────┤
+│  Next Steps:                                                        │
+│   1. Review: Open comparison.md for side-by-side analysis           │
+│   2. Preview: Run /speckit.preview --all-alternatives               │
+│   3. Select: Choose alternative for implementation                  │
+│   4. Design: Run /speckit.design --concept with selected strategy   │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 

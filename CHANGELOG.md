@@ -7,6 +7,48 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.101] - 2026-01-09
+
+### Added
+
+- **Extended Design System Questionnaire** (`templates/shared/design-questionnaire.md`):
+  - 12 design preference questions covering visual foundation, typography, iconography, and motion
+  - Interactive collection flow using AskUserQuestion in batches
+  - Token generation mappings for theme mode, color strategy, corner radius, visual density, shadows, and animation levels
+  - Icon library recommendations per style (Lucide, Heroicons, Phosphor)
+  - Skip questionnaire flag (`--quick` / `--defaults`)
+
+- **Alternative/Variant Design Support** in `/speckit.design`:
+  - New modes: `alternative_design` and `variant_design`
+  - CLI flags: `--alternative N`, `--all-alternatives`, `--variant NAME`, `--all-variants`, `--compare`
+  - Output structure: `specs/app-design/alternatives/alt-N-{strategy}/` and `specs/app-design/variants/{name}/`
+  - Comparison matrix generation with feature/score breakdown
+  - Design token variation per alternative based on strategy type
+
+- **Alternative Preview Parser** (`templates/shared/alternative-parser.md`):
+  - Data structures for Product Alternatives and Concept Variants
+  - Parsing logic to extract alternatives from concept.md
+  - Error handling for missing concept.md or invalid alternative numbers
+
+- **Alternative/Variant Preview Support** in `/speckit.preview`:
+  - CLI flags: `--alternative N`, `--all-alternatives`, `--variant NAME`, `--all-variants`, `--compare`
+  - Gallery index with alternative selector, device picker, score badges
+  - Side-by-side comparison view with synchronized scrolling
+  - Output structure: `.preview/alternatives/` and `.preview/variants/`
+  - HTML templates for gallery and comparison views
+
+### Changed
+
+- **Updated `/speckit.design`** (`templates/commands/design.md`):
+  - Added extended design questionnaire after brand inputs (8 questions in 2 batches)
+  - Added Alternative Design Mode section with full workflow
+  - Added adaptive model routing for alternative/variant modes
+
+- **Updated `/speckit.preview`** (`templates/commands/preview.md`):
+  - Added alternative_preview, variant_preview, and comparison_preview modes to adaptive routing
+  - Added Alternative/Variant Flags section to CLI API
+  - Added Alternative Preview Generation section with workflow, templates, and completion summary
+
 ## [0.0.100] - 2026-01-09
 
 ### Changed

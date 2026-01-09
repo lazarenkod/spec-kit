@@ -32,6 +32,18 @@ claude_code:
         orchestrator: opus
         thinking_budget: 16000
         description: "Complex animations, gestures, transitions"
+      alternative_preview:
+        orchestrator: sonnet
+        thinking_budget: 8000
+        description: "Preview generation for concept alternatives"
+      variant_preview:
+        orchestrator: sonnet
+        thinking_budget: 8000
+        description: "Preview generation for concept variants (MINIMAL/BALANCED/AMBITIOUS)"
+      comparison_preview:
+        orchestrator: opus
+        thinking_budget: 12000
+        description: "Side-by-side alternative comparison gallery"
     detection_signals:
       static: ["wireframe", "layout", "static", "mockup", "visual only"]
       interactive: ["component", "state", "props", "interactive", "click", "hover"]
@@ -2944,6 +2956,16 @@ speckit preview --review
 | `--only <features>` | Run only specific features | `--only storybook` |
 | `--baseline <action>` | Baseline management | `--baseline update` or `--baseline check` |
 
+### Alternative/Variant Flags
+
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--alternative <N>` | Preview specific alternative from concept.md | `--alternative 2` |
+| `--all-alternatives` | Generate preview gallery for ALL alternatives | `--all-alternatives` |
+| `--variant <name>` | Preview specific variant | `--variant BALANCED` |
+| `--all-variants` | Generate previews for all scope variants | `--all-variants` |
+| `--compare` | Generate side-by-side comparison view | `--compare` |
+
 ### Feature Keywords
 
 Use with `--skip` and `--only` flags:
@@ -3005,6 +3027,21 @@ speckit preview --baseline check
 
 # Dark mode only
 speckit preview --theme dark
+
+# Preview all concept alternatives
+speckit preview --all-alternatives
+
+# Preview specific alternative
+speckit preview --alternative 2
+
+# Preview with side-by-side comparison
+speckit preview --all-alternatives --compare
+
+# Preview specific variant
+speckit preview --variant BALANCED
+
+# Preview all variants
+speckit preview --all-variants
 ```
 
 ### Preset Equivalents
@@ -3070,6 +3107,462 @@ Components:
 - Run `/speckit.implement` to build the feature
 - Screenshots available as visual regression baseline at .preview/screenshots/
 ```
+
+---
+
+## Alternative Preview Generation
+
+{{include: shared/alternative-parser.md}}
+
+### When to Use
+
+Use alternative/variant preview when:
+- User runs `/speckit.preview --all-alternatives` or `/speckit.preview --alternative N`
+- User runs `/speckit.preview --all-variants` or `/speckit.preview --variant NAME`
+- User wants to compare visual designs across concept alternatives
+- Stakeholder review requires seeing multiple product directions
+
+### Prerequisites
+
+1. **concept.md** must exist with:
+   - Product Alternatives section (`### Alternative [N]:`) for `--alternative`/`--all-alternatives`
+   - Concept Variants section (`### Variant: MINIMAL/BALANCED/AMBITIOUS`) for `--variant`/`--all-variants`
+
+2. **Design artifacts** must exist in `specs/app-design/alternatives/` or `specs/app-design/variants/`
+   - Run `/speckit.design --concept --all-alternatives` first if missing
+
+### Output Structure
+
+```text
+.preview/
+├── alternatives/
+│   ├── index.html              # Gallery with alternative selector
+│   ├── comparison.html         # Side-by-side comparison (if --compare)
+│   ├── alt-1-conventional/
+│   │   ├── wireframes/
+│   │   ├── components/
+│   │   ├── framed/
+│   │   │   ├── iphone-15-pro.html
+│   │   │   └── desktop.html
+│   │   └── screenshots/
+│   ├── alt-2-disruptive/
+│   │   └── ...
+│   └── alt-N-{strategy}/
+│       └── ...
+└── variants/
+    ├── index.html              # Variant gallery
+    ├── comparison.html         # Scope comparison
+    ├── MINIMAL/
+    │   └── ...
+    ├── BALANCED/
+    │   └── ...
+    └── AMBITIOUS/
+        └── ...
+```
+
+### Alternative Preview Workflow
+
+```text
+IF --all-alternatives:
+  1. CHECK prerequisites:
+     - concept.md exists with Product Alternatives section
+     - Design artifacts exist in specs/app-design/alternatives/
+
+     IF design artifacts missing:
+       ERROR "No alternative designs found. Run /speckit.design --concept --all-alternatives first."
+
+  2. PARSE alternatives from concept.md:
+     alternatives = parse_alternatives(read_file("specs/concept.md"))
+
+     FOR each alt in alternatives:
+       alt_dir = "specs/app-design/alternatives/alt-{alt.number}-{slugify(alt.strategy_type)}/"
+
+       IF NOT exists(alt_dir):
+         WARN "Design for alternative {alt.number} not found, skipping"
+         CONTINUE
+
+       output_dir = ".preview/alternatives/alt-{alt.number}-{slugify(alt.strategy_type)}/"
+
+       3. LOAD design artifacts:
+          design_system = read_file(alt_dir + "design-system.md")
+          features = glob(alt_dir + "features/*.md")
+          screens = glob(alt_dir + "screens/*.md")
+
+       4. GENERATE previews with alternative-specific tokens:
+          # Apply design tokens from alternative's design-system.md
+          FOR each screen in screens:
+            generate_wireframe_preview(screen, design_system, output_dir + "wireframes/")
+
+          FOR each feature in features:
+            generate_component_previews(feature, design_system, output_dir + "components/")
+
+          # Generate device frames
+          generate_device_frames(output_dir + "wireframes/", output_dir + "framed/")
+
+          # Capture screenshots
+          capture_screenshots(output_dir + "framed/", output_dir + "screenshots/")
+
+  5. GENERATE gallery index:
+     gallery_html = generate_alternative_gallery(alternatives, {
+       title: "Alternative Comparison Gallery",
+       features: [
+         "alternative_selector",    # Dropdown to switch alternatives
+         "device_selector",         # Device frame picker
+         "score_badges",            # Show score/40 per alternative
+         "strategy_labels"          # Conventional/Disruptive/etc
+       ]
+     })
+     write_file(".preview/alternatives/index.html", gallery_html)
+
+  6. IF --compare:
+     comparison_html = generate_side_by_side_comparison(alternatives, {
+       layout: "horizontal_scroll",  # or "grid" for 2x2
+       sync_scroll: true,            # Synchronized scrolling
+       highlight_differences: true,  # Visual diff overlay
+       include_scores: true
+     })
+     write_file(".preview/alternatives/comparison.html", comparison_html)
+
+IF --alternative N:
+  # Similar to above but for single alternative
+  alt = parse_alternatives(concept_content).find(a => a.number == N)
+  IF NOT alt:
+    ERROR "Alternative {N} not found. Available alternatives: 1-{max}"
+
+  # Generate preview for this alternative only
+  generate_alternative_preview(alt)
+
+IF --all-variants:
+  1. CHECK prerequisites:
+     - concept.md exists with Concept Variants section
+     - Design artifacts exist in specs/app-design/variants/
+
+  2. PARSE variants: ["MINIMAL", "BALANCED", "AMBITIOUS"]
+
+     FOR each variant in variants:
+       variant_dir = "specs/app-design/variants/{variant}/"
+       output_dir = ".preview/variants/{variant}/"
+
+       # Load and generate similar to alternatives
+       generate_variant_preview(variant, variant_dir, output_dir)
+
+  3. GENERATE variant gallery and comparison:
+     - Show feature count per variant
+     - Show timeline/effort per variant
+     - Show risk level badges
+
+IF --variant NAME:
+  # Single variant preview
+  validate NAME in ["MINIMAL", "BALANCED", "AMBITIOUS"]
+  generate_variant_preview(NAME)
+```
+
+### Gallery Index Template
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{project_name} - Alternative Gallery</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --fg: #f8fafc;
+      --border: #334155;
+      --primary: {primary_color};
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+    .header {
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .controls {
+      display: flex;
+      gap: 16px;
+    }
+    select {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--fg);
+      font-size: 14px;
+    }
+    .gallery {
+      display: flex;
+      gap: 24px;
+      padding: 24px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+    }
+    .alt-card {
+      flex: 0 0 400px;
+      scroll-snap-align: start;
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .alt-header {
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .strategy-badge {
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .strategy-badge.conventional { background: #3b82f6; }
+    .strategy-badge.disruptive { background: #f59e0b; }
+    .strategy-badge.premium { background: #8b5cf6; }
+    .strategy-badge.minimal { background: #22c55e; }
+    .strategy-badge.platform { background: #ec4899; }
+    .score {
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .score span { color: #64748b; font-size: 14px; }
+    .preview-frame {
+      padding: 16px;
+    }
+    .preview-frame iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Alternative Gallery</h1>
+    <div class="controls">
+      <select id="device-select">
+        <option value="iphone-15-pro">iPhone 15 Pro</option>
+        <option value="pixel-8">Pixel 8</option>
+        <option value="desktop">Desktop</option>
+      </select>
+      <select id="theme-select">
+        <option value="light">Light Mode</option>
+        <option value="dark">Dark Mode</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="gallery" id="gallery">
+    <!-- Generated per alternative -->
+    {{#each alternatives}}
+    <div class="alt-card">
+      <div class="alt-header">
+        <div>
+          <h3>Alternative {{number}}</h3>
+          <span class="strategy-badge {{strategy_class}}">{{strategy_type}}</span>
+        </div>
+        <div class="score">{{score}}<span>/40</span></div>
+      </div>
+      <div class="preview-frame">
+        <iframe src="./alt-{{number}}-{{strategy_slug}}/framed/{{device}}.html"></iframe>
+      </div>
+    </div>
+    {{/each}}
+  </div>
+
+  <script>
+    const gallery = document.getElementById('gallery');
+    const deviceSelect = document.getElementById('device-select');
+    const themeSelect = document.getElementById('theme-select');
+
+    deviceSelect.addEventListener('change', updatePreviews);
+    themeSelect.addEventListener('change', updatePreviews);
+
+    function updatePreviews() {
+      const device = deviceSelect.value;
+      const theme = themeSelect.value;
+      document.querySelectorAll('.preview-frame iframe').forEach((iframe, i) => {
+        const altNum = i + 1;
+        iframe.src = `./alt-${altNum}-${alternatives[i].slug}/framed/${device}.html?theme=${theme}`;
+      });
+    }
+  </script>
+</body>
+</html>
+```
+
+### Side-by-Side Comparison Template
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{project_name} - Alternative Comparison</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --fg: #f8fafc;
+      --border: #334155;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+    .comparison-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat({{alt_count}}, 1fr);
+      gap: 1px;
+      background: var(--border);
+      margin-top: 60px;
+    }
+    .comparison-column {
+      background: var(--bg);
+      min-height: 100vh;
+    }
+    .column-header {
+      position: sticky;
+      top: 60px;
+      background: var(--bg);
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      z-index: 50;
+    }
+    .sync-scroll {
+      overflow-y: auto;
+      max-height: calc(100vh - 120px);
+    }
+    .sync-scroll.synced {
+      overflow: hidden;
+    }
+    .diff-highlight {
+      position: absolute;
+      background: rgba(239, 68, 68, 0.2);
+      border: 2px solid #ef4444;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="comparison-header">
+    <h1>Side-by-Side Comparison</h1>
+    <label>
+      <input type="checkbox" id="sync-scroll" checked> Sync Scroll
+    </label>
+  </div>
+
+  <div class="comparison-grid">
+    {{#each alternatives}}
+    <div class="comparison-column">
+      <div class="column-header">
+        <h3>Alt {{number}}: {{name}}</h3>
+        <span>{{strategy_type}} • {{score}}/40</span>
+      </div>
+      <div class="sync-scroll synced" data-alt="{{number}}">
+        <iframe src="./alt-{{number}}-{{strategy_slug}}/framed/{{device}}.html"
+                style="width: 100%; height: 800px; border: none;"></iframe>
+      </div>
+    </div>
+    {{/each}}
+  </div>
+
+  <script>
+    const syncCheckbox = document.getElementById('sync-scroll');
+    const scrollContainers = document.querySelectorAll('.sync-scroll');
+
+    syncCheckbox.addEventListener('change', (e) => {
+      scrollContainers.forEach(el => {
+        el.classList.toggle('synced', e.target.checked);
+      });
+    });
+
+    // Synchronized scrolling
+    scrollContainers.forEach(container => {
+      container.addEventListener('scroll', (e) => {
+        if (!syncCheckbox.checked) return;
+        const scrollTop = e.target.scrollTop;
+        scrollContainers.forEach(other => {
+          if (other !== e.target) {
+            other.scrollTop = scrollTop;
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
+```
+
+### Completion Summary
+
+When alternative preview generation completes, output:
+
+```text
+## Alternative Preview Generated ✓
+
+### Alternatives Processed
+
+| Alt | Strategy | Score | Screens | Components | Status |
+|-----|----------|-------|---------|------------|--------|
+| 1 | Conventional | 32/40 | 5 | 12 | ✓ |
+| 2 | Disruptive | 28/40 | 7 | 15 | ✓ |
+| 3 | Premium | 35/40 | 6 | 18 | ✓ |
+
+### Files Generated
+
+| Type | Count | Location |
+|------|-------|----------|
+| Wireframes | 18 | .preview/alternatives/alt-*/wireframes/ |
+| Components | 45 | .preview/alternatives/alt-*/components/ |
+| Device Frames | 54 | .preview/alternatives/alt-*/framed/ |
+| Screenshots | 162 | .preview/alternatives/alt-*/screenshots/ |
+| Gallery | 1 | .preview/alternatives/index.html |
+| Comparison | 1 | .preview/alternatives/comparison.html |
+
+### Gallery URL
+
+🌐 **http://localhost:3456/alternatives/**
+
+- **Gallery View**: http://localhost:3456/alternatives/index.html
+- **Side-by-Side**: http://localhost:3456/alternatives/comparison.html
+- **Alt 1**: http://localhost:3456/alternatives/alt-1-conventional/
+- **Alt 2**: http://localhost:3456/alternatives/alt-2-disruptive/
+- **Alt 3**: http://localhost:3456/alternatives/alt-3-premium/
+
+### Recommended Next Steps
+
+- Review alternatives in gallery to select preferred direction
+- Run `/speckit.design --alternative N` to refine chosen alternative
+- Run `/speckit.specify` to create detailed spec for selected approach
+```
+
+---
 
 ## Integration with Vision Validation
 

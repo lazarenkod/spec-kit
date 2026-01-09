@@ -1,7 +1,7 @@
 # Spec-Kit Commands Guide
 
 <!-- AUTO-GENERATED - DO NOT EDIT MANUALLY -->
-<!-- Generated at: 2026-01-09 08:54:17 -->
+<!-- Generated at: 2026-01-09 09:57:53 -->
 <!-- Source: templates/commands/*.md -->
 
 Полное руководство по командам Spec Kit для Spec-Driven Development.
@@ -149,6 +149,12 @@ graph LR
 
 **Флаги:**
 
+- `--quick` — or `--defaults` flag passed
+- `--alternative` — — Generate design for specific alternative (1-5)
+- `--all-alternatives` — — Generate designs for ALL alternatives from concept.md
+- `--variant` — — Generate design for variant (MINIMAL/BALANCED/AMBITIOUS)
+- `--all-variants` — — Generate designs for all 3 scope variants
+- `--compare` — — Generate visual comparison matrix alongside designs
 - `--viewports` — `"desktop,tablet,mobile"`
 - `--no-webp` — `false`
 - `--no-optimize` — `false`
@@ -380,6 +386,9 @@ graph LR
 
 **Флаги:**
 
+- `--all-alternatives` — Generate preview gallery for ALL alternatives
+- `--all-variants` — Generate previews for all scope variants
+- `--compare` — Generate side-by-side comparison view
 - `--quick` — `--skip quality,gallery,deploy,frames`
 - `--ci` — `--no-open --baseline check --gate 80 --skip deploy`
 - `--review` — `--deploy --device all --gate 80`
@@ -729,6 +738,12 @@ graph LR
 | Команда | Флаг | Описание |
 |---------|------|----------|
 | `/speckit.specify` | `--model` | Override model selection |
+| `/speckit.design` | `--quick` | or \`--defaults\` flag passed |
+| `/speckit.design` | `--alternative` | — Generate design for specific alternative (1-5) |
+| `/speckit.design` | `--all-alternatives` | — Generate designs for ALL alternatives from conce... |
+| `/speckit.design` | `--variant` | — Generate design for variant (MINIMAL/BALANCED/AM... |
+| `/speckit.design` | `--all-variants` | — Generate designs for all 3 scope variants |
+| `/speckit.design` | `--compare` | — Generate visual comparison matrix alongside desi... |
 | `/speckit.design` | `--viewports` | \`"desktop,tablet,mobile"\` |
 | `/speckit.design` | `--no-webp` | \`false\` |
 | `/speckit.design` | `--no-optimize` | \`false\` |
@@ -766,6 +781,9 @@ graph LR
 | `/speckit.analyze` | `--json` | Output as JSON for programmatic consumption |
 | `/speckit.implement` | `--skip-pre-gates` | Skip pre-implementation gates |
 | `/speckit.implement` | `--fast` | Fast mode - run only Tier 1-2 validation |
+| `/speckit.preview` | `--all-alternatives` | Generate preview gallery for ALL alternatives |
+| `/speckit.preview` | `--all-variants` | Generate previews for all scope variants |
+| `/speckit.preview` | `--compare` | Generate side-by-side comparison view |
 | `/speckit.preview` | `--quick` | \`--skip quality,gallery,deploy,frames\` |
 | `/speckit.preview` | `--ci` | \`--no-open --baseline check --gate 80 --skip depl... |
 | `/speckit.preview` | `--review` | \`--deploy --device all --gate 80\` |
@@ -805,6 +823,6 @@ graph LR
 
 ## Версия документа
 
-**Версия:** 0.0.99
-**Дата генерации:** 2026-01-09 08:54:17
+**Версия:** 0.0.101
+**Дата генерации:** 2026-01-09 09:57:53
 **Автор:** Auto-generated from command templates
