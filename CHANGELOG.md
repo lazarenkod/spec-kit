@@ -7,6 +7,23 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.105] - 2026-01-09
+
+### Changed
+
+- **Aggressive Wave Parallelization** in `/speckit.implement` (default behavior):
+  - Wave-specific overlap thresholds: Wave 2→3 now 40% (was 65%), Wave 3→4 now 50%
+  - Unit and integration tests run in PARALLEL (e2e runs after)
+  - ~30-36% faster execution for moderate/complex projects
+
+- **New Fallback Flags** for conservative mode:
+  - `--conservative-overlap`: Use 65% threshold for all waves (old behavior)
+  - `--sequential-tests`: Run unit/integration/e2e tests sequentially (old behavior)
+
+- **Wave 4 Test Verification** split into parallel subagents:
+  - `unit-test-verifier` + `integration-test-verifier` run in parallel
+  - `e2e-test-verifier` runs sequentially after both complete
+
 ## [0.0.104] - 2026-01-09
 
 ### Added

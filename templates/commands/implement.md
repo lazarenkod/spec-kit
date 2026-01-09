@@ -368,8 +368,21 @@ claude_code:
     wave_overlap:
       enabled: true
       skip_flag: "--sequential-waves"
-      overlap_threshold: 0.65  # Start next wave at 65% completion (Max tier)
+      # Wave-specific thresholds for aggressive parallelization (v0.0.104)
+      wave_thresholds:
+        wave_0_to_1: 1.0   # Staging MUST complete 100% (QG-STAGING-001)
+        wave_1_to_2: 0.60  # Infrastructure mostly ready before tests
+        wave_2_to_3: 0.40  # AGGRESSIVE: Start impl when 40% tests written
+        wave_3_to_4: 0.50  # Start verification at 50% implementation
+        wave_4_to_5: 0.70  # Conservative: tests are critical for review
+      conservative_mode_flag: "--conservative-overlap"  # Use 0.65 for all waves
       critical_deps_only: true
+    # Parallel test execution (v0.0.104)
+    test_parallelization:
+      enabled: true
+      skip_flag: "--sequential-tests"
+      parallel_suites: [unit, integration]  # Run in parallel
+      sequential_suites: [e2e]              # Run after parallel complete
     # PBT Just-in-Time testing: Run property tests after each related task
     pbt_jit:
       enabled: true
@@ -856,41 +869,98 @@ claude_code:
         - Proceed to Wave 4 test verification
       model_override: haiku
     # Wave 4: Test Verification - TDD Green Phase (verify tests pass after implementation)
-    - role: test-verifier
+    # NOTE: Unit and integration tests run in PARALLEL by default (v0.0.104)
+    # Use --sequential-tests flag to run sequentially
+    - role: unit-test-verifier
       role_group: TESTING
-      parallel: false
-      depends_on: [data-layer-builder, api-builder, ui-feature-builder, task-status-enforcer]
+      parallel: true  # Runs in parallel with integration-test-verifier
+      depends_on: [data-layer-builder, api-builder, task-status-enforcer]
       priority: 5
       trigger: "after core implementation complete"
       prompt: |
         ## Context
         Feature: {{FEATURE_DIR}}
         Spec: {{FEATURE_DIR}}/spec.md
-        Tests: tests/ (created in Wave 2)
+        Tests: tests/unit/ (created in Wave 2)
         Staging: .speckit/staging/test-config.env
 
-        ## Task - TDD GREEN PHASE VERIFICATION
-        Run tests and verify implementation makes them pass:
+        ## Task - UNIT TEST VERIFICATION (TDD Green Phase)
+        Run unit tests and verify implementation makes them pass:
         1. Load staging environment variables
-        2. Run all unit tests (npm test / pytest)
+        2. Run unit tests only (npm test:unit / pytest tests/unit)
         3. Verify tests that failed in Wave 2 now PASS
-        4. Calculate coverage and validate QG-TEST-004
+        4. Calculate unit test coverage
 
-        ## Success Criteria (QG-TEST-004)
-        - All tests from Wave 2 now pass
-        - Coverage >= 80% for new code
+        ## Success Criteria
+        - All unit tests from Wave 2 now pass
+        - Unit test coverage >= 80%
         - No test regressions
-        - Staging database used for integration tests
 
         ## Output
-        - Test run summary: X tests, X passed, 0 failed
-        - Coverage report: XX% line coverage
-        - QG-TEST-004: PASSED if coverage >= 80%
+        - Test run summary: X unit tests, X passed, 0 failed
+        - Coverage report: XX% line coverage (unit only)
+      model_override: sonnet
+    - role: integration-test-verifier
+      role_group: TESTING
+      parallel: true  # Runs in parallel with unit-test-verifier
+      depends_on: [ui-feature-builder, api-builder, task-status-enforcer]
+      priority: 5
+      trigger: "after core implementation complete"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Tests: tests/integration/ (created in Wave 2)
+        Staging: .speckit/staging/test-config.env
+
+        ## Task - INTEGRATION TEST VERIFICATION (TDD Green Phase)
+        Run integration tests and verify implementation makes them pass:
+        1. Load staging environment variables
+        2. Run integration tests only (npm test:integration / pytest tests/integration)
+        3. Use staging database for database tests
+        4. Verify API integration works correctly
+
+        ## Success Criteria
+        - All integration tests from Wave 2 now pass
+        - Database/API integration verified
+        - No flaky tests
+
+        ## Output
+        - Test run summary: X integration tests, X passed, 0 failed
+        - Integration points validated
+      model_override: sonnet
+    - role: e2e-test-verifier
+      role_group: TESTING
+      parallel: false  # Sequential AFTER unit/integration complete
+      depends_on: [unit-test-verifier, integration-test-verifier]
+      priority: 4
+      trigger: "after unit and integration tests pass"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Tests: tests/e2e/ (created in Wave 2)
+        Staging: .speckit/staging/test-config.env
+
+        ## Task - E2E TEST VERIFICATION (TDD Green Phase)
+        Run e2e tests after unit/integration tests pass:
+        1. Load staging environment variables
+        2. Run e2e tests (playwright / cypress)
+        3. Verify complete user journeys work
+
+        ## Success Criteria
+        - All e2e tests from Wave 2 now pass
+        - User journeys verified end-to-end
+        - No flaky tests (retry logic if needed)
+
+        ## Output
+        - Test run summary: X e2e tests, X passed, 0 failed
+        - QG-TEST-004: PASSED if overall coverage >= 80%
       model_override: sonnet
     - role: unit-test-generator
       role_group: TESTING
       parallel: true
-      depends_on: [test-verifier]
+      depends_on: [unit-test-verifier, integration-test-verifier, e2e-test-verifier]
       priority: 4
       trigger: "when adding additional unit tests for coverage"
       prompt: |
