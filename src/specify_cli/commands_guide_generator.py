@@ -469,15 +469,16 @@ def generate_commands_guide(
             lines.append(f"**Требует:** {', '.join(cmd.requires)}")
             lines.append("")
 
-        # Flags
-        if cmd.flags:
+        # Flags (only include flags with descriptions)
+        flags_with_desc = [f for f in cmd.flags if f.description.strip()]
+        if flags_with_desc:
             lines.append("**Флаги:**")
             lines.append("")
-            for flag in cmd.flags:
+            for flag in flags_with_desc:
                 if flag.alias:
-                    lines.append(f"- `{flag.name}` / `{flag.alias}` — {flag.description}")
+                    lines.append(f"- `{flag.name}` / `{flag.alias}` — {flag.description.strip()}")
                 else:
-                    lines.append(f"- `{flag.name}` — {flag.description}")
+                    lines.append(f"- `{flag.name}` — {flag.description.strip()}")
             lines.append("")
 
         # Pre-gates
@@ -540,11 +541,12 @@ def generate_commands_guide(
         "",
     ])
 
-    # Flags quick reference
+    # Flags quick reference (only flags with descriptions)
     all_flags = []
     for cmd in commands:
         for flag in cmd.flags:
-            all_flags.append((cmd.name, flag))
+            if flag.description.strip():
+                all_flags.append((cmd.name, flag))
 
     if all_flags:
         lines.extend([
@@ -557,7 +559,9 @@ def generate_commands_guide(
             flag_str = f"`{flag.name}`"
             if flag.alias:
                 flag_str += f" / `{flag.alias}`"
-            lines.append(f"| `/speckit.{cmd_name}` | {flag_str} | {flag.description[:50]}{'...' if len(flag.description) > 50 else ''} |")
+            desc = flag.description.strip()
+            desc_truncated = f"{desc[:50]}..." if len(desc) > 50 else desc
+            lines.append(f"| `/speckit.{cmd_name}` | {flag_str} | {desc_truncated} |")
         lines.append("")
 
     # Version info

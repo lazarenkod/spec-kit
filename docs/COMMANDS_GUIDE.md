@@ -1,7 +1,7 @@
 # Spec-Kit Commands Guide
 
 <!-- AUTO-GENERATED - DO NOT EDIT MANUALLY -->
-<!-- Generated at: 2026-01-09 08:42:31 -->
+<!-- Generated at: 2026-01-09 08:50:59 -->
 <!-- Source: templates/commands/*.md -->
 
 Полное руководство по командам Spec Kit для Spec-Driven Development.
@@ -341,12 +341,6 @@ graph LR
 
 **Флаги:**
 
-- `--sequential` — 
-- `--no-turbo` — 
-- `--no-batch-verify` — 
-- `--sequential-waves` — 
-- `--no-build-fix` — 
-- `--no-adaptive-model` — 
 - `--skip-pre-gates` — Skip pre-implementation gates
 - `--fast` — Fast mode - run only Tier 1-2 validation
 
@@ -770,12 +764,6 @@ graph LR
 | `/speckit.analyze` | `--quiet` | Suppress non-essential output (only gates + result... |
 | `/speckit.analyze` | `--strict` | Lower thresholds (e.g., ambiguity < 3 instead of 5... |
 | `/speckit.analyze` | `--json` | Output as JSON for programmatic consumption |
-| `/speckit.implement` | `--sequential` |  |
-| `/speckit.implement` | `--no-turbo` |  |
-| `/speckit.implement` | `--no-batch-verify` |  |
-| `/speckit.implement` | `--sequential-waves` |  |
-| `/speckit.implement` | `--no-build-fix` |  |
-| `/speckit.implement` | `--no-adaptive-model` |  |
 | `/speckit.implement` | `--skip-pre-gates` | Skip pre-implementation gates |
 | `/speckit.implement` | `--fast` | Fast mode - run only Tier 1-2 validation |
 | `/speckit.preview` | `--quick` | `--skip quality,gallery,deploy,frames` |
@@ -817,6 +805,6 @@ graph LR
 
 ## Версия документа
 
-**Версия:** 0.0.98
-**Дата генерации:** 2026-01-09 08:42:31
+**Версия:** 0.0.99
+**Дата генерации:** 2026-01-09 08:50:59
 **Автор:** Auto-generated from command templates
