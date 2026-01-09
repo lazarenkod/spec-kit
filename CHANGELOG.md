@@ -7,6 +7,98 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.97] - 2026-01-08
+
+### Added
+
+- **Phase 2: QG-TEST-003 Blocking Mode**: Optional strict enforcement of TDD Red phase
+  - `QgTest003ViolationError` exception class with detailed diagnostics
+  - `block_on_qg_test_003: bool = False` config option in `TddVerificationConfig`
+  - When enabled, raises error if test PASSES when it should fail (TDD violation)
+  - Error includes: test file path, task name, exit code, stdout/stderr snippets
+
+### Changed
+
+- **Updated `_verify_test_and_unlock()` for Phase 2**:
+  - Conditionally raises `QgTest003ViolationError` when `block_on_qg_test_003=True`
+  - Default behavior unchanged (graceful degradation with `return []`)
+  - Phase 2 config: `TddVerificationConfig(block_on_qg_test_003=True, max_unlocks_per_wave=5)`
+
+### Technical Details
+
+- Modified `src/specify_cli/wave_scheduler.py`:
+  - Lines 57-91: Added `QgTest003ViolationError` exception class
+  - Line 132: Added `block_on_qg_test_003: bool = False` to TddVerificationConfig
+  - Lines 984-991: Added conditional raise in `_verify_test_and_unlock()`
+
+### Phase 2 Configuration
+
+To enable Phase 2 strict mode:
+
+```python
+from specify_cli.wave_scheduler import WaveConfig, TddVerificationConfig
+
+config = WaveConfig(
+    tdd_config=TddVerificationConfig(
+        enabled=True,
+        block_on_qg_test_003=True,  # Strict mode
+        max_unlocks_per_wave=5,
+        verify_unit_tests_only=True,  # Still skip E2E in Phase 2
+    )
+)
+```
+
+## [0.0.96] - 2026-01-08
+
+### Added
+
+- **TDD Red Phase Verification with Risk Mitigation**: Real test execution for Early Test Verification
+  - `TddVerificationConfig` dataclass with safe defaults:
+    - `enabled: bool = False` (opt-in for safety)
+    - `timeout_ms: int = 30000` (30s per test)
+    - `max_unlocks_per_wave: int = 5` (circuit breaker)
+    - `fallback_to_normal_flow: bool = True` (graceful degradation)
+  - `TestVerificationResult` dataclass for test run outcomes
+  - `TestFrameworkDetector` class: Automatic detection of pytest/jest/go test
+  - `_verify_tdd_red()` method: Actually runs tests via safe subprocess
+  - `_extract_test_file_path()` helper: Extracts test path from task metadata/output
+
+### Changed
+
+- **Updated `_verify_test_and_unlock()` with circuit breaker**:
+  - Added `_unlocks_this_wave` counter to limit unlocks per wave
+  - E2E tests (`e2e`, `integration`) skipped in Phase 1
+  - Real test execution via `_verify_tdd_red()` instead of just checking task completion
+  - QG-TEST-003 violation detection: If test PASSES, it's not a valid TDD Red state
+  - Graceful fallback on any errors (no blocking failures)
+
+### Security
+
+- **Safe subprocess execution**: Uses argument list (not shell string) to prevent command injection
+
+### Technical Details
+
+- Modified `src/specify_cli/wave_scheduler.py`:
+  - Lines 28-29: Added `import re` and `import time`
+  - Lines 115-129: Added `TddVerificationConfig` dataclass
+  - Lines 131-145: Added `TestVerificationResult` dataclass
+  - Lines 147-190: Added `TestFrameworkDetector` class
+  - Line 214: Added `tdd_config` field to `WaveConfig`
+  - Lines 245-246: Added circuit breaker counter and config initialization
+  - Lines 520-560: Added `_extract_test_file_path()` method
+  - Lines 562-640: Added `_verify_tdd_red()` method
+  - Lines 642-720: Updated `_verify_test_and_unlock()` with circuit breaker
+
+### Risk Assessment
+
+- **Before mitigation**: MEDIUM-HIGH risk (test creation check only)
+- **After mitigation**: LOW risk with:
+  - Circuit breaker (max 5 unlocks per wave)
+  - Real test execution verifying TDD Red
+  - Graceful degradation on errors
+  - E2E test skip in Phase 1
+  - Phased rollout plan: Unit tests → Full integration → E2E
+
 ## [0.0.95] - 2026-01-08
 
 ### Added
