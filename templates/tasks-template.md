@@ -266,6 +266,86 @@ Examples of foundational tasks (adjust based on your project):
 
 ---
 
+## Phase 2d-UX: UX Validation Foundation *(for UI features)* 🎯
+
+<!--
+  Include this phase when spec.md has UI State Matrix section.
+  Depends on Phase 2 completion (and Phase 2b if design.md exists).
+  Reference: UI State Matrix, Responsive AS, Interaction AS, CSTM from spec.md
+-->
+
+**Purpose**: Establish UX testing infrastructure before user story implementation
+
+**Quality Gates Required**:
+- QG-STATE-001: UI State Matrix 100% coverage
+- QG-RWD-001: Responsive scenarios for all screens (mobile/tablet/desktop)
+- QG-INT-001: Interaction states for all interactive components
+- QG-CSTM-001: Component-Scenario Traceability Matrix 100% coverage
+
+### UX Test Infrastructure
+
+- [ ] T0XX [P] [A11Y] Setup axe-core accessibility testing in tests/a11y/setup.ts
+- [ ] T0XX [P] [VRT:baseline] Setup Playwright visual regression in tests/visual/config.ts
+- [ ] T0XX [P] Configure viewport matrix: mobile (375px), tablet (768px), desktop (1280px) in tests/config/viewports.ts
+
+### Auto-Generated State Tests
+
+<!--
+  Tasks below are auto-generated from UI State Matrix in spec.md.
+  Each component × applicable state = 1 test task.
+  Format: [STATE-TEST:COMP-xxx:state] [TEST:AS-UI-xxx]
+-->
+
+- [ ] T0XX [STATE-TEST:COMP-001:loading] [TEST:AS-UI-002] Test [Component Name] loading state
+- [ ] T0XX [STATE-TEST:COMP-001:error] [TEST:AS-UI-003] Test [Component Name] error state
+- [ ] T0XX [STATE-TEST:COMP-001:disabled] [TEST:AS-UI-005] Test [Component Name] disabled state
+
+### Auto-Generated Responsive Tests
+
+<!--
+  Tasks below are auto-generated from AS-RWD scenarios in spec.md.
+  Each screen × viewport = 1 test task.
+  Format: [RWD-TEST:SCR-xxx:viewport] [TEST:AS-RWD-xxx]
+-->
+
+- [ ] T0XX [RWD-TEST:SCR-001:mobile] [TEST:AS-RWD-001] Test [Screen Name] mobile layout
+- [ ] T0XX [RWD-TEST:SCR-001:tablet] [TEST:AS-RWD-002] Test [Screen Name] tablet layout
+- [ ] T0XX [RWD-TEST:SCR-001:desktop] [TEST:AS-RWD-003] Test [Screen Name] desktop layout
+
+### Auto-Generated Interaction Tests
+
+<!--
+  Tasks below are auto-generated from AS-INT scenarios in spec.md.
+  Each interaction transition = 1 test task.
+  Format: [INT-TEST:AS-INT-xxx]
+-->
+
+- [ ] T0XX [INT-TEST:AS-INT-001] Test [Component] hover transition (150ms, ease-out)
+- [ ] T0XX [INT-TEST:AS-INT-006] Test [Component] error state animation (200ms, shake)
+
+### Accessibility Baseline
+
+- [ ] T0XX [A11Y-AUDIT] Run axe-core audit on all screens (0 critical, ≤5 warnings)
+- [ ] T0XX [A11Y] Keyboard navigation test: Tab through all interactive elements
+- [ ] T0XX [A11Y] Screen reader test: Verify announcements match AS-INT specs
+
+### E2E Journey Tests *(when design.md journeys exist)*
+
+<!--
+  Tasks below are auto-generated from User Journey sections in design.md.
+  Format: [E2E:journey-slug]
+-->
+
+- [ ] T0XX [E2E:journey-name] End-to-end test: [Journey Name]
+  - Entry: [entry point]
+  - Steps: [step sequence]
+  - Exit criteria: [success conditions]
+  - Error paths: [error scenarios to test]
+
+**Checkpoint**: UX validation foundation ready - user story implementation can begin
+
+---
+
 ## Phase 3: User Story 1 - [Title] (Priority: P1a) 🎯 MVP
 
 **Goal**: [Brief description of what this story delivers]
@@ -514,7 +594,11 @@ Examples of foundational tasks (adjust based on your project):
 - **Migration Foundation (Phase 2c)**: *For brownfield projects* - Depends on Phase 2, BLOCKS change implementation
   - Regression tests for preserved behaviors must pass before changes
   - Feature flags and rollback procedures must be in place
-- **User Stories (Phase 3+)**: All depend on Foundational phase completion (and Design Foundation for UI features, Migration Foundation for brownfield)
+- **UX Validation Foundation (Phase 2d-UX)**: *For UI features* - Depends on Phase 2 (and Phase 2b if design.md exists)
+  - UI state tests, responsive tests, interaction tests MUST be scaffolded before implementation
+  - Quality gates QG-STATE-001, QG-RWD-001, QG-INT-001, QG-CSTM-001 must pass
+  - Accessibility audit baseline must be established
+- **User Stories (Phase 3+)**: All depend on Foundational phase completion (and Design Foundation for UI features, Migration Foundation for brownfield, UX Validation for UI features)
   - User stories can then proceed in parallel (if staffed)
   - Or sequentially in priority order (P1 → P2 → P3)
 - **Polish (Final Phase)**: Depends on all desired user stories being complete

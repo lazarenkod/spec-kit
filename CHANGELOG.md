@@ -7,6 +7,57 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.109] - 2026-01-09
+
+### Added
+
+- **Comprehensive UX Coverage System** to prevent UI incompleteness and UX design gaps:
+  - **UI State Matrix** in `spec-template.md`: Mandatory section for UI features covering 6 states (default, loading, error, success, empty, disabled) per component
+  - **Responsive Acceptance Scenarios** (AS-RWD-xxx): Coverage for mobile/tablet/desktop viewports per screen
+  - **Interaction State Scenarios** (AS-INT-xxx): State transitions with timing, easing, and a11y announcements
+  - **Component-Scenario Traceability Matrix (CSTM)**: Links every component to functional, state, responsive, and interaction scenarios
+  - **Design Artifact Integration**: Imports DQS score and artifacts from design.md when available
+
+- **5 New UX Subagents** in `/speckit.specify` (Wave 2.5):
+  - `ui-state-matrix-generator`: Auto-generates UI State Matrix from Component Registry
+  - `responsive-scenario-generator`: Auto-generates AS-RWD scenarios for all screens
+  - `interaction-state-generator`: Auto-generates AS-INT scenarios for interactive components
+  - `design-artifact-importer`: Imports design.md artifacts and validates DQS ≥70
+  - `cstm-generator`: Generates Component-Scenario Traceability Matrix
+
+- **Phase 2d-UX: UX Validation Foundation** in `/speckit.tasks` and `tasks-template.md`:
+  - Auto-injected when spec.md contains UI State Matrix
+  - Generates [STATE-TEST:], [RWD-TEST:], [INT-TEST:] tasks from spec
+  - Includes [A11Y-AUDIT], [VRT:baseline], [E2E:], [DS-AUDIT], [TOUCH:] markers
+  - Establishes accessibility testing infrastructure before implementation
+
+- **9 New UX Task Markers**:
+  - `[STATE-TEST:COMP-xxx:state]`: UI state test linked to component and state
+  - `[RWD-TEST:SCR-xxx:viewport]`: Responsive layout test for screen/viewport
+  - `[INT-TEST:AS-INT-xxx]`: Interaction/animation transition test
+  - `[E2E:journey-name]`: End-to-end user journey test
+  - `[VRT:baseline|compare]`: Visual regression test (Playwright/Percy)
+  - `[A11Y-AUDIT]`: Accessibility audit task (axe-core, Lighthouse)
+  - `[DS-AUDIT]`: Design system compliance audit
+  - `[TOUCH:gesture]`: Mobile gesture test (swipe, long-press, pinch)
+
+- **5 New Quality Gates** for UX coverage:
+  - `QG-STATE-001`: UI State Matrix 100% component coverage
+  - `QG-RWD-001`: Responsive scenarios for all screens (3 viewports each)
+  - `QG-INT-001`: Interaction states for all interactive components
+  - `QG-CSTM-001`: Component-Scenario Traceability 100% coverage
+  - `QG-DQS-001`: Design Quality Score ≥70 (when design.md exists)
+
+- **20 New Self-Review Criteria**:
+  - `SR-SPEC-UX-01` to `SR-SPEC-UX-10`: UI/UX Coverage validation
+  - `SR-DESIGN-01` to `SR-DESIGN-10`: Design Integration validation
+
+- **Design/Preview Integration** in task generation:
+  - Auto-generates tasks from MQS accessibility issues
+  - Auto-generates tasks from touch target violations
+  - Auto-generates tasks from token compliance issues
+  - Auto-generates E2E journey tests from design.md journeys
+
 ## [0.0.108] - 2026-01-09
 
 ### Added

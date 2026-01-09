@@ -832,11 +832,207 @@ claude_code:
               suggested_requirement: "Add input sanitization for search field"
         ```
 
-    # Wave 3: Specification Writing (depends on analysis)
+    # Wave 2.5: UX Coverage Generation (parallel, depends on acceptance-criteria-generator)
+    - role: ui-state-matrix-generator
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [acceptance-criteria-generator]
+      priority: 25
+      model_override: sonnet
+      prompt: |
+        Generate UI State Matrix for all components in Component Registry.
+
+        For EACH component in Component Registry:
+          FOR EACH applicable state in [default, loading, error, success, empty, disabled]:
+            1. Determine if state applies based on component type:
+               - Controls (Button, Link, etc.): all 6 states
+               - Forms (Input, Select, etc.): all 6 states
+               - Display (Card, Badge, etc.): default, loading, error, empty (skip disabled, success)
+               - Layout (Container, Grid): default only
+            2. Generate AS-UI-xxx scenario for each applicable state
+            3. Link scenario to component and screen
+
+        Output format:
+        ```markdown
+        ### UI State Matrix
+
+        | Component | Screen | default | loading | error | success | empty | disabled | Linked AS |
+        |-----------|--------|---------|---------|-------|---------|-------|----------|-----------|
+        | COMP-001: [Name] | SCR-001 | ✓ AS-UI-001 | ✓ AS-UI-002 | ... | N/A | ... | AS-1A |
+
+        **State Coverage Score**: X/Y components with 100% applicable state coverage
+
+        **Gaps Identified**:
+        - [List any components missing required state scenarios]
+        ```
+
+        Also generate individual AS-UI-xxx scenarios in Given/When/Then format:
+        ```markdown
+        | ID | State | Component | Given | When | Then | Requires Test |
+        |----|-------|-----------|-------|------|------|---------------|
+        | AS-UI-001 | loading | Button | User clicks submit | Request in progress | Button shows spinner, text changes to "Loading...", disabled | YES |
+        ```
+
+    - role: responsive-scenario-generator
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [acceptance-criteria-generator]
+      priority: 25
+      model_override: sonnet
+      prompt: |
+        Generate Responsive Acceptance Scenarios for all screens.
+
+        Load breakpoints from Design Constraints section (or use defaults):
+        - mobile: <640px (sm)
+        - tablet: 640-1024px (md)
+        - desktop: >1024px (lg/xl)
+
+        For EACH screen in Screen Registry:
+          FOR EACH breakpoint in [mobile, tablet, desktop]:
+            1. Analyze components on screen for responsive behavior
+            2. Determine layout changes at breakpoint:
+               - Navigation: hamburger vs sidebar vs full menu
+               - Columns: stack vs side-by-side
+               - Visibility: hide/show elements
+               - Sizing: full-width vs fixed
+            3. Generate AS-RWD-xxx scenario with Given/When/Then
+
+        Output format:
+        ```markdown
+        ### Responsive Acceptance Scenarios
+
+        | ID | Viewport | Screen | Given | When | Then | Requires Test |
+        |----|----------|--------|-------|------|------|---------------|
+        | AS-RWD-001 | mobile | SCR-001: [Name] | User on mobile device (<640px) | Page loads | [Layout changes] | YES |
+        | AS-RWD-002 | tablet | SCR-001: [Name] | User on tablet (640-1024px) | Page loads | [Layout changes] | YES |
+        | AS-RWD-003 | desktop | SCR-001: [Name] | User on desktop (>1024px) | Page loads | [Layout changes] | YES |
+
+        **Responsive Coverage**: X screens × 3 breakpoints = Y scenarios
+        ```
+
+    - role: interaction-state-generator
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [acceptance-criteria-generator]
+      priority: 25
+      model_override: sonnet
+      prompt: |
+        Generate Interaction State Scenarios for all interactive components.
+
+        For EACH Control/Form component in Component Registry:
+          FOR EACH applicable trigger in [hover, focus, blur, click, keypress, submit, drag, drop]:
+            1. Document state transition (from → to)
+            2. Specify timing (duration, easing) - use design tokens if available
+            3. Add accessibility announcement if state change is meaningful
+            4. Link to IR (Interaction Requirements) from design.md if exists
+
+        Output format:
+        ```markdown
+        ### Interaction State Scenarios
+
+        | ID | Component | Trigger | From State | To State | Duration | Easing | A11y Announcement |
+        |----|-----------|---------|------------|----------|----------|--------|-------------------|
+        | AS-INT-001 | Button | hover | default | hover | 150ms | ease-out | - |
+        | AS-INT-002 | Button | focus | default | focus | 0ms | - | "Button focused" |
+        | AS-INT-003 | Button | click | hover | active | 100ms | ease-in | - |
+        | AS-INT-004 | Button | release | active | loading | 0ms | - | "Loading..." |
+        | AS-INT-005 | Input | focus | default | focus | 0ms | - | "{label} input focused" |
+        | AS-INT-006 | Input | blur+invalid | focus | error | 200ms | shake | "Error: {message}" |
+
+        **Interaction Coverage**: X components × Y triggers = Z scenarios
+        **A11y Announcement Coverage**: X/Z scenarios have announcements
+        ```
+
+    - role: design-artifact-importer
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: []
+      priority: 15
+      model_override: haiku
+      trigger: "when specs/{feature}/design.md exists"
+      prompt: |
+        Import design artifacts from design.md into specification.
+
+        IF specs/{feature}/design.md exists:
+          1. Load design.md from FEATURE_DIR
+          2. Extract and validate DQS score (threshold: ≥70)
+          3. Import artifacts:
+             - Component inventory → validate against Component Registry
+             - Screen inventory → validate against Screen Registry
+             - Design tokens → create VR references
+             - Animation specs → create IR references
+             - Interaction matrix → use as base for AS-INT-xxx
+          4. Flag gaps between design and current spec
+
+        Output format:
+        ```markdown
+        ### Design Artifact Integration
+
+        **Source**: `specs/{feature}/design.md`
+        **Design Quality Score (DQS)**: XX/100 (required: ≥70) ✓/✗
+
+        | Category | Score | Weight | Status |
+        |----------|-------|--------|--------|
+        | Visual Hierarchy | XX/25 | 25% | ✓/✗ |
+        | Consistency | XX/20 | 20% | ✓/✗ |
+        | Accessibility | XX/25 | 25% | ✓/✗ |
+        | Responsiveness | XX/15 | 15% | ✓/✗ |
+        | Interaction Design | XX/15 | 15% | ✓/✗ |
+
+        **Imported Artifacts**:
+
+        | Design Artifact | Spec Reference | Validation |
+        |-----------------|----------------|------------|
+        | Wireframe: {screen} | SCR-xxx | ✓ Covered by AS-xxx |
+        | Component: {name} | COMP-xxx | ✓ All states in AS-UI-xxx |
+
+        **Design-Spec Gaps** (must be resolved before /speckit.tasks):
+
+        | Gap Type | Artifact | Required Action |
+        |----------|----------|-----------------|
+        | Missing state | COMP-001 loading | Add AS-UI-xxx for loading state |
+        ```
+
+        IF design.md does NOT exist:
+          Output: "Design artifacts not available - run /speckit.design first for UI features"
+
+    - role: cstm-generator
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [ui-state-matrix-generator, responsive-scenario-generator, interaction-state-generator]
+      priority: 27
+      model_override: haiku
+      prompt: |
+        Generate Component-Scenario Traceability Matrix (CSTM).
+
+        Aggregate all AS types for each component:
+        - Functional AS (AS-xxx from acceptance-criteria-generator)
+        - State AS (AS-UI-xxx from ui-state-matrix-generator)
+        - Responsive AS (AS-RWD-xxx from responsive-scenario-generator)
+        - Interaction AS (AS-INT-xxx from interaction-state-generator)
+
+        Output format:
+        ```markdown
+        ### Component-Scenario Traceability Matrix (CSTM)
+
+        | Component | Screen | Functional AS | State AS | Responsive AS | Interaction AS | Coverage |
+        |-----------|--------|---------------|----------|---------------|----------------|----------|
+        | COMP-001 | SCR-001 | AS-1A, AS-1B | AS-UI-001..005 | AS-RWD-001..003 | AS-INT-001..005 | 100% |
+        | COMP-002 | SCR-001 | AS-2A | AS-UI-010..015 | AS-RWD-001..003 | AS-INT-006..010 | 100% |
+
+        **Total Coverage**: X/Y components with 100% AS coverage
+        **Orphan Components**: [List any COMP-xxx without AS linkage]
+        ```
+
+        Coverage calculation:
+        - 100% = Has at least 1 functional AS + applicable state AS + responsive AS (if on screen) + interaction AS (if interactive)
+        - <100% = Missing required AS category
+
+    # Wave 3: Specification Writing (depends on analysis + UX coverage)
     - role: spec-writer
       role_group: DOCS
       parallel: true
-      depends_on: [requirement-extractor, acceptance-criteria-generator, edge-case-detector, completeness-checker]
+      depends_on: [requirement-extractor, acceptance-criteria-generator, edge-case-detector, completeness-checker, cstm-generator, design-artifact-importer]
       priority: 30
       model_override: opus
       prompt: |
@@ -1785,6 +1981,28 @@ When this command completes successfully, the following automation rules apply:
 | Gate | Check | Block Condition | Message |
 |------|-------|-----------------|---------|
 | Spec Quality Gate | All checklists/requirements.md items pass | Incomplete items > 0 | "Resolve incomplete checklist items before proceeding" |
+| QG-STATE-001 | UI State Matrix completeness | <100% components with state coverage | "All components must have UI state scenarios" |
+| QG-RWD-001 | Responsive coverage | <100% screens with viewport scenarios | "All screens must have responsive acceptance scenarios" |
+| QG-INT-001 | Interaction state coverage | <100% interactive components with AS-INT | "All interactive components need interaction scenarios" |
+| QG-CSTM-001 | Component-Scenario traceability | CSTM coverage <100% | "All components must link to acceptance scenarios" |
+| QG-DQS-001 | Design quality score | DQS <70 (when design.md exists) | "Design quality score must be ≥70 to proceed" |
+
+**UX Quality Gate Application**:
+
+```text
+IF Component Registry section exists in spec.md:
+  APPLY: QG-STATE-001, QG-RWD-001, QG-INT-001, QG-CSTM-001
+
+IF specs/{feature}/design.md exists:
+  APPLY: QG-DQS-001
+
+Quality Gate Evaluation:
+  - QG-STATE-001: Count components in UI State Matrix / Count components in Component Registry = 100%
+  - QG-RWD-001: Count screens with AS-RWD / Count screens in Screen Registry = 100%
+  - QG-INT-001: Count components with AS-INT / Count Control+Form components = 100%
+  - QG-CSTM-001: Count components with 100% coverage in CSTM / Total components = 100%
+  - QG-DQS-001: Extract DQS score from design.md ≥ 70
+```
 
 ### Gate Behavior
 
@@ -1942,6 +2160,40 @@ Check if `memory/constitution.domain.md` references UXQ domain. If yes, also val
 | SR-UXQ-08 | Emotional journey maps key steps with design responses? | MEDIUM |
 | SR-UXQ-09 | Accessibility framed as empowerment (not just compliance)? | HIGH |
 | SR-UXQ-10 | Error messages documented from user perspective (UXQ-005)? | HIGH |
+
+**UI/UX Coverage Criteria** *(apply when feature has UI components)*:
+
+Check if Component Registry section exists in spec.md. If yes, also validate:
+
+| ID | Question | Severity |
+|----|----------|----------|
+| SR-SPEC-UX-01 | UI State Matrix present with all components from Component Registry? | HIGH |
+| SR-SPEC-UX-02 | Each component has applicable states covered (default, loading, error, success, empty, disabled)? | HIGH |
+| SR-SPEC-UX-03 | Each state has AS-UI-xxx scenario linked? | HIGH |
+| SR-SPEC-UX-04 | Responsive Acceptance Scenarios present for all screens? | HIGH |
+| SR-SPEC-UX-05 | Each screen has AS-RWD-xxx for mobile, tablet, desktop viewports? | HIGH |
+| SR-SPEC-UX-06 | Interaction State Scenarios present for all Control/Form components? | HIGH |
+| SR-SPEC-UX-07 | Each interactive component has AS-INT-xxx with triggers (hover, focus, click)? | MEDIUM |
+| SR-SPEC-UX-08 | A11y announcements specified for meaningful state changes? | MEDIUM |
+| SR-SPEC-UX-09 | Component-Scenario Traceability Matrix (CSTM) shows 100% coverage? | HIGH |
+| SR-SPEC-UX-10 | No orphan components exist (all COMP-xxx linked to ≥1 AS)? | CRITICAL |
+
+**Design Integration Criteria** *(apply when design.md exists)*:
+
+Check if `specs/{feature}/design.md` exists. If yes, also validate:
+
+| ID | Question | Severity |
+|----|----------|----------|
+| SR-DESIGN-01 | Design Artifact Integration section present in spec.md? | HIGH |
+| SR-DESIGN-02 | DQS score extracted and displayed (threshold: ≥70)? | HIGH |
+| SR-DESIGN-03 | DQS score ≥ 70? | CRITICAL |
+| SR-DESIGN-04 | All design components mapped to Component Registry? | HIGH |
+| SR-DESIGN-05 | All design screens mapped to Screen Registry? | HIGH |
+| SR-DESIGN-06 | Design tokens referenced in Visual Requirements (VR-xxx)? | MEDIUM |
+| SR-DESIGN-07 | Animation specs referenced in Interaction Requirements (IR-xxx)? | MEDIUM |
+| SR-DESIGN-08 | Design-spec gaps documented and actionable? | HIGH |
+| SR-DESIGN-09 | All CRITICAL design-spec gaps have resolution plan? | CRITICAL |
+| SR-DESIGN-10 | Gap report shows 0 unresolved CRITICAL gaps? | CRITICAL |
 
 **Workspace Criteria** *(apply when WORKSPACE_MODE = true)*:
 

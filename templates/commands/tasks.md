@@ -502,7 +502,45 @@ Every task MUST strictly follow this format:
 7. **[TEST:AS-1A]**: Links test task to Acceptance Scenario
    - Test tasks SHOULD reference the AS they verify
    - Enables Acceptance Scenario Coverage tracking
-8. **Description**: Clear action with exact file path
+
+**UX-Specific Markers** *(for UI features)*:
+
+8. **[STATE-TEST:COMP-xxx:state]**: Links UI state test to component and state
+   - Format: `[STATE-TEST:COMP-001:loading]` tests loading state of COMP-001
+   - States: default, loading, error, success, empty, disabled
+   - Generated from UI State Matrix in spec.md
+
+9. **[RWD-TEST:SCR-xxx:viewport]**: Links responsive layout test to screen and viewport
+   - Format: `[RWD-TEST:SCR-001:mobile]` tests mobile layout of SCR-001
+   - Viewports: mobile, tablet, desktop
+   - Generated from Responsive Acceptance Scenarios
+
+10. **[INT-TEST:AS-INT-xxx]**: Links interaction/animation test to interaction scenario
+    - Format: `[INT-TEST:AS-INT-001]` tests specific interaction transition
+    - Tests timing, easing, and state changes
+
+11. **[E2E:journey-name]**: End-to-end user journey test
+    - Format: `[E2E:login-to-dashboard]` tests complete user flow
+    - Generated from User Journey sections in design.md
+
+12. **[VRT:baseline|compare]**: Visual regression test task
+    - `[VRT:baseline]` captures baseline screenshots
+    - `[VRT:compare]` compares against baseline
+    - Used with Playwright/Percy/Chromatic
+
+13. **[A11Y-AUDIT]**: Accessibility audit task
+    - Runs axe-core, Lighthouse accessibility checks
+    - Validates WCAG compliance level from spec.md
+
+14. **[DS-AUDIT]**: Design system compliance audit
+    - Checks token usage (hardcoded colors, spacing)
+    - Validates component usage patterns
+
+15. **[TOUCH:gesture]**: Mobile gesture test
+    - Format: `[TOUCH:swipe-left]`, `[TOUCH:long-press]`, `[TOUCH:pinch]`
+    - Tests mobile-specific interactions
+
+16. **Description**: Clear action with exact file path
 
 **Examples**:
 
@@ -546,6 +584,8 @@ Every task MUST strictly follow this format:
 - **Phase 1**: Setup (project initialization)
 - **Phase 2**: Foundational (blocking prerequisites - MUST complete before user stories)
   - **Step 2.5: Platform Integration Tasks** (auto-injected if platform detected)
+  - **Phase 2b: Design Foundation** (auto-injected when design.md exists)
+  - **Phase 2d-UX: UX Validation Foundation** (auto-injected when UI State Matrix exists in spec.md)
 - **Phase 3+**: User Stories in priority order (P1a, P1b, P2a, P2b, P3...)
   - Within each story: Tests (if requested) → Models → Services → Endpoints → Integration
   - Each phase should be a complete, independently testable increment
@@ -601,6 +641,163 @@ IF PLATFORM_DETECTED != null:
 - QG-PLATFORM-001: All platform tasks marked [CRITICAL] must complete before Phase 3
 - QG-PLATFORM-002: Platform verification tasks must pass before story implementation
 - QG-PLATFORM-003: iOS and Android builds must succeed
+
+### Phase 2d-UX: UX Validation Foundation (for UI features) 🎯
+
+**Trigger**: Execute when spec.md contains UI State Matrix section.
+
+**Purpose**: Establish UX testing infrastructure before user story implementation. Validates that all UI states, responsive layouts, and interactions have test coverage.
+
+**Detection**:
+```text
+1. Check spec.md for "### UI State Matrix" section
+2. Check spec.md for Component Registry section
+3. If both exist → inject Phase 2d-UX tasks
+```
+
+**Quality Gates (UX)**:
+- QG-STATE-001: All components have UI state scenarios (100% coverage)
+- QG-RWD-001: All screens have responsive scenarios (mobile/tablet/desktop)
+- QG-INT-001: All interactive components have interaction scenarios
+- QG-CSTM-001: Component-Scenario Traceability Matrix shows 100% coverage
+
+**Task Generation Process**:
+
+```text
+# Step 1: Infrastructure Tasks
+GENERATE tasks:
+  - [ ] T### [P] [A11Y] Setup axe-core for automated accessibility testing in tests/a11y/
+  - [ ] T### [P] [VRT:baseline] Setup visual regression baseline (Playwright screenshots) in tests/visual/
+  - [ ] T### [P] Configure viewport testing matrix in tests/config/viewports.ts
+
+# Step 2: State Testing Tasks (auto-generated from UI State Matrix)
+FOR EACH component IN UI_STATE_MATRIX:
+  FOR EACH state IN component.applicable_states:
+    GENERATE task:
+      - [ ] T### [STATE-TEST:{component.id}:{state}] [TEST:{component.as_ui_id}] Test {component.name} {state} state
+
+# Step 3: Responsive Testing Tasks (auto-generated from AS-RWD)
+FOR EACH as_rwd IN RESPONSIVE_ACCEPTANCE_SCENARIOS:
+  GENERATE task:
+    - [ ] T### [RWD-TEST:{as_rwd.screen}:{as_rwd.viewport}] [TEST:{as_rwd.id}] Test {as_rwd.screen} {as_rwd.viewport} layout
+
+# Step 4: Interaction Testing Tasks (auto-generated from AS-INT)
+FOR EACH as_int IN INTERACTION_STATE_SCENARIOS:
+  GENERATE task:
+    - [ ] T### [INT-TEST:{as_int.id}] Test {as_int.component} {as_int.trigger} transition ({as_int.duration}, {as_int.easing})
+
+# Step 5: Accessibility Audit Task
+GENERATE task:
+  - [ ] T### [A11Y-AUDIT] Run full accessibility audit before implementation
+    - axe-core on all screens
+    - Keyboard navigation test
+    - Screen reader announcement test (from AS-INT a11y columns)
+    - Color contrast validation
+```
+
+**Example Output (Phase 2d-UX)**:
+
+```markdown
+## Phase 2d-UX: UX Validation Foundation 🎯
+
+**Purpose**: Establish UX testing infrastructure before user story implementation
+
+**Quality Gates**: QG-STATE-001, QG-RWD-001, QG-INT-001, QG-CSTM-001
+
+### UX Test Infrastructure
+
+- [ ] T020 [P] [A11Y] Setup axe-core accessibility testing in tests/a11y/setup.ts
+- [ ] T021 [P] [VRT:baseline] Setup Playwright visual regression in tests/visual/config.ts
+- [ ] T022 [P] Configure viewport matrix: mobile (375px), tablet (768px), desktop (1280px) in tests/config/viewports.ts
+
+### State Testing Tasks
+
+- [ ] T023 [STATE-TEST:COMP-001:loading] [TEST:AS-UI-002] Test Button loading state renders spinner
+- [ ] T024 [STATE-TEST:COMP-001:error] [TEST:AS-UI-003] Test Button error state shows error styling
+- [ ] T025 [STATE-TEST:COMP-001:disabled] [TEST:AS-UI-005] Test Button disabled state prevents interaction
+- [ ] T026 [STATE-TEST:COMP-002:loading] [TEST:AS-UI-011] Test Form loading state shows overlay
+- [ ] T027 [STATE-TEST:COMP-002:error] [TEST:AS-UI-012] Test Form error state highlights invalid fields
+
+### Responsive Testing Tasks
+
+- [ ] T028 [RWD-TEST:SCR-001:mobile] [TEST:AS-RWD-001] Test Settings mobile layout (hamburger nav, single column)
+- [ ] T029 [RWD-TEST:SCR-001:tablet] [TEST:AS-RWD-002] Test Settings tablet layout (collapsed sidebar)
+- [ ] T030 [RWD-TEST:SCR-001:desktop] [TEST:AS-RWD-003] Test Settings desktop layout (full sidebar)
+
+### Interaction Testing Tasks
+
+- [ ] T031 [INT-TEST:AS-INT-001] Test Button hover transition (150ms, ease-out)
+- [ ] T032 [INT-TEST:AS-INT-006] Test Input error state with shake animation (200ms)
+- [ ] T033 [INT-TEST:AS-INT-008] Test Form success state with fade animation (300ms)
+
+### Accessibility Baseline
+
+- [ ] T034 [A11Y-AUDIT] Run axe-core audit on all screens (0 critical, ≤5 warnings)
+- [ ] T035 [A11Y] Keyboard navigation test: Tab through all interactive elements
+- [ ] T036 [A11Y] Screen reader test: Verify announcements match AS-INT specs
+
+**Checkpoint**: UX validation foundation ready - user story implementation can begin
+```
+
+**Design Integration (when design.md and .preview/ exist)**:
+
+```text
+IF .preview/ directory exists:
+  # Load MQS report
+  MQS_REPORT = READ .preview/reports/mqs-score.json
+
+  IF MQS_REPORT.score < 80:
+    WARN "MQS score {score} < 80 threshold. Implementation may have design issues."
+
+  # Generate tasks from accessibility issues
+  FOR EACH issue IN MQS_REPORT.accessibility_issues:
+    IF issue.severity == 'critical':
+      GENERATE task:
+        - [ ] T### [A11Y] [FIX:MQS-A11Y] Fix accessibility issue: {issue.description}
+        Priority: P1
+
+  # Generate tasks from touch target violations
+  FOR EACH violation IN READ .preview/reports/touch-targets.md:
+    GENERATE task:
+      - [ ] T### [A11Y] [TOUCH] Fix touch target: {violation.component} ({violation.size} → 44px)
+
+  # Generate tasks from token compliance issues
+  FOR EACH issue IN READ .preview/reports/token-compliance.md:
+    IF issue.type == 'hardcoded_color' OR issue.type == 'hardcoded_spacing':
+      GENERATE task:
+        - [ ] T### [DS-AUDIT] Replace hardcoded {issue.type}: {issue.location}
+```
+
+**E2E Journey Tests (auto-generated from design.md journeys)**:
+
+```text
+IF design.md contains User Journey sections OR journeys/ directory exists:
+  FOR EACH journey:
+    GENERATE task:
+      - [ ] T### [E2E:{journey.slug}] End-to-end test: {journey.name}
+        - Entry: {journey.entry_point}
+        - Steps: {journey.steps}
+        - Exit criteria: {journey.exit_criteria}
+        - Error paths: {journey.error_paths}
+```
+
+**Example E2E Tasks**:
+
+```markdown
+### E2E Journey Tests
+
+- [ ] T040 [E2E:login-to-dashboard] End-to-end test: Login → Dashboard flow
+  - Entry: /login page
+  - Steps: Enter credentials → Submit → Redirect → Load dashboard
+  - Exit criteria: Dashboard fully rendered with user data
+  - Error paths: Invalid credentials, network failure, session expired
+
+- [ ] T041 [E2E:settings-update] End-to-end test: Settings modification flow
+  - Entry: Settings page via navigation
+  - Steps: Change setting → Save → Confirm → Reload
+  - Exit criteria: Setting persisted and reflected in UI
+  - Error paths: Validation failure, save failure, concurrent edit
+```
 
 ### Test Task Generation (Enhanced)
 
