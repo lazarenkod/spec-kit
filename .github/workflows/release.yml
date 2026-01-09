@@ -46,9 +46,7 @@ jobs:
 
       - name: Generate COMMANDS_GUIDE.md
         if: steps.check_release.outputs.exists == 'false'
-        run: python -m specify_cli.commands_guide_generator
-        env:
-          PYTHONPATH: src
+        run: python src/specify_cli/commands_guide_generator.py
 
       - name: Commit generated docs (if changed)
         if: steps.check_release.outputs.exists == 'false'

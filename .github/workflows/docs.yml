@@ -48,9 +48,7 @@ jobs:
         run: pip install pyyaml
 
       - name: Regenerate COMMANDS_GUIDE.md
-        run: python -m specify_cli.commands_guide_generator
-        env:
-          PYTHONPATH: src
+        run: python src/specify_cli/commands_guide_generator.py
 
       - name: Setup DocFX
         run: dotnet tool install -g docfx
