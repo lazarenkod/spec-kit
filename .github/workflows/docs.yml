@@ -7,6 +7,7 @@ on:
     branches: ["main"]
     paths:
       - 'docs/**'
+      - 'templates/commands/**'  # Regenerate docs when commands change
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -37,6 +38,19 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.x'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install pyyaml
+
+      - name: Regenerate COMMANDS_GUIDE.md
+        run: python -m specify_cli.commands_guide_generator
+        env:
+          PYTHONPATH: src
 
       - name: Setup DocFX
         run: dotnet tool install -g docfx

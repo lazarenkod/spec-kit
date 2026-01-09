@@ -1,1208 +1,822 @@
 # Spec-Kit Commands Guide
 
-Полное руководство по всем командам Spec-Kit: последовательность выполнения, флаги и аргументы.
+<!-- AUTO-GENERATED - DO NOT EDIT MANUALLY -->
+<!-- Generated at: 2026-01-09 08:42:31 -->
+<!-- Source: templates/commands/*.md -->
+
+Полное руководство по командам Spec Kit для Spec-Driven Development.
+
+---
 
 ## Содержание
 
-- [Основной Workflow](#основной-workflow)
-- [Детальное описание команд](#детальное-описание-команд)
-- [Вспомогательные команды](#вспомогательные-команды)
-- [Специальные режимы](#специальные-режимы)
+- [1. /speckit.constitution](#speckitconstitution)
+- [2. /speckit.concept](#speckitconcept)
+- [3. /speckit.validate-concept](#speckitvalidate-concept)
+- [4. /speckit.specify](#speckitspecify)
+- [5. /speckit.clarify](#speckitclarify)
+- [6. /speckit.design](#speckitdesign)
+- [7. /speckit.plan](#speckitplan)
+- [8. /speckit.tasks](#speckittasks)
+- [9. /speckit.taskstoissues](#speckittaskstoissues)
+- [10. /speckit.staging](#speckitstaging)
+- [11. /speckit.analyze](#speckitanalyze)
+- [12. /speckit.implement](#speckitimplement)
+- [13. /speckit.preview](#speckitpreview)
+- [14. /speckit.list](#speckitlist)
+- [15. /speckit.switch](#speckitswitch)
+- [16. /speckit.extend](#speckitextend)
+- [17. /speckit.merge](#speckitmerge)
+- [18. /speckit.baseline](#speckitbaseline)
+- [19. /speckit.checklist](#speckitchecklist)
+- [20. /speckit.discover](#speckitdiscover)
+- [21. /speckit.integrate](#speckitintegrate)
+- [22. /speckit.monitor](#speckitmonitor)
+- [23. /speckit.launch](#speckitlaunch)
+- [24. /speckit.ship](#speckitship)
+- [25. /speckit.concept-variants](#speckitconcept-variants)
+- [26. /speckit.migrate](#speckitmigrate)
+- [27. /speckit.properties](#speckitproperties)
 
 ---
 
 ## Основной Workflow
 
-### Greenfield проекты (новые проекты)
-
 ```mermaid
-graph TD
-    A[/speckit.constitution] --> B{Размер проекта}
-    B -->|50+ требований| C[/speckit.concept]
-    B -->|<50 требований| D[/speckit.specify]
-    C --> E[/speckit.validate-concept]
-    E --> D
-    D --> F[/speckit.clarify]
-    F --> G[/speckit.design]
-    G --> H[/speckit.plan]
-    H --> I{PBT нужен?}
-    I -->|Да| J[/speckit.properties]
-    I -->|Нет| K[/speckit.tasks]
-    J --> K
-    K --> L[/speckit.staging]
-    L --> M[/speckit.analyze]
-    M --> N[/speckit.implement]
-    N --> O[/speckit.merge]
-```
-
-### Brownfield проекты (существующие кодовые базы)
-
-```mermaid
-graph TD
-    A[/speckit.constitution] --> B[/speckit.baseline]
-    B --> C[/speckit.specify]
-    C --> D[/speckit.plan]
-    D --> E{PBT нужен?}
-    E -->|Да| F[/speckit.properties]
-    E -->|Нет| G[/speckit.tasks]
-    F --> G
-    G --> H[/speckit.staging]
-    H --> I[/speckit.implement]
-    I --> J[/speckit.merge]
+graph LR
+    A[constitution] --> B[concept]
+    B --> C[specify]
+    C --> D[plan]
+    D --> E[tasks]
+    E --> F[staging]
+    F --> G[implement]
+    G --> H[analyze]
 ```
 
 ---
 
 ## Детальное описание команд
 
-### 1. `/speckit.constitution`
+### 1. `/speckit.constitution` {#speckitconstitution}
 
-**Назначение:** Создание или обновление проектной конституции с интерактивным опросником
+**Назначение:** Create or update the project constitution with layered architecture support (base → domain → project layers).
 
-**Аргументы:**
-```bash
-/speckit.constitution                    # Интерактивный режим (3 вопроса)
-/speckit.constitution set domain fintech # Установка домена
-/speckit.constitution set language ru    # Установка языка
-/speckit.constitution --merge            # Показать объединённую конституцию
-```
+**Модель:** `opus` (thinking_budget: 16000)
 
-**Интерактивный режим (если без аргументов):**
+**Handoffs:**
 
-При запуске без аргументов, команда задаёт 3 вопроса:
-
-1. **Тип приложения**: Web / Mobile / API / CLI / Desktop / Other
-2. **Домен**: SaaS / E-commerce / Fintech / Healthcare / Gaming / General
-3. **Язык артефактов**: English (en) / Russian (ru) / Other
-
-На основе ответов:
-- Применяются соответствующие принципы (WEB, API, SEC, etc.)
-- Копируется доменный файл в `constitution.domain.md`
-- Устанавливается язык в Project Settings
-
-**Когда использовать:**
-- ✅ Сразу после `specify init` (первая команда)
-- ✅ При изменении архитектурных принципов
-- ✅ При добавлении новых стандартов качества
-- ✅ При смене домена проекта
-
-**Примеры:**
-```bash
-# Интерактивный режим - AI задаёт 3 вопроса
-/speckit.constitution
-
-# Прямая установка домена
-/speckit.constitution set domain fintech
-
-# Усиление принципа
-/speckit.constitution strengthen QUA-001 to MUST with 95% coverage
-
-# Добавление принципа
-/speckit.constitution add principle: all API responses must include request-id header
-```
-
-**Выходные файлы:**
-- `memory/constitution.md` - проектная конституция (Layer 2)
-- `memory/constitution.base.md` - базовые принципы (Layer 0, read-only)
-- `memory/constitution.domain.md` - доменные принципы (Layer 1, опционально)
-
-**Модель:** `opus` (высшее качество для архитектурных решений)
+- → `/speckit.specify`
+- → `/speckit.analyze`
 
 ---
 
-### 2. `/speckit.concept`
+### 2. `/speckit.concept` {#speckitconcept}
 
-**Назначение:** Захват полного концепта продукта перед детальной спецификацией (для крупных проектов)
+**Назначение:** Capture complete service concept before detailed specification. Creates hierarchical feature breakdown with full traceability. Use BEFORE /speckit.specify for large projects (50+ requirements).
 
-**Аргументы:**
-```bash
-/speckit.concept <free-text-product-description>
-```
+**Модель:** `opus` (thinking_budget: 16000)
 
-**Параметры:**
-- `<free-text-product-description>` - описание продукта, рынка, целей
+**Handoffs:**
 
-**Флаги:** Нет
-
-**Когда использовать:**
-- ✅ Проекты с 50+ требованиями
-- ✅ Новые продукты (требуется market research)
-- ✅ Нужна Epic → Feature → Story иерархия
-- ⛔ Малые фичи (<50 требований) - используйте `/speckit.specify`
-
-**Что генерируется:**
-- **Core Sections** (CQS ≥60): Базовая информация
-- **Strategic Sections** (CQS ≥80): Market research, конкуренты
-- **Advanced Sections** (CQS ≥90): Риски, pivot критерии
-
-**Пример:**
-```bash
-/speckit.concept Build a SaaS platform for team collaboration with real-time editing, targeting remote teams of 10-50 people. Key differentiator: AI-powered task prioritization.
-```
-
-**Выходные файлы:**
-- `specs/concept.md` - полный концепт продукта
-- Включает: TAM/SAM/SOM, конкурентный анализ, JTBD personas, Wave Planning, **Ready-to-Execute Commands**
-
-**Модель:** `opus`
-
-**Новое в v0.0.81:**
-Автоматически генерирует готовые команды `/speckit.specify` в 4 вариантах:
-1. **По волнам (RECOMMENDED)** - Wave 1, Wave 2, Wave 3+
-2. **По эпикам** - EPIC-001, EPIC-002...
-3. **По приоритетам** - P1a, P1b, P2, P3
-4. **Весь концепт целиком** - все stories в одной команде
+- → `/speckit.specify`
+- → `/speckit.analyze`
 
 ---
 
-### 3. `/speckit.validate-concept`
+### 3. `/speckit.validate-concept` {#speckitvalidate-concept}
 
-**Назначение:** Повторная валидация существующего концепта против текущих рыночных условий
+**Назначение:** Re-validate an existing concept against current market conditions. Runs research agents to detect changes in market, competitors, and trends. Generates diff report and CQS delta. Use periodically (monthly/quarterly) to keep concept fresh.
 
-**Аргументы:**
-```bash
-/speckit.validate-concept
-```
+**Модель:** `sonnet` (thinking_budget: 12000)
 
-**Параметры:** Нет (использует существующий `specs/concept.md`)
+**Persona:** `concept-validator`
 
-**Флаги:** Нет
+**Handoffs:**
 
-**Когда использовать:**
-- ✅ Ежемесячно/ежеквартально для проверки актуальности
-- ✅ После значительных рыночных событий
-- ✅ Перед major pivot решениями
-
-**Что проверяется:**
-- Изменения в TAM/SAM/SOM
-- Новые конкуренты / изменения в ценообразовании
-- Тренды и сигналы роста
-- Регуляторные изменения
-
-**Выходные файлы:**
-- `specs/concept-validation-{date}.md` - отчет с diff и CQS delta
-
-**Модель:** `sonnet`
+- → `/speckit.concept`
+- → `/none`
 
 ---
 
-### 4. `/speckit.specify`
+### 4. `/speckit.specify` {#speckitspecify}
 
-**Назначение:** Создание детальной спецификации фичи (что и почему, не как)
+**Назначение:** Create or update the feature specification from a natural language feature description. Supports both standalone features and concept-derived specifications with full traceability.
 
-**Аргументы:**
-```bash
-# Standalone режим (новая фича)
-/speckit.specify <feature-description>
+**Модель:** `opus` (thinking_budget: 16000)
 
-# Concept-driven режим (из концепта)
-/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02
-```
-
-**Параметры:**
-- `<feature-description>` - описание фичи на естественном языке
-- `EPIC-XXX.FXX.SXX` - Story IDs из концепта (через запятую)
+**Persona:** `product-agent`
 
 **Флаги:**
-- `--init` - создать feature directory без генерации spec
-- `--skip-validate` - пропустить pre-handoff validation
 
-**Когда использовать:**
-- ✅ После `/speckit.concept` (concept-driven)
-- ✅ Для standalone фич (<50 требований)
-- ✅ После `/speckit.baseline` (brownfield)
-
-**Пример:**
-```bash
-# Standalone
-/speckit.specify Add user authentication with OAuth2 and JWT tokens
-
-# Из концепта (Wave 1 Foundation)
-/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02, EPIC-001.F02.S01
-```
-
-**Выходные файлы:**
-- `specs/NNN-feature-name/spec.md` - спецификация фичи
-- Включает: FR-xxx (functional requirements), NFR-xxx (non-functional), AS-xxx (acceptance scenarios)
-
-**Модель:** `opus`
+- `--model` — Override model selection
 
 **Quality Gates:**
-- SQS ≥ 80 для перехода к планированию
 
----
+- Spec Quality Gate
 
-### 5. `/speckit.clarify`
+**Handoffs:**
 
-**Назначение:** Выявление недостаточно специфицированных областей через целевые вопросы
-
-**Аргументы:**
-```bash
-/speckit.clarify
-```
-
-**Параметры:** Нет (использует текущий `spec.md`)
-
-**Флаги:** Нет
-
-**Когда использовать:**
-- ✅ Автоматически вызывается при SQS < 80
-- ✅ Много `[NEEDS CLARIFICATION]` маркеров в spec
-- ✅ Обнаружены ambiguities в `/speckit.analyze`
-
-**Режимы работы:**
-1. **Heuristic Pattern Matching** - быстрое выявление vague terms
-2. **LLM Metacognitive Analysis** - глубокий анализ
-3. **Cross-Requirement Consistency** - проверка противоречий
-
-**Что обнаруживает:**
-- Vague terms: "fast", "secure", "user-friendly"
-- Missing quantities: retention без указания срока
-- Unclear actors: "the system" без уточнения
-- Conditional gaps: "if X" без "else"
+- → `/speckit.plan`
+- → `/speckit.clarify`
+- → `/speckit.analyze`
 
 **Выходные файлы:**
-- Обновленный `specs/NNN-feature/spec.md` с clarifications
 
-**Модель:** `sonnet`
+- `spec.md`
+- `Checklists/requirements.md`
 
 ---
 
-### 6. `/speckit.design`
+### 5. `/speckit.clarify` {#speckitclarify}
 
-**Назначение:** Создание визуальных спецификаций и дизайн-систем
+**Назначение:** Identify underspecified areas in the current feature spec by asking up to 5 highly targeted clarification questions and encoding answers back into the spec.
 
-**Аргументы:**
-```bash
-# Feature design режим (из spec)
-/speckit.design
+**Модель:** `sonnet` (thinking_budget: 16000)
 
-# Design system режим
-/speckit.design --design-system
+**Handoffs:**
 
-# Concept design режим (весь app из концепта)
-/speckit.design --concept
+- → `/speckit.plan`
 
-# Mockup generation режим
-/speckit.design --mockup
-```
+---
+
+### 6. `/speckit.design` {#speckitdesign}
+
+**Назначение:** Create visual specifications and complete design systems from brand inputs. Orchestrates UX, Product, and Motion Designer agents. Supports design system generation, component library presets, Storybook auto-generation, and Figma token export. Use AFTER /speckit.specify for UI-heavy features OR standalone for design system bootstrapping.
+
+**Модель:** `opus` (thinking_budget: 16000)
+
+**Persona:** `ux-designer-agent`
 
 **Флаги:**
-- `--design-system` - генерация полной design system
-- `--concept` - дизайн всего app из concept.md
-- `--wave N` - дизайн конкретной волны (с --concept)
-- `--all` - дизайн всех волн сразу (с --concept)
-- `--mockup` - генерация high-fidelity mockups через Google Stitch
-- `--screens "screen1,screen2"` - retry для конкретных экранов (с --mockup)
-- `--promo` - генерация promo материалов
 
-**Когда использовать:**
-- ✅ После `/speckit.specify` для UI-heavy фич
-- ✅ Standalone для design system bootstrapping
-- ✅ После concept для app-wide дизайна
+- `--viewports` — `"desktop,tablet,mobile"`
+- `--no-webp` — `false`
+- `--no-optimize` — `false`
+- `--interactive` — `true`
+- `--parallel` — `true`
+- `--max-parallel` — `3`
+- `--batch-delay` — `5000`
+- `--no-parallel` — -
+- `--incremental` — `true`
+- `--force` — `false`
+- `--reuse-session` — `true`
+- `--no-reuse-session` — -
+- `--audit-selectors` — `false`
+- `--dry-run` — `false`
+- `--debug` — `false`
+- `--log-level` — `info`
+- `--retry-max` — `2`
+- `--retry-backoff` — `exponential`
+- `--allow-manual-intervention` — `false`
+- `--gallery-mode` — `basic`
+- `--no-gallery` — `false`
+- `--all` — `false`
+- `--screens` — -
+- `--manual` — `false`
+- `--reauth` — `false`
+- `--no-figma` — `false`
 
-**Агенты:**
-- `ux-designer-agent` - user flows, wireframes, interactions
-- `product-designer-agent` - visual language, code generation
-- `motion-designer-agent` - animation system
-- `promo-designer-agent` - landing pages (с --promo)
+**Handoffs:**
+
+- → `/speckit.preview`
+- → `/speckit.plan`
+- → `/speckit.tasks`
+- → `/speckit.analyze`
+- → `/speckit.analyze`
+- → `/speckit.design-promo`
+- → `/speckit.preview`
+- → `/speckit.design`
+- → `/speckit.plan`
+- → `/speckit.design`
+- → `/speckit.preview`
+- → `/speckit.design`
+- → `/speckit.design`
 
 **Выходные файлы:**
-- `specs/NNN-feature/design.md` - design specs
-- `specs/app-design/` - для concept design режима
-- `.preview/stitch-mockups/` - для mockup режима
 
-**Модель:** `opus`
+- `design-system/tokens.json`
+- `design-system/README.md`
+- `design-tokens/figma-tokens.json`
+- `themes.json`
+- `metadata.json`
+- ... и ещё 1
 
 ---
 
-### 7. `/speckit.plan`
+### 7. `/speckit.plan` {#speckitplan}
 
-**Назначение:** Создание технического плана реализации (как)
+**Назначение:** Execute the implementation planning workflow using the plan template to generate design artifacts.
 
-**Аргументы:**
-```bash
-/speckit.plan
-```
+**Модель:** `opus` (thinking_budget: 16000)
 
-**Параметры:** Нет (использует текущий `spec.md`)
+**Persona:** `architect-agent`
 
-**Флаги:**
-- `--skip-validate` - пропустить pre-handoff validation
-- `--fast` - быстрая валидация (Tier 1-2 только)
-
-**Когда использовать:**
-- ✅ После `/speckit.specify` (автоматически через handoff)
-- ✅ SQS ≥ 80
-- ✅ Все `[NEEDS CLARIFICATION]` разрешены
-
-**Режимы валидации:**
-- **Progressive validation** - 4-tier система (см. `templates/shared/validation/checkpoints.md`)
-- **Early exit** при confidence ≥ 0.95
-
-**Выходные файлы:**
-- `specs/NNN-feature/plan.md` - implementation plan
-- `specs/NNN-feature/research.md` - Phase 0 research findings
-- `specs/NNN-feature/adrs/ADR-XXX.md` - Architecture Decision Records
-
-**Модель:** `opus`
+**Требует:** handoffs/specify-to-plan.md
 
 **Quality Gates:**
-- Constitution Alignment Gate (CRITICAL)
-- Tech Consistency Gate (HIGH)
+
+- Plan Completeness Gate
+
+**Handoffs:**
+
+- → `/speckit.tasks`
+- → `/speckit.checklist`
+- → `/speckit.specify`
 
 ---
 
-### 8. `/speckit.tasks`
+### 8. `/speckit.tasks` {#speckittasks}
 
-**Назначение:** Генерация actionable, dependency-ordered task breakdown
+**Назначение:** Generate an actionable, dependency-ordered tasks.md with full traceability to spec requirements and acceptance scenarios.
 
-**Аргументы:**
-```bash
-/speckit.tasks
-```
+**Модель:** `sonnet` (thinking_budget: 8000)
 
-**Параметры:** Нет (использует `plan.md`)
+**Persona:** `decomposer-agent`
 
-**Флаги:** Нет
-
-**Когда использовать:**
-- ✅ После `/speckit.plan` (автоматически через handoff)
-- ✅ План заполнен (все фазы описаны)
-- ✅ `research.md` существует (Phase 0 complete)
-
-**Выходные файлы:**
-- `specs/NNN-feature/tasks.md` - task breakdown с зависимостями
-- Включает: [DEP:TASK-XXX] для dependency graph
-
-**Модель:** `sonnet`
+**Требует:** handoffs/plan-to-tasks.md
 
 **Quality Gates:**
-- Circular Dependencies Gate (CRITICAL) - блокирует при циклах
-- FR Coverage Gate (HIGH) - все FR должны иметь tasks
+
+- Tasks Generated Gate
+- Tasks Ready Gate
+- Dependency Validity Gate
+
+**Handoffs:**
+
+- → `/speckit.analyze`
+- → `/speckit.implement`
+- → `/speckit.tasks`
 
 ---
 
-### 9. `/speckit.staging`
+### 9. `/speckit.taskstoissues` {#speckittaskstoissues}
 
-**Назначение:** Provision Docker Compose staging environment ПЕРЕД имплементацией для TDD workflow
+**Назначение:** Convert existing tasks into actionable, dependency-ordered GitHub issues for the feature based on available design artifacts.
 
-**Аргументы:**
-```bash
-/speckit.staging [flags]
-```
+**Модель:** `haiku` (thinking_budget: 8000)
 
-**Параметры:** Нет (автоматически определяет сервисы из spec/tasks)
+---
+
+### 10. `/speckit.staging` {#speckitstaging}
+
+**Назначение:** Provision Docker Compose staging environment before implementation
+
+**Модель:** `haiku` (thinking_budget: 4000)
+
+**Persona:** `devops-agent`
+
+**Требует:** tasks.md
 
 **Флаги:**
-- `--services <list>` - override сервисов (postgres,redis,playwright). Comma-separated
-- `--skip-playwright` - пропустить Playwright контейнер (для unit-test-only фич)
-- `--reset` - пересоздать все сервисы (down + up)
-- `--status` - показать текущий статус без изменений
-- `--down` - остановить все staging сервисы
 
-**Когда использовать:**
-- ✅ После `/speckit.tasks` (автоматически через handoff)
-- ✅ ПЕРЕД `/speckit.implement` для TDD
-- ✅ Тесты требуют PostgreSQL, Redis или Playwright
-- ⛔ НЕ для production деплоя (используйте `/speckit.ship`)
+- `--services` — Override default services (postgres,redis,playwright). Comma-separated.
+- `--skip-playwright` — Skip Playwright container (useful for unit-test-only features)
+- `--reset` — Tear down and recreate all services
+- `--status` — Show current staging status without changes
+- `--down` — Stop all staging services
 
-**Сервисы по умолчанию:**
-| Сервис | Image | Port | Healthcheck |
-|--------|-------|------|-------------|
-| PostgreSQL | postgres:16-alpine | 5433 | pg_isready |
-| Redis | redis:7-alpine | 6380 | redis-cli ping |
-| Playwright | mcr.microsoft.com/playwright:v1.40.0 | - | npx playwright --version |
+**Pre-Gates:**
 
-**Пример:**
-```bash
-# Полный staging
-/speckit.staging
-
-# Только PostgreSQL и Redis (без Playwright)
-/speckit.staging --skip-playwright
-
-# Проверить статус
-/speckit.staging --status
-
-# Остановить
-/speckit.staging --down
-```
-
-**Выходные файлы:**
-- `.speckit/staging/docker-compose.yaml` - Docker Compose конфигурация
-- `.speckit/staging/test-config.env` - переменные окружения для тестов
-- `.speckit/state/staging/staging-status.json` - состояние сервисов
-
-**Модель:** `haiku` (быстрый provisioning)
+- Tasks Exist Gate
+- Docker Available Gate
 
 **Quality Gates:**
-- **QG-STAGING-001**: All services healthy (CRITICAL)
 
-**Отличие от `/speckit.ship`:**
-| Аспект | `/speckit.staging` | `/speckit.ship` |
-|--------|-------------------|-----------------|
-| **Когда** | ПЕРЕД имплементацией | ПОСЛЕ имплементации |
-| **Цель** | Тестовая инфра для TDD | Cloud деплой |
-| **Сервисы** | Docker Compose локально | Terraform + K8s |
-| **Порты** | 5433, 6380 (не конфликтуют) | По infra.yaml |
+- Staging Ready Gate
+
+**Handoffs:**
+
+- → `/speckit.implement`
+
+**Выходные файлы:**
+
+- `.speckit/staging/docker-compose.yaml`
+- `.speckit/staging/test-config.env`
 
 ---
 
-### 10. `/speckit.analyze`
+### 11. `/speckit.analyze` {#speckitanalyze}
 
-**Назначение:** Cross-artifact consistency, traceability, QA verification
+**Назначение:** Perform a non-destructive cross-artifact consistency, traceability, dependency, and system spec analysis across concept.md, spec.md, plan.md, tasks.md, and system specs. In QA mode (post-implementation), validates build, tests, coverage, and security. Automatically detects validation profile from context (caller command or artifact state). Supports Quality Gates (QG-001 to QG-012). Use `--profile <name>` to override auto-detection. See `memory/domains/quality-gates.md` for gate definitions.
 
-**Аргументы:**
-```bash
-# Автоматическое определение профиля
-/speckit.analyze
+**Модель:** `sonnet` (thinking_budget: 16000)
 
-# Явное указание профиля
-/speckit.analyze --profile <profile-name>
-```
-
-**Профили валидации:**
-- `spec_validate` - проверка spec.md
-- `plan_validate` - проверка plan.md
-- `tasks_validate` - проверка tasks.md
-- `qa_mode` - post-implementation QA
-- `concept_validate` - проверка concept.md
+**Persona:** `qa-agent`
 
 **Флаги:**
-- `--profile <name>` - явное указание профиля валидации
-- `--quiet` - тихий режим (минимальный вывод)
-- `--skip-validate` - пропустить валидацию
 
-**Когда использовать:**
-- ✅ Перед переходом между фазами (автоматически через pre_handoff_action)
-- ✅ После `/speckit.implement` (QA mode)
-- ✅ Для проверки consistency вручную
+- `--profile` — override remains available for power users
+- `--quiet` — Suppress non-essential output (only gates + result)
+- `--strict` — Lower thresholds (e.g., ambiguity < 3 instead of 5)
+- `--json` — Output as JSON for programmatic consumption
 
-**Quality Gates (QG-001 to QG-012):**
-- **QG-001**: Constitution Alignment
-- **QG-002**: Spec Completeness
-- **QG-003**: Plan Consistency
-- **QG-004**: Test Coverage ≥ 80%
-- **QG-005**: Type Coverage ≥ 95%
-- **QG-006**: Lint Cleanliness (0 errors)
-- **QG-007**: Performance Baseline (Lighthouse ≥ 90)
-- **QG-008**: Accessibility Compliance (WCAG 2.1 AA)
-- **QG-009**: Documentation Coverage (100% public APIs)
+**Quality Gates:**
 
-**Выходные файлы:**
-- `specs/NNN-feature/analysis/analysis-report-{timestamp}.md`
-- `specs/NNN-feature/analysis/qa-report-{timestamp}.md` (в QA mode)
+- No Critical Issues Gate
+- Dependency Graph Valid Gate
+- SQS Quality Gate
+- QA Issues Exist Gate
+- QA Pass Gate
 
-**Модель:** `sonnet`
+**Handoffs:**
+
+- → `/speckit.specify`
+- → `/speckit.plan`
+- → `/speckit.tasks`
+- → `/speckit.implement`
+- → `/speckit.implement`
+- → `/none`
 
 ---
 
-### 11. `/speckit.implement`
+### 12. `/speckit.implement` {#speckitimplement}
 
-**Назначение:** Выполнение TDD implementation plan с самопроверкой
+**Назначение:** Execute the implementation plan, generate documentation (RUNNING.md, README.md), and validate with self-review. Enforces Quality Gates (QG-001 pre-implement gate, QG-004 to QG-009 post-implement gates). See `memory/domains/quality-gates.md` for gate definitions.
 
-**Аргументы:**
-```bash
-/speckit.implement
-```
+**Модель:** `opus` (thinking_budget: 16000)
 
-**Параметры:** Нет (использует `tasks.md`)
+**Persona:** `developer-agent`
+
+**Требует:** handoffs/tasks-to-implement.md
 
 **Флаги:**
-- `--skip-pre-gates` - пропустить pre-implementation gates
 
-**Когда использовать:**
-- ✅ После `/speckit.tasks` (автоматически через handoff)
-- ✅ Все P1 tasks определены
-- ✅ Нет circular dependencies
-- ✅ SQS ≥ 80
+- `--sequential` — 
+- `--no-turbo` — 
+- `--no-batch-verify` — 
+- `--sequential-waves` — 
+- `--no-build-fix` — 
+- `--no-adaptive-model` — 
+- `--skip-pre-gates` — Skip pre-implementation gates
+- `--fast` — Fast mode - run only Tier 1-2 validation
 
-**Pre-Gates (прогрессивная валидация):**
-- **Tier 1 (SYNTAX)**: tasks.md exists, plan.md exists
-- **Tier 2 (SEMANTIC)**: No CRITICAL issues
-- **Tier 3 (LOGIC)**: Traceability complete
-- **Tier 4 (QUALITY)**: Constitution compliance
+**Pre-Gates:**
 
-**Выходные файлы:**
-- Исходный код (по tasks.md)
-- `specs/NNN-feature/RUNNING.md` - как запустить
-- `README.md` - документация
+- Tasks Exist Gate
+- Required Artifacts Gate
+- No Critical Issues Gate
+- QG-001: SQS Quality Gate
+- Properties Available Gate
 
-**Модель:** `opus`
+**Quality Gates:**
 
-**Автоматические handoffs:**
-- → `/speckit.analyze --profile qa_mode` после завершения
+- Implementation Complete Gate
+- Build Artifacts Gate
+- QG-004: Test Coverage Gate
+- QG-005: Type Coverage Gate
+- QG-006: Lint Gate
+- ... и ещё 1
 
-**Quality Gates (Post-Implement):**
-- **QG-004**: Test Coverage ≥ 80%
-- **QG-005**: Type Coverage ≥ 95%
-- **QG-006**: Lint Cleanliness
-- **QG-007**: Performance Baseline
-- **QG-008**: Accessibility Compliance
-- **QG-009**: Documentation Coverage
+**Handoffs:**
 
----
-
-### 12. `/speckit.merge`
-
-**Назначение:** Финализация фичи и обновление system specs после PR merge
-
-**Аргументы:**
-```bash
-/speckit.merge
-```
-
-**Параметры:** Нет (использует текущую фичу)
-
-**Флаги:** Нет
-
-**Когда использовать:**
-- ✅ PR merged в main
-- ✅ QA verification passed
-- ✅ Готовность к обновлению system specs
-
-**Что делает:**
-1. Validates feature spec completeness
-2. Updates system specs в `specs/system/`
-3. Creates `.merged` file с метаданными
-4. Updates feature registry в `specs/features/.manifest.md`
-
-**Выходные файлы:**
-- `specs/NNN-feature/.merged` - merge metadata
-- `specs/system/*.md` - обновленные system specs
-- `specs/features/.manifest.md` - обновленный registry
-
-**Модель:** `sonnet`
+- → `/speckit.analyze`
+- → `/speckit.implement`
+- → `/speckit.tasks`
+- → `/speckit.specify`
 
 ---
 
-## Вспомогательные команды
+### 13. `/speckit.preview` {#speckitpreview}
 
-### `/speckit.baseline`
+**Назначение:** Generate interactive previews from design specifications. Converts wireframes to visual HTML, generates component previews, captures screenshots, and runs design quality validation.
 
-**Назначение:** Захват текущего состояния для brownfield спецификаций
+**Модель:** `opus` (thinking_budget: 16000)
 
-**Аргументы:**
-```bash
-/speckit.baseline <scope>
-```
-
-**Параметры:**
-- `<scope>` - file paths, modules, или keywords для захвата
-
-**Когда использовать:**
-- ✅ Brownfield проекты (изменение существующего кода)
-- ✅ Перед модификацией legacy компонентов
-
-**Выходные файлы:**
-- `specs/NNN-feature/baseline.md` - текущее поведение (CB-xxx)
-
-**Модель:** `sonnet`
-
----
-
-### `/speckit.checklist`
-
-**Назначение:** Генерация custom checklist для валидации качества требований
-
-**Аргументы:**
-```bash
-/speckit.checklist <domain-requirements>
-```
-
-**Параметры:**
-- `<domain-requirements>` - описание домена (security, UX, performance и т.д.)
-
-**Когда использовать:**
-- ✅ Для domain-specific валидации (security, a11y, UX)
-- ✅ "Unit tests для requirements writing"
-
-**Что проверяет:**
-- ✅ Completeness - все ли requirements определены
-- ✅ Clarity - количественно ли определено "prominent display"
-- ✅ Consistency - консистентны ли hover states
-- ✅ Coverage - определены ли accessibility requirements
-
-**⛔ НЕ проверяет:**
-- ❌ Работает ли код (это не verification)
-- ❌ Корректность реализации
-
-**Выходные файлы:**
-- `specs/NNN-feature/checklists/{domain}.md`
-
-**Модель:** `sonnet`
-
----
-
-### `/speckit.list`
-
-**Назначение:** Список всех фич в проекте с их статусами
-
-**Аргументы:**
-```bash
-/speckit.list [flags]
-```
+**Persona:** `product-designer-agent`
 
 **Флаги:**
-- `--verbose` - детальная информация
-- `--json` - JSON формат вывода
-- `--tree` - древовидная структура
-- `--evolution` - эволюция фич (lineage)
 
-**Когда использовать:**
-- ✅ Для просмотра всех фич проекта
-- ✅ Проверить активную фичу
-- ✅ Понять статус development lifecycle
+- `--quick` — `--skip quality,gallery,deploy,frames`
+- `--ci` — `--no-open --baseline check --gate 80 --skip deploy`
+- `--review` — `--deploy --device all --gate 80`
+- `--preview-mode` — Override model selection
 
-**Модель:** `haiku` (быстрый lookup)
+**Handoffs:**
 
----
-
-### `/speckit.switch`
-
-**Назначение:** Переключение на другую фичу для продолжения работы
-
-**Аргументы:**
-```bash
-/speckit.switch <feature-id-or-name>
-```
-
-**Параметры:**
-- `<feature-id-or-name>` - ID фичи (001) или имя
-
-**Когда использовать:**
-- ✅ Переключение между фичами
-- ✅ Возврат к недоработанной фиче
-
-**Что делает:**
-- Updates `.speckit/active` file
-- Опционально: `git checkout` соответствующей ветки
-
-**Модель:** `haiku`
+- → `/speckit.implement`
+- → `/speckit.design`
+- → `/speckit.design-generate`
 
 ---
 
-### `/speckit.extend`
+### 14. `/speckit.list` {#speckitlist}
 
-**Назначение:** Расширение merged фичи новыми capabilities
+**Назначение:** List all features in the project with their current status. Shows feature registry from manifest and indicates which feature is currently active.
 
-**Аргументы:**
-```bash
-/speckit.extend <parent-feature> <description>
-```
-
-**Параметры:**
-- `<parent-feature>` - ID родительской фичи
-- `<description>` - описание расширения
-
-**Когда использовать:**
-- ✅ Добавление capabilities к merged фиче
-- ✅ Сохранение Feature Lineage
-
-**Что делает:**
-- Создает новую фичу с Feature Lineage
-- Загружает контекст из parent spec
-- Предзаполняет систему constraints
-
-**Модель:** `sonnet`
-
----
-
-### `/speckit.taskstoissues`
-
-**Назначение:** Конвертация tasks.md в GitHub Issues
-
-**Аргументы:**
-```bash
-/speckit.taskstoissues
-```
-
-**Параметры:** Нет (использует `tasks.md`)
-
-**Флаги:** Нет
-
-**Когда использовать:**
-- ✅ После генерации tasks.md
-- ✅ Работа через GitHub Issues
-
-**Требования:**
-- GitHub MCP server настроен
-- `tasks.md` существует
-
-**Модель:** `sonnet`
-
----
-
-### `/speckit.preview`
-
-**Назначение:** Генерация интерактивных preview с quality validation и MQS scoring
-
-**Presets:**
-
-| Preset | Описание |
-|--------|----------|
-| (default) | Полный preview с quality, gallery, frames |
-| `--quick` | Быстрая итерация (без quality, gallery, deploy) |
-| `--ci` | CI/CD режим (headless, baseline check, strict gates) |
-| `--review` | Пакет для stakeholder review (deploy, all devices) |
-
-**Core Flags:**
-
-| Flag | Описание |
-|------|----------|
-| `--component <name>` | Preview конкретного компонента |
-| `--screen <name>` | Preview конкретного экрана |
-| `--device <id>` | Устройство: `iphone-15-pro`, `mobile`, `tablet`, `all` |
-| `--theme <mode>` | Тема: `dark`, `light` |
-| `--output <dir>` | Директория вывода |
-| `--port <num>` | Порт сервера |
-| `--deploy <platform>` | Deploy: `vercel`, `firebase`, `cloudflare`, `surge` |
-| `--password <secret>` | Password protection для deploy |
-| `--gate <score>` | Минимальный MQS (default: 80) |
-| `--skip <features>` | Пропустить фичи (comma-separated) |
-| `--only <features>` | Только указанные фичи (comma-separated) |
-| `--baseline <action>` | Baseline: `update`, `check`, `ignore` |
-
-**Feature Keywords** (для `--skip` и `--only`):
-
-`quality`, `gallery`, `frames`, `gestures`, `deploy`, `storybook`, `mockups`, `screenshots`, `regression`, `states`
-
-**Примеры:**
-```bash
-# Полный preview (default)
-/speckit.preview
-
-# Быстрая итерация
-/speckit.preview --quick
-
-# Конкретный компонент
-/speckit.preview --component Button
-
-# CI pipeline с повышенным порогом
-/speckit.preview --ci --gate 85
-
-# Пакет для review
-/speckit.preview --review
-
-# Без quality validation
-/speckit.preview --skip quality
-
-# Только storybook
-/speckit.preview --only storybook
-
-# Deploy с паролем
-/speckit.preview --deploy vercel --password review2026
-```
-
-**Когда использовать:**
-- ✅ После `/speckit.design`
-- ✅ Визуализация wireframes → HTML
-- ✅ Component previews с state matrix
-- ✅ Quality validation (MQS ≥ 80)
-- ✅ Visual regression testing
-- ✅ Accessibility overlays
-
-**Выходные файлы:**
-- `.preview/wireframes/` - HTML из ASCII wireframes
-- `.preview/components/` - component previews
-- `.preview/screenshots/` - captured screenshots
-- `.preview/reports/mqs-report.md` - MQS quality report
-- `.preview/accessibility/` - a11y overlays
-- `.preview/regression/` - visual regression diffs
-
-**Модель:** `opus`
-
----
-
-## Специальные режимы
-
-### `/speckit.discover`
-
-**Назначение:** Customer discovery для валидации problem-solution fit
-
-**Аргументы:**
-```bash
-/speckit.discover --problem "<hypothesis>" --persona "<target>" --method <interviews|survey|landing_page|all>
-```
+**Модель:** `haiku` (thinking_budget: 4000)
 
 **Флаги:**
-- `--problem` - problem hypothesis
-- `--persona` - target persona
-- `--method` - validation method
 
-**Когда использовать:**
-- ✅ Перед `/speckit.concept` для новых продуктов
-- ✅ Validation required
+- `--json` — Output in JSON format
+- `--tree` — Show feature evolution tree (parent-child relationships)
+
+**Handoffs:**
+
+- → `/speckit.switch`
+- → `/speckit.specify`
+
+---
+
+### 15. `/speckit.switch` {#speckitswitch}
+
+**Назначение:** Switch to a different feature to continue working on it. Updates the active feature state and optionally checks out the corresponding git branch.
+
+**Модель:** `haiku` (thinking_budget: 4000)
+
+**Флаги:**
+
+- `--json` — Output in JSON format
+- `--repair` — Regenerate manifest from directory structure
+- `--no-git` — Skip git branch checkout
+
+**Handoffs:**
+
+- → `/speckit.specify`
+- → `/speckit.plan`
+- → `/speckit.tasks`
+- → `/speckit.implement`
+
+---
+
+### 16. `/speckit.extend` {#speckitextend}
+
+**Назначение:** Extend a merged feature with new capabilities. Creates a new feature branch with Feature Lineage pre-populated, loading context from the parent feature and its system specs.
+
+**Модель:** `sonnet` (thinking_budget: 8000)
+
+**Quality Gates:**
+
+- Extension Valid Gate
+
+**Handoffs:**
+
+- → `/speckit.specify`
+- → `/speckit.view`
+- → `/speckit.analyze`
 
 **Выходные файлы:**
+
+- `spec.md`
+
+---
+
+### 17. `/speckit.merge` {#speckitmerge}
+
+**Назначение:** Finalize feature and update system specs after PR merge. Converts feature requirements into living system documentation.
+
+**Модель:** `sonnet` (thinking_budget: 16000)
+
+**Handoffs:**
+
+- → `/speckit.analyze`
+- → `/speckit.specify`
+
+---
+
+### 18. `/speckit.baseline` {#speckitbaseline}
+
+**Назначение:** Capture current state of system components for brownfield specifications. Generates baseline.md documenting existing behaviors, code structure, and dependencies.
+
+**Модель:** `sonnet` (thinking_budget: 16000)
+
+**Pre-Gates:**
+
+- Feature Directory Gate
+- Scope Definition Gate
+
+**Quality Gates:**
+
+- Baseline Completeness Gate
+- Code Location Validity Gate
+- Baseline Exists Gate
+
+**Handoffs:**
+
+- → `/speckit.specify`
+- → `/speckit.plan`
+
+**Выходные файлы:**
+
+- `FEATURE_DIR/baseline.md`
+
+---
+
+### 19. `/speckit.checklist` {#speckitchecklist}
+
+**Назначение:** Generate a custom checklist for the current feature based on user requirements.
+
+**Модель:** `sonnet` (thinking_budget: 8000)
+
+---
+
+### 20. `/speckit.discover` {#speckitdiscover}
+
+**Назначение:** Validate problem-solution fit before building through customer discovery
+
+**Модель:** `opus` (thinking_budget: 16000)
+
+**Persona:** `product-agent`
+
+**Handoffs:**
+
+- → `/speckit.concept`
+- → `/speckit.discover`
+
+**Выходные файлы:**
+
 - `docs/discover/hypothesis.md`
-- `docs/discover/interview-guide.md` - Mom Test скрипт
+- `docs/discover/interview-guide.md`
+- `docs/discover/scoring-template.md`
 - `docs/discover/analysis.md`
-- `docs/discover/decision.md` - Go/No-Go
-
-**Quality Gates:**
-- `minimum_interviews`: ≥10 interviews OR ≥50 survey responses OR ≥5% landing conversion
-- `signal_strength`: avg_problem_severity ≥3.5
-
-**Модель:** `opus`
+- `docs/discover/decision.md`
+- ... и ещё 5
 
 ---
 
-### `/speckit.migrate`
+### 21. `/speckit.integrate` {#speckitintegrate}
 
-**Назначение:** Планирование и выполнение spec-driven миграций
+**Назначение:** Quick integration with common third-party services
 
-**Аргументы:**
-```bash
-/speckit.migrate <migration-description>
-```
+**Модель:** `sonnet` (thinking_budget: 16000)
 
-**Параметры:**
-- `<migration-description>` - описание миграции (architecture, version, cloud)
+**Persona:** `developer-agent`
 
-**Когда использовать:**
-- ✅ Monolith → Microservices
-- ✅ Version upgrades (Python 2 → 3)
-- ✅ Cloud migrations (AWS → GCP)
+**Handoffs:**
+
+- → `/speckit.implement`
+
+---
+
+### 22. `/speckit.monitor` {#speckitmonitor}
+
+**Назначение:** Set up production observability with OpenTelemetry, dashboards, and alerting
+
+**Модель:** `sonnet` (thinking_budget: 16000)
+
+**Persona:** `devops-agent`
+
+**Handoffs:**
+
+- → `/speckit.monitor`
+- → `/speckit.launch`
 
 **Выходные файлы:**
-- `specs/NNN-migration/migration-plan.md` - с MIG-xxx фазами
-- Включает: Strangler Fig strategy, rollback strategies
 
-**Модель:** `opus`
+- `docs/monitor.md`
+- `infra/observability/docker-compose.yml`
 
 ---
 
-### `/speckit.properties`
+### 23. `/speckit.launch` {#speckitlaunch}
 
-**Назначение:** Извлечение тестируемых свойств из спецификации и генерация property-based тестов через EARS-трансформацию
+**Назначение:** Automate product launch and go-to-market activities
 
-**Аргументы:**
-```bash
-/speckit.properties [OPTIONS] [FEATURE_PATH]
+**Модель:** `sonnet` (thinking_budget: 16000)
 
-OPTIONS:
-  --language <lang>    Целевые языки: python|typescript|go|java|kotlin|all
-                       Default: all (определяется по проекту)
+**Persona:** `marketing-agent`
 
-  --profile <name>     Профиль выполнения:
-                       - quick: Только извлечение свойств (без генерации кода)
-                       - full: Полное извлечение и генерация (default)
-                       - pgs: PGS режим с итеративным уточнением
+**Handoffs:**
 
-  --iterations <n>     Макс итераций PGS для разрешения counterexamples
-                       Default: 5 (только для pgs профиля)
-
-  --coverage <n>       Минимальный % покрытия свойствами
-                       Default: 80
-
-  --dry-run            Показать извлечённые свойства без генерации кода
-
-  --verbose            Включить детали EARS-трансформации
-```
-
-**Примеры:**
-```bash
-/speckit.properties                              # Full extraction для активной фичи
-/speckit.properties --language python            # Только Python Hypothesis
-/speckit.properties --profile pgs --iterations 10  # PGS режим
-/speckit.properties specs/001-user-auth/         # Конкретная фича
-/speckit.properties --dry-run                    # Preview свойств
-```
-
-**Когда использовать:**
-- ✅ После `/speckit.plan` (нужна архитектура для генераторов)
-- ✅ До `/speckit.tasks` (PBT-задачи добавятся в tasks.md)
-- ✅ Критичная надёжность валидации (fintech, healthcare)
-- ✅ Много edge cases в EC-xxx
-- ✅ Security-фокус (SQL injection, XSS тесты)
-- ⛔ Простой CRUD без сложной логики
-- ⛔ MVP без требований к качеству
-
-**Место в workflow:**
-```
-/speckit.specify → /speckit.plan → /speckit.properties → /speckit.tasks → /speckit.implement
-      ↓                 ↓                  ↓                    ↓
-   spec.md          plan.md         properties.md           tasks.md
-   (ЧТО)            (КАК)          (КАК ТЕСТИТЬ)         (ЧТО ДЕЛАТЬ)
-```
-
-**EARS-трансформация:**
-
-Команда преобразует требования в EARS (Easy Approach to Requirements Syntax) формат:
-
-| EARS Type | Паттерн | Источник |
-|-----------|---------|----------|
-| **Event-Driven** | WHEN trigger → action | AS-xxx (Given/When/Then) |
-| **State-Driven** | WHILE condition → behavior | NFR-xxx (constraints) |
-| **Unwanted** | IF bad_input → rejection | EC-xxx (edge cases) |
-| **Ubiquitous** | The system SHALL | FR-xxx (без триггера) |
-| **Option** | WHERE feature → action | Feature flags |
-
-**Типы свойств:**
-
-| Тип | Формула | Пример | Источник |
-|-----|---------|--------|----------|
-| **Inverse** | `delete(create(x)) == initial` | CRUD round-trip | AS-xxx пары |
-| **Idempotent** | `f(f(x)) == f(x)` | Нормализация email | PUT/UPDATE операции |
-| **Invariant** | `forall x: constraint(x)` | Balance >= 0 | NFR-xxx, бизнес-правила |
-| **Commutative** | `f(a,b) == f(b,a)` | add_to_cart order | Set-операции |
-| **Boundary** | `forall x in edge: expect(x)` | Invalid email rejection | EC-xxx |
-| **Model-Based** | `transitions ⊆ model` | Order state machine | STATE-xxx |
-
-**Генерация кода:**
-
-| Язык | Framework | Файл |
-|------|-----------|------|
-| Python | Hypothesis | `tests/properties/test_[feature]_properties.py` |
-| TypeScript | fast-check | `tests/properties/[feature].property.test.ts` |
-| Go | rapid | `[package]_property_test.go` |
-| Java | jqwik | `src/test/java/.../[Feature]PropertyTest.java` |
-| Kotlin | kotest-property | `src/test/kotlin/.../[Feature]PropertyTest.kt` |
-
-**PGS режим (Property-Generated Solver):**
-
-Итеративное уточнение на основе counterexamples:
-1. Выполнение property тестов
-2. Shrinking counterexamples до минимальных
-3. Анализ: PROPERTY_TOO_STRICT / IMPLEMENTATION_BUG / SPEC_AMBIGUITY / GENERATOR_ISSUE
-4. Anti-deception проверки (oscillation, stagnation)
-5. Применение исправлений и регенерация
+- → `/speckit.ship`
+- → `/speckit.monitor`
+- → `/speckit.implement`
 
 **Выходные файлы:**
-- `specs/NNN-feature/properties.md` - все свойства с traceability
-- `specs/NNN-feature/ears-intermediate.yaml` - EARS-трансформации
-- `tests/properties/` - сгенерированные тесты
+
+- `docs/launch/launch-plan.md`
+- `docs/launch/readiness-report.md`
+- `docs/launch/social-content.md`
+- `docs/launch/email-templates.md`
+- `docs/launch/growth-playbook.md`
+- ... и ещё 2
+
+---
+
+### 24. `/speckit.ship` {#speckitship}
+
+**Назначение:** Provision infrastructure, deploy application, and verify running system in one command
+
+**Модель:** `sonnet` (thinking_budget: 16000)
+
+**Persona:** `devops-agent`
+
+**Флаги:**
+
+- `--env` — Target environment (local, staging, production). Default: staging
+- `--only` — Run only specific stage (infra, deploy, verify). Default: all
+- `--destroy` — Tear down infrastructure and deployment
+- `--dry-run` — Show plan without executing
+- `--cloud` — Override cloud provider (vk, yandex, gcp)
+- `--skip-verify` — Skip verification stage
+- `--turbo` — Enable maximum parallelism and skip optional checks
+- `--safe` — Use sequential execution with full validation
+- `--skip-provision` — Skip provision if fingerprint unchanged
+- `--force-deploy` — Force deploy even if version unchanged
+- `--force-provision` — Force provision even if fingerprint unchanged
+- `--full-e2e` — Run full E2E suite instead of contract tests
+- `--full-tests` — Run full test suite instead of incremental
+- `--auto-rollback` — Automatically rollback on verification failure
+- `--no-rollback` — Disable automatic rollback prompts
+- `--sequential-phases` — Disable wave overlap optimization
+- `--no-browser-pool` — Disable browser pool pre-warming
+- `--no-fingerprint` — Disable fingerprint-based skip logic
+- `--no-test-cache` — Ignore cached test results
+
+**Pre-Gates:**
+
+- Implementation Exists Gate
+- Ship Config Exists Gate
 
 **Quality Gates:**
-| Gate | Проверка | Threshold |
-|------|----------|-----------|
-| VG-PROP | Property coverage | ≥ 80% |
-| VG-EARS | EARS transformation | ≥ 85% |
-| VG-SHRUNK | Shrunk examples | ≥ 3 |
-| VG-PGS | Unresolved counterexamples | 0 (pgs mode) |
 
-**PQS (Property Quality Score):**
-```
-PQS = (
-  Requirement_Coverage × 0.30 +
-  Type_Diversity × 0.20 +
-  Generator_Quality × 0.20 +
-  Shrunk_Examples × 0.15 +
-  EARS_Alignment × 0.15
-) × 100
-```
+- Verification Issues Exist Gate
+- Deployment Success Gate
 
-**Интеграция с другими командами:**
-- `/speckit.tasks`: PBT-задачи добавляются как TASK-PBT-xxx
-- `/speckit.specify`: Новые EC-xxx из обнаруженных edge cases
-- `/speckit.analyze`: VG-PROP gate и PQS в метриках
-- `/speckit.implement`: **PBT JIT mode** - автоматический запуск после каждой связанной задачи
+**Handoffs:**
 
-**PBT Just-in-Time Mode:**
+- → `/speckit.implement`
+- → `/speckit.specify`
+- → `/speckit.analyze`
 
-После завершения `/speckit.properties` происходит автоматический переход к `/speckit.implement` с включённым JIT режимом:
+**Выходные файлы:**
 
-```
-TASK-001 (implements FR-001) → pbt-jit-runner → PROP-001, PROP-003
-    │
-    ├─ PASS → продолжить
-    └─ FAIL → Auto-Fix Loop (max 3 попытки)
-           │
-           ├─ SUCCESS → продолжить
-           └─ BLOCK → репорт пользователю
-```
-
-**Преимущества JIT mode:**
-- ✅ Немедленный feedback при ошибках
-- ✅ Auto-fix для типичных багов (off-by-one, null pointer, boundary)
-- ✅ Инкрементальная валидация вместо "всё в конце"
-- ✅ Shrunk counterexamples сохраняются для регрессии
-
-**Отключение JIT:**
-```bash
-/speckit.implement --skip-pbt-jit    # Без JIT валидации
-```
-
-**Протокол:** `templates/shared/pbt/just-in-time-protocol.md`
-
-**Модель:** `sonnet` (extended reasoning: 16000)
+- `/infra-outputs.json`
+- `FEATURE_DIR/verify-results.md`
 
 ---
 
-## Дополнительные команды (не рассмотренные)
+### 25. `/speckit.concept-variants` {#speckitconcept-variants}
 
-### `/speckit.integrate`
+**Назначение:** Generate MINIMAL/BALANCED/AMBITIOUS scope variants for existing concept
 
-**Назначение:** Integration и deployment planning
-
-**Флаги:**
-- Зависит от типа интеграции (CI/CD, third-party APIs)
+**Модель:** `sonnet` (thinking_budget: 8000)
 
 ---
 
-### `/speckit.launch`
+### 26. `/speckit.migrate` {#speckitmigrate}
 
-**Назначение:** Launch preparation и go-to-market
+**Назначение:** Plan and execute spec-driven modernization between architectures, versions, and cloud providers
+
+**Модель:** `opus` (thinking_budget: 32000)
+
+**Persona:** `architect-agent`
 
 **Флаги:**
-- `--prepare-press-kit`
-- `--outreach`
+
+- `--from` — Source architecture to migrate from (monolith, legacy, etc.)
+- `--upgrade` — Target version/runtime to upgrade to (node18, postgres16, python312, etc.)
+- `--to-cloud` — Target cloud provider (aws, gcp, azure, vk-cloud)
+- `--scope` — Limit analysis to specific paths (default: entire codebase)
+- `--output` — Output verbosity (minimal, standard, detailed). Default: standard
+- `--dry-run` — Show migration plan without generating files
+
+**Pre-Gates:**
+
+- Codebase Exists Gate
+- Migration Type Gate
+
+**Quality Gates:**
+
+- Migration Plan Complete Gate
+- Risk Mitigation Gate
+- Migration Plan Exists Gate
+
+**Handoffs:**
+
+- → `/speckit.plan`
+- → `/speckit.tasks`
+
+**Выходные файлы:**
+
+- `baseline.md`
 
 ---
 
-### `/speckit.monitor`
+### 27. `/speckit.properties` {#speckitproperties}
 
-**Назначение:** Setup monitoring и observability
+**Назначение:** Extract properties from spec artifacts and generate property-based tests with EARS transformation. Creates PROP-xxx traced to AS/EC/FR/NFR for comprehensive edge case discovery via PGS (Property-Generated Solver) methodology.
 
-**Флаги:**
-- Telemetry destination configuration
+**Модель:** `sonnet` (thinking_budget: 16000)
 
----
+**Persona:** `qa-agent`
 
-### `/speckit.ship`
+**Требует:** specs/[feature]/spec.md
 
-**Назначение:** Provision infrastructure и deploy
+**Quality Gates:**
 
-**Флаги:**
-- Cloud provider selection
-- Environment targets
+- Property Quality Gate
+- Property Coverage Gate
+
+**Handoffs:**
+
+- → `/speckit.implement`
+- → `/speckit.specify`
+- → `/speckit.analyze`
 
 ---
 
 ## Quick Reference
 
-### По фазе проекта
+### Команды по категориям
 
-| Фаза | Команда | Обязательна |
-|------|---------|-------------|
-| **Setup** | `/speckit.constitution` | ✅ |
-| **Discovery** | `/speckit.discover` | ⚪ (для новых продуктов) |
-| **Concept** | `/speckit.concept` | ⚪ (50+ requirements) |
-| **Validation** | `/speckit.validate-concept` | ⚪ (периодически) |
-| **Brownfield** | `/speckit.baseline` | ⚪ (существующий код) |
-| **Specification** | `/speckit.specify` | ✅ |
-| **Clarification** | `/speckit.clarify` | ⚪ (автоматически при SQS<80) |
-| **Design** | `/speckit.design` | ⚪ (UI-heavy фичи) |
-| **Planning** | `/speckit.plan` | ✅ |
-| **PBT Testing** | `/speckit.properties` | ⚪ (fintech, security, complex validation) |
-| **Tasks** | `/speckit.tasks` | ✅ |
-| **Staging** | `/speckit.staging` | ✅ (TDD инфраструктура) |
-| **Analysis** | `/speckit.analyze` | ✅ (автоматически) |
-| **Implementation** | `/speckit.implement` | ✅ |
-| **Finalization** | `/speckit.merge` | ✅ |
+| Категория | Команды |
+|-----------|---------|
+| Foundation | `/speckit.constitution` |
+| Discovery | `/speckit.concept`, `/speckit.validate-concept`, `/speckit.discover` |
+| Specification | `/speckit.specify`, `/speckit.clarify`, `/speckit.design` |
+| Planning | `/speckit.plan`, `/speckit.tasks`, `/speckit.taskstoissues` |
+| Implementation | `/speckit.staging`, `/speckit.implement`, `/speckit.preview` |
+| Quality | `/speckit.analyze`, `/speckit.checklist` |
+| Navigation | `/speckit.list`, `/speckit.switch`, `/speckit.extend`, `/speckit.merge` |
+| Operations | `/speckit.baseline`, `/speckit.integrate`, `/speckit.monitor`, `/speckit.launch`, `/speckit.ship` |
 
-### По назначению
+### Флаги команд
 
-| Назначение | Команды |
-|------------|---------|
-| **Setup & Principles** | `constitution` |
-| **Strategic Planning** | `concept`, `validate-concept`, `discover` |
-| **Requirements** | `specify`, `clarify`, `baseline` |
-| **Design** | `design`, `preview` |
-| **Planning** | `plan`, `tasks` |
-| **TDD Infrastructure** | `staging` |
-| **Quality** | `analyze`, `checklist`, `properties` |
-| **Implementation** | `implement` |
-| **Project Management** | `list`, `switch`, `extend`, `taskstoissues` |
-| **Deployment** | `integrate`, `launch`, `monitor`, `ship` |
-| **Special** | `migrate`, `merge` |
-
-### Модели по умолчанию
-
-| Команда | Модель | Reasoning Budget |
-|---------|--------|------------------|
-| `constitution` | `opus` | 16000 |
-| `concept` | `opus` | 16000 |
-| `validate-concept` | `sonnet` | 12000 |
-| `specify` | `opus` | 16000 |
-| `clarify` | `sonnet` | 16000 |
-| `design` | `opus` | 16000 |
-| `plan` | `opus` | 16000 |
-| `properties` | `sonnet` | 16000 |
-| `tasks` | `sonnet` | 8000 |
-| `staging` | `haiku` | 4000 |
-| `analyze` | `sonnet` | 16000 |
-| `implement` | `opus` | 16000 |
-| `list` | `haiku` | 4000 |
-| `switch` | `haiku` | 4000 |
-| `preview` | `opus` | 16000 |
-
----
-
-## Troubleshooting
-
-### SQS < 80 (Specification Quality Score низкий)
-
-**Решение:**
-1. Запустить `/speckit.clarify` для уточнения ambiguities
-2. Проверить FR coverage (все ли functional requirements покрыты)
-3. Проверить AS coverage (все ли requirements имеют acceptance scenarios)
-
-### Circular Dependencies в tasks.md
-
-**Решение:**
-1. `/speckit.analyze` покажет циклы
-2. Пересмотреть dependency graph
-3. Регенерировать `/speckit.tasks`
-
-### Pre-handoff validation блокирует переход
-
-**Решение:**
-1. Посмотреть failing gate в output
-2. Исправить указанную проблему
-3. Использовать `--skip-validate` для bypass (не рекомендуется)
-
-### PQS < 80 (Property Quality Score низкий)
-
-**Решение:**
-1. Проверить FR coverage (все ли functional requirements имеют свойства)
-2. Увеличить Type Diversity (использовать ≥ 3 типа свойств)
-3. Добавить shrunk examples через `--profile pgs`
-4. Проверить EARS transformation coverage
-
-### PGS режим не сходится
-
-**Решение:**
-1. Проверить oscillation (история итераций: A→B→A)
-2. Убедиться, что генераторы создают валидные domain inputs
-3. Проверить, нет ли inherently ambiguous требований
-4. Уменьшить `--iterations` и проверить вручную
-
-### Generator Issues
-
-**Решение:**
-1. Убедиться, что entity attributes имеют чёткие constraints
-2. Проверить circular dependencies в генераторах
-3. Добавить explicit boundary exclusions
-4. Проверить сгенерированные генераторы в properties.md
+| Команда | Флаг | Описание |
+|---------|------|----------|
+| `/speckit.specify` | `--model` | Override model selection |
+| `/speckit.design` | `--viewports` | `"desktop,tablet,mobile"` |
+| `/speckit.design` | `--no-webp` | `false` |
+| `/speckit.design` | `--no-optimize` | `false` |
+| `/speckit.design` | `--interactive` | `true` |
+| `/speckit.design` | `--parallel` | `true` |
+| `/speckit.design` | `--max-parallel` | `3` |
+| `/speckit.design` | `--batch-delay` | `5000` |
+| `/speckit.design` | `--no-parallel` | - |
+| `/speckit.design` | `--incremental` | `true` |
+| `/speckit.design` | `--force` | `false` |
+| `/speckit.design` | `--reuse-session` | `true` |
+| `/speckit.design` | `--no-reuse-session` | - |
+| `/speckit.design` | `--audit-selectors` | `false` |
+| `/speckit.design` | `--dry-run` | `false` |
+| `/speckit.design` | `--debug` | `false` |
+| `/speckit.design` | `--log-level` | `info` |
+| `/speckit.design` | `--retry-max` | `2` |
+| `/speckit.design` | `--retry-backoff` | `exponential` |
+| `/speckit.design` | `--allow-manual-intervention` | `false` |
+| `/speckit.design` | `--gallery-mode` | `basic` |
+| `/speckit.design` | `--no-gallery` | `false` |
+| `/speckit.design` | `--all` | `false` |
+| `/speckit.design` | `--screens` | - |
+| `/speckit.design` | `--manual` | `false` |
+| `/speckit.design` | `--reauth` | `false` |
+| `/speckit.design` | `--no-figma` | `false` |
+| `/speckit.staging` | `--services` | Override default services (postgres,redis,playwrig... |
+| `/speckit.staging` | `--skip-playwright` | Skip Playwright container (useful for unit-test-on... |
+| `/speckit.staging` | `--reset` | Tear down and recreate all services |
+| `/speckit.staging` | `--status` | Show current staging status without changes |
+| `/speckit.staging` | `--down` | Stop all staging services |
+| `/speckit.analyze` | `--profile` | override remains available for power users |
+| `/speckit.analyze` | `--quiet` | Suppress non-essential output (only gates + result... |
+| `/speckit.analyze` | `--strict` | Lower thresholds (e.g., ambiguity < 3 instead of 5... |
+| `/speckit.analyze` | `--json` | Output as JSON for programmatic consumption |
+| `/speckit.implement` | `--sequential` |  |
+| `/speckit.implement` | `--no-turbo` |  |
+| `/speckit.implement` | `--no-batch-verify` |  |
+| `/speckit.implement` | `--sequential-waves` |  |
+| `/speckit.implement` | `--no-build-fix` |  |
+| `/speckit.implement` | `--no-adaptive-model` |  |
+| `/speckit.implement` | `--skip-pre-gates` | Skip pre-implementation gates |
+| `/speckit.implement` | `--fast` | Fast mode - run only Tier 1-2 validation |
+| `/speckit.preview` | `--quick` | `--skip quality,gallery,deploy,frames` |
+| `/speckit.preview` | `--ci` | `--no-open --baseline check --gate 80 --skip deplo... |
+| `/speckit.preview` | `--review` | `--deploy --device all --gate 80` |
+| `/speckit.preview` | `--preview-mode` | Override model selection |
+| `/speckit.list` | `--json` | Output in JSON format |
+| `/speckit.list` | `--tree` | Show feature evolution tree (parent-child relation... |
+| `/speckit.switch` | `--json` | Output in JSON format |
+| `/speckit.switch` | `--repair` | Regenerate manifest from directory structure |
+| `/speckit.switch` | `--no-git` | Skip git branch checkout |
+| `/speckit.ship` | `--env` | Target environment (local, staging, production). D... |
+| `/speckit.ship` | `--only` | Run only specific stage (infra, deploy, verify). D... |
+| `/speckit.ship` | `--destroy` | Tear down infrastructure and deployment |
+| `/speckit.ship` | `--dry-run` | Show plan without executing |
+| `/speckit.ship` | `--cloud` | Override cloud provider (vk, yandex, gcp) |
+| `/speckit.ship` | `--skip-verify` | Skip verification stage |
+| `/speckit.ship` | `--turbo` | Enable maximum parallelism and skip optional check... |
+| `/speckit.ship` | `--safe` | Use sequential execution with full validation |
+| `/speckit.ship` | `--skip-provision` | Skip provision if fingerprint unchanged |
+| `/speckit.ship` | `--force-deploy` | Force deploy even if version unchanged |
+| `/speckit.ship` | `--force-provision` | Force provision even if fingerprint unchanged |
+| `/speckit.ship` | `--full-e2e` | Run full E2E suite instead of contract tests |
+| `/speckit.ship` | `--full-tests` | Run full test suite instead of incremental |
+| `/speckit.ship` | `--auto-rollback` | Automatically rollback on verification failure |
+| `/speckit.ship` | `--no-rollback` | Disable automatic rollback prompts |
+| `/speckit.ship` | `--sequential-phases` | Disable wave overlap optimization |
+| `/speckit.ship` | `--no-browser-pool` | Disable browser pool pre-warming |
+| `/speckit.ship` | `--no-fingerprint` | Disable fingerprint-based skip logic |
+| `/speckit.ship` | `--no-test-cache` | Ignore cached test results |
+| `/speckit.migrate` | `--from` | Source architecture to migrate from (monolith, leg... |
+| `/speckit.migrate` | `--upgrade` | Target version/runtime to upgrade to (node18, post... |
+| `/speckit.migrate` | `--to-cloud` | Target cloud provider (aws, gcp, azure, vk-cloud) |
+| `/speckit.migrate` | `--scope` | Limit analysis to specific paths (default: entire ... |
+| `/speckit.migrate` | `--output` | Output verbosity (minimal, standard, detailed). De... |
+| `/speckit.migrate` | `--dry-run` | Show migration plan without generating files |
 
 ---
 
 ## Версия документа
 
-**Версия:** 1.3.0 (совместим с Spec-Kit v0.0.93)
-**Дата:** 2026-01-08
+**Версия:** 0.0.98
+**Дата генерации:** 2026-01-09 08:42:31
 **Автор:** Auto-generated from command templates
-
-### Изменения в 1.3.0
-
-- Перенесён в `docs/` директорию
-- Обновлён `/speckit.preview` с минимизированным API (4 presets, 12 core flags, 10 feature keywords)
-- Удалены ~45 индивидуальных флагов в пользу `--skip`/`--only` с feature keywords
-
-### Изменения в 1.2.0
-
-- Расширено описание `/speckit.properties` с EARS-трансформацией и PGS режимом
-- Добавлено место properties в workflow (после plan, до tasks)
-- Обновлены workflow диаграммы с опциональной веткой PBT
-- Добавлена таблица типов свойств (inverse, idempotent, invariant, etc.)
-- Добавлена информация о генерации кода для 5 языков/фреймворков
-- Добавлен PQS (Property Quality Score) в документацию
-
-### Изменения в 1.1.0
-
-- Добавлена команда `/speckit.staging` для TDD workflow
-- Обновлены workflow диаграммы (staging между tasks и analyze)
-- Добавлен раздел "TDD Infrastructure" в Quick Reference

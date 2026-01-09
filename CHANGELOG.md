@@ -7,6 +7,51 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.99] - 2026-01-09
+
+### Added
+
+- **Auto-generated COMMANDS_GUIDE.md** (`src/specify_cli/commands_guide_generator.py`):
+  - Scans `templates/commands/*.md` and extracts metadata from YAML frontmatter
+  - Extracts flags using 4 patterns: Parse arguments lists, CLI tables, inline mentions, frontmatter configs
+  - Generates comprehensive documentation with: command descriptions, models, flags, gates, handoffs
+  - Includes Quick Reference tables and workflow diagram
+  - CLI entrypoint: `python -m specify_cli.commands_guide_generator`
+
+### Changed
+
+- **CI/CD Integration for COMMANDS_GUIDE generation**:
+  - Updated `.github/workflows/release.yml` to auto-generate COMMANDS_GUIDE.md before release
+  - Updated `.github/workflows/docs.yml` to trigger on `templates/commands/**` changes
+  - Both workflows now regenerate docs ensuring they stay in sync with command templates
+
+## [0.0.98] - 2026-01-08
+
+### Added
+
+- **Autonomous Execution Mode** (`--autonomous` / `--auto` flag):
+  - Unattended implementation without user prompts
+  - Auto-proceeds on checklist validation with warning
+  - Soft-fails staging validation (QG-STAGING-001) with warning
+  - Auto-proceeds on API verification failures with warning
+  - Activates continuous execution mode (no pauses between waves)
+
+- **Execution Flow Control Directive**:
+  - `execution_mode.mode: continuous` config option
+  - Explicit "DO NOT PAUSE" directive for Claude Code CLI
+  - Summary timing control (`end_only`, `per_wave`, `per_task`)
+  - Confirmation request control (`none`, `errors_only`, `all`)
+
+### Changed
+
+- Updated `templates/commands/implement.md`:
+  - Added `autonomous_mode` config section with flag definitions
+  - Added `execution_mode` config section for flow control
+  - Updated Step 2 checklist validation with autonomous check
+  - Updated Wave 0 staging-validator with autonomous soft-fail
+  - Updated Step 3.5 API verification with autonomous proceed
+  - Added "Execution Flow Control" section with AUTO-CONTINUE flow pattern
+
 ## [0.0.97] - 2026-01-08
 
 ### Added
