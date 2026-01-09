@@ -444,6 +444,50 @@ During execution, maintain and display wave progress:
 └── Estimated Savings: {SAVINGS}% vs sequential
 ```
 
+### Final Token & Cost Summary
+
+**ALWAYS emit at command completion:**
+
+```text
+FUNCTION emit_final_token_summary():
+
+  elapsed = timestamp() - METRICS_STATE.start_time
+  cost_per_min = (METRICS_STATE.total_cost / elapsed) * 60 IF elapsed > 0 ELSE 0
+
+  PRINT "
+══════════════════════════════════════════════════════════════════════════════════
+                              📊 TOKEN STATISTICS
+══════════════════════════════════════════════════════════════════════════════════
+
+┌────────────┬──────────────┬──────────────┬──────────────┬─────────────────────┐
+│ Model      │ Requests     │ Input        │ Output       │ Cost                │
+├────────────┼──────────────┼──────────────┼──────────────┼─────────────────────┤
+│ opus       │ {METRICS_STATE.by_model.opus.requests:>10} │ {METRICS_STATE.by_model.opus.tokens_in:>10,} │ {METRICS_STATE.by_model.opus.tokens_out:>10,} │ ${METRICS_STATE.by_model.opus.cost:>15.4f} │
+│ sonnet     │ {METRICS_STATE.by_model.sonnet.requests:>10} │ {METRICS_STATE.by_model.sonnet.tokens_in:>10,} │ {METRICS_STATE.by_model.sonnet.tokens_out:>10,} │ ${METRICS_STATE.by_model.sonnet.cost:>15.4f} │
+│ haiku      │ {METRICS_STATE.by_model.haiku.requests:>10} │ {METRICS_STATE.by_model.haiku.tokens_in:>10,} │ {METRICS_STATE.by_model.haiku.tokens_out:>10,} │ ${METRICS_STATE.by_model.haiku.cost:>15.4f} │
+├────────────┼──────────────┼──────────────┼──────────────┼─────────────────────┤
+│ TOTAL      │ {METRICS_STATE.agents_completed:>10} │ {METRICS_STATE.total_tokens_in:>10,} │ {METRICS_STATE.total_tokens_out:>10,} │ ${METRICS_STATE.total_cost:>15.4f} │
+└────────────┴──────────────┴──────────────┴──────────────┴─────────────────────┘
+
+⏱️  Duration: {elapsed:.1f}s | 💰 Cost/min: ${cost_per_min:.4f}
+
+══════════════════════════════════════════════════════════════════════════════════
+"
+```
+
+**Integration Point:**
+
+```text
+AT command_complete:
+  # 1. Emit orchestration summary (existing)
+  emit_orchestration_summary()
+
+  # 2. ALWAYS emit token statistics
+  emit_final_token_summary()
+
+  # 3. Continue to handoff
+```
+
 ### Error Recovery in Ultrathink Mode
 
 When ultrathink mode is active and an agent fails:
@@ -513,13 +557,14 @@ FUNCTION emit_wave_progress(wave, agents_status, metrics):
 🌊 Wave {wave.index}/{TOTAL_WAVES} - {wave.name}
 ├── Progress: [{'█' * bar_filled}{'░' * bar_empty}] {pct:.0f}%
 ├── Agents: {completed}/{total}
-├── Elapsed: {metrics.elapsed}s | Tokens: {metrics.tokens_total:,}
+├── Elapsed: {metrics.elapsed}s | Tokens: {METRICS_STATE.total_tokens_in + METRICS_STATE.total_tokens_out:,} | Cost: ${METRICS_STATE.total_cost:.4f}
 │"
 
   FOR agent IN wave.agents:
     status = agents_status[agent.role]
     IF status.state == "success":
-      PRINT "├── ✓ {agent.role} [{status.model}]: {status.duration}s"
+      # Display with token stats
+      PRINT "├── ✓ {agent.role} [{status.model}]: {status.duration}s | 📊 +{status.tokens_in:,} in / +{status.tokens_out:,} out | ${status.cost:.4f}"
     ELIF status.state == "failed":
       PRINT "├── ✗ {agent.role} [{status.model}]: {status.error}"
     ELIF status.state == "running":
@@ -532,36 +577,96 @@ FUNCTION emit_wave_progress(wave, agents_status, metrics):
     PRINT "└── 🚀 Overlap threshold reached — Wave {wave.index + 1} started early"
 ```
 
+### Token Streaming Display
+
+After EACH agent completes, display inline token statistics:
+
+```text
+FUNCTION emit_agent_token_stats(agent_result):
+  cost = calculate_cost(agent_result.model_used, agent_result.tokens_in, agent_result.tokens_out)
+
+  PRINT "   📊 {agent_result.role}: +{agent_result.tokens_in:,} in / +{agent_result.tokens_out:,} out | ${cost:.4f}"
+```
+
+After EACH wave completes, display wave token summary:
+
+```text
+FUNCTION emit_wave_token_summary(wave_index, wave_tokens_in, wave_tokens_out, wave_cost, wave_duration):
+
+  PRINT "
+══════════════════════════════════════════════════════════════════════════════
+📊 Wave {wave_index} Complete | Tokens: {wave_tokens_in + wave_tokens_out:,} | Cost: ${wave_cost:.4f} | Time: {wave_duration:.1f}s
+══════════════════════════════════════════════════════════════════════════════
+"
+
+  # Store in history
+  METRICS_STATE.waves.append({
+    wave_id: wave_index,
+    tokens_in: wave_tokens_in,
+    tokens_out: wave_tokens_out,
+    cost: wave_cost,
+    duration: wave_duration
+  })
+```
+
 ### Live Metrics Tracking
 
 ```text
-METRICS_STATE = {
-  start_time: timestamp(),
-  tokens_in: 0,
-  tokens_out: 0,
-  cost_estimate: 0.0,
-  agents_completed: 0,
-  agents_failed: 0
+MODEL_RATES = {  # per 1M tokens (USD)
+  haiku:  { input: 0.25,  output: 1.25  },
+  sonnet: { input: 3.00,  output: 15.00 },
+  opus:   { input: 15.00, output: 75.00 }
 }
 
-FUNCTION update_metrics(agent_result):
-  METRICS_STATE.tokens_in += agent_result.tokens_in
-  METRICS_STATE.tokens_out += agent_result.tokens_out
-  METRICS_STATE.cost_estimate += calculate_cost(agent_result)
+METRICS_STATE = {
+  start_time: timestamp(),
 
+  # Per-model breakdown
+  by_model: {
+    opus:   { tokens_in: 0, tokens_out: 0, requests: 0, cost: 0.0 },
+    sonnet: { tokens_in: 0, tokens_out: 0, requests: 0, cost: 0.0 },
+    haiku:  { tokens_in: 0, tokens_out: 0, requests: 0, cost: 0.0 }
+  },
+
+  # Totals
+  total_tokens_in: 0,
+  total_tokens_out: 0,
+  total_cost: 0.0,
+
+  # Tracking
+  agents_completed: 0,
+  agents_failed: 0,
+
+  # Per-wave history
+  waves: []  # [{wave_id, tokens_in, tokens_out, cost, duration}]
+}
+
+FUNCTION calculate_cost(model, tokens_in, tokens_out):
+  rate = MODEL_RATES[model]
+  RETURN (tokens_in * rate.input + tokens_out * rate.output) / 1_000_000
+
+FUNCTION update_metrics(agent_result):
+  model = agent_result.model_used  # "opus" | "sonnet" | "haiku"
+  cost = calculate_cost(model, agent_result.tokens_in, agent_result.tokens_out)
+
+  # Update per-model stats
+  METRICS_STATE.by_model[model].tokens_in += agent_result.tokens_in
+  METRICS_STATE.by_model[model].tokens_out += agent_result.tokens_out
+  METRICS_STATE.by_model[model].requests += 1
+  METRICS_STATE.by_model[model].cost += cost
+
+  # Update totals
+  METRICS_STATE.total_tokens_in += agent_result.tokens_in
+  METRICS_STATE.total_tokens_out += agent_result.tokens_out
+  METRICS_STATE.total_cost += cost
+
+  # Update counts
   IF agent_result.success:
     METRICS_STATE.agents_completed += 1
   ELSE:
     METRICS_STATE.agents_failed += 1
 
-FUNCTION calculate_cost(result):
-  RATES = {
-    haiku: {input: 0.25, output: 1.25},    # per 1M tokens
-    sonnet: {input: 3.00, output: 15.00},
-    opus: {input: 15.00, output: 75.00}
-  }
-  rate = RATES[result.model_used]
-  RETURN (result.tokens_in * rate.input + result.tokens_out * rate.output) / 1_000_000
+  RETURN cost  # For inline display
 ```
 
 ### Execution Loop with Streaming

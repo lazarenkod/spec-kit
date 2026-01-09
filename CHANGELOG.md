@@ -7,6 +7,23 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.113] - 2026-01-09
+
+### Added
+
+- **Token Statistics & Cost Display** for all speckit commands v0.0.113:
+  - **Streaming token display**: After each agent completes, shows inline token stats (`+X in / +Y out | $cost`)
+  - **Wave summary**: After each wave completes, shows total tokens and cost for the wave
+  - **Final token summary table**: Per-model breakdown (opus/sonnet/haiku) with requests, input/output tokens, and cost
+  - **Quick Summary integration**: Tokens and cost now appear in Quick Summary for all commands
+  - **Per-model tracking**: METRICS_STATE now tracks tokens separately for each model
+  - **Cost calculation**: Updated `calculate_cost()` with current model rates (opus $15/$75, sonnet $3/$15, haiku $0.25/$1.25 per 1M tokens)
+  - **Duration metrics**: Shows elapsed time and cost/minute in final summary
+
+- **Updated files**:
+  - `templates/shared/orchestration-instructions.md`: Enhanced METRICS_STATE, streaming display, final summary
+  - `templates/shared/output/progressive-modes.md`: Added tokens/cost to Quick Summary templates
+
 ## [0.0.112] - 2026-01-09
 
 ### Added

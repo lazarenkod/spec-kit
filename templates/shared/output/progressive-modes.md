@@ -78,6 +78,8 @@ All commands MUST output a Quick Summary before detailed content:
 | **Feature** | {name} |
 | **Complexity** | {TIER} ({score}/100) |
 | **Key Metrics** | {primary_metrics} |
+| **Tokens** | {METRICS_STATE.total_tokens_in + METRICS_STATE.total_tokens_out:,} |
+| **Cost** | ${METRICS_STATE.total_cost:.4f} |
 | **Status** | {status_badge} |
 | **Next Step** | `/speckit.{next}` |
 
@@ -110,6 +112,8 @@ All commands MUST output a Quick Summary before detailed content:
 | **User Stories** | {story_count} stories |
 | **Requirements** | {fr_count} functional, {nfr_count} non-functional |
 | **Scenarios** | {as_count} acceptance scenarios |
+| **Tokens** | {total_tokens:,} |
+| **Cost** | ${total_cost:.4f} |
 | **Status** | ✅ Ready for Planning |
 | **Next Step** | `/speckit.plan` |
 
@@ -135,6 +139,8 @@ All commands MUST output a Quick Summary before detailed content:
 | **Phases** | {phase_count} implementation phases |
 | **Dependencies** | {dep_count} external, {internal_count} internal |
 | **Estimated Scope** | {file_count} files to modify |
+| **Tokens** | {total_tokens:,} |
+| **Cost** | ${total_cost:.4f} |
 | **Status** | ✅ Ready for Tasks |
 | **Next Step** | `/speckit.tasks` |
 
@@ -160,6 +166,8 @@ All commands MUST output a Quick Summary before detailed content:
 | **By Story** | {story_task_breakdown} |
 | **Parallel Ops** | {parallel_count} can run in parallel |
 | **FR Coverage** | {fr_covered}/{fr_total} ({fr_pct}%) |
+| **Tokens** | {total_tokens:,} |
+| **Cost** | ${total_cost:.4f} |
 | **Status** | ✅ Ready for Implementation |
 | **Next Step** | `/speckit.implement` |
 
@@ -332,6 +340,7 @@ Read `templates/shared/output/progressive-modes.md` and apply:
    - Use command-specific template
    - Include status badge
    - Include next step
+   - Include tokens and cost from METRICS_STATE
 
 3. Format full content:
    - IF MODE == COMPACT: wrap in <details>
@@ -342,7 +351,26 @@ Read `templates/shared/output/progressive-modes.md` and apply:
    - Quick Summary (always visible)
    - Full content (formatted per mode)
    - Self-review report (if applicable)
+   - **Token Statistics table** (always visible, from orchestration-instructions.md)
 ```
+
+### Token Statistics Integration
+
+**ALWAYS emit token statistics at command completion:**
+
+```text
+IMPORT: templates/shared/orchestration-instructions.md#emit_final_token_summary
+
+AT command_complete:
+  emit_final_token_summary()  # Displays per-model breakdown table
+```
+
+The token statistics table displays:
+- Per-model breakdown (opus, sonnet, haiku)
+- Input/output tokens per model
+- Cost per model
+- Total tokens and total cost
+- Duration and cost/minute
 
 ### User Overrides
 
