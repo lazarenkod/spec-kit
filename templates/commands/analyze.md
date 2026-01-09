@@ -1,5 +1,18 @@
 ---
-description: Perform a non-destructive cross-artifact consistency, traceability, dependency, and system spec analysis across concept.md, spec.md, plan.md, tasks.md, and system specs. In QA mode (post-implementation), validates build, tests, coverage, and security. Automatically detects validation profile from context (caller command or artifact state). Supports Quality Gates (QG-001 to QG-012). Use `--profile <name>` to override auto-detection. See `memory/domains/quality-gates.md` for gate definitions.
+description: |
+  Full cross-artifact analysis and comprehensive QA verification.
+
+  **Primary Use Cases** (after inline gates integration):
+  - Comprehensive audits before major milestones (`--profile full`)
+  - Post-implementation QA verification (`--profile qa`)
+  - Quality dashboard for stakeholders (`--profile quality_dashboard`)
+  - Troubleshooting quality issues
+  - Generating detailed findings reports
+
+  **Note**: Most commands now have built-in inline quality gates (IG-SPEC-*, IG-PLAN-*, IG-TASK-*, IG-IMPL-*).
+  Use /speckit.analyze for full audits, QA verification, or when you need detailed findings.
+
+  Supports Quality Gates (QG-001 to QG-012). See `memory/domains/quality-gates.md` for definitions.
 persona: qa-agent
 handoffs:
   - label: Fix Spec Issues
@@ -131,8 +144,15 @@ scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
 validation_profiles:
+  # ========================================================================
+  # INLINE GATE PROFILES (deprecated for auto-invocation - use inline_gates)
+  # ========================================================================
+  # These profiles are now handled by inline gates in each command.
+  # They remain available for explicit manual invocation if needed.
   spec_validate:
-    description: "Lightweight spec validation for auto-gating before plan"
+    description: "Lightweight spec validation (DEPRECATED: now handled by IG-SPEC-* in /speckit.specify)"
+    deprecated_for_inline: true
+    inline_gate_equivalent: [IG-SPEC-001, IG-SPEC-002, IG-SPEC-003, IG-SPEC-004]
     passes: [B, D]
     gates:
       constitution_alignment:
@@ -146,7 +166,9 @@ validation_profiles:
     timeout_seconds: 30
     output_mode: compact
   plan_validate:
-    description: "Plan consistency validation before task generation"
+    description: "Plan consistency validation (DEPRECATED: now handled by IG-PLAN-* in /speckit.plan)"
+    deprecated_for_inline: true
+    inline_gate_equivalent: [IG-PLAN-001, IG-PLAN-002, IG-PLAN-003, IG-PLAN-004]
     passes: [D, F, V]
     gates:
       constitution_alignment:
@@ -160,7 +182,9 @@ validation_profiles:
     timeout_seconds: 45
     output_mode: compact
   tasks_validate:
-    description: "Task graph validation before implementation"
+    description: "Task graph validation (DEPRECATED: now handled by IG-TASK-* in /speckit.tasks)"
+    deprecated_for_inline: true
+    inline_gate_equivalent: [IG-TASK-001, IG-TASK-002, IG-TASK-003, IG-TASK-004]
     passes: [G, H, J]
     gates:
       no_circular_deps:
@@ -174,7 +198,9 @@ validation_profiles:
     timeout_seconds: 30
     output_mode: compact
   sqs:
-    description: "Spec Quality Score validation (pre-implement gate QG-001)"
+    description: "SQS validation (DEPRECATED: now handled by IG-IMPL-004 in /speckit.implement)"
+    deprecated_for_inline: true
+    inline_gate_equivalent: [IG-IMPL-004]
     passes: [E, H, D, Z]
     gates:
       sqs_threshold:
@@ -192,6 +218,9 @@ validation_profiles:
         severity: CRITICAL
     timeout_seconds: 60
     output_mode: compact
+  # ========================================================================
+  # PRIMARY PROFILES (recommended for explicit invocation)
+  # ========================================================================
   quality_gates:
     description: "Full quality gates validation (all QG-001 to QG-012)"
     passes: [D, E, G, H, R, S, T, U, Z]

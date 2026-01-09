@@ -1867,6 +1867,7 @@ This command includes multiple performance optimizations for 50-65% faster execu
 
 | Optimization | Module | Savings | Skip Flag |
 |--------------|--------|---------|-----------|
+| **Task-Level Batching** | `templates/shared/implement/task-batching.md` | **60-75%** | `--sequential-tasks` |
 | **Parallel Agent Orchestration** | `templates/shared/orchestration-instructions.md` | 20-30% | `--sequential` |
 | Vision Turbo Mode | `templates/shared/implement/vision-turbo.md` | 75-80% | `--no-turbo` |
 | API Batch Verification | `templates/shared/implement/api-batch.md` | 70% | `--no-batch-verify` |
@@ -2340,6 +2341,11 @@ During parallel execution, apply streaming output for real-time visibility:
 7. Execute implementation following the task plan:
 
    **Performance Optimizations**:
+   - **Task-Level Batching** (PRIMARY): Read `templates/shared/implement/task-batching.md`
+     - Group independent tasks into batches (4-8 tasks per batch)
+     - Execute ALL tasks in batch as parallel Task tool calls in **SINGLE message**
+     - Expected savings: 60-75% (N round-trips → N/4-8 round-trips)
+     - Skip with `--sequential-tasks` flag
    - **Wave Overlap**: Read `templates/shared/implement/wave-overlap.md` for speculative execution
      - Start Wave N+1 when Wave N is 80% complete (not 100%)
      - Expected savings: 25-30% (220-340s → 160-250s)
@@ -2349,8 +2355,8 @@ During parallel execution, apply streaming output for real-time visibility:
      - SIMPLE: Single viewport, abbreviated review (60-80% savings)
      - MODERATE/COMPLEX: Full workflow with opus
 
-   - **Phase-by-phase execution**: Complete each phase before moving to the next
-   - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together
+   - **Batch-first execution**: Group tasks by topological level, execute batches
+   - **Respect dependencies**: Tasks with [DEP:Txxx] wait for dependency completion
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
    - **Validation checkpoints**: Use progressive validation (Tier 1-2 BLOCKING, Tier 3-4 non-blocking/async). See `templates/shared/validation/checkpoints.md`

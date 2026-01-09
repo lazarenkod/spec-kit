@@ -181,6 +181,28 @@ When `/speckit.properties` is run before implementation, PBT tests execute incre
 
 **Skip JIT mode**: `--skip-pbt-jit` flag on implement command
 
+### Inline Quality Gates
+
+Commands now have built-in quality gates that run automatically before handoffs:
+
+| Command | Inline Gates | Passes Used | Severity |
+|---------|--------------|-------------|----------|
+| `/speckit.specify` | IG-SPEC-001..004 | B, D | CRITICAL, HIGH |
+| `/speckit.plan` | IG-PLAN-001..004 | D, F | CRITICAL, HIGH |
+| `/speckit.tasks` | IG-TASK-001..004 | G, H, J | CRITICAL, HIGH |
+| `/speckit.implement` | IG-IMPL-001..104 | R, S, T, U | CRITICAL, HIGH |
+
+**Gate Flags**:
+- `--skip-gates` — Bypass all inline quality gates (not recommended)
+- `--strict-gates` — Treat HIGH severity as blocking (same as CRITICAL)
+- `--full-gates` — Run full validation pass instead of simplified check
+
+**When to Use /speckit.analyze**:
+- Full audit before major milestones (`--profile full`)
+- Post-implementation QA verification (`--profile qa`)
+- Comprehensive quality dashboard
+- Troubleshooting quality issues
+
 ### Quality Gates (TDD)
 
 | Gate | Phase | Purpose |
@@ -190,6 +212,24 @@ When `/speckit.properties` is run before implementation, PBT tests execute incre
 | QG-TEST-002 | Pre-Implement | Test framework configured |
 | QG-TEST-003 | Wave 2 | Tests fail first (TDD red) |
 | QG-TEST-004 | Post-Story | Coverage >= 80% |
+
+### Task Batching (v0.0.110)
+
+`/speckit.implement` now groups independent tasks into batches and executes them as parallel Task tool calls in a **single message**:
+
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| API round-trips | N (per task) | N/4-8 | 4-8x fewer |
+| Execution time | ~10 min | ~2-3 min | 60-75% faster |
+| Parallelism | 1 task | 4-8 tasks | 4-8x |
+
+**Algorithm**:
+1. Parse tasks.md → build dependency graph
+2. Compute topological levels (tasks at same level are independent)
+3. Group by file conflicts (same-file → separate batches)
+4. Execute each batch as parallel Task calls
+
+**Skip**: `--sequential-tasks` flag
 
 ### CI/CD Integration
 
