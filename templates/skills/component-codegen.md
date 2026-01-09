@@ -2,6 +2,20 @@
 
 Skill for generating React/Vue/Svelte components from design specifications using templates and patterns.
 
+**Primary Style: shadcn/ui** — All component generation follows shadcn/ui patterns by default.
+
+## Component Registry Reference
+
+For complete component patterns, variants, and dependencies, see:
+- **shadcn/ui Registry**: `templates/shared/shadcn-registry.md` (60+ components)
+- **Design Presets**: `templates/shared/design-system-presets.md` (tokens, colors, typography)
+
+When generating components:
+1. Check shadcn-registry.md for existing component patterns
+2. Use CVA (class-variance-authority) for variants
+3. Apply `cn()` utility for className merging
+4. Follow Radix UI accessibility patterns for overlays/forms
+
 ## Trigger Conditions
 
 Use this skill when:
@@ -19,6 +33,10 @@ required_files:
 
 optional_files:
   - existing components for pattern matching
+
+reference_files:
+  - templates/shared/shadcn-registry.md (component patterns)
+  - templates/shared/design-system-presets.md (design tokens)
 ```
 
 ## Component Complexity Assessment

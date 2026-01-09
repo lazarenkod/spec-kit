@@ -7,6 +7,29 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.103] - 2026-01-09
+
+### Added
+
+- **shadcn/ui Component Registry** (`templates/shared/shadcn-registry.md`):
+  - Complete reference for 60+ shadcn/ui components with variants, dependencies, and code examples
+  - Categories: Form, Display, Navigation, Overlays, Data, Feedback, Typography, Utility
+  - CVA (class-variance-authority) patterns for type-safe variant definitions
+  - Import paths, Radix UI dependencies, and accessibility patterns
+
+### Changed
+
+- **shadcn/ui as Default Style** in `/speckit.design` and `/speckit.preview`:
+  - shadcn/ui is now the primary component library (auto-applied for React/Next.js projects)
+  - Added `--library` flag to override default (choices: shadcn, mui, vuetify, bootstrap, tailwind, angular-material, skeleton)
+  - Updated `design-system-presets.md` with expanded shadcn/ui preset (chart colors, sidebar tokens, dark mode, animations)
+  - Component generation now references `shadcn-registry.md` for patterns
+  - Preview pipeline applies shadcn/ui styling by default
+
+- **Component Codegen Skill** (`templates/skills/component-codegen.md`):
+  - Added explicit reference to shadcn-registry.md as primary pattern source
+  - Instructions for CVA usage, cn() utility, and Radix UI accessibility patterns
+
 ## [0.0.102] - 2026-01-09
 
 ### Changed

@@ -460,10 +460,14 @@ figma_import:
     - icons
 library_recommendation:
   enabled: true
+  default_library: "shadcn/ui"                 # Auto-applied for React/Next.js projects
+  library_flag: "--library"                    # Override: --library mui, --library vuetify
+  library_choices: ["shadcn", "mui", "vuetify", "bootstrap", "tailwind", "angular-material", "skeleton"]
   skip_flag: "--no-recommendation"
   trigger_condition: "design_system.framework == 'none'"
   mapping_source: "templates/shared/library-recommendations.md"
   presets_source: "templates/shared/design-system-presets.md"
+  component_registry: "templates/shared/shadcn-registry.md"
 ---
 
 ## User Input
@@ -2352,17 +2356,29 @@ When spec file exists (default mode), create visual specs for the feature.
 
    Read `templates/shared/figma-import.md` for detailed Figma API mapping rules.
 
-0.75. **Component Library Recommendation** (Auto-Discovery):
+0.75. **Component Library Setup** (shadcn/ui Default):
+
+   **shadcn/ui is the default component library for all React/Next.js projects.**
 
    ```text
    TRIGGER: design_system.framework in constitution.md is "none" or not configured
 
+   # Priority order:
+   # 1. --library flag (explicit override)
+   # 2. Existing constitution.md config
+   # 3. Default: shadcn/ui (for React/Next.js)
+
+   IF --library flag passed:
+     selected_library = flag_value  # e.g., --library mui, --library vuetify
+     LOG "📚 Using specified library: {selected_library}"
+     GOTO Step 0.75.3
+
    IF design_system.framework != "none" AND design_system.framework is configured:
-     LOG "ℹ️ Design system already configured ({framework}), skipping recommendation"
+     LOG "ℹ️ Design system already configured ({framework}), using existing config"
      SKIP to Step 1
 
    IF --no-recommendation flag passed:
-     LOG "ℹ️ Component library recommendation disabled"
+     LOG "ℹ️ Component library setup disabled"
      SKIP to Step 1
    ```
 
@@ -2395,93 +2411,96 @@ When spec file exists (default mode), create visual specs for the feature.
         typescript_enabled = true
    ```
 
-   **Step 0.75.2: Load Recommendation Rules**
+   **Step 0.75.2: Select Library (Auto-Default to shadcn/ui)**
 
    ```text
-   Read templates/shared/library-recommendations.md
+   # DEFAULT: shadcn/ui for React/Next.js projects
+   IF ui_framework IN ["React", "Next.js"] OR typescript_enabled:
+     selected_library = "shadcn/ui"
+     LOG "✓ Using shadcn/ui (default for React/Next.js)"
 
-   Apply framework → library mapping:
-   - React + TypeScript → shadcn/ui (primary), MUI, Radix UI (alternatives)
-   - React (JS) → MUI (primary), shadcn/ui, Chakra UI (alternatives)
-   - Vue.js → Vuetify (primary), PrimeVue, Quasar (alternatives)
-   - Angular → Angular Material (primary), PrimeNG, ng-bootstrap (alternatives)
-   - Svelte → Skeleton UI (primary), Svelte Material UI (alternatives)
+   # Alternative frameworks get appropriate defaults
+   ELIF ui_framework == "Vue" OR ui_framework == "Nuxt":
+     selected_library = "vuetify"
+     LOG "✓ Using Vuetify (default for Vue.js)"
 
-   Apply domain modifiers (from constitution.md Domain Layer):
-   - uxq domain → prefer rich UX libraries (shadcn/ui, MUI)
-   - saas domain → prefer data-dense libraries (MUI, Angular Material)
-   - fintech domain → prefer mature, audited libraries (MUI, Angular Material)
+   ELIF ui_framework == "Angular":
+     selected_library = "angular-material"
+     LOG "✓ Using Angular Material (default for Angular)"
 
-   Apply WCAG modifiers (from spec.md Design Constraints):
-   - AAA level → filter to accessible-first libraries
-   ```
-
-   **Step 0.75.3: Generate Recommendation**
-
-   ```text
-   OUTPUT:
-   ┌─────────────────────────────────────────────────────────────┐
-   │ Component Library Recommendation                            │
-   ├─────────────────────────────────────────────────────────────┤
-   │ Detected Framework: {framework} {+ TypeScript if detected}  │
-   │ Source: {spec.md / constitution.md}                         │
-   │                                                             │
-   │ Primary Recommendation: {library}                           │
-   │ Reasoning: {reasoning from library-recommendations.md}      │
-   │                                                             │
-   │ Alternatives: {alt1}, {alt2}, {alt3}                        │
-   │                                                             │
-   │ Preset Available: {Yes/No} in design-system-presets.md      │
-   └─────────────────────────────────────────────────────────────┘
-   ```
-
-   **Step 0.75.4: Suggest Preset Application**
-
-   ```text
-   IF preset exists in design-system-presets.md:
-
-     1. Show preset preview:
-        - Framework: {preset.framework}
-        - Primary color: {preset.theme.colors.primary}
-        - Font family: {preset.theme.typography.font_family}
-        - Component URL: {preset.component_library_url}
-
-     2. Prompt user:
-        "Apply {library} preset to constitution.md? [Y/n/choose alternative]"
-
-     3. IF user confirms (Y or default):
-        - Load preset YAML from design-system-presets.md
-        - Update design_system block in constitution.md
-        - LOG "✓ Applied {library} preset to constitution.md"
-
-     4. IF user chooses alternative:
-        - Show alternative presets
-        - Let user select
-        - Apply selected preset
-
-     5. IF user declines (n):
-        - LOG "ℹ️ Preset not applied. Configure manually in constitution.md"
-        - Continue with framework: "none" (tokens from constitution.md theme block)
+   ELIF ui_framework == "Svelte" OR ui_framework == "SvelteKit":
+     selected_library = "skeleton"
+     LOG "✓ Using Skeleton UI (default for Svelte)"
 
    ELSE:
-     LOG "⚠️ No preset found for {library}. Using custom tokens from constitution.md"
+     # Fallback: still default to shadcn/ui
+     selected_library = "shadcn/ui"
+     LOG "ℹ️ Framework not detected, using shadcn/ui as default"
    ```
 
-   **Step 0.75.5: Skip Conditions**
+   **Step 0.75.3: Auto-Apply Preset**
+
+   ```text
+   # Load preset from design-system-presets.md
+   Read templates/shared/design-system-presets.md
+   IF selected_library == "shadcn/ui":
+     Read templates/shared/shadcn-registry.md  # Component reference
+
+   preset = find_preset(selected_library)
+
+   IF preset exists:
+     # Auto-apply without confirmation (streamlined flow)
+     1. Load preset YAML
+     2. Update design_system block in constitution.md:
+        - framework: {selected_library}
+        - theme: {preset.theme}
+        - components: {preset.components}
+
+     3. LOG output:
+        ┌─────────────────────────────────────────────────────────────┐
+        │ ✓ Component Library: {selected_library}                     │
+        ├─────────────────────────────────────────────────────────────┤
+        │ Primary: {preset.theme.colors.primary}                      │
+        │ Font: {preset.theme.typography.font_family}                 │
+        │ Docs: {preset.component_library_url}                        │
+        │                                                             │
+        │ To change: /speckit.design --library <name>                 │
+        │ Options: shadcn, mui, vuetify, bootstrap, angular-material  │
+        └─────────────────────────────────────────────────────────────┘
+
+   ELSE:
+     LOG "⚠️ No preset found for {selected_library}. Using custom tokens."
+   ```
+
+   **Step 0.75.4: Skip Conditions**
 
    ```text
    Skip this step when:
    - design_system.framework already configured (not "none")
    - UI Framework explicitly set to "None" in Technology Constraints
-   - No UI framework detected in spec.md or constitution.md
    - Backend-only project (no Frontend markers in Framework Requirements)
    - --no-recommendation flag passed
 
    When skipped, output:
-   "Step 0.75: Component Library Recommendation - Skipped ({reason})"
+   "Step 0.75: Component Library Setup - Skipped ({reason})"
    ```
 
-   Read `templates/shared/library-recommendations.md` for detailed framework→library mapping and algorithm.
+   **--library Flag Reference**
+
+   ```text
+   Override the default library:
+
+   /speckit.design --library shadcn   # shadcn/ui (default)
+   /speckit.design --library mui      # Material UI
+   /speckit.design --library vuetify  # Vuetify (Vue.js)
+   /speckit.design --library bootstrap # Bootstrap
+   /speckit.design --library angular-material # Angular Material
+   /speckit.design --library skeleton # Skeleton UI (Svelte)
+   /speckit.design --library tailwind # Tailwind CSS only (no components)
+   ```
+
+   Read `templates/shared/library-recommendations.md` for detailed framework→library mapping.
+   Read `templates/shared/shadcn-registry.md` for shadcn/ui component reference (60+ components).
 
 1. **Initialize design document**:
    - Run script `{SCRIPT}` to verify spec.md exists

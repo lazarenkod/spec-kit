@@ -2310,7 +2310,19 @@ claude_code:
 
         Save before/after screenshots for comparison.
 
+component_styling:
+  default_library: "shadcn/ui"
+  registry: "templates/shared/shadcn-registry.md"
+  patterns:
+    imports: "@/components/ui/{component}"
+    variants: "class-variance-authority (cva)"
+    utilities: "cn() from @/lib/utils"
+    dark_mode: "Tailwind dark: class strategy"
+    accessibility: "Radix UI primitives"
 skills:
+  - name: shadcn-registry
+    trigger: "When generating any UI component"
+    usage: "Read templates/shared/shadcn-registry.md for component patterns and imports"
   - name: wireframe-preview
     trigger: "When converting ASCII wireframes to visual HTML"
     usage: "Read templates/skills/wireframe-preview.md for conversion rules"
@@ -2319,7 +2331,7 @@ skills:
     usage: "Read templates/skills/component-codegen.md for generation templates"
   - name: v0-generation
     trigger: "When using v0.dev for component generation"
-    usage: "Read templates/shared/v0-integration.md for API and prompts"
+    usage: "Read templates/shared/v0-integration.md for API and prompts (generates shadcn/ui style)"
   - name: visual-regression
     trigger: "When capturing screenshots for baseline"
     usage: "Read templates/shared/visual-regression.md for Playwright setup"
@@ -2494,8 +2506,26 @@ FOR EACH component IN design.md Component Specifications:
        method = "template"
        Read templates/skills/component-codegen.md
 
+  2.5. Apply shadcn/ui styling (DEFAULT):
+     # All generated components use shadcn/ui patterns
+     Read templates/shared/shadcn-registry.md
+     styling_config = {
+       import_base: "@/components/ui/",
+       variant_system: "cva",  # class-variance-authority
+       utility_merge: "cn()",  # clsx + tailwind-merge
+       dark_mode: "class",     # Tailwind dark: prefix
+       css_variables: true,    # Use CSS custom properties
+       accessibility: "radix"  # Radix UI primitives
+     }
+
+     # Map component to shadcn/ui equivalent
+     IF component.type IN shadcn_registry:
+       base_component = shadcn_registry[component.type]
+       LOG "📦 Using shadcn/ui base: {base_component}"
+
   3. Generate component code:
-     v0_prompt = build_v0_prompt(component, design_tokens)
+     v0_prompt = build_v0_prompt(component, design_tokens, styling_config)
+     # v0.dev generates shadcn/ui style by default
      code = generate_component(method, v0_prompt)
 
   4. Create preview wrapper:

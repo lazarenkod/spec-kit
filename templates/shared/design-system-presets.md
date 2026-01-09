@@ -17,45 +17,95 @@ design_system:
 
 ---
 
-## shadcn/ui Preset
+## shadcn/ui Preset (DEFAULT)
 
-Based on shadcn/ui default theme with CSS variables.
+**Primary choice for all React/Next.js projects.** Based on shadcn/ui default theme with CSS variables.
+
+See `templates/shared/shadcn-registry.md` for complete component reference.
 
 ```yaml
 # preset: "shadcn/ui"
 design_system:
   framework: "shadcn/ui"
+  is_default: true  # Auto-applied unless --library flag overrides
 
   theme:
     colors:
-      # Light mode defaults
-      background: "#FFFFFF"
-      foreground: "#0F172A"
-      card: "#FFFFFF"
-      card-foreground: "#0F172A"
-      popover: "#FFFFFF"
-      popover-foreground: "#0F172A"
-      primary: "#0F172A"
-      primary-foreground: "#F8FAFC"
-      secondary: "#F1F5F9"
-      secondary-foreground: "#0F172A"
-      muted: "#F1F5F9"
-      muted-foreground: "#64748B"
-      accent: "#F1F5F9"
-      accent-foreground: "#0F172A"
-      destructive: "#EF4444"
-      destructive-foreground: "#F8FAFC"
-      border: "#E2E8F0"
-      input: "#E2E8F0"
-      ring: "#0F172A"
+      # Core semantic colors (HSL values for CSS variables)
+      background: "0 0% 100%"           # --background
+      foreground: "222.2 84% 4.9%"      # --foreground
+      card: "0 0% 100%"                 # --card
+      card-foreground: "222.2 84% 4.9%" # --card-foreground
+      popover: "0 0% 100%"              # --popover
+      popover-foreground: "222.2 84% 4.9%"
+      primary: "222.2 47.4% 11.2%"      # --primary
+      primary-foreground: "210 40% 98%"
+      secondary: "210 40% 96.1%"        # --secondary
+      secondary-foreground: "222.2 47.4% 11.2%"
+      muted: "210 40% 96.1%"            # --muted
+      muted-foreground: "215.4 16.3% 46.9%"
+      accent: "210 40% 96.1%"           # --accent
+      accent-foreground: "222.2 47.4% 11.2%"
+      destructive: "0 84.2% 60.2%"      # --destructive
+      destructive-foreground: "210 40% 98%"
+      border: "214.3 31.8% 91.4%"       # --border
+      input: "214.3 31.8% 91.4%"        # --input
+      ring: "222.2 84% 4.9%"            # --ring
+      radius: "0.5rem"                  # --radius
 
-      # Dark mode variants (if supporting dark mode)
-      # Prefix with "dark-" for dark mode tokens
-      dark-background: "#0F172A"
-      dark-foreground: "#F8FAFC"
-      dark-card: "#0F172A"
-      dark-primary: "#F8FAFC"
-      dark-primary-foreground: "#0F172A"
+      # Chart colors (for Recharts integration)
+      chart-1: "12 76% 61%"             # --chart-1 (orange)
+      chart-2: "173 58% 39%"            # --chart-2 (teal)
+      chart-3: "197 37% 24%"            # --chart-3 (dark blue)
+      chart-4: "43 74% 66%"             # --chart-4 (yellow)
+      chart-5: "27 87% 67%"             # --chart-5 (peach)
+
+      # Sidebar colors (for sidebar component)
+      sidebar-background: "0 0% 98%"    # --sidebar-background
+      sidebar-foreground: "240 5.3% 26.1%"
+      sidebar-primary: "240 5.9% 10%"
+      sidebar-primary-foreground: "0 0% 98%"
+      sidebar-accent: "240 4.8% 95.9%"
+      sidebar-accent-foreground: "240 5.9% 10%"
+      sidebar-border: "220 13% 91%"
+      sidebar-ring: "217.2 91.2% 59.8%"
+
+      # Dark mode variants
+      dark:
+        background: "222.2 84% 4.9%"
+        foreground: "210 40% 98%"
+        card: "222.2 84% 4.9%"
+        card-foreground: "210 40% 98%"
+        popover: "222.2 84% 4.9%"
+        popover-foreground: "210 40% 98%"
+        primary: "210 40% 98%"
+        primary-foreground: "222.2 47.4% 11.2%"
+        secondary: "217.2 32.6% 17.5%"
+        secondary-foreground: "210 40% 98%"
+        muted: "217.2 32.6% 17.5%"
+        muted-foreground: "215 20.2% 65.1%"
+        accent: "217.2 32.6% 17.5%"
+        accent-foreground: "210 40% 98%"
+        destructive: "0 62.8% 30.6%"
+        destructive-foreground: "210 40% 98%"
+        border: "217.2 32.6% 17.5%"
+        input: "217.2 32.6% 17.5%"
+        ring: "212.7 26.8% 83.9%"
+        # Dark chart colors
+        chart-1: "220 70% 50%"
+        chart-2: "160 60% 45%"
+        chart-3: "30 80% 55%"
+        chart-4: "280 65% 60%"
+        chart-5: "340 75% 55%"
+        # Dark sidebar
+        sidebar-background: "240 5.9% 10%"
+        sidebar-foreground: "240 4.8% 95.9%"
+        sidebar-primary: "224.3 76.3% 48%"
+        sidebar-primary-foreground: "0 0% 100%"
+        sidebar-accent: "240 3.7% 15.9%"
+        sidebar-accent-foreground: "240 4.8% 95.9%"
+        sidebar-border: "240 3.7% 15.9%"
+        sidebar-ring: "217.2 91.2% 59.8%"
 
     typography:
       font_family: "Inter, system-ui, -apple-system, sans-serif"
@@ -69,43 +119,73 @@ design_system:
         2xl: "1.5rem"      # 24px
         3xl: "1.875rem"    # 30px
         4xl: "2.25rem"     # 36px
+        5xl: "3rem"        # 48px
       line_heights:
+        none: "1"
         tight: "1.25"
+        snug: "1.375"
         normal: "1.5"
-        relaxed: "1.75"
+        relaxed: "1.625"
+        loose: "2"
       font_weights:
         normal: "400"
         medium: "500"
         semibold: "600"
         bold: "700"
+        extrabold: "800"
+      tracking:
+        tighter: "-0.05em"
+        tight: "-0.025em"
+        normal: "0em"
+        wide: "0.025em"
+        wider: "0.05em"
+        widest: "0.1em"
 
     spacing:
       unit: "4px"
       scale:
         0: "0"
+        px: "1px"
+        0.5: "0.125rem"    # 2px
         1: "0.25rem"       # 4px
+        1.5: "0.375rem"    # 6px
         2: "0.5rem"        # 8px
+        2.5: "0.625rem"    # 10px
         3: "0.75rem"       # 12px
+        3.5: "0.875rem"    # 14px
         4: "1rem"          # 16px
         5: "1.25rem"       # 20px
         6: "1.5rem"        # 24px
+        7: "1.75rem"       # 28px
         8: "2rem"          # 32px
+        9: "2.25rem"       # 36px
         10: "2.5rem"       # 40px
+        11: "2.75rem"      # 44px
         12: "3rem"         # 48px
+        14: "3.5rem"       # 56px
+        16: "4rem"         # 64px
+        20: "5rem"         # 80px
+        24: "6rem"         # 96px
+        28: "7rem"         # 112px
+        32: "8rem"         # 128px
 
     radii:
       none: "0"
-      sm: "calc(0.5rem - 4px)"   # ~4px
-      md: "calc(0.5rem - 2px)"   # ~6px
-      lg: "0.5rem"               # 8px
-      xl: "0.75rem"              # 12px
-      2xl: "1rem"                # 16px
+      sm: "calc(var(--radius) - 4px)"   # ~4px
+      md: "calc(var(--radius) - 2px)"   # ~6px
+      lg: "var(--radius)"               # 8px (default)
+      xl: "calc(var(--radius) + 4px)"   # 12px
+      2xl: "calc(var(--radius) + 8px)"  # 16px
+      3xl: "calc(var(--radius) + 16px)" # 24px
       full: "9999px"
 
     shadows:
       sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)"
-      md: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
-      lg: "0 10px 15px -3px rgb(0 0 0 / 0.1)"
+      md: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)"
+      lg: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)"
+      xl: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)"
+      2xl: "0 25px 50px -12px rgb(0 0 0 / 0.25)"
+      inner: "inset 0 2px 4px 0 rgb(0 0 0 / 0.05)"
 
     # Motion tokens for animations
     motion:
@@ -121,27 +201,137 @@ design_system:
         ease-in-out: "cubic-bezier(0.4, 0, 0.2, 1)"
         spring: "cubic-bezier(0.175, 0.885, 0.32, 1.275)"
       keyframes:
+        # Radix UI animation keyframes
+        accordion-down: "{ from { height: 0 } to { height: var(--radix-accordion-content-height) } }"
+        accordion-up: "{ from { height: var(--radix-accordion-content-height) } to { height: 0 } }"
+        collapsible-down: "{ from { height: 0 } to { height: var(--radix-collapsible-content-height) } }"
+        collapsible-up: "{ from { height: var(--radix-collapsible-content-height) } to { height: 0 } }"
+        # Fade animations
         fade-in: "{ from { opacity: 0 } to { opacity: 1 } }"
         fade-out: "{ from { opacity: 1 } to { opacity: 0 } }"
-        slide-up: "{ from { transform: translateY(10px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }"
-        slide-down: "{ from { transform: translateY(-10px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }"
+        # Slide animations
+        slide-in-from-top: "{ from { transform: translateY(-100%) } to { transform: translateY(0) } }"
+        slide-in-from-bottom: "{ from { transform: translateY(100%) } to { transform: translateY(0) } }"
+        slide-in-from-left: "{ from { transform: translateX(-100%) } to { transform: translateX(0) } }"
+        slide-in-from-right: "{ from { transform: translateX(100%) } to { transform: translateX(0) } }"
+        slide-out-to-top: "{ from { transform: translateY(0) } to { transform: translateY(-100%) } }"
+        slide-out-to-bottom: "{ from { transform: translateY(0) } to { transform: translateY(100%) } }"
+        slide-out-to-left: "{ from { transform: translateX(0) } to { transform: translateX(-100%) } }"
+        slide-out-to-right: "{ from { transform: translateX(0) } to { transform: translateX(100%) } }"
+        # Scale animations
         scale-in: "{ from { transform: scale(0.95); opacity: 0 } to { transform: scale(1); opacity: 1 } }"
+        scale-out: "{ from { transform: scale(1); opacity: 1 } to { transform: scale(0.95); opacity: 0 } }"
+        # Spin
+        spin: "{ from { transform: rotate(0deg) } to { transform: rotate(360deg) } }"
 
   component_library_url: "https://ui.shadcn.com/docs"
+  component_registry: "templates/shared/shadcn-registry.md"
   enforcement_level: "warn"
 
-  # Component mapping for DSS-001 detection
+  # Dependencies for shadcn/ui
+  dependencies:
+    core:
+      - "tailwindcss"
+      - "tailwind-merge"
+      - "clsx"
+      - "class-variance-authority"
+    optional:
+      - "@radix-ui/react-accordion"
+      - "@radix-ui/react-alert-dialog"
+      - "@radix-ui/react-aspect-ratio"
+      - "@radix-ui/react-avatar"
+      - "@radix-ui/react-checkbox"
+      - "@radix-ui/react-collapsible"
+      - "@radix-ui/react-context-menu"
+      - "@radix-ui/react-dialog"
+      - "@radix-ui/react-dropdown-menu"
+      - "@radix-ui/react-hover-card"
+      - "@radix-ui/react-label"
+      - "@radix-ui/react-menubar"
+      - "@radix-ui/react-navigation-menu"
+      - "@radix-ui/react-popover"
+      - "@radix-ui/react-progress"
+      - "@radix-ui/react-radio-group"
+      - "@radix-ui/react-scroll-area"
+      - "@radix-ui/react-select"
+      - "@radix-ui/react-separator"
+      - "@radix-ui/react-slider"
+      - "@radix-ui/react-switch"
+      - "@radix-ui/react-tabs"
+      - "@radix-ui/react-toast"
+      - "@radix-ui/react-toggle"
+      - "@radix-ui/react-toggle-group"
+      - "@radix-ui/react-tooltip"
+      - "cmdk"
+      - "embla-carousel-react"
+      - "input-otp"
+      - "react-day-picker"
+      - "react-hook-form"
+      - "@hookform/resolvers"
+      - "zod"
+      - "recharts"
+      - "sonner"
+      - "vaul"
+      - "@tanstack/react-table"
+      - "react-resizable-panels"
+
+  # Component mapping for DSS-001 detection (expanded)
   components:
+    # Form components
     button: "@/components/ui/button"
     input: "@/components/ui/input"
+    textarea: "@/components/ui/textarea"
     select: "@/components/ui/select"
     checkbox: "@/components/ui/checkbox"
-    dialog: "@/components/ui/dialog"
-    dropdown-menu: "@/components/ui/dropdown-menu"
-    card: "@/components/ui/card"
-    tabs: "@/components/ui/tabs"
-    toast: "@/components/ui/toast"
+    radio-group: "@/components/ui/radio-group"
+    switch: "@/components/ui/switch"
+    slider: "@/components/ui/slider"
+    toggle: "@/components/ui/toggle"
+    toggle-group: "@/components/ui/toggle-group"
+    input-otp: "@/components/ui/input-otp"
+    label: "@/components/ui/label"
     form: "@/components/ui/form"
+    # Display components
+    card: "@/components/ui/card"
+    badge: "@/components/ui/badge"
+    alert: "@/components/ui/alert"
+    avatar: "@/components/ui/avatar"
+    skeleton: "@/components/ui/skeleton"
+    separator: "@/components/ui/separator"
+    aspect-ratio: "@/components/ui/aspect-ratio"
+    scroll-area: "@/components/ui/scroll-area"
+    resizable: "@/components/ui/resizable"
+    collapsible: "@/components/ui/collapsible"
+    # Navigation components
+    breadcrumb: "@/components/ui/breadcrumb"
+    pagination: "@/components/ui/pagination"
+    menubar: "@/components/ui/menubar"
+    navigation-menu: "@/components/ui/navigation-menu"
+    dropdown-menu: "@/components/ui/dropdown-menu"
+    context-menu: "@/components/ui/context-menu"
+    tabs: "@/components/ui/tabs"
+    sidebar: "@/components/ui/sidebar"
+    # Overlay components
+    dialog: "@/components/ui/dialog"
+    alert-dialog: "@/components/ui/alert-dialog"
+    drawer: "@/components/ui/drawer"
+    sheet: "@/components/ui/sheet"
+    popover: "@/components/ui/popover"
+    hover-card: "@/components/ui/hover-card"
+    tooltip: "@/components/ui/tooltip"
+    command: "@/components/ui/command"
+    # Data components
+    table: "@/components/ui/table"
+    data-table: "@/components/ui/data-table"
+    carousel: "@/components/ui/carousel"
+    calendar: "@/components/ui/calendar"
+    progress: "@/components/ui/progress"
+    chart: "@/components/ui/chart"
+    # Feedback components
+    toast: "@/components/ui/toast"
+    sonner: "@/components/ui/sonner"
+    # Utility components
+    accordion: "@/components/ui/accordion"
 ```
 
 ---
