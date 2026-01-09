@@ -7,6 +7,23 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.102] - 2026-01-09
+
+### Changed
+
+- **Migrated COMMANDS_GUIDE.md generation to CLAUDE.md instructions**:
+  - Added "COMMANDS_GUIDE.md Maintenance" section to `CLAUDE.md` with update rules
+  - Claude Code now maintains `docs/COMMANDS_GUIDE.md` similar to CHANGELOG workflow
+  - Instructions include: when to update, format templates, workflow order, skip conditions
+
+### Removed
+
+- **Deleted Python generator script** (`src/specify_cli/commands_guide_generator.py`):
+  - No longer needed as Claude Code handles documentation updates
+  - Removed Python setup steps from `.github/workflows/docs.yml`
+  - Removed Python setup and auto-commit steps from `.github/workflows/release.yml`
+  - Removed `templates/commands/**` trigger from docs.yml workflow
+
 ## [0.0.101] - 2026-01-09
 
 ### Added

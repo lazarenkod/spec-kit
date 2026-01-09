@@ -251,3 +251,51 @@ After completing any feature or significant change, ALWAYS:
 3. **Summary**: Report completed changes to user
 
 This ensures traceability and prevents changelog updates from being forgotten.
+
+## COMMANDS_GUIDE.md Maintenance
+
+After any changes to `templates/commands/*.md`, update `docs/COMMANDS_GUIDE.md`:
+
+### When to Update
+
+- New command template created
+- Existing command flags changed
+- Command description or handoffs modified
+- Quality gates added/removed
+
+### Update Process
+
+1. **Scan changed command templates**:
+   - Read YAML frontmatter for: description, persona, model, thinking_budget, handoffs, pre_gates, gates
+   - Extract CLI flags from markdown content (patterns: `--flag-name`, CLI tables, Parse arguments sections)
+
+2. **Update COMMANDS_GUIDE.md sections**:
+   - **Table of Contents**: Ensure new commands are listed in workflow order
+   - **Command section**: Update or add section with format:
+     ```markdown
+     ### N. `/speckit.COMMAND` {#speckitcommand}
+
+     **Назначение:** [description from frontmatter]
+
+     **Модель:** [model] (thinking_budget: [value])
+
+     **Флаги:**
+     - `--flag` — description
+
+     **Handoffs:**
+     - → `/speckit.next-command`
+     ```
+   - **Quick Reference tables**: Update flags table if flags changed
+
+3. **Update footer**:
+   - Version from pyproject.toml
+   - Generation timestamp (current date/time)
+
+### Workflow Order (for TOC)
+
+constitution → concept → validate-concept → specify → clarify → design → plan → tasks → taskstoissues → staging → analyze → implement → preview → list → switch → extend → merge → baseline → checklist → discover → integrate → monitor → launch → ship → concept-variants → migrate → properties
+
+### Skip Updates When
+
+- Only `.COMPRESSED.md` files changed
+- Changes are only to non-command templates (shared/, etc.)

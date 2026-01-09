@@ -34,28 +34,6 @@ jobs:
           .github/workflows/scripts/check-release-exists.sh ${{ steps.get_tag.outputs.new_version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Setup Python
-        if: steps.check_release.outputs.exists == 'false'
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        if: steps.check_release.outputs.exists == 'false'
-        run: pip install pyyaml
-
-      - name: Generate COMMANDS_GUIDE.md
-        if: steps.check_release.outputs.exists == 'false'
-        run: python src/specify_cli/commands_guide_generator.py
-
-      - name: Commit generated docs (if changed)
-        if: steps.check_release.outputs.exists == 'false'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/COMMANDS_GUIDE.md
-          git diff --staged --quiet || git commit -m "docs: auto-generate COMMANDS_GUIDE.md [skip ci]"
-          git push || true
 
       - name: Create release package variants
         if: steps.check_release.outputs.exists == 'false'
