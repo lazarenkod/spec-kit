@@ -560,6 +560,8 @@ def generate_commands_guide(
             if flag.alias:
                 flag_str += f" / `{flag.alias}`"
             desc = flag.description.strip()
+            # Escape markdown characters in table cell to prevent nesting issues
+            desc = desc.replace('`', '\\`').replace('|', '\\|')
             desc_truncated = f"{desc[:50]}..." if len(desc) > 50 else desc
             lines.append(f"| `/speckit.{cmd_name}` | {flag_str} | {desc_truncated} |")
         lines.append("")

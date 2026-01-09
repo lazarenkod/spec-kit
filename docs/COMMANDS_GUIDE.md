@@ -1,7 +1,7 @@
 # Spec-Kit Commands Guide
 
 <!-- AUTO-GENERATED - DO NOT EDIT MANUALLY -->
-<!-- Generated at: 2026-01-09 08:50:59 -->
+<!-- Generated at: 2026-01-09 08:54:17 -->
 <!-- Source: templates/commands/*.md -->
 
 Полное руководство по командам Spec Kit для Spec-Driven Development.
@@ -729,32 +729,32 @@ graph LR
 | Команда | Флаг | Описание |
 |---------|------|----------|
 | `/speckit.specify` | `--model` | Override model selection |
-| `/speckit.design` | `--viewports` | `"desktop,tablet,mobile"` |
-| `/speckit.design` | `--no-webp` | `false` |
-| `/speckit.design` | `--no-optimize` | `false` |
-| `/speckit.design` | `--interactive` | `true` |
-| `/speckit.design` | `--parallel` | `true` |
-| `/speckit.design` | `--max-parallel` | `3` |
-| `/speckit.design` | `--batch-delay` | `5000` |
+| `/speckit.design` | `--viewports` | \`"desktop,tablet,mobile"\` |
+| `/speckit.design` | `--no-webp` | \`false\` |
+| `/speckit.design` | `--no-optimize` | \`false\` |
+| `/speckit.design` | `--interactive` | \`true\` |
+| `/speckit.design` | `--parallel` | \`true\` |
+| `/speckit.design` | `--max-parallel` | \`3\` |
+| `/speckit.design` | `--batch-delay` | \`5000\` |
 | `/speckit.design` | `--no-parallel` | - |
-| `/speckit.design` | `--incremental` | `true` |
-| `/speckit.design` | `--force` | `false` |
-| `/speckit.design` | `--reuse-session` | `true` |
+| `/speckit.design` | `--incremental` | \`true\` |
+| `/speckit.design` | `--force` | \`false\` |
+| `/speckit.design` | `--reuse-session` | \`true\` |
 | `/speckit.design` | `--no-reuse-session` | - |
-| `/speckit.design` | `--audit-selectors` | `false` |
-| `/speckit.design` | `--dry-run` | `false` |
-| `/speckit.design` | `--debug` | `false` |
-| `/speckit.design` | `--log-level` | `info` |
-| `/speckit.design` | `--retry-max` | `2` |
-| `/speckit.design` | `--retry-backoff` | `exponential` |
-| `/speckit.design` | `--allow-manual-intervention` | `false` |
-| `/speckit.design` | `--gallery-mode` | `basic` |
-| `/speckit.design` | `--no-gallery` | `false` |
-| `/speckit.design` | `--all` | `false` |
+| `/speckit.design` | `--audit-selectors` | \`false\` |
+| `/speckit.design` | `--dry-run` | \`false\` |
+| `/speckit.design` | `--debug` | \`false\` |
+| `/speckit.design` | `--log-level` | \`info\` |
+| `/speckit.design` | `--retry-max` | \`2\` |
+| `/speckit.design` | `--retry-backoff` | \`exponential\` |
+| `/speckit.design` | `--allow-manual-intervention` | \`false\` |
+| `/speckit.design` | `--gallery-mode` | \`basic\` |
+| `/speckit.design` | `--no-gallery` | \`false\` |
+| `/speckit.design` | `--all` | \`false\` |
 | `/speckit.design` | `--screens` | - |
-| `/speckit.design` | `--manual` | `false` |
-| `/speckit.design` | `--reauth` | `false` |
-| `/speckit.design` | `--no-figma` | `false` |
+| `/speckit.design` | `--manual` | \`false\` |
+| `/speckit.design` | `--reauth` | \`false\` |
+| `/speckit.design` | `--no-figma` | \`false\` |
 | `/speckit.staging` | `--services` | Override default services (postgres,redis,playwrig... |
 | `/speckit.staging` | `--skip-playwright` | Skip Playwright container (useful for unit-test-on... |
 | `/speckit.staging` | `--reset` | Tear down and recreate all services |
@@ -766,9 +766,9 @@ graph LR
 | `/speckit.analyze` | `--json` | Output as JSON for programmatic consumption |
 | `/speckit.implement` | `--skip-pre-gates` | Skip pre-implementation gates |
 | `/speckit.implement` | `--fast` | Fast mode - run only Tier 1-2 validation |
-| `/speckit.preview` | `--quick` | `--skip quality,gallery,deploy,frames` |
-| `/speckit.preview` | `--ci` | `--no-open --baseline check --gate 80 --skip deplo... |
-| `/speckit.preview` | `--review` | `--deploy --device all --gate 80` |
+| `/speckit.preview` | `--quick` | \`--skip quality,gallery,deploy,frames\` |
+| `/speckit.preview` | `--ci` | \`--no-open --baseline check --gate 80 --skip depl... |
+| `/speckit.preview` | `--review` | \`--deploy --device all --gate 80\` |
 | `/speckit.preview` | `--preview-mode` | Override model selection |
 | `/speckit.list` | `--json` | Output in JSON format |
 | `/speckit.list` | `--tree` | Show feature evolution tree (parent-child relation... |
@@ -806,5 +806,5 @@ graph LR
 ## Версия документа
 
 **Версия:** 0.0.99
-**Дата генерации:** 2026-01-09 08:50:59
+**Дата генерации:** 2026-01-09 08:54:17
 **Автор:** Auto-generated from command templates
