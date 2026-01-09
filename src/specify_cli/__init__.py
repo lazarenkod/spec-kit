@@ -130,6 +130,57 @@ def _format_rate_limit_error(status_code: int, headers: httpx.Headers, url: str)
     
     return "\n".join(lines)
 
+# Auto-update configuration
+UPDATE_REPO = "lazarenkod/spec-kit"
+UPDATE_REPO_URL = f"git+https://github.com/{UPDATE_REPO}.git"
+
+
+def _check_and_auto_update() -> None:
+    """Check for updates and auto-update if newer version available."""
+    try:
+        import importlib.metadata
+        from packaging.version import parse
+
+        # Get current version
+        try:
+            current = importlib.metadata.version("specify-cli")
+        except importlib.metadata.PackageNotFoundError:
+            return  # Running from source, skip update check
+
+        # Fetch latest release from GitHub
+        response = client.get(
+            f"https://api.github.com/repos/{UPDATE_REPO}/releases/latest",
+            headers=_github_auth_headers(),
+            timeout=5.0,  # Short timeout to not block
+        )
+        if response.status_code != 200:
+            return  # Silently skip on error
+
+        data = response.json()
+        latest = data.get("tag_name", "").lstrip("v")
+
+        if not latest or latest == current:
+            return  # Up to date
+
+        # Compare versions
+        if parse(latest) <= parse(current):
+            return  # Current is same or newer
+
+        # Auto-update via uv
+        console.print(f"[yellow]Updating spec-kit: {current} → {latest}[/yellow]")
+        result = subprocess.run(
+            ["uv", "tool", "install", "specify-cli", "--force", "--from", UPDATE_REPO_URL],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            console.print(f"[green]✓ Updated to {latest}[/green]")
+        else:
+            console.print(f"[red]Update failed: {result.stderr}[/red]")
+    except Exception:
+        pass  # Silently ignore all errors - don't block user
+
+
 # Agent configuration with name, folder, install URL, and CLI tool requirement
 AGENT_CONFIG = {
     "copilot": {
@@ -975,6 +1026,9 @@ def show_workflow(compact: bool = False):
 @app.callback()
 def callback(ctx: typer.Context):
     """Show banner when no subcommand is provided."""
+    # Auto-update check on every invocation
+    _check_and_auto_update()
+
     if ctx.invoked_subcommand is None and "--help" not in sys.argv and "-h" not in sys.argv:
         show_banner()
         console.print(Align.center("[dim]Run 'specify --help' for usage information[/dim]"))
