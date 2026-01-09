@@ -166,6 +166,69 @@ claude_code:
       prefetch: true         # Speculative parallel load
       searches: true         # Batch research searches
       validations: true      # Batch inline gate checks
+      sections: true         # Batch plan sections by dependency wave
+  section_batching:
+    enabled: true
+    skip_flag: "--sequential-sections"
+    algorithm: templates/shared/operation-batching.md#SECTION_BATCH
+    sections:
+      # Wave 1: Independent sections (no dependencies, run in parallel)
+      - id: strategic_narrative
+        name: "Strategic Narrative"
+        phase: "-1"
+        depends_on: []
+        sources: [concept.md, spec.md]
+        model: sonnet
+      - id: pre_mortem
+        name: "Pre-Mortem Analysis"
+        phase: "-1"
+        depends_on: []
+        sources: [concept.md]
+        model: sonnet
+      - id: technical_context
+        name: "Technical Context"
+        phase: "0"
+        depends_on: []
+        sources: [spec.md, constitution.md]
+        model: sonnet
+      - id: nfr_definition
+        name: "NFR Definition"
+        phase: "0.75"
+        depends_on: []
+        sources: [spec.md]
+        model: sonnet
+      - id: dependency_registry
+        name: "Dependency Registry"
+        phase: "0.5"
+        depends_on: []
+        sources: [spec.md]
+        model: sonnet
+      # Wave 2: Depends on Wave 1
+      - id: adrs
+        name: "Architecture Decisions (ADRs)"
+        phase: "0"
+        depends_on: [technical_context, nfr_definition]
+        sources: [spec.md, research.md]
+        model: sonnet
+      # Wave 3: Depends on ADRs or NFRs
+      - id: rtm
+        name: "Requirements Traceability Matrix"
+        phase: "1.75"
+        depends_on: [adrs]
+        sources: [spec.md]
+        model: sonnet
+      - id: observability
+        name: "Observability & Monitoring Plan"
+        phase: "1.5"
+        depends_on: [nfr_definition]
+        sources: [spec.md]
+        model: sonnet
+      - id: scalability
+        name: "Scalability Strategy"
+        phase: "1.5"
+        depends_on: [nfr_definition, technical_context]
+        sources: [spec.md]
+        model: sonnet
   subagents:
     - role: architecture-specialist
       role_group: REVIEW
@@ -345,6 +408,58 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
    Read `templates/shared/openapi-generation.md` for FR-to-endpoint mapping rules.
 
 5. **Stop and report**: Command ends after Phase 2 planning. Report branch, IMPL_PLAN path, and generated artifacts.
+
+## Section Batching Execution
+
+**CRITICAL**: When `section_batching.enabled` is true, use wave-based parallel execution instead of sequential phases.
+
+```text
+IF section_batching.enabled AND NOT "--sequential-sections" IN ARGS:
+
+  IMPORT: templates/shared/operation-batching.md#SECTION_BATCH
+
+  # Parse section config from frontmatter
+  sections = PARSE(claude_code.section_batching.sections)
+
+  # Setup wave-based todos (not per-section)
+  TodoWrite([
+    {content: "Wave 1: Strategic + Pre-Mortem + Context + NFRs + Deps (5 sections)", status: "in_progress", activeForm: "Generating Wave 1 sections in parallel..."},
+    {content: "Wave 2: Architecture Decisions (ADRs)", status: "pending", activeForm: "Generating Architecture Decisions..."},
+    {content: "Wave 3: RTM + Observability + Scalability (3 sections)", status: "pending", activeForm: "Generating Wave 3 sections in parallel..."},
+    {content: "Self-review and validation", status: "pending", activeForm: "Running self-review..."}
+  ])
+
+  # Execute SECTION_BATCH algorithm
+  section_results = SECTION_BATCH(sections, section_batching)
+
+  # Assemble results into plan.md
+  FOR section_id, content IN section_results:
+    IF content:
+      INSERT content INTO plan.md at appropriate section
+
+  # Mark waves complete and proceed to self-review
+  TodoWrite([
+    {content: "Wave 1: Strategic + Pre-Mortem + Context + NFRs + Deps", status: "completed", ...},
+    {content: "Wave 2: Architecture Decisions (ADRs)", status: "completed", ...},
+    {content: "Wave 3: RTM + Observability + Scalability", status: "completed", ...},
+    {content: "Self-review and validation", status: "in_progress", ...}
+  ])
+
+ELSE:
+  # Fallback: sequential phase execution (legacy mode)
+  LOG "⚠️ Section batching DISABLED (--sequential-sections flag or config)"
+  EXECUTE phases sequentially as defined below
+```
+
+### Expected Performance Improvement
+
+| Mode | Waves | Parallel Sections | Time |
+|------|-------|-------------------|------|
+| Sequential | 9 | 1 per wave | ~90s |
+| Batched | 3 | 5, 1, 3 | ~35s |
+| **Improvement** | | | **~60% faster** |
+
+---
 
 ## Phases
 

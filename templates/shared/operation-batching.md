@@ -381,3 +381,241 @@ BATCH_ERROR_STRATEGY:
 | `strategies.searches` | `true` | Batch Explore agents |
 | `strategies.validations` | `true` | Batch QG checks |
 | `strategies.prefetch` | `true` | Speculative parallel load |
+| `strategies.sections` | `true` | Batch plan sections by dependency |
+
+---
+
+## Section Batching
+
+### SECTION_BATCH Algorithm
+
+**PURPOSE**: Batch independent plan sections into parallel Task calls, reducing sequential execution.
+
+```text
+FUNCTION SECTION_BATCH(sections, dependency_config):
+  """
+  Execute independent plan sections in parallel waves.
+  Sections with no dependencies run together.
+  Sections depending on prior outputs wait for their wave.
+  """
+
+  # Build dependency graph
+  graph = {}
+  FOR section IN sections:
+    graph[section.id] = {
+      section: section,
+      depends_on: section.depends_on OR [],
+      resolved: false
+    }
+
+  # Topological sort into waves
+  waves = []
+  resolved_ids = set()
+
+  WHILE len(resolved_ids) < len(sections):
+    # Find sections with all dependencies resolved
+    current_wave = []
+    FOR section_id, node IN graph.items():
+      IF node.resolved:
+        CONTINUE
+
+      deps_met = ALL(dep IN resolved_ids FOR dep IN node.depends_on)
+      IF deps_met:
+        current_wave.append(node.section)
+
+    IF len(current_wave) == 0:
+      ERROR: "Circular dependency detected in section config"
+      BREAK
+
+    # Mark as resolved
+    FOR section IN current_wave:
+      graph[section.id].resolved = true
+      resolved_ids.add(section.id)
+
+    waves.append(current_wave)
+
+  # Execute waves
+  all_results = {}
+  wave_idx = 0
+
+  FOR wave IN waves:
+    wave_idx += 1
+    section_names = [s.name FOR s IN wave]
+    PRINT "📦 Section Wave {wave_idx}/{len(waves)} ({len(wave)} sections)"
+    PRINT "├── " + ", ".join(section_names)
+
+    # Build Task calls for all sections in wave
+    task_calls = []
+    FOR section IN wave:
+      task_calls.append(
+        Task(
+          description: "Generate {section.name}",
+          prompt: BUILD_SECTION_PROMPT(section, all_results),
+          subagent_type: "general-purpose",
+          model: section.model OR "sonnet"
+        )
+      )
+
+    # CRITICAL: Execute ALL in SINGLE message (parallel)
+    results = EMIT_PARALLEL(task_calls)
+
+    # Collect results
+    FOR i, section IN enumerate(wave):
+      IF results[i].success:
+        all_results[section.id] = results[i].content
+        PRINT "├── ✓ {section.name}"
+      ELSE:
+        PRINT "├── ✗ {section.name}: {results[i].error}"
+        all_results[section.id] = null
+
+    PRINT "✓ Wave {wave_idx} complete"
+
+    # Update METRICS_STATE per wave
+    emit_wave_token_summary(wave_idx, results)
+
+  RETURN all_results
+```
+
+### BUILD_SECTION_PROMPT
+
+```text
+FUNCTION BUILD_SECTION_PROMPT(section, prior_results):
+  """
+  Build prompt for section generation with context from prior waves.
+  """
+
+  prompt = """
+  Generate the "{section.name}" section for plan.md.
+
+  **Source files**: {section.sources}
+  **Output format**: Markdown section
+  """
+
+  # Inject results from dependencies
+  IF section.depends_on:
+    prompt += "\n\n**Context from prior sections**:\n"
+    FOR dep_id IN section.depends_on:
+      IF dep_id IN prior_results AND prior_results[dep_id]:
+        prompt += "\n### {dep_id}:\n{prior_results[dep_id][:2000]}...\n"
+
+  RETURN prompt
+```
+
+### Section Dependency Configuration
+
+Define section dependencies in command YAML frontmatter:
+
+```yaml
+section_batching:
+  enabled: true
+  skip_flag: "--sequential-sections"
+
+  sections:
+    # Wave 1: Independent sections (no dependencies)
+    - id: strategic_narrative
+      name: "Strategic Narrative"
+      depends_on: []
+      sources: [concept.md]
+      model: sonnet
+
+    - id: pre_mortem
+      name: "Pre-Mortem Analysis"
+      depends_on: []
+      sources: [concept.md]
+      model: sonnet
+
+    - id: technical_context
+      name: "Technical Context"
+      depends_on: []
+      sources: [spec.md, constitution.md]
+      model: sonnet
+
+    - id: nfr_definition
+      name: "NFR Definition"
+      depends_on: []
+      sources: [spec.md]
+      model: sonnet
+
+    - id: dependency_registry
+      name: "Dependency Registry"
+      depends_on: []
+      sources: [spec.md]
+      model: sonnet
+
+    # Wave 2: Depends on Wave 1
+    - id: adrs
+      name: "Architecture Decisions"
+      depends_on: [technical_context, nfr_definition]
+      sources: [spec.md]
+      model: sonnet
+
+    # Wave 3: Depends on Wave 2
+    - id: rtm
+      name: "Requirements Traceability Matrix"
+      depends_on: [adrs]
+      sources: [spec.md]
+      model: sonnet
+
+    - id: observability
+      name: "Observability Plan"
+      depends_on: [nfr_definition]
+      sources: [spec.md]
+      model: sonnet
+
+    - id: scalability
+      name: "Scalability Strategy"
+      depends_on: [nfr_definition, technical_context]
+      sources: [spec.md]
+      model: sonnet
+```
+
+### Section Batching Progress Output
+
+```text
+📦 Section Wave 1/3 (5 sections)
+├── Strategic Narrative, Pre-Mortem, Technical Context, NFR Definition, Dependency Registry
+├── ✓ Strategic Narrative
+├── ✓ Pre-Mortem Analysis
+├── ✓ Technical Context
+├── ✓ NFR Definition
+├── ✓ Dependency Registry
+✓ Wave 1 complete
+
+📊 Wave 1 Token Summary:
+| Model  | Tokens In | Tokens Out | Cost    |
+|--------|-----------|------------|---------|
+| sonnet | 45,230    | 12,450     | $0.3218 |
+
+📦 Section Wave 2/3 (1 section)
+├── Architecture Decisions
+├── ✓ Architecture Decisions
+✓ Wave 2 complete
+
+📦 Section Wave 3/3 (3 sections)
+├── RTM, Observability Plan, Scalability Strategy
+├── ✓ Requirements Traceability Matrix
+├── ✓ Observability Plan
+├── ✓ Scalability Strategy
+✓ Wave 3 complete
+```
+
+### TodoWrite Integration
+
+```text
+# Instead of per-section todos, show wave progress:
+
+TodoWrite([
+  {content: "Wave 1: Strategic + Pre-Mortem + Context + NFRs + Deps", status: "in_progress", activeForm: "Generating Wave 1 sections..."},
+  {content: "Wave 2: Architecture Decisions (ADRs)", status: "pending", activeForm: "Generating Architecture Decisions..."},
+  {content: "Wave 3: RTM + Observability + Scalability", status: "pending", activeForm: "Generating Wave 3 sections..."},
+  {content: "Self-review and validation", status: "pending", activeForm: "Running self-review..."}
+])
+
+# Update as waves complete:
+AFTER wave_1_complete:
+  TodoWrite([
+    {content: "Wave 1: Strategic + Pre-Mortem + Context + NFRs + Deps", status: "completed", ...},
+    {content: "Wave 2: Architecture Decisions (ADRs)", status: "in_progress", ...},
+    ...
+  ])
+```

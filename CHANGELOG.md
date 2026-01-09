@@ -7,6 +7,30 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.114] - 2026-01-09
+
+### Added
+
+- **Section Batching for `/speckit.plan`** to parallelize independent plan sections v0.0.114:
+  - **SECTION_BATCH algorithm**: New algorithm in `operation-batching.md` for wave-based section execution
+  - **Dependency-aware batching**: Sections grouped into waves based on dependency graph
+  - **Wave execution**:
+    - Wave 1: Strategic Narrative + Pre-Mortem + Technical Context + NFRs + Dependency Registry (5 parallel)
+    - Wave 2: Architecture Decisions (depends on Wave 1)
+    - Wave 3: RTM + Observability + Scalability (3 parallel)
+  - **~60% faster execution**: 9 sequential operations → 3 batched waves
+  - **Wave-level TodoWrite**: Shows batch progress instead of per-section todos
+  - **Skip flag**: `--sequential-sections` to disable batching and use legacy sequential mode
+
+- **New configuration** in `plan.md`:
+  - `section_batching.enabled`: Toggle section batching (default: true)
+  - `section_batching.sections`: Section definitions with `depends_on` arrays
+  - `section_batching.algorithm`: Reference to SECTION_BATCH
+
+- **Updated files**:
+  - `templates/shared/operation-batching.md`: Added SECTION_BATCH algorithm with BUILD_SECTION_PROMPT helper
+  - `templates/commands/plan.md`: Added section_batching config and Section Batching Execution flow
+
 ## [0.0.113] - 2026-01-09
 
 ### Added
