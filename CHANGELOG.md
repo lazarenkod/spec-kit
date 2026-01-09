@@ -7,6 +7,33 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.106] - 2026-01-09
+
+### Added
+
+- **Cross-Platform Framework Support** for mobile development:
+  - New 4-layer constitution architecture: base -> domain -> **platform** -> project
+  - Platform detection module (`templates/shared/platform-detection.md`) auto-detects KMP, Flutter, React Native
+  - Platform constitutions (`memory/platforms/`) with framework-specific principles (KMP-001 to KMP-008, FLT-001 to FLT-008, RN-001 to RN-009)
+  - Platform integration checklists (`templates/shared/platforms/`) with mandatory tasks auto-injected into Phase 2
+
+- **Question 4 in `/speckit.constitution`**: Cross-Platform Framework selection when Mobile Application is chosen
+
+- **Platform Task Injection in `/speckit.tasks`** (Step 2.5):
+  - KMP: 11 tasks for iOS framework integration, Koin DI export, Android setup
+  - Flutter: 11 tasks for CocoaPods, Xcode signing, Android SDK configuration
+  - React Native: 14 tasks for Metro bundler, native modules, platform builds
+  - All platform tasks marked [CRITICAL] and [PLATFORM:xxx] for traceability
+
+- **Platform Dependencies section in plan-template.md**: Documents cross-platform framework requirements
+
+- **Cross-platform complexity scoring**: KMP adds 15 points, Flutter/RN add 10 points to complexity assessment
+
+### Changed
+
+- `/speckit.tasks` Phase Structure now includes Step 2.5 for platform integration tasks
+- `complexity-scoring.md` includes platform keywords in tech_complex_high/medium arrays
+
 ## [0.0.105] - 2026-01-09
 
 ### Changed

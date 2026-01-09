@@ -442,10 +442,62 @@ Every task MUST strictly follow this format:
 
 - **Phase 1**: Setup (project initialization)
 - **Phase 2**: Foundational (blocking prerequisites - MUST complete before user stories)
+  - **Step 2.5: Platform Integration Tasks** (auto-injected if platform detected)
 - **Phase 3+**: User Stories in priority order (P1a, P1b, P2a, P2b, P3...)
   - Within each story: Tests (if requested) → Models → Services → Endpoints → Integration
   - Each phase should be a complete, independently testable increment
 - **Final Phase**: Polish & Cross-Cutting Concerns
+
+### Platform Integration Task Injection (Step 2.5)
+
+**Trigger**: Execute when cross-platform framework is detected in constitution or codebase.
+
+**Detection**: Use `templates/shared/platform-detection.md` algorithm:
+```text
+1. Check constitution.md for Technology Stack section with platform keywords
+2. Check codebase for platform markers:
+   - KMP: build.gradle.kts with kotlin("multiplatform")
+   - Flutter: pubspec.yaml with flutter:
+   - React Native: package.json with react-native dependency
+```
+
+**Injection Process**:
+```text
+IF PLATFORM_DETECTED != null:
+  1. LOAD checklist from templates/shared/platforms/{platform}-integration-checklist.md
+  2. PARSE tasks from ### Mandatory Tasks sections
+  3. ASSIGN task IDs:
+     - If no existing tasks: Start from T001
+     - If tasks exist: Continue after last Task ID
+  4. ADD markers to all tasks:
+     - [CRITICAL] for iOS/Android integration tasks
+     - [PLATFORM:{platform}] for traceability
+  5. INSERT into Phase 2 (Foundational) BEFORE story tasks
+  6. ADD implicit dependency: All Phase 3+ tasks depend on platform verification tasks
+
+  OUTPUT: "Platform integration tasks injected: {count} tasks for {platform}"
+```
+
+**Platform Checklist Files**:
+
+| Platform | Checklist | Task Prefix | Task Count |
+|----------|-----------|-------------|------------|
+| kmp | `kmp-integration-checklist.md` | T-KMP-* | ~11 tasks |
+| flutter | `flutter-integration-checklist.md` | T-FLT-* | ~11 tasks |
+| react_native | `rn-integration-checklist.md` | T-RN-* | ~14 tasks |
+
+**Task Format (Platform Tasks)**:
+```markdown
+- [ ] T### [CRITICAL] [PLATFORM:kmp] [DEP:T###] Description
+  - File: path/to/file
+  - Command: specific command
+  - Verify: success criteria
+```
+
+**Quality Gates (Platform)**:
+- QG-PLATFORM-001: All platform tasks marked [CRITICAL] must complete before Phase 3
+- QG-PLATFORM-002: Platform verification tasks must pass before story implementation
+- QG-PLATFORM-003: iOS and Android builds must succeed
 
 ### Test Task Generation (Enhanced)
 

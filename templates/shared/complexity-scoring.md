@@ -79,11 +79,13 @@ COMPLEXITY_SCORE += STAKEHOLDER_SCORE
 
 tech_complex_high = [
   "real-time", "distributed", "ML", "machine learning", "AI",
-  "blockchain", "cryptography", "streaming", "event sourcing"
+  "blockchain", "cryptography", "streaming", "event sourcing",
+  "kotlin multiplatform", "kmp", "kmm", "cross-platform"
 ]
 tech_complex_medium = [
   "async", "queue", "cache", "search", "analytics",
-  "notification", "scheduled", "batch", "import", "export"
+  "notification", "scheduled", "batch", "import", "export",
+  "flutter", "react native", "react-native", "expo"
 ]
 tech_complex_low = [
   "CRUD", "form", "page", "list", "table", "dashboard"
@@ -117,6 +119,36 @@ ELSE:
 
 COMPLEXITY_SIGNALS.append({category: "integration", matches: integration_matches, score: INTEGRATION_SCORE})
 COMPLEXITY_SCORE += INTEGRATION_SCORE
+
+# ─────────────────────────────────────────────────
+# Signal Category 4.5: CROSS-PLATFORM (0-15 points)
+# ─────────────────────────────────────────────────
+
+# Detect cross-platform frameworks that add significant complexity
+cross_platform_keywords = {
+  "kmp": ["kotlin multiplatform", "kmp", "kmm", "iosMain", "androidMain", "shared module"],
+  "flutter": ["flutter", "dart", "pubspec.yaml"],
+  "react_native": ["react native", "react-native", "expo"]
+}
+
+PLATFORM_DETECTED = null
+for platform, keywords in cross_platform_keywords:
+  IF any(kw in user_input.lower() for kw in keywords):
+    PLATFORM_DETECTED = platform
+    break
+
+IF PLATFORM_DETECTED == "kmp":
+  PLATFORM_SCORE = 15  # KMP has highest complexity (iOS interop, framework export)
+ELIF PLATFORM_DETECTED == "flutter":
+  PLATFORM_SCORE = 10  # Flutter moderate complexity
+ELIF PLATFORM_DETECTED == "react_native":
+  PLATFORM_SCORE = 10  # RN moderate complexity
+ELSE:
+  PLATFORM_SCORE = 0
+
+IF PLATFORM_SCORE > 0:
+  COMPLEXITY_SIGNALS.append({category: "cross_platform", platform: PLATFORM_DETECTED, score: PLATFORM_SCORE})
+  COMPLEXITY_SCORE += PLATFORM_SCORE
 
 # ─────────────────────────────────────────────────
 # Signal Category 5: CODEBASE CONTEXT (0-15 points)

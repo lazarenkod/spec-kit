@@ -154,14 +154,34 @@ Ask: "What language should be used for specifications and documentation?"
 | Russian | `ru` | All prose content in Russian |
 | Other | (user specifies) | Validate against supported languages list |
 
+### Question 4: Cross-Platform Framework (if Mobile selected)
+
+**Condition**: Only ask if Question 1 answer is "Mobile Application"
+
+Ask: "Are you using a cross-platform framework?"
+
+| Option | Platform File | Integration Checklist | Key Principles |
+|--------|---------------|----------------------|----------------|
+| Kotlin Multiplatform (KMP) | `platforms/kmp.md` | `kmp-integration-checklist.md` | KMP-001 to KMP-008 |
+| Flutter | `platforms/flutter.md` | `flutter-integration-checklist.md` | FLT-001 to FLT-008 |
+| React Native | `platforms/react-native.md` | `rn-integration-checklist.md` | RN-001 to RN-009 |
+| Native Only (no cross-platform) | (none) | Platform-specific native tasks | iOS/Android native principles |
+
+**Platform Detection**: If `$ARGUMENTS` or codebase already indicates a platform, SKIP this question.
+Use `templates/shared/platform-detection.md` algorithm to auto-detect from:
+- build.gradle.kts (KMP)
+- pubspec.yaml (Flutter)
+- package.json with react-native (React Native)
+
 ### After Collecting Answers
 
 1. **Map App Type → Principles**: Apply relevant principle sets based on application type
 2. **Map Domain → Domain Layer**: Copy appropriate domain file to `constitution.domain.md`
-3. **Set Language**: Update Project Settings table with language preference
-4. **Generate Constitution**: Merge all layers and generate complete constitution
+3. **Map Platform → Platform Layer**: If mobile + cross-platform, copy platform file to `constitution.platform.md`
+4. **Set Language**: Update Project Settings table with language preference
+5. **Generate Constitution**: Merge all layers and generate complete constitution
 
-**Example Flow**:
+**Example Flow (Web)**:
 ```text
 User runs: /speckit.constitution
 (No arguments provided)
@@ -169,6 +189,7 @@ User runs: /speckit.constitution
 AI asks Question 1 → User selects "Web Application"
 AI asks Question 2 → User selects "SaaS"
 AI asks Question 3 → User selects "Russian"
+(Question 4 skipped - not mobile)
 
 AI then:
 1. Copies memory/domains/saas.md → memory/constitution.domain.md
@@ -177,18 +198,38 @@ AI then:
 4. Generates complete constitution with SYNC REPORT
 ```
 
+**Example Flow (Mobile + KMP)**:
+```text
+User runs: /speckit.constitution
+(No arguments provided)
+
+AI asks Question 1 → User selects "Mobile Application"
+AI asks Question 2 → User selects "General/Minimal"
+AI asks Question 3 → User selects "English"
+AI asks Question 4 → User selects "Kotlin Multiplatform (KMP)"
+
+AI then:
+1. Copies memory/platforms/kmp.md → memory/constitution.platform.md
+2. Adds KMP-001-008 principles to project layer
+3. Sets language = "en" in Project Settings
+4. Generates complete constitution with SYNC REPORT
+5. Integration tasks will be auto-injected by /speckit.tasks
+```
+
 ---
 
 ## Layered Constitution Architecture
 
-The constitution uses a 3-layer inheritance model:
+The constitution uses a 4-layer inheritance model:
 
 ```text
-Layer 0: /memory/constitution.base.md ─── Enterprise defaults (READ-ONLY)
+Layer 0: /memory/constitution.base.md ───── Enterprise defaults (READ-ONLY)
     ↓ inherits
-Layer 1: /memory/constitution.domain.md ─ Domain-specific (fintech, healthcare, etc.)
+Layer 1: /memory/constitution.domain.md ─── Domain-specific (fintech, healthcare, etc.)
     ↓ inherits
-Layer 2: /memory/constitution.md ──────── Project overrides
+Layer 2: /memory/constitution.platform.md ─ Platform-specific (KMP, Flutter, RN)
+    ↓ inherits
+Layer 3: /memory/constitution.md ─────────── Project overrides
 ```
 
 **Inheritance Rules**:
@@ -196,6 +237,12 @@ Layer 2: /memory/constitution.md ──────── Project overrides
 - Higher layers can STRENGTHEN (SHOULD → MUST) but NEVER weaken (MUST → SHOULD)
 - Higher layers can ADD new principles
 - Higher layers can REFINE parameters (e.g., coverage 80% → 90%)
+
+**Layer Applicability**:
+- Layer 0 (base): Always applies
+- Layer 1 (domain): Applies when business domain selected
+- Layer 2 (platform): Applies when cross-platform framework selected (mobile only)
+- Layer 3 (project): Always applies, contains project-specific overrides
 
 ## Available Domains
 
@@ -214,12 +261,32 @@ Layer 2: /memory/constitution.md ──────── Project overrides
 
 When combining domains, copy both to `constitution.domain.md` and merge principles (stricter level wins).
 
+## Available Platforms
+
+| Platform | File | Use Cases | Integration Checklist |
+|----------|------|-----------|----------------------|
+| kmp | `platforms/kmp.md` | Kotlin Multiplatform iOS+Android | `kmp-integration-checklist.md` |
+| flutter | `platforms/flutter.md` | Flutter iOS+Android+Web | `flutter-integration-checklist.md` |
+| react-native | `platforms/react-native.md` | React Native iOS+Android | `rn-integration-checklist.md` |
+
+**Platform Detection**: Platforms can be auto-detected from codebase:
+- `build.gradle.kts` with `kotlin("multiplatform")` → KMP
+- `pubspec.yaml` with `flutter:` → Flutter
+- `package.json` with `react-native` dependency → React Native
+
+See `templates/shared/platform-detection.md` for full detection algorithm.
+
+**Platform + Domain Combinations**: Platform layer combines with domain layer:
+- `kmp + fintech` → KMP app with financial security requirements
+- `flutter + healthcare` → Flutter app with HIPAA compliance
+- `react-native + e-commerce` → RN app with PCI-DSS requirements
+
 ## Execution Flow
 
 ### 0. Check for Interactive Mode
 
 **FIRST**, check if `$ARGUMENTS` is empty or whitespace-only:
-- If **empty** → Execute Phase 0 (ask 3 questions via AskUserQuestion)
+- If **empty** → Execute Phase 0 (ask 3-4 questions via AskUserQuestion)
 - If **not empty** → Skip to step 1 and parse the input
 
 ### 1. Determine Operation Mode

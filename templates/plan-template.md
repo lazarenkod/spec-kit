@@ -101,6 +101,35 @@
 - `deploy.yaml` - Helm/docker-compose configuration for deployment
 - `verify.yaml` - Health check and acceptance test configuration
 
+#### Platform Dependencies (PLATFORM-xxx)
+
+<!--
+  Cross-platform framework requirements from constitution.platform.md.
+  Auto-detected by /speckit.plan using templates/shared/platform-detection.md.
+  Skip this section if Project Type is not Mobile + API.
+
+  Types: kmp, flutter, react_native
+  Integration tasks auto-injected by /speckit.tasks into Phase 2 (Foundational)
+-->
+
+| ID | Platform | Version | Constitution | Integration Checklist | Status |
+|----|----------|---------|--------------|----------------------|--------|
+| PLATFORM-001 | [kmp/flutter/react_native] | [e.g., Kotlin 1.9, Flutter 3.16] | [platforms/kmp.md] | [kmp-integration-checklist.md] | [Detected/Manual] |
+
+**Platform Build Commands**:
+- KMP iOS: `./gradlew :shared:linkDebugFrameworkIosArm64`
+- KMP Android: `./gradlew :androidApp:assembleDebug`
+- Flutter: `flutter build ios/apk --debug`
+- React Native: `npx react-native run-ios/android`
+
+**Platform Integration Validation**:
+- [ ] Framework builds successfully for both platforms
+- [ ] DI configuration exports factory functions for iOS
+- [ ] Platform-specific implementations complete (expect/actual)
+- [ ] Verification tasks pass (QG-PLATFORM-001 to QG-PLATFORM-003)
+
+**Note**: Platform integration tasks are automatically injected into tasks.md Phase 2 (Foundational) by `/speckit.tasks`. See `templates/shared/platforms/{platform}-integration-checklist.md` for details.
+
 ### API Method Reference
 
 <!--
