@@ -395,6 +395,22 @@ claude_code:
         - properties_validated
         - auto_fixes_applied
         - shrunk_examples_found
+    # Auto-provision staging: Automatically invoke /speckit.staging if needed
+    staging_auto_provision:
+      enabled: true
+      skip_flag: "--no-auto-staging"
+      timeout: 120000  # 2 min for docker services to start
+      retry_on_failure: 1
+      fallback: "block_and_prompt"
+      detection:
+        check_files:
+          - ".speckit/staging/docker-compose.yaml"
+          - ".speckit/staging/test-config.env"
+        require_keywords_in_tasks:
+          - "[TEST:AS-"
+          - "integration"
+          - "e2e"
+        skip_if_flag: "--skip-tests"
     # Task status enforcement: Ensure tasks.md is updated after each task
     task_status_enforcement:
       enabled: true
@@ -429,7 +445,7 @@ claude_code:
     description: "Run without user prompts, auto-proceed on all validation gates"
     behavior:
       checklist_incomplete: "proceed_with_warning"
-      staging_missing: "soft_fail"
+      staging_missing: "auto_provision_then_soft_fail"  # Try auto-staging first, soft fail if Docker unavailable
       api_verification_fail: "proceed_with_warning"
   # Continuous execution: Complete all waves without pausing
   execution_mode:
@@ -452,27 +468,58 @@ claude_code:
         ## Context
         Feature: {{FEATURE_DIR}}
         Staging: .speckit/staging/docker-compose.yaml
+        Auto-provision: enabled (unless --no-auto-staging flag set)
 
         ## Task
-        Validate staging environment is ready for TDD:
-        1. Check if .speckit/staging/docker-compose.yaml exists
-        2. If not exists, prompt user to run /speckit.staging first
-        3. Verify all services are healthy (postgres, redis if enabled)
-        4. Validate QG-STAGING-001 passes
+        Validate or provision staging environment for TDD:
+
+        ### Step 1: Check staging status
+        ```bash
+        if [ -f ".speckit/staging/docker-compose.yaml" ]; then
+          echo "Staging config exists, checking health..."
+          docker-compose -f .speckit/staging/docker-compose.yaml ps
+        else
+          echo "Staging config not found"
+        fi
+        ```
+
+        ### Step 2: Auto-provision if needed
+        IF staging config does NOT exist AND `--no-auto-staging` is NOT set:
+        1. LOG: "⚙️ Auto-provisioning staging environment..."
+        2. Execute /speckit.staging workflow:
+           - Read templates/commands/staging.md
+           - Generate docker-compose.yaml based on spec.md/tasks.md requirements
+           - Start services with `docker-compose up -d --wait`
+           - Wait for health checks (max 2 minutes)
+        3. Verify QG-STAGING-001 passes
+        4. IF failed after timeout:
+           - LOG: "❌ Auto-staging failed"
+           - BLOCK with instructions
+
+        ### Step 3: Verify health (if staging exists)
+        IF staging config exists:
+        1. Check all containers are running and healthy
+        2. Validate database is accessible (port 5433)
+        3. Validate redis if enabled (port 6380)
+        4. Pass QG-STAGING-001
 
         ## Success Criteria
-        - docker-compose.yaml exists
+        - docker-compose.yaml exists (auto-created if needed)
         - All staging services pass health checks
         - QG-STAGING-001: PASSED
         - Test database is accessible
 
         ## On Failure
-        - IF `--autonomous` flag is set:
-          - Log warning: "⚠️ AUTONOMOUS MODE: Staging not validated (QG-STAGING-001 skipped)"
-          - Continue to Wave 1 (soft fail - tests may fail later)
-        - ELSE:
+        - IF auto-provision was attempted AND failed:
+          - LOG: "❌ Auto-staging failed. Check Docker is running."
+          - Output: "Run `/speckit.staging --reset` to troubleshoot"
+          - Block implementation
+        - IF `--no-auto-staging` flag is set AND staging not found:
           - Output: "Run /speckit.staging to provision test infrastructure"
           - Block implementation until staging is ready
+        - IF `--autonomous` flag is set AND staging still unhealthy:
+          - Log warning: "⚠️ AUTONOMOUS MODE: Staging not validated (QG-STAGING-001 skipped)"
+          - Continue to Wave 1 (soft fail - tests may fail later)
       model_override: haiku
     # Wave 1: Infrastructure (no deps)
     - role: project-scaffolder
@@ -736,6 +783,159 @@ claude_code:
         - Each user story has corresponding UI
         - Forms validate input before submission
         - API errors display user-friendly messages
+    - role: component-wire-builder
+      role_group: FRONTEND
+      parallel: true
+      depends_on: [ui-foundation-builder, ui-feature-builder]
+      priority: 5
+      trigger: "when wiring components into screens (UI features with Component Registry)"
+      skip_if: "spec.md does not contain '## UI Component Registry' section"
+      prompt: |
+        ═══════════════════════════════════════════════════════════════
+        ⚠️  TASK STATUS UPDATE PROTOCOL - MANDATORY ⚠️
+        ═══════════════════════════════════════════════════════════════
+
+        AFTER EACH TASK YOU COMPLETE:
+          1. ✅ Complete the implementation work
+          2. ✅ Edit tasks.md: change `- [ ] T00x...` → `- [X] T00x...`
+          3. ✅ Verify the edit succeeded
+          4. ✅ ONLY THEN proceed to next task
+
+        ⛔ BLOCKER: If you skip the update, the entire workflow FAILS ⛔
+
+        ═══════════════════════════════════════════════════════════════
+
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md (contains Component Registry, Screen Registry)
+        Tasks: {{FEATURE_DIR}}/tasks.md (contains CSIM matrix)
+
+        ## Pre-Check: Component Registry Detection
+        1. Read spec.md
+        2. VERIFY: Contains "## UI Component Registry" section
+        3. IF NOT FOUND: Skip this role (not a component-based UI feature)
+
+        ## Task: Wire Components into Screens
+
+        Execute all [WIRE:COMP-xxx→SCR-yyy] tasks from tasks.md:
+
+        ```
+        FOR EACH task WITH marker [WIRE:COMP-xxx→SCR-yyy]:
+
+          1. **Extract References**:
+             - component_id = COMP-xxx (from marker)
+             - screen_id = SCR-yyy (from marker)
+             - Look up [COMP:COMP-xxx] task → get component file path
+             - Look up [SCREEN:SCR-yyy] task → get screen file path
+
+          2. **Verify Prerequisites**:
+             - CONFIRM [COMP:COMP-xxx] task is marked [X]
+             - CONFIRM [SCREEN:SCR-yyy] task is marked [X] OR screen file exists
+             - IF NOT: Log dependency and skip (will retry in next pass)
+
+          3. **Wire Component**:
+             a. Read screen file
+             b. Add import statement for component
+             c. Find placeholder (Text("..."), TODO, etc.) or insertion point
+             d. Replace placeholder with component instantiation
+             e. Pass required props/parameters
+
+          4. **Verify Integration**:
+             - Component import exists in screen file
+             - Component is instantiated in render/compose function
+             - No placeholder text remains for this component
+
+          5. **Update Tasks**:
+             - Mark wire task [X] in tasks.md
+             - Update CSIM matrix: Status = [X] for this pair
+        ```
+
+        ## Platform-Specific Patterns
+
+        ### Swift/SwiftUI
+        ```swift
+        // Before (placeholder)
+        Text("Settings")
+
+        // After (wired)
+        import SharedUI  // or specific component path
+
+        struct SettingsScreen: View {
+            var body: some View {
+                VStack {
+                    FontSizeSliderView()
+                    ThemeSwitcherView()
+                }
+            }
+        }
+        ```
+
+        ### Kotlin/Compose
+        ```kotlin
+        // Before (placeholder)
+        Text("Settings")
+
+        // After (wired)
+        import com.app.ui.components.FontSizeSlider
+        import com.app.ui.components.ThemeSwitcher
+
+        @Composable
+        fun SettingsScreen() {
+            Column {
+                FontSizeSlider()
+                ThemeSwitcher()
+            }
+        }
+        ```
+
+        ### React/React Native
+        ```tsx
+        // Before (placeholder)
+        <Text>Settings</Text>
+
+        // After (wired)
+        import { FontSizeSlider } from '@/components/FontSizeSlider';
+        import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+
+        export function SettingsScreen() {
+            return (
+                <View>
+                    <FontSizeSlider />
+                    <ThemeSwitcher />
+                </View>
+            );
+        }
+        ```
+
+        ### Flutter
+        ```dart
+        // Before (placeholder)
+        Text('Settings')
+
+        // After (wired)
+        import 'package:app/widgets/font_size_slider.dart';
+        import 'package:app/widgets/theme_switcher.dart';
+
+        class SettingsScreen extends StatelessWidget {
+          @override
+          Widget build(BuildContext context) {
+            return Column(
+              children: [
+                FontSizeSlider(),
+                ThemeSwitcher(),
+              ],
+            );
+          }
+        }
+        ```
+
+        ## Success Criteria
+        - Every [WIRE:] task has been executed
+        - Component imports exist in target screen files
+        - Components are instantiated (not placeholders)
+        - CSIM matrix shows 100% completion for this feature
+        - No orphan components (created but not wired)
+      model_override: sonnet
     # Wave 3.5: PBT Just-in-Time Validation (if properties.md exists)
     - role: pbt-jit-runner
       role_group: IMPLEMENT_VALIDATION
@@ -1078,6 +1278,132 @@ claude_code:
         ```
       model_override: sonnet
     # Wave 4: Review (sequential)
+    - role: component-integration-verifier
+      role_group: REVIEW
+      parallel: false
+      depends_on: [component-wire-builder]
+      priority: 4
+      trigger: "after component wiring (UI features with Component Registry)"
+      skip_if: "spec.md does not contain '## UI Component Registry' section"
+      prompt: |
+        ## Component Integration Verifier (QG-COMP-004)
+
+        ### Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Tasks: {{FEATURE_DIR}}/tasks.md
+
+        ### Pre-Check
+        1. Read spec.md
+        2. VERIFY: Contains "## UI Component Registry" section
+        3. IF NOT FOUND: Skip this role (not a component-based UI feature)
+
+        ### Verification Protocol
+
+        Execute QG-COMP-004 validation:
+
+        ```
+        orphan_components = []
+        incomplete_wires = []
+        placeholder_warnings = []
+
+        FOR EACH wire_task marked [X] in tasks.md:
+
+          1. **Extract Files**:
+             - Parse [WIRE:COMP-xxx→SCR-yyy] marker
+             - Look up component_file from [COMP:COMP-xxx] task
+             - Look up screen_file from [SCREEN:SCR-yyy] task
+
+          2. **Verify Import**:
+             - Read screen_file
+             - SCAN for import of component (by filename, class name, or module)
+             - IF NOT FOUND:
+               incomplete_wires.append({
+                 wire_task: task_id,
+                 component: COMP-xxx,
+                 screen: SCR-yyy,
+                 issue: "Missing import"
+               })
+
+          3. **Verify Usage**:
+             - SCAN screen_file for component instantiation
+             - Look for: ComponentName(), <ComponentName />, ComponentName{}
+             - IF NOT FOUND:
+               orphan_components.append({
+                 component: COMP-xxx,
+                 screen_file: screen_file,
+                 issue: "Component imported but not used"
+               })
+
+          4. **Placeholder Detection**:
+             - SCAN screen_file for patterns:
+               - Text("placeholder")
+               - Text("Settings")  # generic labels where component should be
+               - TODO:, FIXME:, HACK: in render/compose
+               - EmptyView(), Spacer() with comments indicating missing component
+             - IF FOUND in area where component should be:
+               placeholder_warnings.append({
+                 file: screen_file,
+                 pattern: matched_pattern,
+                 suggestion: "Replace with {component_name}"
+               })
+        ```
+
+        ### Failure Handling
+
+        ```
+        IF orphan_components.length > 0 OR incomplete_wires.length > 0:
+
+          1. **Revert Task Status**:
+             FOR EACH issue IN (orphan_components + incomplete_wires):
+               - Find wire task [WIRE:COMP-xxx→SCR-yyy]
+               - Change [X] back to [ ] in tasks.md
+               - Update CSIM matrix: Status = [ ]
+
+          2. **Report**:
+             ERROR: "Component Integration Incomplete"
+             - Orphan components: {count}
+             - Incomplete wires: {count}
+             - Details: {list each issue}
+
+          3. **Action**:
+             - Log for component-wire-builder to retry
+             - Block proceeding to code-reviewer
+
+        IF placeholder_warnings.length > 0:
+          WARNING: "Potential placeholder remnants detected"
+          - {list each warning}
+          - Action: Review manually, may be intentional
+        ```
+
+        ### Success Report
+
+        ```
+        ✅ Component Integration Verified (QG-COMP-004)
+
+        Wire Tasks Validated: {count}
+        ┌──────────┬─────────────────────┬─────────────┬────────┐
+        │ COMP     │ Component           │ Screen      │ Status │
+        ├──────────┼─────────────────────┼─────────────┼────────┤
+        │ COMP-001 │ FontSizeSliderView  │ Settings    │ ✅     │
+        │ COMP-001 │ FontSizeSliderView  │ ReaderOverlay│ ✅    │
+        │ COMP-002 │ ThemeSwitcherView   │ Settings    │ ✅     │
+        │ COMP-002 │ ThemeSwitcherView   │ ReaderOverlay│ ✅    │
+        └──────────┴─────────────────────┴─────────────┴────────┘
+
+        Orphan Components: 0
+        Placeholder Warnings: 0
+
+        → Proceeding to code review
+        ```
+
+        ### Success Criteria
+        - All [WIRE:] tasks marked [X] are verified in code
+        - Component imports exist in target screens
+        - Component instantiations exist in render/compose
+        - No orphan components (imported but not used)
+        - Placeholder warnings reviewed
+      model_override: sonnet
     - role: code-reviewer
       role_group: REVIEW
       parallel: false
@@ -1251,6 +1577,7 @@ This command includes multiple performance optimizations for 50-65% faster execu
 | Model Selection | `templates/shared/implement/model-selection.md` | 60-90% cost | `--no-adaptive-model` |
 | **Streaming Output** | `orchestration-instructions.md` → "Streaming Output" | Real-time visibility | `--no-streaming` or `--quiet` |
 | File Caching | Inline (Step 3) | 85% | N/A |
+| **Auto Staging** | `staging_auto_provision` | Skip manual staging setup | Default ON, `--no-auto-staging` to disable |
 | **Autonomous Mode** | Inline (below) | Unattended execution | Default OFF, `--autonomous` to enable |
 
 {{include: shared/orchestration-instructions.md}}

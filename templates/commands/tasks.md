@@ -239,6 +239,109 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
    - **Generate [TEST:] markers** linking test tasks to acceptance scenarios
    - Validate task completeness (each user story has all needed tasks, independently testable)
 
+4.5. **Generate Component Wire Tasks** *(for UI features with Component Registry)*:
+
+   ```text
+   IF spec.md contains "## UI Component Registry" section:
+
+     # Step 1: Parse Component Registry
+     COMPONENT_REGISTRY = []
+     FOR EACH row in "UI Component Registry" table:
+       comp = {
+         id: row.ID,           # e.g., COMP-001
+         name: row.Component,  # e.g., FontSizeSliderView
+         type: row.Type,       # e.g., Control
+         target_screens: parse_csv(row["Target Screens"]),  # e.g., [Settings, ReaderOverlay]
+         priority: row.Priority,
+         vr_ir_refs: row["VR/IR Refs"]
+       }
+       COMPONENT_REGISTRY.append(comp)
+
+     # Step 2: Parse Screen Registry
+     SCREEN_REGISTRY = []
+     FOR EACH row in "Screen Registry" table:
+       screen = {
+         id: row.ID,           # e.g., SCR-001
+         name: row.Screen,     # e.g., Settings
+         type: row.Type,       # e.g., Page
+         route: row["Route/Navigation"],
+         required_components: parse_csv(row["Required Components"])  # e.g., [COMP-001, COMP-002]
+       }
+       SCREEN_REGISTRY.append(screen)
+
+     # Step 3: Generate Component Creation Tasks (for Phase 2b)
+     FOR EACH comp IN COMPONENT_REGISTRY:
+       IF NOT exists task with [COMP:{comp.id}]:
+         GENERATE task:
+           ID: T{next_id}
+           Markers: [P] [COMP:{comp.id}] [VR:{comp.vr_ir_refs}]
+           Description: "Create {comp.name} in {inferred_path}"
+           Subtask: "- **Target Screens**: {comp.target_screens.join(', ')}"
+           Subtask: "- **Type**: {comp.type}"
+
+     # Step 4: Generate Screen Implementation Tasks (for story phases)
+     FOR EACH screen IN SCREEN_REGISTRY:
+       IF NOT exists task with [SCREEN:{screen.id}]:
+         GENERATE task:
+           ID: T{next_id}
+           Markers: [SCREEN:{screen.id}] [DEP:foundation_tasks]
+           Description: "Create {screen.name} in {inferred_path}"
+           Subtask: "- **Route**: {screen.route}"
+           Subtask: "- **Required Components**: {screen.required_components.join(', ')}"
+
+     # Step 5: Generate Wire Tasks (CRITICAL for integration)
+     WIRE_TASKS = []
+     FOR EACH comp IN COMPONENT_REGISTRY:
+       FOR EACH screen_name IN comp.target_screens:
+         screen = FIND screen IN SCREEN_REGISTRY WHERE screen.name == screen_name
+         IF screen:
+           comp_task = FIND task with [COMP:{comp.id}]
+           screen_task = FIND task with [SCREEN:{screen.id}]
+
+           wire_task = {
+             ID: T{next_id},
+             Markers: "[WIRE:{comp.id}→{screen.id}] [DEP:{comp_task.id},{screen_task.id}]",
+             Description: "Wire {comp.name} into {screen.name}",
+             Subtasks: [
+               "- **Component File**: {comp_task.file_path}",
+               "- **Screen File**: {screen_task.file_path}",
+               "- **Action**: Import component, replace placeholder",
+               "- **Verify**: Component renders, is functional in {screen.name}"
+             ]
+           }
+           WIRE_TASKS.append(wire_task)
+
+     # Step 6: Generate CSIM Matrix
+     CSIM_ROWS = []
+     FOR EACH wire_task IN WIRE_TASKS:
+       row = {
+         comp_id: wire_task.comp_id,
+         comp_name: wire_task.comp_name,
+         screen_id: wire_task.screen_id,
+         screen_name: wire_task.screen_name,
+         wire_task_id: wire_task.ID,
+         deps: wire_task.deps,
+         status: "[ ]"
+       }
+       CSIM_ROWS.append(row)
+
+     # Step 7: Validate Coverage (QG-COMP-002)
+     EXPECTED_PAIRS = len(COMPONENT_REGISTRY) × avg(len(comp.target_screens))
+     ACTUAL_PAIRS = len(WIRE_TASKS)
+
+     IF ACTUAL_PAIRS < EXPECTED_PAIRS:
+       ERROR: "QG-COMP-002 FAILED: CSIM coverage {ACTUAL_PAIRS}/{EXPECTED_PAIRS}"
+       FOR EACH missing_pair:
+         ERROR: "  Missing wire: {comp.id} → {screen.id}"
+     ELSE:
+       OUTPUT: "QG-COMP-002 PASSED: {ACTUAL_PAIRS} wire tasks for {len(COMPONENT_REGISTRY)} components"
+
+   ELSE:
+     SKIP: "No Component Registry found - skipping wire task generation"
+   ```
+
+   **Output**: Component-Screen Integration Matrix (CSIM) section added to tasks.md after RTM.
+
 5. **Generate Dependency Graph**:
 
    ```text
@@ -873,6 +976,9 @@ Apply criteria based on complexity tier (from framework.md):
 | SR-TASK-08 | No Circular Dependencies | Dependency graph has no cycles | CRITICAL |
 | SR-TASK-09 | RTM Table Complete | Requirements Traceability Matrix lists all FRs with linked tasks | MEDIUM |
 | SR-TASK-10 | Coverage Summary Present | Coverage Summary section shows FR/AS coverage stats | MEDIUM |
+| SR-TASK-11 | Component Markers Present | Phase 2b component tasks have [COMP:COMP-xxx] markers (UI features) | HIGH |
+| SR-TASK-12 | Wire Tasks Complete | Every (Component, Target Screen) pair has [WIRE:] task (QG-COMP-002) | CRITICAL |
+| SR-TASK-13 | CSIM Matrix Complete | Component-Screen Integration Matrix shows 100% coverage (UI features) | HIGH |
 
 ### Step 3: Dependency Validation
 

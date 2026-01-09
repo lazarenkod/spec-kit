@@ -1705,6 +1705,200 @@ The following categories (R-U) are executed when `/speckit.analyze` runs after `
 
 ---
 
+#### W3. Component Integration Validation *(for UI features)*
+
+**Purpose**: Ensure UI components are properly registered, have wire tasks, and are actually integrated into screens.
+
+**Activation Check**:
+
+```text
+IF spec.md contains "## UI Component Registry" section:
+  COMPONENT_INTEGRATION_ACTIVE = true
+ELSE:
+  COMPONENT_INTEGRATION_ACTIVE = false
+
+IF NOT COMPONENT_INTEGRATION_ACTIVE:
+  SKIP this validation pass
+  OUTPUT: "No Component Registry found - skipping component integration validation"
+```
+
+**1. Component Registration Validation (QG-COMP-001)**:
+
+```text
+IF tasks.md exists:
+  # Extract Phase 2b component tasks
+  component_tasks = FIND all tasks in "Phase 2b: Design Foundation" section
+                    WHERE description contains "Create.*View" OR "Create.*Component" OR "Create.*Button"
+
+  FOR EACH component_task:
+    IF NOT component_task.markers contains "[COMP:COMP-xxx]":
+      → HIGH: "Component task missing [COMP:] marker: {component_task.id}"
+      → Suggest: "Add [COMP:COMP-xxx] marker linking to Component Registry"
+
+  # Verify COMP-xxx exists in registry
+  FOR EACH [COMP:COMP-xxx] marker in tasks.md:
+    IF COMP-xxx NOT IN Component_Registry:
+      → HIGH: "Task references unknown component: {COMP-xxx}"
+      → Suggest: "Add {COMP-xxx} to Component Registry in spec.md"
+```
+
+**2. Wire Task Coverage Validation (QG-COMP-002)**:
+
+```text
+# Parse Component Registry
+COMPONENT_REGISTRY = parse "UI Component Registry" table from spec.md
+SCREEN_REGISTRY = parse "Screen Registry" table from spec.md
+
+# Calculate expected wire pairs
+EXPECTED_PAIRS = []
+FOR EACH comp IN COMPONENT_REGISTRY:
+  FOR EACH screen_name IN comp.Target_Screens:
+    screen = FIND screen IN SCREEN_REGISTRY WHERE screen.name == screen_name
+    IF screen:
+      EXPECTED_PAIRS.append({comp: comp.id, screen: screen.id})
+
+# Find actual wire tasks
+WIRE_TASKS = FIND all tasks in tasks.md WHERE markers contain "[WIRE:"
+ACTUAL_PAIRS = []
+FOR EACH wire_task IN WIRE_TASKS:
+  PARSE wire_task marker "[WIRE:{comp_id}→{screen_id}]"
+  ACTUAL_PAIRS.append({comp: comp_id, screen: screen_id})
+
+# Validate coverage
+FOR EACH expected_pair IN EXPECTED_PAIRS:
+  IF expected_pair NOT IN ACTUAL_PAIRS:
+    → CRITICAL: "Missing wire task: {expected_pair.comp} → {expected_pair.screen}"
+    → Suggest: "Add: - [ ] T### [WIRE:{comp}→{screen}] Wire {comp_name} into {screen_name}"
+
+CSIM_COVERAGE = len(ACTUAL_PAIRS) / len(EXPECTED_PAIRS) × 100
+IF CSIM_COVERAGE < 100:
+  → CRITICAL: "QG-COMP-002 FAILED: CSIM coverage {CSIM_COVERAGE}% < 100%"
+ELSE:
+  → PASS: "QG-COMP-002 PASSED: All component-screen pairs have wire tasks"
+```
+
+**3. Screen Completeness Validation (QG-COMP-003)**:
+
+```text
+FOR EACH screen IN SCREEN_REGISTRY:
+  FOR EACH required_comp IN screen.Required_Components:
+    IF NOT EXISTS wire_task with [WIRE:{required_comp}→{screen.id}]:
+      → CRITICAL: "Screen {screen.name} missing wire task for required component {required_comp}"
+
+  # Count wired vs required
+  wired_count = COUNT wire_tasks WHERE screen_id = screen.id
+  required_count = len(screen.Required_Components)
+
+  IF wired_count < required_count:
+    → HIGH: "Screen {screen.name} only has {wired_count}/{required_count} components wired"
+```
+
+**4. Orphan Component Detection (QG-COMP-004) - QA Mode Only**:
+
+```text
+IF VALIDATION_PROFILE == "qa":
+  # This validation runs after implementation
+
+  FOR EACH wire_task WHERE status = "[x]" (completed):
+    # Resolve files
+    comp_task = FIND task with [COMP:{wire_task.comp_id}]
+    screen_task = FIND task with [SCREEN:{wire_task.screen_id}]
+
+    comp_file = extract file path from comp_task
+    screen_file = extract file path from screen_task
+
+    IF file_exists(screen_file):
+      screen_content = read(screen_file)
+
+      # Check for component import
+      comp_name = extract component name from comp_task
+      import_patterns = [
+        "import.*{comp_name}",              # Kotlin/Swift/JS
+        "from.*import.*{comp_name}",        # Python
+        "@import.*{comp_name}",             # Objective-C
+      ]
+
+      import_found = ANY(pattern matches screen_content for pattern in import_patterns)
+      IF NOT import_found:
+        → CRITICAL: "Orphan: {comp_name} not imported in {screen_file}"
+        → Suggest: "Add import statement for {comp_name}"
+
+      # Check for component usage
+      usage_patterns = [
+        "{comp_name}(",                     # Function call
+        "<{comp_name}",                     # JSX/SwiftUI
+        "{comp_name} {",                    # Kotlin Compose
+        "{comp_name}View",                  # iOS naming
+      ]
+
+      usage_found = ANY(pattern matches screen_content for pattern in usage_patterns)
+      IF NOT usage_found:
+        → CRITICAL: "Orphan: {comp_name} imported but not used in {screen_file}"
+        → Suggest: "Add {comp_name} to render function in {screen_file}"
+
+      # Check for placeholder patterns
+      placeholder_patterns = [
+        'Text(".*placeholder.*")',
+        'Text("{screen_name}")',            # e.g., Text("Settings")
+        "// TODO:",
+        "// FIXME:",
+        "EmptyView()",
+        "Spacer().*// component here",
+      ]
+
+      FOR EACH pattern IN placeholder_patterns:
+        IF pattern matches screen_content:
+          → WARNING: "Placeholder detected in {screen_file}: {matched_text}"
+          → Suggest: "Replace placeholder with actual component usage"
+
+ELSE:
+  SKIP: "Orphan detection only runs in QA mode (post-implement)"
+```
+
+**5. CSIM Matrix Validation**:
+
+```text
+IF tasks.md contains "## Component-Screen Integration Matrix":
+  CSIM_TABLE = parse CSIM table from tasks.md
+
+  # Validate CSIM completeness
+  FOR EACH expected_pair IN EXPECTED_PAIRS:
+    IF expected_pair NOT IN CSIM_TABLE:
+      → HIGH: "CSIM matrix missing entry: {expected_pair.comp} → {expected_pair.screen}"
+
+  # Validate wire task references
+  FOR EACH row IN CSIM_TABLE:
+    wire_task_id = row.Wire_Task
+    IF NOT EXISTS task with id = wire_task_id:
+      → HIGH: "CSIM references non-existent wire task: {wire_task_id}"
+
+  # Calculate coverage metrics
+  total_pairs = len(CSIM_TABLE)
+  pairs_with_wire = COUNT rows WHERE Wire_Task is not empty
+  coverage = pairs_with_wire / total_pairs × 100
+
+  OUTPUT: "CSIM Coverage: {coverage}% ({pairs_with_wire}/{total_pairs} pairs)"
+
+ELSE:
+  IF COMPONENT_INTEGRATION_ACTIVE:
+    → HIGH: "Component Registry exists but CSIM matrix missing from tasks.md"
+    → Suggest: "Regenerate tasks with /speckit.tasks to create CSIM"
+```
+
+**Severity Summary for Pass W3:**
+
+| Condition | Severity |
+|-----------|----------|
+| Wire task missing for component-screen pair | CRITICAL |
+| Orphan component (not used in screen) | CRITICAL |
+| Screen missing required component | CRITICAL |
+| Component task missing [COMP:] marker | HIGH |
+| CSIM matrix incomplete | HIGH |
+| CSIM references invalid task | HIGH |
+| Placeholder detected in screen | WARNING |
+
+---
+
 #### X. UXQ Domain Validation *(if UXQ domain active)*
 
 **Purpose**: Validate User Experience Quality principles when UXQ domain is active.

@@ -484,6 +484,64 @@
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]
 - **[Entity 2]**: [What it represents, relationships to other entities]
+
+### UI Component Registry *(for UI features with reusable components)*
+
+<!--
+  Register all reusable UI components created in Phase 2b (Design Foundation).
+  Each component must specify Target Screens where it will be used.
+
+  QG-COMP-002 validates that wire tasks exist for ALL (Component, Target Screen) pairs.
+  This ensures components are not orphaned - created but never integrated.
+
+  Component Types:
+  - Control: Interactive elements (Button, Slider, Toggle, Picker)
+  - Container: Layout/grouping elements (Card, Panel, Modal, Sheet)
+  - Display: Read-only elements (Label, Badge, Icon, Image)
+  - Form: Input elements (TextField, DatePicker, Dropdown, Checkbox)
+  - Navigation: Nav elements (TabBar, Sidebar, Breadcrumb, Link)
+
+  Skip this section for API-only, CLI, or backend features.
+-->
+
+| ID | Component | Type | Target Screens | Priority | VR/IR Refs |
+|----|-----------|------|----------------|----------|------------|
+| COMP-001 | [ComponentName] | [Control/Container/Display/Form/Nav] | [Screen1, Screen2] | P1 | VR-001 |
+| COMP-002 | [ComponentName] | [Type] | [Screen1] | P1 | IR-001 |
+
+**Component Creation Source**: Phase 2b tasks in tasks.md use `[COMP:COMP-xxx]` markers
+
+### Screen Registry *(for UI features with navigation)*
+
+<!--
+  Register all screens/pages in the navigation flow.
+  Required Components must match Component Registry Target Screens.
+
+  QG-COMP-003 validates that screens have wire tasks for ALL Required Components.
+  This ensures every screen receives all components it needs.
+
+  Screen Types:
+  - Page: Full-screen view in navigation stack
+  - Modal: Overlay/dialog that covers part of screen
+  - Sheet: Bottom/side sheet that slides in
+  - Tab: Tab content within tab bar
+  - Drawer: Side drawer menu content
+
+  Route Format:
+  - Web: URL path (e.g., /settings, /user/:id)
+  - iOS: View name (e.g., SettingsView, ProfileView)
+  - Android: Fragment/Activity name (e.g., SettingsFragment)
+-->
+
+| ID | Screen | Type | Route/Navigation | Required Components | Priority |
+|----|--------|------|------------------|---------------------|----------|
+| SCR-001 | [ScreenName] | [Page/Modal/Sheet/Tab/Drawer] | [/route or ViewName] | COMP-001, COMP-002 | P1 |
+| SCR-002 | [ScreenName] | [Type] | [/route or ViewName] | COMP-001 | P2 |
+
+**Screen Implementation Source**: User story tasks in tasks.md use `[SCREEN:SCR-xxx]` markers
+
+**Component-Screen Coverage**: Validated by QG-COMP-002 and QG-COMP-003 gates
+
 ---
 
 ## Non-Functional Requirements *(mandatory)*

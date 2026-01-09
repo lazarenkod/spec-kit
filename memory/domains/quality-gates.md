@@ -314,6 +314,170 @@ go test -coverprofile=coverage.out && go tool cover -func=coverage.out
 
 ---
 
+## Component Integration Gates (QG-COMP-xxx)
+
+> **Component Integration Quality Gates** ensure UI components are not just created but actually integrated into all target screens.
+> Prevents "orphan components" - components that exist but are never used in navigation.
+
+### QG-COMP-001: Component Registration
+
+**Level**: MUST (for UI features with Component Registry)
+**Applies to**: All `/speckit.tasks` outputs for features with UI Component Registry
+**Phase**: Pre-Implement
+
+Every component creation task in Phase 2b MUST have a `[COMP:COMP-xxx]` marker linking to Component Registry.
+
+**Threshold**: 100% of Phase 2b component tasks have [COMP:] markers
+
+**Validation**:
+```bash
+# Parse tasks.md Phase 2b, extract component creation tasks
+# Verify each has [COMP:COMP-xxx] marker
+# Verify COMP-xxx exists in spec.md Component Registry
+```
+
+**Implementation**:
+```
+FOR EACH task IN Phase_2b_tasks:
+  IF task.description contains "Create.*Component" OR ".*View" OR ".*Button":
+    IF NOT task.markers contains "[COMP:COMP-xxx]":
+      ERROR: "Component task missing [COMP:] marker: {task}"
+    IF NOT Component_Registry contains task.COMP_id:
+      ERROR: "COMP-{id} not found in Component Registry"
+```
+
+**Violations**: HIGH - Component not traceable to spec
+
+---
+
+### QG-COMP-002: Wire Task Coverage
+
+**Level**: MUST (for UI features with Component Registry)
+**Applies to**: All `/speckit.tasks` outputs for features with UI Component Registry
+**Phase**: Pre-Implement
+
+Every (Component, Target Screen) pair from Component Registry MUST have a corresponding wire task.
+
+**Threshold**: 100% of (Component, Target Screen) pairs have [WIRE:] tasks
+
+**Validation**:
+```bash
+/speckit.analyze --profile component-coverage
+# Output: CSIM coverage: X/Y pairs have wire tasks (Z%)
+```
+
+**Implementation**:
+```
+FOR EACH comp IN Component_Registry:
+  FOR EACH screen_id IN comp.Target_Screens:
+    FIND task with marker "[WIRE:{comp.id}→{screen_id}]"
+    IF NOT FOUND:
+      ERROR: "Missing wire task: {comp.id} → {screen_id}"
+      ERROR: "Add: - [ ] TXXX [WIRE:{comp.id}→{screen_id}] Wire {comp.name} into {screen.name}"
+```
+
+**CSIM Matrix Validation**:
+```
+CSIM_PAIRS = Component_Registry × Screen_Registry (via Target_Screens)
+WIRE_TASKS = tasks with [WIRE:*] markers
+COVERAGE = len(WIRE_TASKS) / len(CSIM_PAIRS) × 100
+
+IF COVERAGE < 100%:
+  BLOCK: "CSIM coverage {COVERAGE}% < 100%. Missing wire tasks for:"
+  FOR EACH missing_pair:
+    OUTPUT: "  - {comp.name} → {screen.name}"
+```
+
+**Violations**: CRITICAL - Components will not appear in navigation screens
+
+---
+
+### QG-COMP-003: Screen Component Completeness
+
+**Level**: MUST (for UI features with Screen Registry)
+**Applies to**: All `/speckit.tasks` outputs for features with Screen Registry
+**Phase**: Pre-Implement
+
+Every screen MUST have wire tasks for ALL its Required Components (from Screen Registry).
+
+**Threshold**: 100% of screens have wire tasks for all Required Components
+
+**Validation**:
+```bash
+/speckit.analyze --profile screen-completeness
+# Output: Screen coverage: X/Y screens fully wired (Z%)
+```
+
+**Implementation**:
+```
+FOR EACH screen IN Screen_Registry:
+  FOR EACH comp_id IN screen.Required_Components:
+    FIND task with marker "[WIRE:{comp_id}→{screen.id}]"
+    IF NOT FOUND:
+      ERROR: "{screen.name} missing wire task for {comp_id}"
+```
+
+**Violations**: CRITICAL - Screen will show placeholders instead of components
+
+---
+
+### QG-COMP-004: No Orphan Components (Post-Implement)
+
+**Level**: MUST (for UI features)
+**Applies to**: `/speckit.analyze` QA mode after implementation
+**Phase**: Post-Implement
+
+Every completed wire task MUST result in actual component usage in the screen file.
+
+**Threshold**: 100% of completed [WIRE:] tasks have import AND usage in screen
+
+**Validation**:
+```bash
+/speckit.analyze --profile qa --check orphan-components
+# Output: Orphan detection: X/Y wire tasks verified (Z%)
+```
+
+**Implementation** (code-level validation):
+```
+FOR EACH wire_task WHERE status = "[x]":
+  comp_file = resolve from [COMP:{comp_id}] task
+  screen_file = resolve from [SCREEN:{screen_id}] task
+
+  # Check import
+  SCAN screen_file for import of comp_file
+  IF NOT FOUND:
+    CRITICAL: "Missing import: {comp_name} not imported in {screen_file}"
+
+  # Check usage
+  SCAN screen_file for usage of component (function call, JSX tag, Compose call)
+  IF NOT FOUND:
+    CRITICAL: "Orphan component: {comp_name} imported but not used in {screen_file}"
+
+  # Check for placeholders
+  SCAN screen_file for placeholder patterns:
+    - Text("...placeholder...")
+    - Text("{screen_name}")  # e.g., Text("Settings")
+    - TODO:, FIXME: in render body
+    - EmptyView(), Spacer() where component should be
+  IF FOUND:
+    WARNING: "Placeholder detected in {screen_file}: {pattern}"
+```
+
+**Violations**: CRITICAL - Tasks marked complete but integration not done
+
+---
+
+### Component Integration Gates Summary
+
+| Gate ID | Phase | Level | Threshold | Validation | Violation |
+|---------|-------|-------|-----------|------------|-----------|
+| QG-COMP-001 | Pre-Implement | MUST | 100% markers | [COMP:] check | HIGH |
+| QG-COMP-002 | Pre-Implement | MUST | 100% pairs | CSIM coverage | CRITICAL |
+| QG-COMP-003 | Pre-Implement | MUST | 100% screens | Screen completeness | CRITICAL |
+| QG-COMP-004 | Post-Implement | MUST | 100% wired | Orphan detection | CRITICAL |
+
+---
+
 ## Pre-Implement Gates
 
 ### QG-001: Minimum Spec Quality Score
@@ -854,6 +1018,10 @@ pytest -k "security or auth"
 
 | Gate | Phase | Level | Threshold | Validation Command | Severity |
 |------|-------|-------|-----------|-------------------|----------|
+| QG-COMP-001 | Pre-Implement | MUST | 100% markers | `/speckit.analyze --profile component-coverage` | HIGH |
+| QG-COMP-002 | Pre-Implement | MUST | 100% pairs | `/speckit.analyze --profile component-coverage` | CRITICAL |
+| QG-COMP-003 | Pre-Implement | MUST | 100% screens | `/speckit.analyze --profile screen-completeness` | CRITICAL |
+| QG-COMP-004 | Post-Implement | MUST | 100% wired | `/speckit.analyze --profile qa --check orphan-components` | CRITICAL |
 | QG-DQS-001 | Pre-Implement | MUST | DQS >= 70 | `/speckit.analyze --profile dqs` | HIGH |
 | QG-DQS-002 | Pre-Implement | MUST | A11y >= 60% | `/speckit.analyze --profile dqs --dimension accessibility` | CRITICAL |
 | QG-DQS-003 | Pre-Implement | MUST | WCAG AA | Contrast ratio validation | CRITICAL |
@@ -1009,15 +1177,17 @@ PQS = (
 
 | Type | Count |
 |------|-------|
+| Component Integration Gates | 4 |
 | Design Quality Gates | 3 |
+| Test-First Development Gates | 4 |
 | Pre-Implement Gates | 5 |
 | Post-Implement Gates | 7 |
 | Pre-Deploy Gates | 5 |
 | Security Gates | 5 |
 | Migration Gates | 3 |
 | Property-Based Testing Gates | 7 |
-| **Total QG Principles** | **30** |
-| MUST level | 19 |
+| **Total QG Principles** | **38** |
+| MUST level | 27 |
 | SHOULD level | 4 |
 
 ---

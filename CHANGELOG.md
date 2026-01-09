@@ -7,6 +7,64 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.108] - 2026-01-09
+
+### Added
+
+- **Component-Screen Integration Validation System** to prevent orphan UI components:
+  - **UI Component Registry** in `spec-template.md`: COMP-xxx entries with Target Screens
+  - **Screen Registry** in `spec-template.md`: SCR-xxx entries with Required Components
+  - **New task markers** in `tasks-template.md`: [COMP:], [WIRE:], [SCREEN:]
+  - **CSIM Matrix** (Component-Screen Integration Matrix) tracks all component-screen pairs
+  - **Step 4.5** in `/speckit.tasks`: Auto-generates wire tasks from Component/Screen registries
+
+- **Quality Gates QG-COMP-001 to QG-COMP-004** in `quality-gates.md`:
+  - QG-COMP-001: Component Registration (100% markers required)
+  - QG-COMP-002: Wire Task Coverage (100% component-screen pairs)
+  - QG-COMP-003: Screen Component Completeness
+  - QG-COMP-004: No Orphan Components (post-implement validation)
+
+- **Pass W3: Component Integration Validation** in `/speckit.analyze`:
+  - Validates wire task coverage and CSIM matrix completeness
+  - Orphan component detection in QA mode (scans code for imports/usage)
+  - Placeholder detection (finds `Text("Settings")` remnants)
+
+- **New implement roles** in `/speckit.implement`:
+  - `component-wire-builder` (Wave 3): Executes [WIRE:] tasks with platform-specific patterns
+  - `component-integration-verifier` (Wave 4): Validates QG-COMP-004, reverts incomplete wires
+
+### New Self-Review Criteria
+
+- SR-TASK-11: Component Markers Present (Phase 2b tasks have [COMP:] markers)
+- SR-TASK-12: Wire Tasks Complete (every component-screen pair has [WIRE:] task)
+- SR-TASK-13: CSIM Matrix Complete (100% coverage for UI features)
+
+## [0.0.107] - 2026-01-09
+
+### Added
+
+- **Auto Staging Provisioning** in `/speckit.implement`:
+  - Staging environment is automatically provisioned when needed (Wave 0)
+  - Detects missing `.speckit/staging/docker-compose.yaml` and auto-invokes `/speckit.staging` workflow
+  - New `staging_auto_provision` config block with detection logic and timeout settings
+  - In autonomous mode: attempts auto-provision first, then soft fails if Docker unavailable
+
+### Changed
+
+- **`staging-validator` subagent** now includes auto-provision logic:
+  - Step 1: Check existing staging status
+  - Step 2: Auto-provision if missing (unless `--no-auto-staging`)
+  - Step 3: Verify health and pass QG-STAGING-001
+
+- **`autonomous_mode.behavior.staging_missing`**: Changed from `soft_fail` to `auto_provision_then_soft_fail`
+
+### New Flags
+
+- `--no-auto-staging`: Skip automatic staging provisioning. Use when:
+  - Testing without Docker
+  - Staging already provisioned externally
+  - Unit tests only (no integration/e2e)
+
 ## [0.0.106] - 2026-01-09
 
 ### Added
