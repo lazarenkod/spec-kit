@@ -1,7 +1,7 @@
 # Spec-Kit Commands Guide
 
 <!-- AUTO-GENERATED - DO NOT EDIT MANUALLY -->
-<!-- Generated at: 2026-01-09 08:50:59 -->
+<!-- Generated at: 2026-01-09 12:51:39 -->
 <!-- Source: templates/commands/*.md -->
 
 Полное руководство по командам Spec Kit для Spec-Driven Development.
@@ -806,5 +806,5 @@ graph LR
 ## Версия документа
 
 **Версия:** 0.0.99
-**Дата генерации:** 2026-01-09 08:50:59
+**Дата генерации:** 2026-01-09 12:51:39
 **Автор:** Auto-generated from command templates
