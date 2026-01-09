@@ -1161,37 +1161,84 @@ This command includes multiple performance optimizations for 50-65% faster execu
 
 {{include: shared/orchestration-instructions.md}}
 
-### Execution Flow Control
+### AUTONOMOUS EXECUTION MODE
 
-**CRITICAL DIRECTIVE FOR CLAUDE CODE CLI**:
+> **⚠️ MANDATORY BEHAVIOR WHEN `--autonomous` OR `--auto` FLAG IS SET**
+>
+> This section defines REQUIRED behavior for Claude Code CLI. Violations break user trust.
+> These rules OVERRIDE default Claude Code behavior for summaries, todos, and pauses.
 
-When `--autonomous` flag is set OR `execution_mode.mode == "continuous"`:
+#### Tool Restrictions in Autonomous Mode
 
-1. **DO NOT PAUSE** between waves for user confirmation
-2. **DO NOT REQUEST** continuation approval after completing tasks
-3. **DO NOT GENERATE** intermediate summaries that wait for response
-4. **CONTINUE AUTOMATICALLY** through all waves (0 → 1 → 2 → 3 → 3.5 → 4 → 5)
-5. **DEFER ALL SUMMARIES** until complete implementation is finished
+| Tool | Allowed | Notes |
+|------|---------|-------|
+| **TodoWrite** | ❌ FORBIDDEN | Do NOT create or update todos - track progress internally only |
+| **AskUserQuestion** | ❌ FORBIDDEN | Do NOT ask questions or request confirmation |
+| **Text summaries** | ❌ FORBIDDEN | Do NOT output multi-line summaries between waves |
+| **Progress indicators** | ✅ REQUIRED | Single-line only: `✓ Wave N complete (X/Y tasks)` |
+| **Final summary** | ✅ REQUIRED | Only after ALL waves complete (Wave 5) |
 
-**Flow Pattern:**
+#### Execution Pattern
+
 ```text
-Wave 0: Staging → AUTO-CONTINUE →
-Wave 1: Infrastructure → AUTO-CONTINUE →
-Wave 2: Test Scaffolding → AUTO-CONTINUE →
-Wave 3: Core Implementation → AUTO-CONTINUE →
-Wave 3.5: PBT Validation → AUTO-CONTINUE →
-Wave 4: Test Verification → AUTO-CONTINUE →
-Wave 5: Polish → FINAL SUMMARY
+START → Wave0 → Wave1 → Wave2 → Wave3 → Wave3.5 → Wave4 → Wave5 → SUMMARY → END
+         │        │       │        │         │         │        │
+      (silent) (silent) (silent) (silent) (silent) (silent) (silent)
+         │        │       │        │         │         │        │
+         └────────┴───────┴────────┴─────────┴─────────┴────────┘
+                         NO PAUSES, NO SUMMARIES
 ```
 
-**Only stop execution for:**
+#### DO NOT (Autonomous Mode):
+
+- ❌ Pause between waves for any reason
+- ❌ Generate summaries or status updates between waves
+- ❌ Use TodoWrite tool to track progress
+- ❌ Ask for confirmation before proceeding
+- ❌ Output reflection, planning, or thinking text
+- ❌ Create intermediate "progress reports"
+- ❌ Wait for user response at any point
+
+#### DO (Autonomous Mode):
+
+- ✅ Execute waves sequentially without stopping
+- ✅ Emit ONLY single-line progress after each wave: `✓ Wave 2 complete (5/5 tasks)`
+- ✅ Continue immediately to next wave after progress line
+- ✅ Output comprehensive summary ONLY after Wave 5 completes
+- ✅ Handle errors silently with auto-recovery when possible
+- ✅ Log errors to implementation log, continue execution
+
+#### Only Stop Execution For:
+
 - Critical errors that cannot be auto-recovered
 - Blocking quality gate failures (when configured to block)
 - Build/test failures that require human intervention
+- Explicit user interruption (Ctrl+C)
 
-**Summary timing:**
-- Per-wave progress indicators: `✓ Wave N complete (X/Y tasks)`
-- Full summary: Only at the end of all waves
+#### Autonomous Mode Summary Format
+
+When `--autonomous` flag was set, output this format ONLY at the END:
+
+```markdown
+## Implementation Complete (Autonomous Mode)
+
+**Duration**: Xm Ys | **Waves**: 6/6 | **Tasks**: N/N
+
+| Wave | Tasks | Status |
+|------|-------|--------|
+| 0 - Staging | 2/2 | ✓ |
+| 1 - Infrastructure | 3/3 | ✓ |
+| 2 - Test Scaffolding | 5/5 | ✓ |
+| 3 - Core Implementation | 8/8 | ✓ |
+| 3.5 - PBT Validation | 2/2 | ✓ |
+| 4 - Test Verification | 3/3 | ✓ |
+| 5 - Polish | 2/2 | ✓ |
+
+**Files modified**: X | **Tests added**: Y | **Coverage**: Z%
+
+### Changes Summary
+[Detailed implementation summary here]
+```
 
 ### Wave Execution with Streaming
 
@@ -1222,6 +1269,15 @@ During parallel execution, apply streaming output for real-time visibility:
 - Cost: $18.50 → ~$6.20 (66% savings with adaptive models)
 
 ---
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     AUTONOMOUS MODE REMINDER: If --autonomous/--auto flag is set:
+     • DO NOT use TodoWrite
+     • DO NOT output summaries between waves
+     • DO NOT pause or ask questions
+     • ONLY emit: "✓ Wave N complete (X/Y tasks)"
+     • ONLY output full summary after Wave 5 completes
+     ═══════════════════════════════════════════════════════════════════════════ -->
 
 1. Run `{SCRIPT}` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
@@ -1642,10 +1698,15 @@ During parallel execution, apply streaming output for real-time visibility:
    │  1. ✅ Complete the task implementation                      │
    │  2. ✅ Edit tasks.md: `[ ]` → `[X]`                          │
    │  3. ✅ Verify the edit succeeded                             │
-   │  4. ✅ Report completion to user                             │
+   │  4. ✅ Report completion (see mode below)                    │
    │  5. ⚠️  ONLY THEN proceed to next task                       │
    │                                                              │
    │  ⛔ NEVER proceed without updating tasks.md first ⛔          │
+   │                                                              │
+   │  📌 AUTONOMOUS MODE (--auto): Skip step 4, continue silently │
+   │     - Do NOT output per-task progress reports                │
+   │     - Do NOT use TodoWrite tool                              │
+   │     - Continue immediately to next task                      │
    └──────────────────────────────────────────────────────────────┘
 
    a) **Mark task as complete**:
@@ -1662,11 +1723,15 @@ During parallel execution, apply streaming output for real-time visibility:
       5. Proceed to next task
 
    c) **Progress report format** (after marking task):
+
+      **Interactive mode** (default):
       ```text
       ✓ T005 [FR:FR-001] Implement user authentication service - DONE
         Files: src/services/auth.ts, src/models/user.ts
         Progress: 5/12 tasks complete (42%)
       ```
+
+      **Autonomous mode** (`--auto`): NO per-task output. Continue silently.
 
    d) **Error handling**:
       - Halt execution if any non-parallel task fails
@@ -1679,6 +1744,8 @@ During parallel execution, apply streaming output for real-time visibility:
         ```
 
    e) **Verification checkpoint** (every 3-5 tasks):
+
+      **Interactive mode** (default):
       ```text
       📊 Progress Check:
       ├── Completed: T001, T002, T003, T004, T005 (5 tasks)
@@ -1686,6 +1753,9 @@ During parallel execution, apply streaming output for real-time visibility:
       ├── Blocked: none
       └── Next: T006 - Create API endpoints
       ```
+
+      **Autonomous mode** (`--auto`): Skip checkpoints. Only emit wave completion:
+      `✓ Wave 2 complete (5/5 tasks)`
 
 10. **Definition of Done (DoD)** — Per User Story:
 

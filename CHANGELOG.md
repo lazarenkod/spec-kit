@@ -7,6 +7,19 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.100] - 2026-01-09
+
+### Changed
+
+- **Strengthened Autonomous Mode Enforcement** in `/speckit.implement`:
+  - Added explicit tool restrictions table: TodoWrite and AskUserQuestion FORBIDDEN in autonomous mode
+  - Added visual execution pattern diagram showing silent wave-to-wave flow
+  - Added DO NOT / DO lists with specific prohibited and required behaviors
+  - Updated Task Completion Protocol (Step 9) with autonomous mode modifier
+  - Updated progress report format and verification checkpoints for autonomous mode
+  - Added HTML comment reminder at start of implementation steps
+  - Goal: Prevent Claude Code from pausing, summarizing, or using TodoWrite during `--auto` execution
+
 ## [0.0.99] - 2026-01-09
 
 ### Added
