@@ -13,9 +13,43 @@ handoffs:
     agent: speckit.design-generate
     prompt: Generate additional component variants
 claude_code:
-  model: opus
+  model: opus  # Default model, overridden by adaptive selection
   reasoning_mode: extended
   thinking_budget: 16000
+  adaptive_model:
+    enabled: true
+    mode_detection: true
+    mode_routing:
+      static_mockup:
+        orchestrator: haiku
+        thinking_budget: 4000
+        description: "Simple HTML/CSS conversion from wireframes"
+      interactive_preview:
+        orchestrator: sonnet
+        thinking_budget: 8000
+        description: "Component generation with state management"
+      animated_preview:
+        orchestrator: opus
+        thinking_budget: 16000
+        description: "Complex animations, gestures, transitions"
+    detection_signals:
+      static: ["wireframe", "layout", "static", "mockup", "visual only"]
+      interactive: ["component", "state", "props", "interactive", "click", "hover"]
+      animated: ["animation", "transition", "gesture", "motion", "swipe", "drag"]
+    subagent_overrides:
+      static_mockup:
+        wireframe-converter: haiku
+        component-previewer: haiku
+        screenshot-generator: haiku
+      interactive_preview:
+        wireframe-converter: sonnet
+        component-previewer: sonnet
+        screenshot-generator: haiku
+      animated_preview:
+        wireframe-converter: sonnet
+        component-previewer: opus
+        motion-designer: opus
+    override_flag: "--preview-mode"
   cache_hierarchy: full
   orchestration:
     max_parallel: 3
@@ -2320,7 +2354,59 @@ This command generates **interactive visual previews** from design specification
 
 ## Outline
 
-### 0. Load Configuration
+### 0. Preview Mode Detection (Adaptive Model Selection)
+
+```text
+# Detect preview mode from design.md content and CLI flags
+
+IF adaptive_model.enabled = true AND --preview-mode flag not present:
+
+  READ design.md → DESIGN_CONTENT
+
+  # Analyze content for mode signals
+  STATIC_SIGNALS = count_matches(DESIGN_CONTENT, adaptive_model.detection_signals.static)
+  INTERACTIVE_SIGNALS = count_matches(DESIGN_CONTENT, adaptive_model.detection_signals.interactive)
+  ANIMATED_SIGNALS = count_matches(DESIGN_CONTENT, adaptive_model.detection_signals.animated)
+
+  # Determine mode (priority: animated > interactive > static)
+  IF ANIMATED_SIGNALS >= 2:
+    PREVIEW_MODE = "animated_preview"
+  ELIF INTERACTIVE_SIGNALS >= 3:
+    PREVIEW_MODE = "interactive_preview"
+  ELSE:
+    PREVIEW_MODE = "static_mockup"
+
+  # Apply adaptive routing
+  MODE_CONFIG = adaptive_model.mode_routing[PREVIEW_MODE]
+  ORCHESTRATOR_MODEL = MODE_CONFIG.orchestrator
+  THINKING_BUDGET = MODE_CONFIG.thinking_budget
+
+  APPLY subagent_overrides from adaptive_model.subagent_overrides[PREVIEW_MODE]
+
+  DISPLAY:
+  ┌─────────────────────────────────────────┐
+  │ Preview Mode: {PREVIEW_MODE}            │
+  ├─────────────────────────────────────────┤
+  │ Description: {MODE_CONFIG.description}  │
+  │ Model:       {ORCHESTRATOR_MODEL}       │
+  │ Opus cost:   $0.50                      │
+  │ Selected:    ${SELECTED_COST}           │
+  │ Savings:     {SAVINGS}%                 │
+  └─────────────────────────────────────────┘
+
+  REPORT: "Detected preview mode: {PREVIEW_MODE}"
+  REPORT: "Using {ORCHESTRATOR_MODEL} for cost optimization"
+
+ELSE IF --preview-mode flag present:
+  PREVIEW_MODE = flag_value
+  USE corresponding mode_routing configuration
+
+ELSE:
+  PREVIEW_MODE = "full"  # Default opus for all
+  USE default model: opus
+```
+
+### 1. Load Configuration
 
 ```text
 READ constitution.md:

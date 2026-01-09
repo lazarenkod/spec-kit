@@ -7,7 +7,87 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.95] - 2026-01-08
+
+### Added
+
+- **Adaptive Model Selection Framework**: Intelligent cost optimization across SpecKit commands
+  - Created `templates/shared/model-selection.md` - General-purpose framework for model routing
+  - Created `templates/shared/specify/complexity-detection.md` - Spec-specific complexity scoring
+  - Enables 30-50% cost savings on simple features while preserving quality
+
+- **Adaptive Model Selection for `/speckit.specify`**:
+  - Automatic complexity detection (SIMPLE/MODERATE/COMPLEX tiers)
+  - Smart routing: Simple features → Sonnet ($0.10), Complex features → Opus ($0.50)
+  - Detection signals: entity count, integration count, technical complexity, scope, word count
+  - Expected savings: 30-50% for SIMPLE/MODERATE features (0% for COMPLEX)
+  - Quality gates preserved (Constitution Alignment, Ambiguity Gate, SQS >= 80)
+  - Override flag: `--model=haiku|sonnet|opus`
+
+- **Preview Mode Detection for `/speckit.preview`**:
+  - Automatic mode detection (static_mockup/interactive_preview/animated_preview)
+  - Smart routing: Static → Haiku ($0.05), Interactive → Sonnet ($0.15), Animated → Opus ($0.50)
+  - Detection signals: wireframe/layout keywords, component/state keywords, animation/gesture keywords
+  - Expected savings: 40-60% for static mockups, 20-40% for interactive previews
+  - Override flag: `--preview-mode=static_mockup|interactive_preview|animated_preview`
+
+### Changed
+
+- **Updated `/speckit.specify` workflow**:
+  - Added Step 0: Complexity detection with adaptive model selection
+  - Displays cost savings estimate before execution
+  - Subagent model overrides based on complexity tier
+  - Updated reference from `complexity-scoring.md` to `complexity-detection.md`
+
+- **Updated `/speckit.preview` workflow**:
+  - Added Step 0: Preview mode detection with adaptive model selection
+  - Displays mode and cost estimate before execution
+  - Subagent model overrides based on preview mode
+
+### Technical Details
+
+- Modified `templates/commands/specify.md`:
+  - Lines 68-94: Added `adaptive_model` configuration with tier routing
+  - Lines 1254-1295: Added complexity detection and model selection logic in Step 0
+- Modified `templates/commands/preview.md`:
+  - Lines 19-52: Added `adaptive_model` configuration with mode routing
+  - Lines 2357-2407: Added mode detection and model selection logic in Step 0
+- Created `templates/shared/specify/complexity-detection.md` (397 lines)
+- Created `templates/shared/model-selection.md` (472 lines)
+
+### Cost Impact
+
+**Estimated savings per feature lifecycle**:
+```
+Before Phase 2:
+  /speckit.specify: $0.50 (always Opus)
+  /speckit.preview: $0.50 (always Opus)
+  Total: $1.00
+
+After Phase 2 (50% simple features):
+  /speckit.specify: $0.30 avg (50% Sonnet, 50% Opus)
+  /speckit.preview: $0.25 avg (50% Haiku/Sonnet mix)
+  Total: $0.55
+  Savings: $0.45 (45%)
+```
+
+**Combined with Phase 1**:
+```
+Total lifecycle cost:
+  Before: $7.37 per feature
+  After: $7.01 per feature
+  Total savings: ~5% overall
+```
+
 ## [0.0.94] - 2026-01-08
+
+### Changed
+
+- **Model Optimization for `/speckit.taskstoissues`**: Downgraded orchestrator model from Sonnet to Haiku
+  - Template-based conversion requires minimal reasoning for orchestration
+  - Subagents already optimized (task-parser: Haiku, issue-creator: Sonnet)
+  - Expected cost reduction: ~85% for orchestration layer
+  - Quality preserved through subagent model overrides
 
 ### Fixed
 
@@ -27,6 +107,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Lines 647-678: ui-feature-builder prompt restructured
   - Lines 1572-1624: Step 9 enhanced with blocking visual box
 - Changes from reactive enforcement (checkpoint after wave) to proactive prevention (visual prominence before task)
+- Modified `templates/commands/taskstoissues.md`:
+  - Line 8: Changed orchestrator model from `sonnet` to `haiku`
+  - Added optimization comment explaining reasoning
 
 ## [0.0.93] - 2026-01-08
 

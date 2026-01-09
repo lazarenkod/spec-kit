@@ -5,7 +5,7 @@ scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
 claude_code:
-  model: sonnet
+  model: haiku  # Template-based conversion, minimal orchestration reasoning required
   reasoning_mode: extended
   thinking_budget: 8000
   cache_hierarchy: full

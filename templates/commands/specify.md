@@ -62,9 +62,36 @@ skills:
     trigger: "Brownfield mode - understanding existing codebase"
     usage: "Read templates/skills/code-explore.md to document current behaviors before specification"
 claude_code:
-  model: opus
+  model: opus  # Default model, overridden by adaptive selection
   reasoning_mode: extended
   thinking_budget: 16000
+  adaptive_model:
+    enabled: true
+    complexity_framework: templates/shared/specify/complexity-detection.md
+    tier_routing:
+      SIMPLE:
+        orchestrator: sonnet
+        thinking_budget: 8000
+      MODERATE:
+        orchestrator: sonnet
+        thinking_budget: 12000
+      COMPLEX:
+        orchestrator: opus
+        thinking_budget: 16000
+    subagent_overrides:
+      SIMPLE:
+        requirement-extractor: sonnet
+        spec-writer: sonnet
+        validator: sonnet
+      MODERATE:
+        requirement-extractor: sonnet
+        spec-writer: sonnet
+        validator: sonnet
+      COMPLEX:
+        requirement-extractor: opus
+        spec-writer: opus
+        validator: opus
+    override_flag: "--model"
   cache_control:
     system_prompt: ephemeral
     constitution: ephemeral
@@ -1224,7 +1251,7 @@ The text the user typed after `/speckit.specify` in the triggering message **is*
 
 Given that feature description, do this:
 
-0. **Load project language and assess complexity**:
+0. **Load project language and assess complexity (with adaptive model selection)**:
 
    Use **parallel loading** for initialization (see `templates/shared/core/parallel-loading.md`):
 
@@ -1232,20 +1259,40 @@ Given that feature description, do this:
    # PARALLEL BATCH READ (single message, multiple Read tool calls)
    Read IN PARALLEL:
    - `templates/shared/core/language-loading.md`
-   - `templates/shared/complexity-scoring.md`
+   - `templates/shared/specify/complexity-detection.md`
    - `templates/shared/semantic-detection.md`
 
    # Execute after all loaded
    EXECUTE language-loading.md → ARTIFACT_LANGUAGE
-   EXECUTE complexity-scoring.md → COMPLEXITY_TIER, COMPLEXITY_SCORE
+   EXECUTE complexity-detection.md → SPEC_TIER, SPEC_SCORE, RECOMMENDED_MODEL
    EXECUTE semantic-detection.md → DETECTED_INTENT, FEATURE_NAME (apply to user input)
 
+   # Adaptive Model Selection
+   IF adaptive_model.enabled = true AND --model flag not present:
+     ORCHESTRATOR_MODEL = adaptive_model.tier_routing[SPEC_TIER].orchestrator
+     THINKING_BUDGET = adaptive_model.tier_routing[SPEC_TIER].thinking_budget
+
+     APPLY subagent_overrides from adaptive_model.tier_routing[SPEC_TIER]
+
+     DISPLAY:
+     ┌─────────────────────────────────────────┐
+     │ Specification Complexity: {SPEC_TIER}   │
+     ├─────────────────────────────────────────┤
+     │ Score:         {SPEC_SCORE}/100         │
+     │ Model:         {ORCHESTRATOR_MODEL}     │
+     │ Opus cost:     $0.50                    │
+     │ Selected cost: ${SELECTED_COST}         │
+     │ Savings:       {SAVINGS}%               │
+     └─────────────────────────────────────────┘
+   ELSE:
+     USE default model: opus
+
    REPORT: "Generating specification in {LANGUAGE_NAME} ({ARTIFACT_LANGUAGE})..."
-   REPORT: "Complexity: {COMPLEXITY_TIER} ({COMPLEXITY_SCORE}/100)"
+   REPORT: "Complexity: {SPEC_TIER} ({SPEC_SCORE}/100)"
    REPORT: "Detected intent: {DETECTED_INTENT} for '{FEATURE_NAME}'"
    ```
 
-   Adapt workflow based on COMPLEXITY_TIER (see complexity-scoring.md for tier-specific guidelines).
+   Adapt workflow based on SPEC_TIER (see complexity-detection.md for tier-specific guidelines).
 
 1. **Generate a concise short name** (2-4 words) for the branch:
    - Analyze the feature description and extract the most meaningful keywords
