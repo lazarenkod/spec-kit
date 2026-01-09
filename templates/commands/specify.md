@@ -64,20 +64,44 @@ skills:
 claude_code:
   model: opus  # Default model, overridden by adaptive selection
   reasoning_mode: extended
-  thinking_budget: 16000
+  # Rate limit tiers (default: max for Claude Code Max $20)
+  rate_limits:
+    default_tier: max
+    tiers:
+      free:
+        thinking_budget: 8000
+        max_parallel: 2
+        batch_delay: 8000
+        wave_overlap_threshold: 0.90
+        timeout_per_agent: 180000
+        retry_on_failure: 1
+      pro:
+        thinking_budget: 16000
+        max_parallel: 4
+        batch_delay: 4000
+        wave_overlap_threshold: 0.80
+        timeout_per_agent: 300000
+        retry_on_failure: 2
+      max:
+        thinking_budget: 32000
+        max_parallel: 8
+        batch_delay: 1500
+        wave_overlap_threshold: 0.65
+        timeout_per_agent: 900000
+        retry_on_failure: 3
   adaptive_model:
     enabled: true
     complexity_framework: templates/shared/specify/complexity-detection.md
     tier_routing:
       SIMPLE:
         orchestrator: sonnet
-        thinking_budget: 8000
+        thinking_budget: 16000  # Max tier
       MODERATE:
         orchestrator: sonnet
-        thinking_budget: 12000
+        thinking_budget: 20000  # Max tier
       COMPLEX:
         orchestrator: opus
-        thinking_budget: 16000
+        thinking_budget: 32000  # Max tier
     subagent_overrides:
       SIMPLE:
         requirement-extractor: sonnet
@@ -106,14 +130,14 @@ claude_code:
     ttl: 3600
   cache_hierarchy: full
   orchestration:
-    max_parallel: 3
+    max_parallel: 8
     conflict_resolution: queue
-    timeout_per_agent: 300000
-    retry_on_failure: 1
+    timeout_per_agent: 900000
+    retry_on_failure: 3
     role_isolation: true
     wave_overlap:
       enabled: true
-      threshold: 0.80
+      threshold: 0.65
   subagents:
     # Wave 1: Context Gathering (parallel)
     - role: brownfield-detector

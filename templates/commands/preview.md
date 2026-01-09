@@ -15,34 +15,52 @@ handoffs:
 claude_code:
   model: opus  # Default model, overridden by adaptive selection
   reasoning_mode: extended
-  thinking_budget: 16000
+  # Rate limit tiers (default: max for Claude Code Max $20)
+  rate_limits:
+    default_tier: max
+    tiers:
+      free:
+        thinking_budget: 8000
+        max_parallel: 2
+        batch_delay: 8000
+        wave_overlap_threshold: 0.90
+      pro:
+        thinking_budget: 16000
+        max_parallel: 4
+        batch_delay: 4000
+        wave_overlap_threshold: 0.80
+      max:
+        thinking_budget: 32000
+        max_parallel: 8
+        batch_delay: 1500
+        wave_overlap_threshold: 0.65
   adaptive_model:
     enabled: true
     mode_detection: true
     mode_routing:
       static_mockup:
         orchestrator: haiku
-        thinking_budget: 4000
+        thinking_budget: 8000  # Max tier
         description: "Simple HTML/CSS conversion from wireframes"
       interactive_preview:
         orchestrator: sonnet
-        thinking_budget: 8000
+        thinking_budget: 16000  # Max tier
         description: "Component generation with state management"
       animated_preview:
         orchestrator: opus
-        thinking_budget: 16000
+        thinking_budget: 32000  # Max tier
         description: "Complex animations, gestures, transitions"
       alternative_preview:
         orchestrator: sonnet
-        thinking_budget: 8000
+        thinking_budget: 16000  # Max tier
         description: "Preview generation for concept alternatives"
       variant_preview:
         orchestrator: sonnet
-        thinking_budget: 8000
+        thinking_budget: 16000  # Max tier
         description: "Preview generation for concept variants (MINIMAL/BALANCED/AMBITIOUS)"
       comparison_preview:
         orchestrator: opus
-        thinking_budget: 12000
+        thinking_budget: 24000  # Max tier
         description: "Side-by-side alternative comparison gallery"
     detection_signals:
       static: ["wireframe", "layout", "static", "mockup", "visual only"]
@@ -64,11 +82,11 @@ claude_code:
     override_flag: "--preview-mode"
   cache_hierarchy: full
   orchestration:
-    max_parallel: 3
+    max_parallel: 8
     fail_fast: true
     wave_overlap:
       enabled: true
-      overlap_threshold: 0.80
+      overlap_threshold: 0.65
   subagents:
     # Wave 1: Preview Generation (parallel)
     - role: wireframe-converter

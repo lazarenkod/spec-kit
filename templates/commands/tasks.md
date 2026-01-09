@@ -71,7 +71,25 @@ scripts:
 claude_code:
   model: sonnet
   reasoning_mode: extended
-  thinking_budget: 8000
+  # Rate limit tiers (default: max for Claude Code Max $20)
+  rate_limits:
+    default_tier: max
+    tiers:
+      free:
+        thinking_budget: 6000
+        max_parallel: 2
+        batch_delay: 8000
+        wave_overlap_threshold: 0.90
+      pro:
+        thinking_budget: 12000
+        max_parallel: 4
+        batch_delay: 4000
+        wave_overlap_threshold: 0.80
+      max:
+        thinking_budget: 24000
+        max_parallel: 8
+        batch_delay: 1500
+        wave_overlap_threshold: 0.65
   cache_control:
     system_prompt: ephemeral
     constitution: ephemeral
@@ -87,7 +105,7 @@ claude_code:
     ttl: 3600
   cache_hierarchy: full
   orchestration:
-    max_parallel: 2
+    max_parallel: 8
     role_isolation: true
   subagents:
     - role: dependency-analyzer

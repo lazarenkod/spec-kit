@@ -298,7 +298,31 @@ vision_validation:
 claude_code:
   model: opus
   reasoning_mode: extended
-  thinking_budget: 16000
+  # Rate limit tiers (default: max for Claude Code Max $20)
+  rate_limits:
+    default_tier: max
+    tiers:
+      free:
+        thinking_budget: 8000
+        max_parallel: 2
+        batch_delay: 8000
+        wave_overlap_threshold: 0.90
+        timeout_per_agent: 180000
+        retry_on_failure: 1
+      pro:
+        thinking_budget: 16000
+        max_parallel: 4
+        batch_delay: 4000
+        wave_overlap_threshold: 0.80
+        timeout_per_agent: 300000
+        retry_on_failure: 2
+      max:
+        thinking_budget: 32000
+        max_parallel: 8
+        batch_delay: 1500
+        wave_overlap_threshold: 0.65
+        timeout_per_agent: 900000
+        retry_on_failure: 3
   cache_control:
     system_prompt: ephemeral
     constitution: ephemeral
@@ -317,34 +341,34 @@ claude_code:
     setup:
       model: haiku
       reasoning_mode: normal
-      thinking_budget: 2000
+      thinking_budget: 4000  # Max tier
       description: "Project init, deps, ignore files"
     core:
       model: opus
       reasoning_mode: extended
-      thinking_budget: 10000
+      thinking_budget: 20000  # Max tier
       description: "Business logic, services, models"
     tests:
       model: sonnet
       reasoning_mode: normal
-      thinking_budget: 4000
+      thinking_budget: 8000  # Max tier
       description: "Test code generation"
     self_review:
       model: haiku
       reasoning_mode: normal
-      thinking_budget: 2000
+      thinking_budget: 4000  # Max tier
       description: "Auto-fix, annotations, formatting"
   orchestration:
-    max_parallel: 3
+    max_parallel: 8
     conflict_resolution: queue
-    timeout_per_agent: 300000
-    retry_on_failure: 1
+    timeout_per_agent: 900000
+    retry_on_failure: 3
     role_isolation: true
     # Performance optimization: See templates/shared/implement/wave-overlap.md
     wave_overlap:
       enabled: true
       skip_flag: "--sequential-waves"
-      overlap_threshold: 0.80  # Start next wave at 80% completion
+      overlap_threshold: 0.65  # Start next wave at 65% completion (Max tier)
       critical_deps_only: true
     # PBT Just-in-Time testing: Run property tests after each related task
     pbt_jit:

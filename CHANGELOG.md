@@ -7,6 +7,39 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.104] - 2026-01-09
+
+### Added
+
+- **Rate Limit Tier System** for all speckit commands:
+  - Three-tier system: `free`, `pro`, `max` with `max` as default (optimized for Claude Code Max $20)
+  - Configurable parameters per tier: `thinking_budget`, `max_parallel`, `batch_delay`, `wave_overlap_threshold`
+  - Tier-specific timeouts and retry counts for long-running commands
+
+### Changed
+
+- **Opus commands** (concept, constitution, discover, preview):
+  - `thinking_budget`: free=8000, pro=16000, max=32000
+  - `max_parallel`: free=2, pro=4, max=8
+
+- **Sonnet main commands** (implement, plan, specify, design, tasks, analyze, ship, migrate):
+  - `thinking_budget`: free=6000, pro=12000, max=24000
+  - `max_parallel`: free=2, pro=4, max=8
+
+- **Sonnet supporting commands** (extend, checklist, properties, clarify, baseline, integrate, monitor, validate-concept, merge, launch, concept-variants):
+  - `thinking_budget`: free=4000, pro=8000, max=16000
+  - `max_parallel`: free=2, pro=3, max=6
+
+- **Haiku commands** (list, switch, staging, taskstoissues):
+  - `thinking_budget`: free=2000, pro=4000, max=8000
+  - `max_parallel`: free=2, pro=3, max=6
+
+- Updated orchestration defaults to Max tier values:
+  - `max_parallel`: 6-8 (was 3-4)
+  - `batch_delay`: 1500ms (was 5000ms)
+  - `wave_overlap_threshold`: 0.65 (was 0.80)
+  - `timeout_per_agent`: up to 900000ms (15 min) for complex commands
+
 ## [0.0.103] - 2026-01-09
 
 ### Added

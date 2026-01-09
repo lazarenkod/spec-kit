@@ -2,7 +2,7 @@
 
 Official component registry for shadcn/ui. Use this as the primary reference for component generation in `/speckit.design` and `/speckit.preview`.
 
-**Source:** https://ui.shadcn.com/docs
+**Source:** <https://ui.shadcn.com/docs>
 
 ---
 

@@ -43,17 +43,41 @@ pre_gates:
 claude_code:
   model: sonnet
   reasoning_mode: extended
-  thinking_budget: 16000
+  # Rate limit tiers (default: max for Claude Code Max $20)
+  rate_limits:
+    default_tier: max
+    tiers:
+      free:
+        thinking_budget: 4000
+        max_parallel: 2
+        batch_delay: 8000
+        wave_overlap_threshold: 0.90
+        timeout_per_agent: 180000
+        retry_on_failure: 1
+      pro:
+        thinking_budget: 8000
+        max_parallel: 3
+        batch_delay: 4000
+        wave_overlap_threshold: 0.80
+        timeout_per_agent: 300000
+        retry_on_failure: 2
+      max:
+        thinking_budget: 16000
+        max_parallel: 6
+        batch_delay: 1500
+        wave_overlap_threshold: 0.65
+        timeout_per_agent: 600000
+        retry_on_failure: 3
   cache_hierarchy: full
   orchestration:
-    max_parallel: 3
+    max_parallel: 6
     conflict_resolution: queue
-    timeout_per_agent: 300000
-    retry_on_failure: 1
+    timeout_per_agent: 600000
+    retry_on_failure: 3
     role_isolation: true
     wave_overlap:
       enabled: true
-      threshold: 0.80
+      threshold: 0.65
   subagents:
     # Wave 1: Analysis (parallel)
     - role: code-structure-analyzer

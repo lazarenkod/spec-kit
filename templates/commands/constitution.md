@@ -13,14 +13,32 @@ scripts:
 claude_code:
   model: opus
   reasoning_mode: extended
-  thinking_budget: 16000
+  # Rate limit tiers (default: max for Claude Code Max $20)
+  rate_limits:
+    default_tier: max
+    tiers:
+      free:
+        thinking_budget: 8000
+        max_parallel: 2
+        batch_delay: 8000
+        wave_overlap_threshold: 0.90
+      pro:
+        thinking_budget: 16000
+        max_parallel: 4
+        batch_delay: 4000
+        wave_overlap_threshold: 0.80
+      max:
+        thinking_budget: 32000
+        max_parallel: 8
+        batch_delay: 1500
+        wave_overlap_threshold: 0.65
   cache_hierarchy: full
   orchestration:
-    max_parallel: 3
+    max_parallel: 8
     fail_fast: true
     wave_overlap:
       enabled: true
-      overlap_threshold: 0.80
+      overlap_threshold: 0.65
   subagents:
     # Wave 0: Interactive Questionnaire (if no input)
     - role: questionnaire-agent
