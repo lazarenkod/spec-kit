@@ -384,6 +384,25 @@ claude_code:
     enabled: true
     skip_flag: "--no-adaptive-model"
     complexity_tier: "${COMPLEXITY_TIER}"  # TRIVIAL, SIMPLE, MODERATE, COMPLEX
+  # Autonomous execution mode: Skip all user prompts for unattended runs
+  autonomous_mode:
+    enabled: false
+    flag: "--autonomous"
+    alias: "--auto"
+    description: "Run without user prompts, auto-proceed on all validation gates"
+    behavior:
+      checklist_incomplete: "proceed_with_warning"
+      staging_missing: "soft_fail"
+      api_verification_fail: "proceed_with_warning"
+  # Continuous execution: Complete all waves without pausing
+  execution_mode:
+    mode: "continuous"  # Options: interactive (default), continuous
+    description: "Control execution flow between waves and tasks"
+    continuous_behavior:
+      pause_between_waves: false
+      pause_between_tasks: false
+      summary_timing: "end_only"  # Options: per_wave, per_task, end_only
+      confirmation_requests: "none"  # Options: all, errors_only, none
   subagents:
     # Wave 0: Staging Validation (verify test infrastructure is ready)
     - role: staging-validator
@@ -411,8 +430,12 @@ claude_code:
         - Test database is accessible
 
         ## On Failure
-        - Output: "Run /speckit.staging to provision test infrastructure"
-        - Block implementation until staging is ready
+        - IF `--autonomous` flag is set:
+          - Log warning: "⚠️ AUTONOMOUS MODE: Staging not validated (QG-STAGING-001 skipped)"
+          - Continue to Wave 1 (soft fail - tests may fail later)
+        - ELSE:
+          - Output: "Run /speckit.staging to provision test infrastructure"
+          - Block implementation until staging is ready
       model_override: haiku
     # Wave 1: Infrastructure (no deps)
     - role: project-scaffolder
@@ -1134,8 +1157,41 @@ This command includes multiple performance optimizations for 50-65% faster execu
 | Model Selection | `templates/shared/implement/model-selection.md` | 60-90% cost | `--no-adaptive-model` |
 | **Streaming Output** | `orchestration-instructions.md` → "Streaming Output" | Real-time visibility | `--no-streaming` or `--quiet` |
 | File Caching | Inline (Step 3) | 85% | N/A |
+| **Autonomous Mode** | Inline (below) | Unattended execution | Default OFF, `--autonomous` to enable |
 
 {{include: shared/orchestration-instructions.md}}
+
+### Execution Flow Control
+
+**CRITICAL DIRECTIVE FOR CLAUDE CODE CLI**:
+
+When `--autonomous` flag is set OR `execution_mode.mode == "continuous"`:
+
+1. **DO NOT PAUSE** between waves for user confirmation
+2. **DO NOT REQUEST** continuation approval after completing tasks
+3. **DO NOT GENERATE** intermediate summaries that wait for response
+4. **CONTINUE AUTOMATICALLY** through all waves (0 → 1 → 2 → 3 → 3.5 → 4 → 5)
+5. **DEFER ALL SUMMARIES** until complete implementation is finished
+
+**Flow Pattern:**
+```text
+Wave 0: Staging → AUTO-CONTINUE →
+Wave 1: Infrastructure → AUTO-CONTINUE →
+Wave 2: Test Scaffolding → AUTO-CONTINUE →
+Wave 3: Core Implementation → AUTO-CONTINUE →
+Wave 3.5: PBT Validation → AUTO-CONTINUE →
+Wave 4: Test Verification → AUTO-CONTINUE →
+Wave 5: Polish → FINAL SUMMARY
+```
+
+**Only stop execution for:**
+- Critical errors that cannot be auto-recovered
+- Blocking quality gate failures (when configured to block)
+- Build/test failures that require human intervention
+
+**Summary timing:**
+- Per-wave progress indicators: `✓ Wave N complete (X/Y tasks)`
+- Full summary: Only at the end of all waves
 
 ### Wave Execution with Streaming
 
@@ -1191,10 +1247,14 @@ During parallel execution, apply streaming output for real-time visibility:
 
    - **If any checklist is incomplete**:
      - Display the table with incomplete item counts
-     - **STOP** and ask: "Some checklists are incomplete. Do you want to proceed with implementation anyway? (yes/no)"
-     - Wait for user response before continuing
-     - If user says "no" or "wait" or "stop", halt execution
-     - If user says "yes" or "proceed" or "continue", proceed to step 3
+     - **IF `--autonomous` flag is set**:
+       - Log warning: "⚠️ AUTONOMOUS MODE: Proceeding with {N} incomplete checklist items"
+       - Automatically proceed to step 3 (no user prompt)
+     - **ELSE (interactive mode)**:
+       - **STOP** and ask: "Some checklists are incomplete. Do you want to proceed with implementation anyway? (yes/no)"
+       - Wait for user response before continuing
+       - If user says "no" or "wait" or "stop", halt execution
+       - If user says "yes" or "proceed" or "continue", proceed to step 3
 
    - **If all checklists are complete**:
      - Display the table showing all checklists passed
@@ -1267,11 +1327,15 @@ During parallel execution, apply streaming output for real-time visibility:
    d) **Block on verification failure**:
       ```text
       IF API/method not found in documentation:
-        → STOP implementation for this task
         → Report: "⛔ API verification failed: {method} not found in {docs_url}"
-        → SUGGEST: "Check dependency version in Dependency Registry"
-        → SUGGEST: "Use Context7 to fetch current documentation"
-        → ASK user: "Proceed anyway (risky) or fix Dependency Registry first?"
+        → IF `--autonomous` flag is set:
+          → Log warning: "⚠️ AUTONOMOUS MODE: Proceeding with unverified API ({method})"
+          → CONTINUE implementation (risky, no user prompt)
+        → ELSE:
+          → STOP implementation for this task
+          → SUGGEST: "Check dependency version in Dependency Registry"
+          → SUGGEST: "Use Context7 to fetch current documentation"
+          → ASK user: "Proceed anyway (risky) or fix Dependency Registry first?"
       ```
 
    e) **Skip conditions**:
