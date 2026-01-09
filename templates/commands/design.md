@@ -165,6 +165,22 @@ claude_code:
     wave_overlap:
       enabled: true
       threshold: 0.65
+  operation_batching:
+    enabled: true
+    skip_flag: "--sequential"
+    framework: templates/shared/operation-batching.md
+    strategies:
+      context_reads: true    # Batch context file reads
+      prefetch: true         # Speculative parallel load
+    design_context_batch:
+      enabled: true
+      required_paths:
+        - "memory/constitution.md"
+        - "{FEATURE_DIR}/spec.md"
+      optional_paths:
+        - "design-system/tokens.json"
+        - "design-system/components.md"
+        - ".speckit/design-presets.yaml"
   subagents:
     # Wave 1: Research & Analysis (parallel)
     - role: design-researcher

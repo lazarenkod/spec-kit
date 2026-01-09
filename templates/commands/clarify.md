@@ -53,6 +53,20 @@ claude_code:
     wave_overlap:
       enabled: true
       overlap_threshold: 0.65
+  operation_batching:
+    enabled: true
+    skip_flag: "--sequential"
+    framework: templates/shared/operation-batching.md
+    strategies:
+      context_reads: true    # Batch context file reads
+      searches: true         # Batch gap search queries
+      prefetch: true         # Speculative parallel load
+    gap_search_batch:
+      enabled: true
+      queries:
+        - "Search spec.md for vague terms and ambiguities"
+        - "Search plan.md for undefined references"
+        - "Search tasks.md for missing details"
   subagents:
     # Wave 1: Ambiguity Detection (Enhanced with pattern-based detection)
     - role: ambiguity-detector

@@ -633,3 +633,210 @@ IF "--no-streaming" IN ARGS OR "--quiet" IN ARGS:
   LOG "📴 Streaming output disabled"
   # Fall back to batch-mode reporting (existing behavior)
 ```
+
+---
+
+## Operation Batching
+
+> **Purpose**: Batch independent operations (file reads, searches, validations) into parallel calls within a **single message**, reducing API round-trips across all commands.
+
+### Batching Hierarchy
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ Level 0: Operation Batching (cross-command)                     │
+│   - Context reads: batch file reads before processing           │
+│   - Searches: batch Explore agents                              │
+│   - Validations: batch QG/inline gate checks                    │
+│   - Controlled by: operation_batching.strategies                │
+├─────────────────────────────────────────────────────────────────┤
+│ Level 1: Wave Parallelism (subagent-level)                      │
+│   - Agents in same wave execute in parallel                     │
+├─────────────────────────────────────────────────────────────────┤
+│ Level 2: Task Batching (task-level, implement.md only)          │
+│   - Tasks grouped by dependencies                               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Configuration
+
+```yaml
+operation_batching:
+  enabled: true
+  skip_flag: "--sequential"
+  framework: templates/shared/operation-batching.md
+  strategies:
+    context_reads: true    # Batch file reads
+    searches: true         # Batch Explore agents
+    validations: true      # Batch QG checks
+    prefetch: true         # Speculative parallel load
+```
+
+### Core Algorithms
+
+#### CONTEXT_BATCH
+
+```text
+# Batch multiple file reads
+CONTEXT = CONTEXT_BATCH([
+  "memory/constitution.md",
+  "templates/spec-template.md",
+  "{FEATURE_DIR}/spec.md"
+])
+
+# Result: Single message with multiple Read calls → 3x faster
+```
+
+#### SEARCH_BATCH
+
+```text
+# Batch multiple searches
+RESULTS = SEARCH_BATCH([
+  "Find architecture patterns in codebase",
+  "Search for existing API patterns",
+  "Find database schema patterns"
+])
+
+# Result: Single message with multiple Explore agents → 3x faster
+```
+
+#### VALIDATE_BATCH
+
+```text
+# Batch inline gate checks
+VALIDATION = VALIDATE_BATCH([
+  {id: "IG-SPEC-001", check: constitution_alignment},
+  {id: "IG-SPEC-002", check: ambiguity_detection},
+  {id: "IG-SPEC-003", check: fr_as_coverage}
+])
+
+# Result: Parallel validation → faster gate checking
+```
+
+### Command-Specific Batching
+
+| Command | Batching Strategy |
+|---------|-------------------|
+| `/speckit.specify` | Context reads + prefetch |
+| `/speckit.plan` | Context reads + research searches |
+| `/speckit.tasks` | Context reads + parallel mappers |
+| `/speckit.clarify` | Gap search batch |
+| `/speckit.design` | Design context pre-cache |
+| `/speckit.implement` | Task-level batching (see below) |
+
+### Performance Impact
+
+| Mode | Round-trips | Savings |
+|------|-------------|---------|
+| Sequential reads (4 files) | 4 | baseline |
+| Batched reads (4 files) | 1 | 4x faster |
+| Sequential searches (3 queries) | 3 | baseline |
+| Batched searches (3 queries) | 1 | 3x faster |
+
+### Skip Flag
+
+```text
+IF "--sequential" IN ARGS:
+  operation_batching.enabled = false
+  LOG "⚠️ Operation batching DISABLED (sequential mode)"
+```
+
+See `templates/shared/operation-batching.md` for full framework.
+
+---
+
+## Task-Level Batching
+
+> **Purpose**: While subagent-level parallelism executes agents within waves in parallel, **task-level batching** groups individual tasks from tasks.md into batches and executes them as parallel Task tool calls in a **single message**, achieving maximum parallelism.
+
+### Parallelism Hierarchy
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ Level 1: Wave Parallelism (subagent-level)                     │
+│   - Agents in same wave execute in parallel                    │
+│   - Sequential across waves (Wave 1 → Wave 2 → ...)            │
+│   - Controlled by: orchestration.max_parallel                  │
+├─────────────────────────────────────────────────────────────────┤
+│ Level 2: Task Batching (task-level) ← NEW                      │
+│   - Tasks within agent execution grouped by dependencies       │
+│   - Independent tasks → single message with multiple Task calls│
+│   - Controlled by: orchestration.task_batching                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Configuration
+
+```yaml
+task_batching:
+  enabled: true
+  skip_flag: "--sequential-tasks"
+  max_batch_size: 8                     # Max tasks per batch
+  batch_by: dependency_level            # Topological grouping
+  file_conflict_resolution: queue       # Same-file → next batch
+```
+
+### Integration with Subagent Execution
+
+When a subagent receives tasks to execute:
+
+```text
+FUNCTION execute_subagent_with_batching(agent, tasks):
+
+  IF NOT task_batching.enabled OR "--sequential-tasks" IN ARGS:
+    # Fallback: sequential execution
+    FOR task IN tasks:
+      execute_task(task)
+    RETURN
+
+  # Apply batching
+  batches = BATCH_TASKS(tasks)
+
+  LOG "📦 Batching: {len(tasks)} tasks → {len(batches)} batches"
+
+  FOR batch IN batches:
+    # CRITICAL: All Task calls in SINGLE message
+    results = EXECUTE_BATCH_PARALLEL(batch)
+    update_tasks_md(results)
+```
+
+### Performance Impact
+
+| Mode | Round-trips | Time | Savings |
+|------|-------------|------|---------|
+| Sequential tasks | N (per task) | ~10 min | baseline |
+| Batched (4-8 per batch) | N/4-8 | ~2-3 min | 60-75% |
+
+### Batching Algorithm Summary
+
+1. **Parse tasks.md** → extract task IDs, dependencies, target files
+2. **Build dependency graph** → topological sort
+3. **Group by level** → tasks at same level are independent
+4. **Split by file conflicts** → same-file tasks in different batches
+5. **Execute batches** → parallel Task calls per batch
+
+See `templates/shared/implement/task-batching.md` for full algorithm.
+
+### Batch Output Format
+
+```text
+📦 Batch 1/4 (3 tasks)
+├── T001 [haiku]: Create project scaffold
+├── T002 [haiku]: Install dependencies
+└── T003 [sonnet]: Configure database
+
+⏳ Executing batch in parallel...
+
+✓ Batch 1/4 complete (2.3s)
+├── ✓ T001: Created 5 files
+├── ✓ T002: Installed 12 packages
+└── ✓ T003: Configured PostgreSQL
+```
+
+### Skip Flag
+
+```text
+IF "--sequential-tasks" IN ARGS:
+  task_batching.enabled = false
+  LOG "⚠️ Task batching DISABLED (sequential mode)"
+```

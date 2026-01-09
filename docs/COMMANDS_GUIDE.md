@@ -109,6 +109,19 @@ graph LR
 **Флаги:**
 
 - `--model` — Override model selection
+- `--skip-gates` — Bypass inline quality gates
+- `--strict-gates` — Treat HIGH severity as blocking
+- `--full-gates` — Run full validation passes
+- `--sequential` — Disable operation batching (execute operations sequentially)
+
+**Inline Quality Gates:**
+
+| Gate ID | Name | Severity | Pass |
+|---------|------|----------|------|
+| IG-SPEC-001 | Constitution Alignment | CRITICAL | D |
+| IG-SPEC-002 | Ambiguity Detection | HIGH | B |
+| IG-SPEC-003 | FR-AS Coverage | HIGH | - |
+| IG-SPEC-004 | Implementation Details | MEDIUM | - |
 
 **Quality Gates:**
 
@@ -118,7 +131,7 @@ graph LR
 
 - → `/speckit.plan`
 - → `/speckit.clarify`
-- → `/speckit.analyze`
+- → `/speckit.analyze` (for full audit)
 
 **Выходные файлы:**
 
@@ -132,6 +145,10 @@ graph LR
 **Назначение:** Identify underspecified areas in the current feature spec by asking up to 5 highly targeted clarification questions and encoding answers back into the spec.
 
 **Модель:** `sonnet` (thinking_budget: 16000)
+
+**Флаги:**
+
+- `--sequential` — Disable operation batching (execute gap searches sequentially)
 
 **Handoffs:**
 
@@ -181,6 +198,7 @@ graph LR
 - `--manual` — `false`
 - `--reauth` — `false`
 - `--no-figma` — `false`
+- `--sequential` — Disable operation batching (execute context reads sequentially)
 
 **Handoffs:**
 
@@ -219,6 +237,22 @@ graph LR
 
 **Требует:** handoffs/specify-to-plan.md
 
+**Флаги:**
+
+- `--skip-gates` — Bypass inline quality gates
+- `--strict-gates` — Treat HIGH severity as blocking
+- `--full-gates` — Run full validation passes
+- `--sequential` — Disable operation batching (execute research sequentially)
+
+**Inline Quality Gates:**
+
+| Gate ID | Name | Severity | Pass |
+|---------|------|----------|------|
+| IG-PLAN-001 | Constitution Alignment | CRITICAL | D |
+| IG-PLAN-002 | Tech Consistency | HIGH | F |
+| IG-PLAN-003 | Spec Alignment | HIGH | V |
+| IG-PLAN-004 | Dependencies Verified | MEDIUM | - |
+
 **Quality Gates:**
 
 - Plan Completeness Gate
@@ -228,6 +262,7 @@ graph LR
 - → `/speckit.tasks`
 - → `/speckit.checklist`
 - → `/speckit.specify`
+- → `/speckit.analyze` (for full audit)
 
 ---
 
@@ -241,6 +276,22 @@ graph LR
 
 **Требует:** handoffs/plan-to-tasks.md
 
+**Флаги:**
+
+- `--skip-gates` — Bypass inline quality gates
+- `--strict-gates` — Treat HIGH severity as blocking
+- `--full-gates` — Run full validation passes
+- `--sequential` — Disable operation batching (execute mappers sequentially)
+
+**Inline Quality Gates:**
+
+| Gate ID | Name | Severity | Pass |
+|---------|------|----------|------|
+| IG-TASK-001 | Dependency Graph Valid | CRITICAL | G |
+| IG-TASK-002 | FR Coverage | HIGH | H |
+| IG-TASK-003 | RTM Validity | MEDIUM | J |
+| IG-TASK-004 | Test Coverage | HIGH | QG-TEST-001 |
+
 **Quality Gates:**
 
 - Tasks Generated Gate
@@ -249,9 +300,9 @@ graph LR
 
 **Handoffs:**
 
-- → `/speckit.analyze`
 - → `/speckit.implement`
 - → `/speckit.tasks`
+- → `/speckit.analyze` (for full audit)
 
 ---
 
@@ -303,7 +354,9 @@ graph LR
 
 ### 11. `/speckit.analyze` {#speckitanalyze}
 
-**Назначение:** Perform a non-destructive cross-artifact consistency, traceability, dependency, and system spec analysis across concept.md, spec.md, plan.md, tasks.md, and system specs. In QA mode (post-implementation), validates build, tests, coverage, and security. Automatically detects validation profile from context (caller command or artifact state). Supports Quality Gates (QG-001 to QG-012). Use `--profile <name>` to override auto-detection. See `memory/domains/quality-gates.md` for gate definitions.
+**Назначение:** Full cross-artifact analysis and comprehensive QA verification. Primary use cases: comprehensive audits before major milestones (`--profile full`), post-implementation QA verification (`--profile qa`), generating audit reports (`--json`).
+
+> **Note:** Since v0.0.109, inline quality gates are embedded in `/speckit.specify`, `/speckit.plan`, `/speckit.tasks`, and `/speckit.implement`. Use `/speckit.analyze` for full audits only. Profiles `spec_validate`, `plan_validate`, `tasks_validate` are deprecated for inline use.
 
 **Модель:** `sonnet` (thinking_budget: 16000)
 
@@ -311,7 +364,7 @@ graph LR
 
 **Флаги:**
 
-- `--profile` — override remains available for power users
+- `--profile` — Select validation profile: `full` (all passes), `qa` (post-implementation), `quick` (critical only)
 - `--quiet` — Suppress non-essential output (only gates + result)
 - `--strict` — Lower thresholds (e.g., ambiguity < 3 instead of 5)
 - `--json` — Output as JSON for programmatic consumption
@@ -330,14 +383,12 @@ graph LR
 - → `/speckit.plan`
 - → `/speckit.tasks`
 - → `/speckit.implement`
-- → `/speckit.implement`
-- → `/none`
 
 ---
 
 ### 12. `/speckit.implement` {#speckitimplement}
 
-**Назначение:** Execute the implementation plan, generate documentation (RUNNING.md, README.md), and validate with self-review. Enforces Quality Gates (QG-001 pre-implement gate, QG-004 to QG-009 post-implement gates). See `memory/domains/quality-gates.md` for gate definitions.
+**Назначение:** Execute the implementation plan, generate documentation (RUNNING.md, README.md), and validate with self-review. Enforces inline quality gates for pre-implementation checks and post-implementation validation.
 
 **Модель:** `opus` (thinking_budget: 16000)
 
@@ -347,16 +398,38 @@ graph LR
 
 **Флаги:**
 
-- `--skip-pre-gates` — Skip pre-implementation gates
+- `--skip-gates` — Bypass all inline quality gates
+- `--skip-pre-gates` — Skip only pre-implementation gates
+- `--strict-gates` — Treat HIGH severity as blocking
 - `--fast` — Fast mode - run only Tier 1-2 validation
+- `--sequential-tasks` — Disable task batching (execute tasks one-by-one)
+- `--sequential-waves` — Disable wave overlap optimization
 
-**Pre-Gates:**
+**Task Batching (v0.0.110):**
 
-- Tasks Exist Gate
-- Required Artifacts Gate
-- No Critical Issues Gate
-- QG-001: SQS Quality Gate
-- Properties Available Gate
+Tasks are grouped by dependency level and executed as parallel Task tool calls:
+- Independent tasks → single message with 4-8 parallel Task calls
+- 60-75% time savings vs sequential execution
+- Skip with `--sequential-tasks` flag
+
+**Pre-Implementation Inline Gates:**
+
+| Gate ID | Name | Severity | Ref |
+|---------|------|----------|-----|
+| IG-IMPL-001 | Staging Ready | CRITICAL | QG-STAGING-001 |
+| IG-IMPL-002 | SQS Threshold | CRITICAL | QG-001 |
+| IG-IMPL-003 | Tasks Exist | CRITICAL | - |
+| IG-IMPL-004 | Required Artifacts | CRITICAL | - |
+| IG-IMPL-005 | Properties Available | MEDIUM | - |
+
+**Post-Implementation Inline Gates:**
+
+| Gate ID | Name | Severity | Pass |
+|---------|------|----------|------|
+| IG-IMPL-101 | Build Success | CRITICAL | R |
+| IG-IMPL-102 | Tests Pass | CRITICAL | S |
+| IG-IMPL-103 | Coverage >= 80% | HIGH | T |
+| IG-IMPL-104 | Lint Clean | HIGH | U |
 
 **Quality Gates:**
 
@@ -365,11 +438,10 @@ graph LR
 - QG-004: Test Coverage Gate
 - QG-005: Type Coverage Gate
 - QG-006: Lint Gate
-- ... и ещё 1
 
 **Handoffs:**
 
-- → `/speckit.analyze`
+- → `/speckit.analyze` (for full QA audit)
 - → `/speckit.implement`
 - → `/speckit.tasks`
 - → `/speckit.specify`
@@ -823,6 +895,6 @@ graph LR
 
 ## Версия документа
 
-**Версия:** 0.0.101
-**Дата генерации:** 2026-01-09 14:02:55
+**Версия:** 0.0.109
+**Дата генерации:** 2026-01-09
 **Автор:** Auto-generated from command templates

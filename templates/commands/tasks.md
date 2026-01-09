@@ -5,10 +5,46 @@ handoff:
   requires: handoffs/plan-to-tasks.md
   generates: handoffs/tasks-to-implement.md
   template: templates/handoff-template.md
+inline_gates:
+  enabled: true
+  skip_flag: "--skip-gates"
+  strict_flag: "--strict-gates"
+  full_flag: "--full-gates"
+  mode: progressive
+  on_failure: block
+  gates:
+    - id: IG-TASK-001
+      name: "Dependency Graph Valid"
+      pass: G
+      tier: 1
+      threshold: 0
+      severity: CRITICAL
+      message: "Circular dependencies detected in task graph"
+    - id: IG-TASK-002
+      name: "FR Coverage"
+      pass: H
+      tier: 2
+      threshold: 0
+      severity: HIGH
+      message: "Functional requirements without implementation tasks"
+    - id: IG-TASK-003
+      name: "RTM Validity"
+      pass: J
+      tier: 2
+      threshold: 0
+      severity: MEDIUM
+      message: "Requirements Traceability Matrix inconsistent"
+    - id: IG-TASK-004
+      name: "Test Coverage"
+      ref: QG-TEST-001
+      tier: 2
+      threshold: 0
+      severity: HIGH
+      message: "Acceptance scenarios missing test tasks"
 handoffs:
-  - label: Analyze For Consistency
+  - label: Full Audit (Optional)
     agent: speckit.analyze
-    prompt: Run a project analysis for consistency and validate traceability
+    prompt: Run comprehensive project analysis with full profile
     auto: false
     condition:
       - "User prefers thorough validation before implementation"
@@ -25,38 +61,12 @@ handoffs:
     condition:
       - "tasks.md generated with valid task structure"
       - "At least one P1 task defined"
-      - "No circular dependencies detected"
-    pre_handoff_action:
-      name: "Tasks Validation"
-      invoke: speckit.analyze
-      args: "--quiet"  # Profile auto-detected from caller context
-      skip_flag: "--skip-validate"
-      timeout: 30s
-      gates:
-        - name: "Circular Dependencies Gate"
-          pass: G
-          threshold: 0
-          severity: CRITICAL
-          block_if: "circular dependencies > 0"
-          message: "Circular task dependencies detected. Fix before implementation."
-        - name: "FR Coverage Gate"
-          pass: H
-          threshold: 0
-          severity: HIGH
-          block_if: "FRs without tasks > 0"
-          message: "Some requirements have no implementation tasks."
-      on_failure:
-        action: block
-        message: "Tasks validation failed. Review dependency graph and traceability."
+      - "Inline gates passed (IG-TASK-*)"
     gates:
       - name: "Tasks Ready Gate"
         check: "All P1 tasks have file paths and dependencies defined"
         block_if: "P1 tasks missing file paths or have invalid [DEP:] references"
         message: "Ensure all P1 tasks are fully specified before implementation"
-      - name: "Dependency Validity Gate"
-        check: "No circular dependencies in task graph"
-        block_if: "Circular dependency detected"
-        message: "Resolve circular dependencies before proceeding"
     post_actions:
       - "log: Tasks generated, ready for implementation"
   - label: Regenerate Tasks
@@ -107,6 +117,18 @@ claude_code:
   orchestration:
     max_parallel: 8
     role_isolation: true
+  operation_batching:
+    enabled: true
+    skip_flag: "--sequential"
+    framework: templates/shared/operation-batching.md
+    strategies:
+      context_reads: true    # Batch context file reads
+      prefetch: true         # Speculative parallel load
+      validations: true      # Batch inline gate checks
+    subagent_batching:
+      enabled: true
+      parallel_mappers: [dependency-analyzer, fr-mapper]  # Run in parallel
+      sequential_mappers: [as-mapper]                     # Depends on fr-mapper
   subagents:
     - role: dependency-analyzer
       role_group: INFRA

@@ -5,6 +5,42 @@ handoff:
   requires: handoffs/specify-to-plan.md
   generates: handoffs/plan-to-tasks.md
   template: templates/handoff-template.md
+inline_gates:
+  enabled: true
+  skip_flag: "--skip-gates"
+  strict_flag: "--strict-gates"
+  full_flag: "--full-gates"
+  mode: progressive
+  on_failure: block
+  gates:
+    - id: IG-PLAN-001
+      name: "Constitution Alignment"
+      pass: D
+      tier: 2
+      threshold: 0
+      severity: CRITICAL
+      message: "Plan violates project constitution"
+    - id: IG-PLAN-002
+      name: "Tech Consistency"
+      pass: F
+      tier: 2
+      threshold: 0
+      severity: HIGH
+      message: "Terminology inconsistent between spec and plan"
+    - id: IG-PLAN-003
+      name: "Spec Alignment"
+      checks: [SR-PLAN-07]
+      tier: 2
+      threshold: 0
+      severity: HIGH
+      message: "Plan references undefined spec elements"
+    - id: IG-PLAN-004
+      name: "Dependencies Verified"
+      checks: [SR-PLAN-03, SR-PLAN-04]
+      tier: 2
+      threshold: 0
+      severity: MEDIUM
+      message: "External dependencies not verified"
 handoffs:
   - label: Create Tasks
     agent: speckit.tasks
@@ -14,31 +50,7 @@ handoffs:
       - "plan.md completed with all phases"
       - "research.md exists (Phase 0 complete)"
       - "All [NEEDS CLARIFICATION] resolved"
-    pre_handoff_action:
-      name: "Plan Validation"
-      mode: progressive  # 4-tier validation (see templates/shared/validation/checkpoints.md)
-      invoke: speckit.analyze
-      args: "--quiet"  # Profile auto-detected from caller context
-      skip_flag: "--skip-validate"
-      fast_flag: "--fast"  # Tier 1-2 only
-      timeout: 45s
-      early_exit_threshold: 0.95  # Skip Tier 3-4 at high confidence
-      gates:
-        - name: "Constitution Alignment Gate"
-          pass: D
-          threshold: 0
-          severity: CRITICAL
-          block_if: "constitution violations > 0"
-          message: "Plan violates project constitution. Resolve before task generation."
-        - name: "Tech Consistency Gate"
-          pass: F
-          threshold: 0
-          severity: HIGH
-          block_if: "terminology inconsistencies > 0"
-          message: "Technical inconsistencies between spec and plan detected."
-      on_failure:
-        action: block
-        message: "Plan validation failed. Review findings and update plan.md."
+      - "Inline gates passed (IG-PLAN-*)"
     gates:
       - name: "Plan Completeness Gate"
         check: "Technical Context filled, Architecture defined, Phases outlined"
@@ -96,6 +108,15 @@ claude_code:
   orchestration:
     max_parallel: 8
     role_isolation: false
+  operation_batching:
+    enabled: true
+    skip_flag: "--sequential"
+    framework: templates/shared/operation-batching.md
+    strategies:
+      context_reads: true    # Batch context file reads
+      prefetch: true         # Speculative parallel load
+      searches: true         # Batch research searches
+      validations: true      # Batch inline gate checks
   subagents:
     - role: architecture-specialist
       role_group: REVIEW

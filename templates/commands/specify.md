@@ -4,6 +4,43 @@ persona: product-agent
 handoff:
   generates: handoffs/specify-to-plan.md
   template: templates/handoff-template.md
+inline_gates:
+  enabled: true
+  skip_flag: "--skip-gates"
+  strict_flag: "--strict-gates"
+  full_flag: "--full-gates"
+  mode: progressive
+  on_failure: block
+  gates:
+    - id: IG-SPEC-001
+      name: "Constitution Alignment"
+      pass: D
+      tier: 2
+      threshold: 0
+      severity: CRITICAL
+      message: "Spec violates project constitution"
+    - id: IG-SPEC-002
+      name: "Ambiguity Detection"
+      pass: B
+      tier: 2
+      threshold: 5
+      severity: HIGH
+      message: "Too many vague terms without measurable criteria"
+      auto_fix: speckit.clarify
+    - id: IG-SPEC-003
+      name: "FR-AS Coverage"
+      checks: [SR-SPEC-03, SR-SPEC-04]
+      tier: 2
+      threshold: 0
+      severity: HIGH
+      message: "Functional requirements missing acceptance scenarios"
+    - id: IG-SPEC-004
+      name: "Implementation Details"
+      checks: [SR-SPEC-02]
+      tier: 2
+      threshold: 0
+      severity: MEDIUM
+      message: "Spec contains implementation details (should be in plan)"
 handoffs:
   - label: Build Technical Plan
     agent: speckit.plan
@@ -12,28 +49,7 @@ handoffs:
     condition:
       - "spec.md created and valid"
       - "No unresolved [NEEDS CLARIFICATION] markers"
-    pre_handoff_action:
-      name: "Spec Validation"
-      invoke: speckit.analyze
-      args: "--quiet"  # Profile auto-detected from caller context
-      skip_flag: "--skip-validate"
-      timeout: 30s
-      gates:
-        - name: "Constitution Alignment Gate"
-          pass: D
-          threshold: 0
-          severity: CRITICAL
-          block_if: "constitution violations > 0"
-          message: "Spec violates project constitution. Resolve before planning."
-        - name: "Ambiguity Gate"
-          pass: B
-          threshold: 5
-          severity: HIGH
-          block_if: "ambiguity count > 5"
-          message: "Too many ambiguities detected. Clarification required."
-      on_failure:
-        auto_remediate: speckit.clarify
-        inject_context: "extracted_questions_from_validation"
+      - "Inline gates passed (IG-SPEC-*)"
     gates:
       - name: "Spec Quality Gate"
         check: "All checklist items in checklists/requirements.md pass"
@@ -138,6 +154,14 @@ claude_code:
     wave_overlap:
       enabled: true
       threshold: 0.65
+  operation_batching:
+    enabled: true
+    skip_flag: "--sequential"
+    framework: templates/shared/operation-batching.md
+    strategies:
+      context_reads: true    # Batch context file reads
+      prefetch: true         # Speculative parallel load
+      validations: true      # Batch inline gate checks
   subagents:
     # Wave 1: Context Gathering (parallel)
     - role: brownfield-detector

@@ -7,9 +7,38 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.111] - 2026-01-09
+
+### Added
+
+- **Operation Batching Framework** for all major commands (v0.0.111):
+  - New universal framework: `templates/shared/operation-batching.md`
+  - Batches independent operations (file reads, searches, validations) in **single message**
+  - Commands updated with `operation_batching` config:
+    - `/speckit.specify`: Context reads + prefetch
+    - `/speckit.plan`: Context reads + research searches
+    - `/speckit.tasks`: Context reads + parallel mappers (dependency-analyzer + fr-mapper)
+    - `/speckit.clarify`: Gap search batch (spec, plan, tasks)
+    - `/speckit.design`: Design context pre-cache
+  - Core algorithms: CONTEXT_BATCH, SEARCH_BATCH, VALIDATE_BATCH, PREFETCH_BATCH
+  - New flag: `--sequential` to disable batching on any command
+  - Updated orchestration-instructions.md with Operation Batching section
+  - Batching hierarchy: Operation → Wave → Task (3 levels of parallelism)
+  - Performance: ~2x faster context loading, ~3x faster searches
+
 ## [0.0.110] - 2026-01-09
 
 ### Added
+
+- **Task-Level Batching** in `/speckit.implement` for 60-75% faster execution:
+  - Groups independent tasks from tasks.md into batches (4-8 tasks per batch)
+  - Executes ALL tasks in batch as parallel Task tool calls in **single message**
+  - Topological level grouping: tasks at same level have no interdependencies
+  - File conflict resolution: same-file tasks in separate batches
+  - New flag: `--sequential-tasks` to disable batching
+  - New framework: `templates/shared/implement/task-batching.md` with BATCH_TASKS algorithm
+  - Updated orchestration-instructions.md with Task-Level Batching section
+  - Performance: N tasks → N/4-8 round-trips (4-8x fewer API calls)
 
 - **Mobile Testing Support** in `/speckit.implement` for automatic testing of mobile apps alongside web:
   - **Mobile Test Scaffolder role** (Wave 2): Generates test scaffolds for Flutter, React Native, Native iOS, Native Android
