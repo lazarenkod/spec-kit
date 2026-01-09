@@ -79,40 +79,82 @@ handoffs:
     condition:
       - "Implementation required spec deviations"
       - "New requirements discovered during implementation"
-pre_gates:
-  mode: progressive  # 4-tier validation (see templates/shared/validation/checkpoints.md)
-  fast_flag: "--fast"  # Tier 1-2 only (saves ~20s)
-  skip_flag: "--skip-pre-gates"
-  early_exit_threshold: 0.95  # Skip Tier 3-4 at high confidence
-  gates:
-    - name: "Tasks Exist Gate"
-      tier: 1  # SYNTAX - BLOCKING
+inline_gates:
+  enabled: true
+  skip_flag: "--skip-gates"
+  strict_flag: "--strict-gates"
+  full_flag: "--full-gates"
+  mode: progressive
+  on_failure: block
+  # Pre-implementation gates (run before Wave 1)
+  pre_gates:
+    - id: IG-IMPL-001
+      name: "Tasks Exist"
+      tier: 1
       check: "tasks.md exists in FEATURE_DIR"
-      block_if: "tasks.md missing"
+      threshold: 0
+      severity: CRITICAL
       message: "Run /speckit.tasks first to generate task breakdown"
-    - name: "Required Artifacts Gate"
-      tier: 1  # SYNTAX - BLOCKING
+    - id: IG-IMPL-002
+      name: "Plan Exists"
+      tier: 1
       check: "plan.md exists in FEATURE_DIR"
-      block_if: "plan.md missing"
+      threshold: 0
+      severity: CRITICAL
       message: "Run /speckit.plan first to generate implementation plan"
-    - name: "No Critical Issues Gate"
-      tier: 2  # SEMANTIC - BLOCKING on errors
-      check: "If analyze was run, CRITICAL == 0"
-      block_if: "CRITICAL issues exist from prior analysis"
-      message: "Resolve CRITICAL issues before starting implementation"
-    - name: "QG-001: SQS Quality Gate"
-      tier: 3  # QUALITY - NON-BLOCKING (but warns)
-      check: "Run /speckit.analyze; SQS >= 80"  # Profile auto-detected from caller context
-      block_if: "SQS < 80"
-      message: "SQS below MVP threshold (80). Improve FR coverage, AS coverage, or resolve constitution violations before implementation. See memory/domains/quality-gates.md"
-      domain_ref: "QG-001"
-    - name: "Properties Available Gate"
-      tier: 1  # SYNTAX - INFO ONLY
+    - id: IG-IMPL-003
+      name: "Staging Ready"
+      ref: QG-STAGING-001
+      tier: 1
+      threshold: 0
+      severity: CRITICAL
+      message: "Staging environment not healthy - run docker compose up"
+    - id: IG-IMPL-004
+      name: "SQS Threshold"
+      ref: QG-001
+      tier: 3
+      threshold: 80
+      severity: HIGH
+      message: "SQS below 80 - improve spec quality first"
+    - id: IG-IMPL-005
+      name: "Properties Available"
+      tier: 1
       check: "properties.md exists in FEATURE_DIR"
-      block_if: false  # Never blocks - informational only
       info_only: true
-      on_exists: "PBT JIT mode enabled - property tests will run after each related task"
-      on_missing: "No properties.md - PBT JIT mode disabled (use /speckit.properties to enable)"
+      on_exists: "PBT JIT mode enabled"
+      on_missing: "No properties.md - PBT JIT disabled"
+  # Post-implementation gates (run after Wave 4)
+  post_gates:
+    - id: IG-IMPL-101
+      name: "Build Success"
+      pass: R
+      tier: 1
+      threshold: 0
+      severity: CRITICAL
+      message: "Build failed"
+    - id: IG-IMPL-102
+      name: "Tests Pass"
+      pass: S
+      tier: 2
+      threshold: 0
+      severity: CRITICAL
+      message: "Tests failing"
+    - id: IG-IMPL-103
+      name: "Coverage Threshold"
+      pass: T
+      ref: QG-004
+      tier: 2
+      threshold: 80
+      severity: HIGH
+      message: "Test coverage below 80%"
+    - id: IG-IMPL-104
+      name: "Lint Clean"
+      pass: U
+      ref: QG-006
+      tier: 2
+      threshold: 0
+      severity: HIGH
+      message: "Lint errors present"
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
@@ -383,6 +425,16 @@ claude_code:
       skip_flag: "--sequential-tests"
       parallel_suites: [unit, integration]  # Run in parallel
       sequential_suites: [e2e]              # Run after parallel complete
+    # Task-level batching: Group independent tasks for parallel execution (v0.0.110)
+    # See templates/shared/implement/task-batching.md for full algorithm
+    task_batching:
+      enabled: true
+      skip_flag: "--sequential-tasks"
+      max_batch_size: 8                     # Max tasks per batch (rate limit safe)
+      batch_by: dependency_level            # Group by topological level
+      file_conflict_resolution: queue       # Same-file tasks → sequential
+      parallel_marker: "[P]"                # Explicit parallel marker (optional)
+      model_per_task: true                  # Select model per task complexity
     # PBT Just-in-Time testing: Run property tests after each related task
     pbt_jit:
       enabled: true
@@ -645,6 +697,136 @@ claude_code:
         - E2E test files created with proper structure
         - Playwright config uses staging services
         - Tests can be run in CI mode
+      model_override: sonnet
+    - role: mobile-test-scaffolder
+      role_group: TESTING
+      parallel: true
+      depends_on: [staging-validator, dependency-installer]
+      priority: 9
+      trigger: "when platform is flutter/react_native/kmp/swift/kotlin_android"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Tasks: {{FEATURE_DIR}}/tasks.md
+        Constitution: memory/constitution.md
+        Staging Config: .speckit/staging/test-config.env
+
+        ## Platform Detection
+        Detect mobile platform from project files:
+        - Flutter: pubspec.yaml exists
+        - React Native: package.json contains "react-native"
+        - KMP: build.gradle.kts contains kotlin("multiplatform")
+        - Native iOS: *.xcodeproj exists
+        - Native Android: app/build.gradle exists without React Native
+
+        ## Task - Mobile Test Scaffolding (TDD Red Phase)
+        Create mobile test scaffolds based on detected platform:
+
+        ### Flutter
+        1. Create integration_test/ directory
+        2. Add integration_test/app_test.dart:
+           ```dart
+           import 'package:flutter_test/flutter_test.dart';
+           import 'package:integration_test/integration_test.dart';
+           import 'package:{{app_name}}/main.dart' as app;
+
+           void main() {
+             IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+             // AS-xxx: [scenario description]
+             testWidgets('AS-xxx: test description', (tester) async {
+               app.main();
+               await tester.pumpAndSettle();
+               // TODO: Implement test - must FAIL initially
+               expect(find.text('Expected'), findsOneWidget);
+             });
+           }
+           ```
+
+        ### React Native - Detox
+        IF .detoxrc.js exists OR package.json has "detox":
+        1. Create e2e/ directory
+        2. Add e2e/firstTest.e2e.js:
+           ```javascript
+           describe('Feature Tests', () => {
+             beforeAll(async () => {
+               await device.launchApp();
+             });
+             // AS-xxx: [scenario description]
+             it('AS-xxx: test description', async () => {
+               // TODO: Implement test - must FAIL initially
+               await expect(element(by.id('expected-element'))).toBeVisible();
+             });
+           });
+           ```
+
+        ### React Native - Maestro
+        IF .maestro/ exists OR package.json has "maestro":
+        1. Create .maestro/ directory
+        2. Add .maestro/feature-flow.yaml:
+           ```yaml
+           appId: com.example.app
+           ---
+           # AS-xxx: [scenario description]
+           - launchApp
+           - assertVisible: "Expected Text"
+           # TODO: Complete flow - must FAIL initially
+           ```
+
+        ### Native iOS (XCUITest)
+        1. Create UITests target if not exists
+        2. Add FeatureUITests.swift:
+           ```swift
+           import XCTest
+           class FeatureUITests: XCTestCase {
+               // AS-xxx: [scenario description]
+               func testASxxx() throws {
+                   let app = XCUIApplication()
+                   app.launch()
+                   // TODO: Implement test - must FAIL initially
+                   XCTAssertTrue(app.staticTexts["Expected"].exists)
+               }
+           }
+           ```
+
+        ### Native Android (Espresso)
+        1. Create androidTest directory if not exists
+        2. Add FeatureTest.kt:
+           ```kotlin
+           @RunWith(AndroidJUnit4::class)
+           class FeatureTest {
+               @get:Rule
+               val activityRule = ActivityScenarioRule(MainActivity::class.java)
+
+               // AS-xxx: [scenario description]
+               @Test
+               fun testASxxx() {
+                   // TODO: Implement test - must FAIL initially
+                   onView(withText("Expected")).check(matches(isDisplayed()))
+               }
+           }
+           ```
+
+        ## TDD Red Phase Requirements
+        - ALL tests MUST be created with assertions that WILL FAIL
+        - Map each test to AS-xxx from spec.md
+        - Include @speckit:AS-xxx annotations in comments
+
+        ## iOS Simulator Handling
+        - IF macOS: Configure tests for iOS Simulator
+        - IF NOT macOS: Skip iOS tests with warning, create Android-only tests
+        - Log: "iOS tests skipped - requires macOS host"
+
+        ## Success Criteria (QG-MOB-001 Validation)
+        - Mobile test files created for detected platform
+        - Tests reference AS-xxx from spec
+        - Tests can connect to mobile staging (emulator/simulator)
+        - ALL tests FAIL initially (TDD red verified)
+
+        ## Output
+        - Test files created in appropriate directories
+        - Mobile test run summary: X tests created, X failures (expected)
+        - Platform detected: [flutter|react_native|kmp|ios_native|android_native]
       model_override: sonnet
     # Wave 3: Core Implementation - TDD Green Phase (make tests pass)
     - role: data-layer-builder
@@ -1157,10 +1339,126 @@ claude_code:
         - Test run summary: X e2e tests, X passed, 0 failed
         - QG-TEST-004: PASSED if overall coverage >= 80%
       model_override: sonnet
+    - role: mobile-test-verifier
+      role_group: TESTING
+      parallel: false  # Sequential AFTER e2e tests complete
+      depends_on: [e2e-test-verifier]
+      priority: 3
+      trigger: "when platform is flutter/react_native/kmp/swift/kotlin_android"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Tasks: {{FEATURE_DIR}}/tasks.md
+        Mobile Tests: (created in Wave 2 by mobile-test-scaffolder)
+        Staging Config: .speckit/staging/test-config.env
+
+        ## Platform Detection
+        Same as mobile-test-scaffolder:
+        - Flutter: pubspec.yaml exists
+        - React Native: package.json contains "react-native"
+        - KMP: build.gradle.kts contains kotlin("multiplatform")
+        - Native iOS: *.xcodeproj exists
+        - Native Android: app/build.gradle exists
+
+        ## Task - Mobile Test Verification (TDD Green Phase)
+        Run mobile tests after e2e tests pass:
+
+        ### Flutter
+        ```bash
+        # Check for connected devices/emulators
+        flutter devices
+
+        # Run integration tests on Android emulator
+        flutter test integration_test/ --device-id=emulator-5554
+
+        # Run on iOS Simulator (macOS only)
+        if [[ "$(uname)" == "Darwin" ]]; then
+          flutter test integration_test/ --device-id="iPhone 15 Pro"
+        fi
+        ```
+
+        ### React Native - Detox
+        ```bash
+        # Build and test Android
+        detox build --configuration android.emu.debug
+        detox test --configuration android.emu.debug
+
+        # Build and test iOS (macOS only)
+        if [[ "$(uname)" == "Darwin" ]]; then
+          detox build --configuration ios.sim.debug
+          detox test --configuration ios.sim.debug
+        fi
+        ```
+
+        ### React Native - Maestro
+        ```bash
+        # Run Maestro flows
+        maestro test .maestro/
+
+        # Or specific flow
+        maestro test .maestro/feature-flow.yaml
+        ```
+
+        ### Native iOS (XCUITest)
+        ```bash
+        # macOS only
+        if [[ "$(uname)" == "Darwin" ]]; then
+          xcodebuild test \
+            -scheme Runner \
+            -destination 'platform=iOS Simulator,name=iPhone 15 Pro'
+        else
+          echo "WARN: iOS tests skipped - requires macOS"
+        fi
+        ```
+
+        ### Native Android (Espresso)
+        ```bash
+        # Ensure emulator is running (from staging)
+        adb devices | grep emulator
+
+        # Run instrumented tests
+        ./gradlew connectedAndroidTest
+        ```
+
+        ## Cross-Platform Verification (QG-MOB-003)
+        - IF both Android AND iOS supported:
+          - Run tests on BOTH platforms
+          - Both must pass for QG-MOB-003
+        - IF macOS not available:
+          - Run Android tests only
+          - Log warning: "iOS tests skipped - requires macOS host"
+          - QG-MOB-003 passes with Android-only if explicitly --android-only
+
+        ## Coverage Check (QG-MOB-002)
+        - Flutter: `flutter test --coverage`
+        - React Native: Check Jest coverage from Detox
+        - Native: Use platform-specific coverage tools
+        - Threshold: >= 70% mobile test coverage
+
+        ## Device Profile Validation (QG-MOB-004)
+        Verify tests run on at least one device per category:
+        - Android: emulator OR physical device
+        - iOS: simulator OR physical device (macOS only)
+
+        ## Success Criteria
+        - All mobile tests from Wave 2 now PASS
+        - QG-MOB-002: Mobile coverage >= 70%
+        - QG-MOB-003: Tests pass on all available platforms
+        - QG-MOB-004: At least 1 device per platform tested
+
+        ## Output
+        - Test run summary per platform:
+          - Android: X tests, X passed, 0 failed
+          - iOS: X tests, X passed, 0 failed (or "skipped")
+        - QG-MOB-002: PASSED/FAILED (coverage: XX%)
+        - QG-MOB-003: PASSED/FAILED (platforms: android, ios)
+        - QG-MOB-004: PASSED/FAILED (devices tested: N)
+      model_override: sonnet
     - role: unit-test-generator
       role_group: TESTING
       parallel: true
-      depends_on: [unit-test-verifier, integration-test-verifier, e2e-test-verifier]
+      depends_on: [unit-test-verifier, integration-test-verifier, e2e-test-verifier, mobile-test-verifier]
       priority: 4
       trigger: "when adding additional unit tests for coverage"
       prompt: |

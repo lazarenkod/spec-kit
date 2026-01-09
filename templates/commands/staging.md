@@ -90,6 +90,13 @@ Parse arguments for:
 - `--status`: Show current staging status without changes
 - `--down`: Stop all staging services
 
+**Mobile Testing Options:**
+- `--mobile`: Enable Android emulator for mobile app testing
+- `--android-only`: Only provision Android emulator (skip iOS simulator)
+- `--ios-only`: Only provision iOS simulator (macOS only, skip Android)
+- `--appium`: Include Appium server for native automation
+- `--emulator-device <name>`: Android device type (default: pixel_6). Options: pixel_6, pixel_8, galaxy_s24
+
 ## Outline
 
 ### Phase 0: Prerequisites Check
@@ -128,6 +135,22 @@ Parse arguments for:
 
    IF tasks.md has "[TEST:AS-xxx]" with type="e2e" OR type="playwright":
      services.append("playwright")
+
+   # Mobile platform detection
+   IF constitution.md OR spec.md mentions "mobile" OR "iOS" OR "Android":
+     mobile_enabled = true
+
+   IF pubspec.yaml exists (Flutter):
+     mobile_enabled = true
+
+   IF package.json contains "react-native":
+     mobile_enabled = true
+
+   IF build.gradle.kts contains kotlin("multiplatform"):
+     mobile_enabled = true
+
+   IF --mobile specified:
+     mobile_enabled = true
 
    IF --services specified:
      services = parse_comma_separated(--services)
@@ -188,10 +211,44 @@ Parse arguments for:
 
    volumes:
      test-db-data:
+     android-avd-data:
 
    networks:
      default:
        name: speckit-staging
+   ```
+
+   **Mobile services (added with `--mobile` flag):**
+   ```yaml
+     # Android Emulator Container
+     android-emulator:
+       image: budtmo/docker-android:emulator_12.0
+       container_name: speckit-android-emulator
+       privileged: true
+       ports:
+         - "5554:5554"   # ADB
+         - "5555:5555"   # ADB wireless
+         - "6080:6080"   # VNC/noVNC web interface
+       environment:
+         EMULATOR_DEVICE: "${EMULATOR_DEVICE:-pixel_6}"
+         WEB_VNC: "true"
+       healthcheck:
+         test: ["CMD-SHELL", "adb devices | grep -q emulator"]
+         interval: 30s
+         timeout: 10s
+         retries: 10
+         start_period: 120s
+       profiles:
+         - mobile
+
+     # Appium Server (optional, with --appium flag)
+     appium:
+       image: appium/appium:latest
+       container_name: speckit-appium
+       ports:
+         - "4723:4723"
+       profiles:
+         - appium
    ```
 
 3. **Generate test-config.env:**
@@ -215,6 +272,20 @@ Parse arguments for:
    # Playwright (if enabled)
    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
    CI=true
+
+   # Mobile Testing - Android (if --mobile enabled)
+   ANDROID_EMULATOR_HOST=localhost
+   ANDROID_ADB_PORT=5555
+   ANDROID_VNC_PORT=6080
+   ANDROID_DEVICE=pixel_6
+
+   # Mobile Testing - iOS (macOS only)
+   IOS_SIMULATOR_DEVICE=iPhone 15 Pro
+   IOS_SIMULATOR_OS=17.2
+
+   # Appium Server (if --appium enabled)
+   APPIUM_HOST=localhost
+   APPIUM_PORT=4723
 
    # Test Configuration
    NODE_ENV=test
@@ -382,6 +453,9 @@ After successful provisioning:
 | PostgreSQL | speckit-test-db | 5433 | Healthy |
 | Redis | speckit-test-redis | 6380 | Healthy |
 | Playwright | speckit-playwright | - | Ready |
+| Android Emulator | speckit-android-emulator | 5555 (ADB), 6080 (VNC) | Healthy (if --mobile) |
+| Appium | speckit-appium | 4723 | Ready (if --appium) |
+| iOS Simulator | - | - | Booted (macOS only) |
 
 ### Configuration Files
 

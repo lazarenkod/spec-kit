@@ -7,9 +7,68 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.110] - 2026-01-09
+
+### Added
+
+- **Mobile Testing Support** in `/speckit.implement` for automatic testing of mobile apps alongside web:
+  - **Mobile Test Scaffolder role** (Wave 2): Generates test scaffolds for Flutter, React Native, Native iOS, Native Android
+  - **Mobile Test Verifier role** (Wave 4): Executes mobile tests on emulators/simulators
+  - **Platform Auto-Detection**: Automatically detects Flutter (pubspec.yaml), React Native (Detox/Maestro), KMP, iOS Native, Android Native
+  - **iOS Simulator Support**: Uses `xcrun simctl` on macOS (skipped with warning on Linux/Windows)
+  - **Android Emulator Support**: Docker-based (`budtmo/docker-android:emulator_12.0`) for CI/CD
+
+- **Mobile Test Templates** in `templates/shared/mobile-test-templates/`:
+  - `flutter-test-template.md`: Flutter integration tests with Robot pattern
+  - `detox-test-template.md`: Detox tests for React Native with screen objects
+  - `maestro-flow-template.md`: Maestro YAML flows for React Native
+  - `xcuitest-template.md`: XCUITest templates for native iOS (Swift)
+  - `espresso-template.md`: Espresso tests for native Android (Kotlin)
+
+- **Platform Integration Checklists** in `templates/shared/platforms/`:
+  - `native-ios-integration-checklist.md`: T-IOS-CFG/BLD/TST/VER tasks with XCUITest
+  - `native-android-integration-checklist.md`: T-AND-CFG/BLD/TST/VER tasks with Espresso
+  - Updated `flutter-integration-checklist.md` with T-FLT-TST-xxx tasks
+  - Updated `rn-integration-checklist.md` with T-RN-TST-xxx tasks (Detox/Maestro)
+
+- **Mobile Quality Gates** (QG-MOB-001 to QG-MOB-004) in `quality-gates.md`:
+  - QG-MOB-001: Mobile staging environment ready (emulators healthy)
+  - QG-MOB-002: Mobile test coverage ≥70%
+  - QG-MOB-003: Cross-platform verification (100% on Android AND iOS)
+  - QG-MOB-004: Device profile validation (1+ device per category)
+
+- **Mobile Staging Support** in `/speckit.staging`:
+  - New CLI flags: `--mobile`, `--android-only`, `--ios-only`, `--appium`, `--emulator-device`
+  - Docker service for Android emulator with VNC access (port 6080)
+  - `mobile-staging-provision.sh` script for iOS Simulator and Appium setup
+
+- **Mobile CI/CD Templates** in `ci-templates.md`:
+  - GitHub Actions: `mobile-tests-android` (ubuntu with emulator-runner), `mobile-tests-ios` (macos-latest)
+  - GitLab CI: `mobile-tests-android` (Docker emulator), `mobile-tests-ios` (macOS runner)
+  - Platform-specific test execution for Flutter, Detox, Maestro, XCUITest, Espresso
+
+- **Mobile CLI flags** for `/speckit.implement`:
+  - `--skip-mobile`: Skip all mobile tests
+  - `--android-only`: Skip iOS tests
+  - `--ios-only`: Skip Android tests
+  - `--mobile-threshold <N>`: Override 70% coverage threshold
+
+- **Updated `run-tdd-pipeline.sh`** with mobile testing support:
+  - `detect_mobile_platform()` function for platform auto-detection
+  - `run_mobile_tests()` function with platform-specific test execution
+  - Step 6: Mobile Tests with QG-MOB-002, QG-MOB-003 validation
+
 ## [0.0.109] - 2026-01-09
 
 ### Added
+
+- **Inline Quality Gates System** - embedded validation in each command:
+  - Quality gates now run automatically during `/speckit.specify`, `/speckit.plan`, `/speckit.tasks`, `/speckit.implement`
+  - New framework: `templates/shared/validation/inline-gates.md` with EXECUTE_INLINE_GATES algorithm
+  - Simplified checks in `templates/shared/validation/gate-checks.md` (~1-5s vs ~10-30s full passes)
+  - CLI flags: `--skip-gates`, `--strict-gates`, `--full-gates` for all commands
+  - `/speckit.analyze` now reserved for full audits only; profiles `spec_validate`, `plan_validate`, `tasks_validate` deprecated for inline use
+  - Gate IDs: IG-SPEC-001..004, IG-PLAN-001..004, IG-TASK-001..004, IG-IMPL-001..005 (pre), IG-IMPL-101..104 (post)
 
 - **Comprehensive UX Coverage System** to prevent UI incompleteness and UX design gaps:
   - **UI State Matrix** in `spec-template.md`: Mandatory section for UI features covering 6 states (default, loading, error, success, empty, disabled) per component

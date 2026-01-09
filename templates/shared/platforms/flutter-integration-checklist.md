@@ -149,6 +149,57 @@ Tasks use the format: `T-FLT-{AREA}-{NNN}`
   - Output: Screenshots of running app
 ```
 
+### Mobile Testing Tasks [TST]
+
+```markdown
+- [ ] T-FLT-TST-001 [CRITICAL] [PLATFORM:flutter] [DEP:T-FLT-VER-004] Configure integration test dependencies
+  - File: pubspec.yaml
+  - Add dev_dependencies:
+    ```yaml
+    dev_dependencies:
+      integration_test:
+        sdk: flutter
+      flutter_test:
+        sdk: flutter
+    ```
+  - Run: flutter pub get
+  - Verify: Dependencies resolved
+
+- [ ] T-FLT-TST-002 [CRITICAL] [PLATFORM:flutter] [DEP:T-FLT-TST-001] Create integration_test directory structure
+  - Create: integration_test/
+  - Create: integration_test/app_test.dart
+  - Create: test_driver/integration_test.dart
+  - Template: templates/shared/mobile-test-templates/flutter-test-template.md
+  - Verify: Directory structure correct
+
+- [ ] T-FLT-TST-003 [HIGH] [PLATFORM:flutter] [DEP:T-FLT-TST-002] Scaffold integration tests for AS-xxx
+  - Map: Each AS-xxx from spec.md to test case
+  - Add: @speckit:AS-xxx annotations
+  - Add: testWidgets() for each acceptance scenario
+  - Verify: All AS-xxx covered with test scaffolds
+  - QG-MOB-001: Test scaffolds created
+
+- [ ] T-FLT-TST-004 [HIGH] [PLATFORM:flutter] [DEP:T-FLT-TST-003] Run tests on Android emulator
+  - Prerequisite: Android emulator running (speckit-android-emulator)
+  - Command: flutter test integration_test/ --device-id=emulator-5554
+  - Check: Tests execute (may fail in TDD Red phase)
+  - Output: Test execution log
+
+- [ ] T-FLT-TST-005 [HIGH] [PLATFORM:flutter] [DEP:T-FLT-TST-003] Run tests on iOS Simulator (macOS only)
+  - Prerequisite: iOS Simulator running (iPhone 15 Pro)
+  - Skip: If not on macOS (log warning)
+  - Command: flutter test integration_test/
+  - Check: Tests execute (may fail in TDD Red phase)
+  - Output: Test execution log
+  - QG-MOB-003: Cross-platform verified
+
+- [ ] T-FLT-TST-006 [MEDIUM] [PLATFORM:flutter] [DEP:T-FLT-TST-004,T-FLT-TST-005] Generate coverage report
+  - Command: flutter test integration_test/ --coverage
+  - File: coverage/lcov.info
+  - Check: Coverage >= 70% (QG-MOB-002 threshold)
+  - Output: Coverage summary
+```
+
 ## Dependency Graph
 
 ```text
@@ -160,6 +211,21 @@ T-FLT-CFG-001 ──┬──→ T-FLT-CFG-002 ──→ T-FLT-CFG-003 ──→
                                                                                    │
                                                                                    ↓
                                                                            T-FLT-VER-004
+                                                                                   │
+                                                                                   ↓
+                                                                           T-FLT-TST-001
+                                                                                   │
+                                                                                   ↓
+                                                                           T-FLT-TST-002
+                                                                                   │
+                                                                                   ↓
+                                                                           T-FLT-TST-003
+                                                                               ┌───┴───┐
+                                                                               ↓       ↓
+                                                                       T-FLT-TST-004  T-FLT-TST-005
+                                                                               └───┬───┘
+                                                                                   ↓
+                                                                           T-FLT-TST-006
 ```
 
 ## Injection Rules
@@ -179,3 +245,6 @@ When `/speckit.tasks` detects `PLATFORM_DETECTED = "flutter"`:
 | QG-FLT-001 | T-FLT-VER-001 | Phase 3 start |
 | QG-FLT-002 | T-FLT-VER-002 | iOS story tasks |
 | QG-FLT-003 | T-FLT-VER-003 | Android story tasks |
+| QG-MOB-001 | T-FLT-TST-003 | Wave 3 implementation |
+| QG-MOB-002 | T-FLT-TST-006 | Feature completion |
+| QG-MOB-003 | T-FLT-TST-005 | Cross-platform release |

@@ -182,6 +182,63 @@ Tasks use the format: `T-RN-{AREA}-{NNN}`
   - Output: Screenshots of running app
 ```
 
+### Mobile Testing Tasks [TST]
+
+```markdown
+- [ ] T-RN-TST-001 [CRITICAL] [PLATFORM:react_native] [DEP:T-RN-VER-004] Detect and configure test framework
+  - Check: .detoxrc.js OR .detoxrc.json exists → Detox
+  - Check: .maestro/ directory exists → Maestro
+  - Check: package.json has "detox" → Detox
+  - If neither: Default to Detox
+  - Template: templates/shared/mobile-test-templates/detox-test-template.md
+  - Template: templates/shared/mobile-test-templates/maestro-flow-template.md
+
+- [ ] T-RN-TST-002 [CRITICAL] [PLATFORM:react_native] [DEP:T-RN-TST-001] Install test dependencies (Detox)
+  - IF Detox selected:
+  - Command: npm install --save-dev detox jest @types/detox
+  - File: .detoxrc.js - configure devices
+  - File: e2e/jest.config.js - configure Jest
+  - Run: detox build --configuration ios.sim.debug
+  - Run: detox build --configuration android.emu.debug
+  - Verify: Builds succeed
+
+- [ ] T-RN-TST-003 [CRITICAL] [PLATFORM:react_native] [DEP:T-RN-TST-001] Configure Maestro (if selected)
+  - IF Maestro selected:
+  - Create: .maestro/ directory
+  - Create: .maestro/config.yaml with appId
+  - Install: curl -Ls "https://get.maestro.mobile.dev" | bash
+  - Verify: maestro --version works
+
+- [ ] T-RN-TST-004 [HIGH] [PLATFORM:react_native] [DEP:T-RN-TST-002,T-RN-TST-003] Scaffold tests for AS-xxx
+  - Map: Each AS-xxx from spec.md to test case
+  - Add: @speckit:AS-xxx annotations in comments
+  - Detox: Create e2e/tests/feature.e2e.js
+  - Maestro: Create .maestro/flows/feature.yaml
+  - Verify: All AS-xxx covered with test scaffolds
+  - QG-MOB-001: Test scaffolds created
+
+- [ ] T-RN-TST-005 [HIGH] [PLATFORM:react_native] [DEP:T-RN-TST-004] Run tests on Android emulator
+  - Prerequisite: Android emulator running (speckit-android-emulator)
+  - Detox: detox test --configuration android.emu.debug
+  - Maestro: maestro test .maestro/
+  - Check: Tests execute (may fail in TDD Red phase)
+  - Output: Test execution log
+
+- [ ] T-RN-TST-006 [HIGH] [PLATFORM:react_native] [DEP:T-RN-TST-004] Run tests on iOS Simulator (macOS only)
+  - Prerequisite: iOS Simulator running (iPhone 15 Pro)
+  - Skip: If not on macOS (log warning)
+  - Detox: detox test --configuration ios.sim.debug
+  - Maestro: maestro test .maestro/ (iOS device)
+  - Check: Tests execute (may fail in TDD Red phase)
+  - Output: Test execution log
+  - QG-MOB-003: Cross-platform verified
+
+- [ ] T-RN-TST-007 [MEDIUM] [PLATFORM:react_native] [DEP:T-RN-TST-005,T-RN-TST-006] Generate coverage report
+  - Detox: Jest coverage from test run
+  - Check: Coverage >= 70% (QG-MOB-002 threshold)
+  - Output: Coverage summary
+```
+
 ## Dependency Graph
 
 ```text
@@ -197,6 +254,21 @@ T-RN-CFG-001 ──→ T-RN-CFG-002 ──┬──→ T-RN-CFG-003 ──→ T-
                                                                                             │
                                                                                             ↓
                                                                                     T-RN-VER-004
+                                                                                            │
+                                                                                            ↓
+                                                                                    T-RN-TST-001
+                                                                                        ┌───┴───┐
+                                                                                        ↓       ↓
+                                                                                T-RN-TST-002  T-RN-TST-003
+                                                                                        └───┬───┘
+                                                                                            ↓
+                                                                                    T-RN-TST-004
+                                                                                        ┌───┴───┐
+                                                                                        ↓       ↓
+                                                                                T-RN-TST-005  T-RN-TST-006
+                                                                                        └───┬───┘
+                                                                                            ↓
+                                                                                    T-RN-TST-007
 ```
 
 ## Injection Rules
@@ -216,6 +288,9 @@ When `/speckit.tasks` detects `PLATFORM_DETECTED = "react_native"`:
 | QG-RN-001 | T-RN-VER-001 | Phase 3 start |
 | QG-RN-002 | T-RN-VER-002 | iOS story tasks |
 | QG-RN-003 | T-RN-VER-003 | Android story tasks |
+| QG-MOB-001 | T-RN-TST-004 | Wave 3 implementation |
+| QG-MOB-002 | T-RN-TST-007 | Feature completion |
+| QG-MOB-003 | T-RN-TST-006 | Cross-platform release |
 
 ## Expo Variant
 

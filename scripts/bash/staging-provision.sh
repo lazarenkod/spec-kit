@@ -17,6 +17,12 @@ RESET=false
 STATUS_ONLY=false
 DOWN=false
 JSON_OUTPUT=false
+# Mobile testing defaults
+MOBILE_ENABLED=false
+ANDROID_ONLY=false
+IOS_ONLY=false
+APPIUM_ENABLED=false
+EMULATOR_DEVICE="pixel_6"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -45,6 +51,28 @@ while [[ $# -gt 0 ]]; do
       JSON_OUTPUT=true
       shift
       ;;
+    --mobile)
+      MOBILE_ENABLED=true
+      shift
+      ;;
+    --android-only)
+      MOBILE_ENABLED=true
+      ANDROID_ONLY=true
+      shift
+      ;;
+    --ios-only)
+      MOBILE_ENABLED=true
+      IOS_ONLY=true
+      shift
+      ;;
+    --appium)
+      APPIUM_ENABLED=true
+      shift
+      ;;
+    --emulator-device)
+      EMULATOR_DEVICE="$2"
+      shift 2
+      ;;
     -h|--help)
       echo "Usage: staging-provision.sh [OPTIONS]"
       echo ""
@@ -55,6 +83,15 @@ while [[ $# -gt 0 ]]; do
       echo "  --status             Show current status only"
       echo "  --down               Stop all staging services"
       echo "  --json               Output results as JSON"
+      echo ""
+      echo "Mobile Testing Options:"
+      echo "  --mobile             Enable Android emulator for mobile testing"
+      echo "  --android-only       Only provision Android emulator (skip iOS)"
+      echo "  --ios-only           Only provision iOS simulator (macOS only)"
+      echo "  --appium             Include Appium server for native automation"
+      echo "  --emulator-device    Android device type (default: pixel_6)"
+      echo "                       Options: pixel_6, pixel_8, galaxy_s24"
+      echo ""
       echo "  -h, --help           Show this help"
       exit 0
       ;;
@@ -143,8 +180,53 @@ services:
       test-db:
         condition: service_healthy
 
+  # Mobile Testing Services
+  android-emulator:
+    image: budtmo/docker-android:emulator_12.0
+    container_name: speckit-android-emulator
+    privileged: true
+    ports:
+      - "5554:5554"
+      - "5555:5555"
+      - "5037:5037"
+      - "6080:6080"
+    environment:
+      EMULATOR_DEVICE: "${EMULATOR_DEVICE:-pixel_6}"
+      WEB_VNC: "true"
+      DATAPARTITION: "2048m"
+    healthcheck:
+      test: ["CMD-SHELL", "adb devices | grep -q emulator || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    profiles:
+      - mobile
+      - android
+    volumes:
+      - android-avd-data:/root/.android
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2'
+
+  appium:
+    image: appium/appium:latest
+    container_name: speckit-appium
+    ports:
+      - "4723:4723"
+    environment:
+      - APPIUM_ARGS=--relaxed-security
+    profiles:
+      - appium
+    depends_on:
+      android-emulator:
+        condition: service_healthy
+
 volumes:
   test-db-data:
+  android-avd-data:
 
 networks:
   default:
@@ -177,6 +259,20 @@ TEST_REDIS_PORT=6380
 PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 CI=true
 
+# Mobile Testing (Android)
+ANDROID_EMULATOR_HOST=localhost
+ANDROID_ADB_PORT=5555
+ANDROID_VNC_PORT=6080
+ANDROID_DEVICE=${EMULATOR_DEVICE:-pixel_6}
+
+# Mobile Testing (iOS - macOS only)
+IOS_SIMULATOR_DEVICE=iPhone 15 Pro
+IOS_SIMULATOR_OS=17.2
+
+# Appium Server
+APPIUM_HOST=localhost
+APPIUM_PORT=4723
+
 # Test Configuration
 NODE_ENV=test
 LOG_LEVEL=error
@@ -203,6 +299,18 @@ build_profiles() {
     esac
   done
 
+  # Add mobile profiles
+  if [ "$MOBILE_ENABLED" = true ]; then
+    if [ "$IOS_ONLY" = false ]; then
+      profiles="${profiles:+$profiles,}mobile"
+    fi
+  fi
+
+  # Add appium profile
+  if [ "$APPIUM_ENABLED" = true ]; then
+    profiles="${profiles:+$profiles,}appium"
+  fi
+
   echo "$profiles"
 }
 
@@ -220,11 +328,19 @@ check_health() {
 # Wait for all services to be healthy
 wait_for_healthy() {
   local max_wait=60
+  local mobile_max_wait=180  # Mobile emulators need more time
   local waited=0
+  local current_max_wait=$max_wait
+
+  # Increase timeout if mobile testing is enabled
+  if [ "$MOBILE_ENABLED" = true ] && [ "$IOS_ONLY" = false ]; then
+    current_max_wait=$mobile_max_wait
+    echo -e "${YELLOW}Mobile testing enabled - extended timeout to ${mobile_max_wait}s${NC}"
+  fi
 
   echo -e "${BLUE}Waiting for services to be healthy...${NC}"
 
-  while [ $waited -lt $max_wait ]; do
+  while [ $waited -lt $current_max_wait ]; do
     local all_healthy=true
 
     # Check postgres (always required)
@@ -243,15 +359,34 @@ wait_for_healthy() {
       fi
     fi
 
+    # Check Android emulator if mobile enabled (and not iOS-only)
+    if [ "$MOBILE_ENABLED" = true ] && [ "$IOS_ONLY" = false ]; then
+      if check_health "android" "speckit-android-emulator"; then
+        echo -e "  ${GREEN}android-emulator: healthy${NC}"
+      else
+        all_healthy=false
+        echo -e "  ${YELLOW}android-emulator: starting (can take 2-3 minutes)...${NC}"
+      fi
+    fi
+
+    # Check Appium if enabled
+    if [ "$APPIUM_ENABLED" = true ]; then
+      if docker ps --filter "name=speckit-appium" --format "{{.Names}}" | grep -q "speckit-appium"; then
+        echo -e "  ${GREEN}appium: running${NC}"
+      else
+        all_healthy=false
+      fi
+    fi
+
     if [ "$all_healthy" = true ]; then
       return 0
     fi
 
-    sleep 2
-    waited=$((waited + 2))
+    sleep 5
+    waited=$((waited + 5))
   done
 
-  echo -e "${RED}ERROR: Services did not become healthy within ${max_wait}s${NC}"
+  echo -e "${RED}ERROR: Services did not become healthy within ${current_max_wait}s${NC}"
   $DOCKER_COMPOSE -f "$STAGING_DIR/docker-compose.yaml" logs
   return 1
 }
@@ -297,8 +432,56 @@ validate_gate() {
     fi
   fi
 
+  # Check Android emulator if mobile enabled (and not iOS-only)
+  if [ "$MOBILE_ENABLED" = true ] && [ "$IOS_ONLY" = false ]; then
+    if docker exec speckit-android-emulator adb devices 2>/dev/null | grep -q "emulator"; then
+      checks+=("android-emulator:PASS:5555")
+      echo -e "  ${GREEN}Android Emulator: PASS${NC}"
+    else
+      checks+=("android-emulator:FAIL:5555")
+      echo -e "  ${RED}Android Emulator: FAIL${NC}"
+      all_passed=false
+    fi
+  fi
+
+  # Check iOS simulator if enabled (macOS only)
+  if [ "$MOBILE_ENABLED" = true ] && [ "$ANDROID_ONLY" = false ]; then
+    if [[ "$(uname)" == "Darwin" ]]; then
+      if xcrun simctl list devices 2>/dev/null | grep -q "Booted"; then
+        checks+=("ios-simulator:PASS:0")
+        echo -e "  ${GREEN}iOS Simulator: PASS${NC}"
+      else
+        checks+=("ios-simulator:WARN:0")
+        echo -e "  ${YELLOW}iOS Simulator: NOT BOOTED (run manually or use --android-only)${NC}"
+        # Don't fail for iOS - it's optional unless --ios-only
+        if [ "$IOS_ONLY" = true ]; then
+          all_passed=false
+        fi
+      fi
+    else
+      checks+=("ios-simulator:SKIP:0")
+      echo -e "  ${YELLOW}iOS Simulator: SKIPPED (macOS required)${NC}"
+    fi
+  fi
+
+  # Check Appium if enabled
+  if [ "$APPIUM_ENABLED" = true ]; then
+    if curl -s http://localhost:4723/status 2>/dev/null | grep -q "ready"; then
+      checks+=("appium:PASS:4723")
+      echo -e "  ${GREEN}Appium: PASS${NC}"
+    else
+      checks+=("appium:FAIL:4723")
+      echo -e "  ${RED}Appium: FAIL${NC}"
+      all_passed=false
+    fi
+  fi
+
   if [ "$all_passed" = true ]; then
     echo -e "\n${GREEN}QG-STAGING-001: PASSED${NC}"
+    # Validate mobile-specific gate if mobile enabled
+    if [ "$MOBILE_ENABLED" = true ]; then
+      echo -e "${GREEN}QG-MOB-001: Mobile Staging Ready - PASSED${NC}"
+    fi
     return 0
   else
     echo -e "\n${RED}QG-STAGING-001: FAILED${NC}"
@@ -312,6 +495,9 @@ write_state() {
 
   local redis_healthy=false
   local playwright_enabled=false
+  local android_enabled=false
+  local ios_available=false
+  local appium_enabled=false
 
   if [[ "$SERVICES" == *"redis"* ]]; then
     redis_healthy=true
@@ -321,6 +507,18 @@ write_state() {
     playwright_enabled=true
   fi
 
+  if [ "$MOBILE_ENABLED" = true ] && [ "$IOS_ONLY" = false ]; then
+    android_enabled=true
+  fi
+
+  if [[ "$(uname)" == "Darwin" ]] && [ "$MOBILE_ENABLED" = true ] && [ "$ANDROID_ONLY" = false ]; then
+    ios_available=true
+  fi
+
+  if [ "$APPIUM_ENABLED" = true ]; then
+    appium_enabled=true
+  fi
+
   cat > "$STATE_DIR/staging-status.json" << EOF
 {
   "status": "ready",
@@ -328,10 +526,20 @@ write_state() {
   "services": {
     "postgres": {"port": 5433, "healthy": true},
     "redis": {"port": 6380, "healthy": $redis_healthy},
-    "playwright": {"enabled": $playwright_enabled}
+    "playwright": {"enabled": $playwright_enabled},
+    "android-emulator": {"port": 5555, "enabled": $android_enabled, "device": "$EMULATOR_DEVICE"},
+    "ios-simulator": {"available": $ios_available},
+    "appium": {"port": 4723, "enabled": $appium_enabled}
   },
   "gate": {
-    "QG-STAGING-001": "PASSED"
+    "QG-STAGING-001": "PASSED",
+    "QG-MOB-001": "$( [ "$MOBILE_ENABLED" = true ] && echo "PASSED" || echo "N/A" )"
+  },
+  "mobile": {
+    "enabled": $MOBILE_ENABLED,
+    "android_only": $ANDROID_ONLY,
+    "ios_only": $IOS_ONLY,
+    "emulator_device": "$EMULATOR_DEVICE"
   }
 }
 EOF
@@ -380,7 +588,15 @@ output_json() {
   "COMPOSE_FILE": "$STAGING_DIR/docker-compose.yaml",
   "CONFIG_FILE": "$STAGING_DIR/test-config.env",
   "DATABASE_URL": "postgresql://test:test@localhost:5433/test_db",
-  "REDIS_URL": "redis://localhost:6380"
+  "REDIS_URL": "redis://localhost:6380",
+  "MOBILE_ENABLED": $MOBILE_ENABLED,
+  "ANDROID_EMULATOR_HOST": "localhost",
+  "ANDROID_ADB_PORT": 5555,
+  "ANDROID_VNC_PORT": 6080,
+  "ANDROID_DEVICE": "$EMULATOR_DEVICE",
+  "APPIUM_HOST": "localhost",
+  "APPIUM_PORT": 4723,
+  "APPIUM_ENABLED": $APPIUM_ENABLED
 }
 EOF
 }
@@ -458,10 +674,39 @@ main() {
   echo "  source $STAGING_DIR/test-config.env"
   echo "  npm test"
   echo ""
+
+  # Mobile testing info
+  if [ "$MOBILE_ENABLED" = true ]; then
+    echo -e "${BLUE}Mobile Testing:${NC}"
+    if [ "$IOS_ONLY" = false ]; then
+      echo "  - Android Emulator: localhost:5555 (ADB), localhost:6080 (VNC)"
+      echo "  - Device: $EMULATOR_DEVICE"
+    fi
+    if [ "$ANDROID_ONLY" = false ]; then
+      if [[ "$(uname)" == "Darwin" ]]; then
+        echo "  - iOS Simulator: Use 'xcrun simctl boot \"iPhone 15 Pro\"' to start"
+      else
+        echo "  - iOS Simulator: Skipped (requires macOS)"
+      fi
+    fi
+    if [ "$APPIUM_ENABLED" = true ]; then
+      echo "  - Appium Server: localhost:4723"
+    fi
+    echo ""
+    echo "Mobile Test Commands:"
+    echo "  flutter test integration_test/           # Flutter"
+    echo "  detox test --configuration android       # React Native (Detox)"
+    echo "  maestro test .maestro/                   # React Native (Maestro)"
+    echo ""
+  fi
+
   echo "Commands:"
   echo "  /speckit.staging --status    Check status"
   echo "  /speckit.staging --down      Stop services"
   echo "  /speckit.staging --reset     Recreate services"
+  if [ "$MOBILE_ENABLED" = false ]; then
+    echo "  /speckit.staging --mobile    Enable mobile testing"
+  fi
   echo ""
   echo -e "${GREEN}Next: Run /speckit.implement to start TDD implementation${NC}"
 }

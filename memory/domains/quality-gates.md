@@ -314,6 +314,192 @@ go test -coverprofile=coverage.out && go tool cover -func=coverage.out
 
 ---
 
+## Mobile Testing Gates (QG-MOB-xxx)
+
+> **Mobile Testing** gates ensure mobile apps are tested on real emulators/simulators.
+> Tests MUST run on both Android and iOS for cross-platform frameworks.
+
+### QG-MOB-001: Mobile Staging Ready
+
+**Level**: MUST
+**Applies to**: All mobile features (Flutter, React Native, KMP, native iOS/Android)
+**Phase**: Pre-Implement
+
+Mobile staging environment MUST be provisioned with working emulator/simulator.
+
+**Threshold**: All mobile staging services pass health checks
+
+**Validation**:
+```bash
+# Android emulator (Docker)
+docker exec speckit-android-emulator adb devices | grep -q "emulator"
+
+# iOS simulator (macOS only)
+xcrun simctl list devices | grep -q "Booted"
+```
+
+**Required Services**:
+| Service | Health Check | Required |
+|---------|-------------|----------|
+| android-emulator | `adb devices` | YES (Android/cross-platform) |
+| ios-simulator | `xcrun simctl list` | YES (iOS/cross-platform, macOS only) |
+| appium-server | HTTP 4723 | OPTIONAL (native automation) |
+
+**Platform-Specific Requirements**:
+| Platform | Android | iOS |
+|----------|---------|-----|
+| Flutter | Required | Required (macOS) or Skipped (Linux/Windows) |
+| React Native | Required | Required (macOS) or Skipped |
+| KMP | Required | Required (macOS) or Skipped |
+| Native Android | Required | N/A |
+| Native iOS | N/A | Required (macOS only) |
+
+**Violations**: CRITICAL - Cannot run mobile tests without emulator/simulator
+
+---
+
+### QG-MOB-002: Mobile Test Coverage
+
+**Level**: MUST
+**Applies to**: All mobile features
+**Phase**: Post-Implement
+
+Mobile test coverage MUST meet minimum threshold.
+
+**Threshold**: >= 70% line coverage for mobile-specific code
+
+**Validation by Framework**:
+| Framework | Command | Coverage Format |
+|-----------|---------|-----------------|
+| Flutter | `flutter test --coverage` | lcov |
+| React Native | `jest --coverage` (unit) + Detox | istanbul |
+| Native iOS | `xcodebuild ... -enableCodeCoverage YES` | xccov |
+| Native Android | `./gradlew jacocoTestReport` | jacoco |
+
+**Coverage Calculation**:
+```bash
+# Flutter
+flutter test --coverage
+lcov --summary coverage/lcov.info | grep "lines" | awk '{print $2}'
+
+# React Native
+jest --coverage --coverageReporters=text-summary
+
+# iOS (after xcodebuild test)
+xcrun xccov view --report result.xcresult
+
+# Android
+./gradlew jacocoTestReport
+# Parse build/reports/jacoco/test/html/index.html
+```
+
+**Thresholds**:
+- **≥70%**: Ready for merge
+- **50-69%**: Needs improvement (add more tests)
+- **<50%**: BLOCK - Insufficient coverage
+
+**Violations**: HIGH - Insufficient mobile test coverage
+
+---
+
+### QG-MOB-003: Cross-Platform Verification
+
+**Level**: MUST
+**Applies to**: Flutter, React Native, KMP features
+**Phase**: Post-Implement
+
+Cross-platform apps MUST pass tests on BOTH Android AND iOS.
+
+**Threshold**: 100% test pass rate on both platforms
+
+**Validation**:
+```bash
+# Flutter
+flutter test integration_test/ -d <android_emulator>
+flutter test integration_test/ -d <ios_simulator>
+
+# React Native (Detox)
+detox test --configuration android.emu.debug
+detox test --configuration ios.sim.debug
+
+# React Native (Maestro)
+maestro test .maestro/ --device android
+maestro test .maestro/ --device ios
+
+# KMP
+./gradlew connectedAndroidTest        # Android
+xcodebuild test -scheme iosApp       # iOS
+```
+
+**Skip Conditions**:
+- Single-platform native apps (Swift-only or Kotlin-only)
+- Platform-specific feature (e.g., Android widget, iOS Today Extension)
+- No macOS available for iOS tests (skip with WARNING, not FAIL)
+
+**Platform Matrix**:
+| Framework | Android | iOS (macOS) | iOS (Linux/Windows) |
+|-----------|---------|-------------|---------------------|
+| Flutter | MUST pass | MUST pass | SKIP with warning |
+| React Native | MUST pass | MUST pass | SKIP with warning |
+| KMP | MUST pass | MUST pass | SKIP with warning |
+
+**Violations**: CRITICAL - Cross-platform apps must work on both platforms
+
+---
+
+### QG-MOB-004: Device Profile Validation
+
+**Level**: SHOULD
+**Applies to**: All mobile features
+**Phase**: Post-Implement
+
+App SHOULD be tested on representative device profiles.
+
+**Threshold**: Tests pass on at least one device from each category
+
+**Device Categories**:
+| Category | Examples | Min Test |
+|----------|----------|----------|
+| Small phone | iPhone SE, Pixel 4a | 1 device |
+| Large phone | iPhone 15 Pro Max, Pixel 8 Pro | 1 device |
+| Tablet | iPad, Pixel Tablet | 1 device (if tablet support specified) |
+
+**Reference**: `templates/shared/device-profiles.md`
+
+**Validation**:
+```bash
+# Test on multiple device profiles
+flutter test integration_test/ -d "iPhone SE"
+flutter test integration_test/ -d "iPhone 15 Pro Max"
+flutter test integration_test/ -d "iPad Pro"
+```
+
+**Performance Thresholds** (from `memory/domains/mobile.md`):
+| Metric | MUST | Lovable |
+|--------|------|---------|
+| Cold start | < 2s | < 1s |
+| Warm start | < 500ms | < 200ms |
+| Touch response | < 100ms | < 50ms |
+| Animations | 60fps | 120fps (ProMotion) |
+| Battery drain | < 5%/hour | < 2%/hour |
+| App size (iOS) | < 200MB | < 100MB |
+| App size (Android) | < 150MB | < 75MB |
+
+**Violations**: MEDIUM - May have device-specific issues
+
+---
+
+### Mobile Gate Enforcement Matrix
+
+| Gate ID | Phase | Level | Threshold | Validation | Severity |
+|---------|-------|-------|-----------|------------|----------|
+| QG-MOB-001 | Pre-Implement | MUST | Emulators healthy | Health check | CRITICAL |
+| QG-MOB-002 | Post-Implement | MUST | >= 70% coverage | Coverage report | HIGH |
+| QG-MOB-003 | Post-Implement | MUST | 100% both platforms | Test pass rate | CRITICAL |
+| QG-MOB-004 | Post-Implement | SHOULD | Device categories | Multi-device tests | MEDIUM |
+
+---
+
 ## Component Integration Gates (QG-COMP-xxx)
 
 > **Component Integration Quality Gates** ensure UI components are not just created but actually integrated into all target screens.

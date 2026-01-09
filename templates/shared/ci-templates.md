@@ -995,12 +995,257 @@ jobs:
           path: playwright-report/
 
   # ============================================
+  # MOBILE TESTS: Flutter/React Native/Native
+  # ============================================
+  mobile-tests-android:
+    name: QG-MOB-002/003 Mobile Tests (Android)
+    runs-on: ubuntu-latest
+    needs: [staging, unit-tests]
+    if: |
+      hashFiles('pubspec.yaml') != '' ||
+      hashFiles('.detoxrc.js') != '' ||
+      hashFiles('.detoxrc.json') != '' ||
+      hashFiles('.maestro/**') != '' ||
+      hashFiles('app/build.gradle') != '' ||
+      hashFiles('app/build.gradle.kts') != ''
+    env:
+      MOBILE_COVERAGE_THRESHOLD: 70
+    steps:
+      - uses: actions/checkout@v4
+
+      # Detect mobile platform
+      - name: Detect Mobile Platform
+        id: detect
+        run: |
+          if [ -f "pubspec.yaml" ]; then
+            echo "platform=flutter" >> $GITHUB_OUTPUT
+          elif [ -f "package.json" ] && grep -q "react-native" package.json 2>/dev/null; then
+            if [ -f ".detoxrc.js" ] || [ -f ".detoxrc.json" ]; then
+              echo "platform=detox" >> $GITHUB_OUTPUT
+            elif [ -d ".maestro" ]; then
+              echo "platform=maestro" >> $GITHUB_OUTPUT
+            else
+              echo "platform=react_native" >> $GITHUB_OUTPUT
+            fi
+          elif [ -f "app/build.gradle" ] || [ -f "app/build.gradle.kts" ]; then
+            echo "platform=android_native" >> $GITHUB_OUTPUT
+          else
+            echo "platform=none" >> $GITHUB_OUTPUT
+          fi
+
+      # Flutter Setup
+      - name: Setup Flutter
+        if: steps.detect.outputs.platform == 'flutter'
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      # Node Setup (React Native / Maestro)
+      - name: Setup Node.js
+        if: contains(fromJSON('["detox", "maestro", "react_native"]'), steps.detect.outputs.platform)
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        if: contains(fromJSON('["detox", "maestro", "react_native"]'), steps.detect.outputs.platform)
+        run: npm ci
+
+      # Java Setup (Android Native / React Native)
+      - name: Setup Java
+        if: contains(fromJSON('["android_native", "detox", "react_native"]'), steps.detect.outputs.platform)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Android Emulator + Tests
+      - name: Run Android Tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: |
+            echo "## QG-MOB-002/003: Mobile Tests (Android)" >> $GITHUB_STEP_SUMMARY
+
+            PLATFORM="${{ steps.detect.outputs.platform }}"
+
+            case "$PLATFORM" in
+              flutter)
+                flutter pub get
+                flutter test integration_test/ --device-id=emulator-5554 2>&1 | tee mobile-test.log
+                ;;
+              detox)
+                npx detox build --configuration android.emu.debug
+                npx detox test --configuration android.emu.debug 2>&1 | tee mobile-test.log
+                ;;
+              maestro)
+                curl -Ls "https://get.maestro.mobile.dev" | bash
+                export PATH="$PATH:$HOME/.maestro/bin"
+                npx react-native run-android --mode debug
+                maestro test .maestro/ 2>&1 | tee mobile-test.log
+                ;;
+              android_native)
+                ./gradlew connectedAndroidTest 2>&1 | tee mobile-test.log
+                ;;
+            esac
+
+            if [ $? -eq 0 ]; then
+              echo "✅ QG-MOB-002/003: Android tests PASSED" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ QG-MOB-002/003: Android tests FAILED" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            fi
+
+      - name: Upload Mobile Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-test-results-android
+          path: |
+            mobile-test.log
+            app/build/reports/androidTests/
+            build/app/reports/
+
+  mobile-tests-ios:
+    name: QG-MOB-002/003 Mobile Tests (iOS)
+    runs-on: macos-latest
+    needs: [staging, unit-tests]
+    if: |
+      hashFiles('pubspec.yaml') != '' ||
+      hashFiles('.detoxrc.js') != '' ||
+      hashFiles('.detoxrc.json') != '' ||
+      hashFiles('.maestro/**') != '' ||
+      hashFiles('*.xcodeproj/**') != '' ||
+      hashFiles('*.xcworkspace/**') != ''
+    env:
+      MOBILE_COVERAGE_THRESHOLD: 70
+    steps:
+      - uses: actions/checkout@v4
+
+      # Detect mobile platform
+      - name: Detect Mobile Platform
+        id: detect
+        run: |
+          if [ -f "pubspec.yaml" ]; then
+            echo "platform=flutter" >> $GITHUB_OUTPUT
+          elif [ -f "package.json" ] && grep -q "react-native" package.json 2>/dev/null; then
+            if [ -f ".detoxrc.js" ] || [ -f ".detoxrc.json" ]; then
+              echo "platform=detox" >> $GITHUB_OUTPUT
+            elif [ -d ".maestro" ]; then
+              echo "platform=maestro" >> $GITHUB_OUTPUT
+            else
+              echo "platform=react_native" >> $GITHUB_OUTPUT
+            fi
+          elif ls *.xcodeproj 1>/dev/null 2>&1 || ls *.xcworkspace 1>/dev/null 2>&1; then
+            echo "platform=ios_native" >> $GITHUB_OUTPUT
+          else
+            echo "platform=none" >> $GITHUB_OUTPUT
+          fi
+
+      # Flutter Setup
+      - name: Setup Flutter
+        if: steps.detect.outputs.platform == 'flutter'
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      # Node Setup (React Native)
+      - name: Setup Node.js
+        if: contains(fromJSON('["detox", "maestro", "react_native"]'), steps.detect.outputs.platform)
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        if: contains(fromJSON('["detox", "maestro", "react_native"]'), steps.detect.outputs.platform)
+        run: npm ci
+
+      # Boot iOS Simulator
+      - name: Boot iOS Simulator
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available | grep "iPhone 15 Pro" | head -1 | grep -oE '[A-F0-9-]{36}')
+          if [ -z "$DEVICE_ID" ]; then
+            DEVICE_ID=$(xcrun simctl create "iPhone 15 Pro" "com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro" "com.apple.CoreSimulator.SimRuntime.iOS-17-0")
+          fi
+          xcrun simctl boot "$DEVICE_ID" || true
+          echo "SIMULATOR_UDID=$DEVICE_ID" >> $GITHUB_ENV
+
+      # Run iOS Tests
+      - name: Run iOS Tests
+        run: |
+          echo "## QG-MOB-002/003: Mobile Tests (iOS)" >> $GITHUB_STEP_SUMMARY
+
+          PLATFORM="${{ steps.detect.outputs.platform }}"
+
+          case "$PLATFORM" in
+            flutter)
+              flutter pub get
+              cd ios && pod install && cd ..
+              flutter test integration_test/ 2>&1 | tee mobile-test.log
+              ;;
+            detox)
+              cd ios && pod install && cd ..
+              npx detox build --configuration ios.sim.debug
+              npx detox test --configuration ios.sim.debug 2>&1 | tee mobile-test.log
+              ;;
+            maestro)
+              curl -Ls "https://get.maestro.mobile.dev" | bash
+              export PATH="$PATH:$HOME/.maestro/bin"
+              cd ios && pod install && cd ..
+              npx react-native run-ios --simulator "iPhone 15 Pro"
+              maestro test .maestro/ 2>&1 | tee mobile-test.log
+              ;;
+            ios_native)
+              WORKSPACE=$(ls -d *.xcworkspace 2>/dev/null | head -1)
+              PROJECT=$(ls -d *.xcodeproj 2>/dev/null | head -1)
+
+              if [ -n "$WORKSPACE" ]; then
+                xcodebuild test \
+                  -workspace "$WORKSPACE" \
+                  -scheme "$(basename "$WORKSPACE" .xcworkspace)" \
+                  -destination "platform=iOS Simulator,name=iPhone 15 Pro" \
+                  2>&1 | tee mobile-test.log
+              elif [ -n "$PROJECT" ]; then
+                xcodebuild test \
+                  -project "$PROJECT" \
+                  -scheme "$(basename "$PROJECT" .xcodeproj)" \
+                  -destination "platform=iOS Simulator,name=iPhone 15 Pro" \
+                  2>&1 | tee mobile-test.log
+              fi
+              ;;
+          esac
+
+          if [ $? -eq 0 ]; then
+            echo "✅ QG-MOB-002/003: iOS tests PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ QG-MOB-002/003: iOS tests FAILED" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Upload Mobile Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-test-results-ios
+          path: |
+            mobile-test.log
+            build/reports/
+            DerivedData/Logs/Test/
+
+  # ============================================
   # QUALITY GATES SUMMARY
   # ============================================
   quality-gates:
     name: Quality Gates Summary
     runs-on: ubuntu-latest
-    needs: [staging, test-completeness, unit-tests, integration-tests, e2e-tests]
+    needs: [staging, test-completeness, unit-tests, integration-tests, e2e-tests, mobile-tests-android, mobile-tests-ios]
     if: always()
     steps:
       - name: Summary
@@ -1014,6 +1259,8 @@ jobs:
           echo "| QG-TEST-004 | ${{ needs.unit-tests.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Integration | ${{ needs.integration-tests.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| E2E | ${{ needs.e2e-tests.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| QG-MOB-002/003 Android | ${{ needs.mobile-tests-android.result == 'success' && '✅' || (needs.mobile-tests-android.result == 'skipped' && '⏭️' || '❌') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| QG-MOB-002/003 iOS | ${{ needs.mobile-tests-ios.result == 'success' && '✅' || (needs.mobile-tests-ios.result == 'skipped' && '⏭️' || '❌') }} |" >> $GITHUB_STEP_SUMMARY
 ```
 
 ### GitLab CI - TDD Pipeline
@@ -1110,6 +1357,160 @@ e2e-tests:
       - playwright-report/
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# ============================================
+# MOBILE TESTS: Android (Docker-based emulator)
+# ============================================
+mobile-tests-android:
+  stage: e2e-tests
+  image: budtmo/docker-android:emulator_12.0
+  needs: [unit-tests]
+  variables:
+    EMULATOR_DEVICE: "pixel_6"
+  before_script:
+    - |
+      # Detect mobile platform
+      if [ -f "pubspec.yaml" ]; then
+        export MOBILE_PLATFORM="flutter"
+      elif [ -f "package.json" ] && grep -q "react-native" package.json 2>/dev/null; then
+        if [ -f ".detoxrc.js" ] || [ -f ".detoxrc.json" ]; then
+          export MOBILE_PLATFORM="detox"
+        elif [ -d ".maestro" ]; then
+          export MOBILE_PLATFORM="maestro"
+        else
+          export MOBILE_PLATFORM="react_native"
+        fi
+      elif [ -f "app/build.gradle" ] || [ -f "app/build.gradle.kts" ]; then
+        export MOBILE_PLATFORM="android_native"
+      else
+        export MOBILE_PLATFORM="none"
+      fi
+  script:
+    - echo "## QG-MOB-002/003 Mobile Tests (Android)"
+    - |
+      case "$MOBILE_PLATFORM" in
+        flutter)
+          flutter pub get
+          flutter test integration_test/ --device-id=emulator-5554
+          ;;
+        detox)
+          npm ci
+          npx detox build --configuration android.emu.debug
+          npx detox test --configuration android.emu.debug
+          ;;
+        maestro)
+          npm ci
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          export PATH="$PATH:$HOME/.maestro/bin"
+          npx react-native run-android --mode debug
+          maestro test .maestro/
+          ;;
+        android_native)
+          ./gradlew connectedAndroidTest
+          ;;
+        *)
+          echo "No Android mobile tests detected, skipping"
+          ;;
+      esac
+  artifacts:
+    when: always
+    paths:
+      - app/build/reports/androidTests/
+      - build/app/reports/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      exists:
+        - pubspec.yaml
+        - .detoxrc.js
+        - .detoxrc.json
+        - .maestro/**/*
+        - app/build.gradle
+        - app/build.gradle.kts
+  allow_failure: true
+
+# ============================================
+# MOBILE TESTS: iOS (macOS runner required)
+# ============================================
+mobile-tests-ios:
+  stage: e2e-tests
+  tags:
+    - macos  # Requires macOS runner
+  needs: [unit-tests]
+  before_script:
+    - |
+      # Detect mobile platform
+      if [ -f "pubspec.yaml" ]; then
+        export MOBILE_PLATFORM="flutter"
+      elif [ -f "package.json" ] && grep -q "react-native" package.json 2>/dev/null; then
+        if [ -f ".detoxrc.js" ] || [ -f ".detoxrc.json" ]; then
+          export MOBILE_PLATFORM="detox"
+        elif [ -d ".maestro" ]; then
+          export MOBILE_PLATFORM="maestro"
+        else
+          export MOBILE_PLATFORM="react_native"
+        fi
+      elif ls *.xcodeproj 1>/dev/null 2>&1 || ls *.xcworkspace 1>/dev/null 2>&1; then
+        export MOBILE_PLATFORM="ios_native"
+      else
+        export MOBILE_PLATFORM="none"
+      fi
+    - |
+      # Boot iOS Simulator
+      DEVICE_ID=$(xcrun simctl list devices available | grep "iPhone 15 Pro" | head -1 | grep -oE '[A-F0-9-]{36}')
+      if [ -z "$DEVICE_ID" ]; then
+        DEVICE_ID=$(xcrun simctl create "iPhone 15 Pro" "com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro")
+      fi
+      xcrun simctl boot "$DEVICE_ID" || true
+  script:
+    - echo "## QG-MOB-002/003 Mobile Tests (iOS)"
+    - |
+      case "$MOBILE_PLATFORM" in
+        flutter)
+          flutter pub get
+          cd ios && pod install && cd ..
+          flutter test integration_test/
+          ;;
+        detox)
+          npm ci
+          cd ios && pod install && cd ..
+          npx detox build --configuration ios.sim.debug
+          npx detox test --configuration ios.sim.debug
+          ;;
+        maestro)
+          npm ci
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          export PATH="$PATH:$HOME/.maestro/bin"
+          cd ios && pod install && cd ..
+          npx react-native run-ios --simulator "iPhone 15 Pro"
+          maestro test .maestro/
+          ;;
+        ios_native)
+          WORKSPACE=$(ls -d *.xcworkspace 2>/dev/null | head -1)
+          PROJECT=$(ls -d *.xcodeproj 2>/dev/null | head -1)
+          if [ -n "$WORKSPACE" ]; then
+            xcodebuild test -workspace "$WORKSPACE" -scheme "$(basename "$WORKSPACE" .xcworkspace)" -destination "platform=iOS Simulator,name=iPhone 15 Pro"
+          elif [ -n "$PROJECT" ]; then
+            xcodebuild test -project "$PROJECT" -scheme "$(basename "$PROJECT" .xcodeproj)" -destination "platform=iOS Simulator,name=iPhone 15 Pro"
+          fi
+          ;;
+        *)
+          echo "No iOS mobile tests detected, skipping"
+          ;;
+      esac
+  artifacts:
+    when: always
+    paths:
+      - build/reports/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      exists:
+        - pubspec.yaml
+        - .detoxrc.js
+        - .detoxrc.json
+        - .maestro/**/*
+        - "*.xcodeproj"
+        - "*.xcworkspace"
+  allow_failure: true
 ```
 
 ---
