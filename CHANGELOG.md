@@ -7,6 +7,50 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.112] - 2026-01-09
+
+### Added
+
+- **World-Class Implementation Plans** in `/speckit.plan` for 60%→95% artifact quality:
+  - **Strategic Narrative (Working Backwards)**: Amazon PR/FAQ methodology with Press Release Summary, MVP Scope Statement, Go/No-Go criteria
+  - **Pre-Mortem Analysis**: 3+ failure scenarios with early warning signs, prevention strategies, and kill criteria
+  - **Enhanced NFRs**: Performance with P50/P95/P99/P99.9 latency targets, Reliability with availability targets and error budgets, Observability requirements, Security constraints
+  - **Requirements Traceability Matrix (RTM)**: Bidirectional FR→ADR→TASK→TEST tracing with coverage percentages and gap detection
+  - **Brainstorm-Curate Enforcement**: Mandatory scoring matrices for all non-trivial ADRs with "Why Not Others" documentation
+  - **Observability & Monitoring Plan**: SLIs/SLOs definitions, dashboard specifications, alert definitions with runbook links
+  - **Scalability Strategy**: Capacity baseline, scaling triggers, bottleneck analysis, growth milestones
+
+- **New Plan Phases** for comprehensive artifact generation:
+  - Phase -1: Strategic Context Import (PR/FAQ import from concept.md, Pre-Mortem generation)
+  - Phase 0.75: NFR Definition (Performance, Reliability, Observability, Security NFRs)
+  - Phase 1.5: Observability & Scalability Planning (SLIs/SLOs, dashboards, alerts, scaling triggers)
+  - Phase 1.75: RTM Generation (FR/NFR coverage matrices, gap detection, impact analysis)
+
+- **New Self-Review Criteria** (SR-PLAN-14 to SR-PLAN-27):
+  - SR-PLAN-14: Strategic Narrative Present (HIGH)
+  - SR-PLAN-15: Pre-Mortem 3+ scenarios (HIGH)
+  - SR-PLAN-16: Pre-Mortem Tech+Integration coverage (MEDIUM)
+  - SR-PLAN-17: NFR-PERF with P95/P99 targets (CRITICAL)
+  - SR-PLAN-18: Availability target justified (HIGH)
+  - SR-PLAN-19: RTM FR Coverage ≥90% (CRITICAL)
+  - SR-PLAN-20: No orphan FRs/ADRs (HIGH)
+  - SR-PLAN-21: Brainstorm-Curate applied (HIGH)
+  - SR-PLAN-22: Scoring matrix visible (MEDIUM)
+  - SR-PLAN-23: SLI/SLO defined ≥2 (HIGH)
+  - SR-PLAN-24: Alerts have runbooks (MEDIUM)
+  - SR-PLAN-25: Capacity baseline filled (MEDIUM)
+  - SR-PLAN-26: Scaling triggers ≥2 (MEDIUM)
+  - SR-PLAN-27: Kill criteria present (HIGH)
+
+- **New Inline Quality Gates** (IG-PLAN-005 to IG-PLAN-011):
+  - IG-PLAN-005: Strategic Narrative Present (HIGH)
+  - IG-PLAN-006: Pre-Mortem Coverage (HIGH)
+  - IG-PLAN-007: NFR Definition (CRITICAL)
+  - IG-PLAN-008: RTM Coverage (HIGH)
+  - IG-PLAN-009: Brainstorm-Curate Enforcement (HIGH)
+  - IG-PLAN-010: Observability Defined (MEDIUM)
+  - IG-PLAN-011: Scalability Planned (MEDIUM)
+
 ## [0.0.111] - 2026-01-09
 
 ### Added

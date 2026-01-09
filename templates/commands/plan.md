@@ -41,6 +41,55 @@ inline_gates:
       threshold: 0
       severity: MEDIUM
       message: "External dependencies not verified"
+    - id: IG-PLAN-005
+      name: "Strategic Narrative Present"
+      checks: [SR-PLAN-14]
+      tier: 2
+      threshold: 0
+      severity: HIGH
+      message: "Plan missing Strategic Narrative (Working Backwards) section"
+    - id: IG-PLAN-006
+      name: "Pre-Mortem Coverage"
+      checks: [SR-PLAN-15, SR-PLAN-16, SR-PLAN-27]
+      tier: 2
+      threshold: 0
+      severity: HIGH
+      message: "Pre-Mortem analysis incomplete (need 3+ scenarios, Tech+Integration coverage, kill criteria)"
+    - id: IG-PLAN-007
+      name: "NFR Definition"
+      checks: [SR-PLAN-17, SR-PLAN-18]
+      tier: 2
+      threshold: 0
+      severity: CRITICAL
+      message: "NFRs not defined (need P95/P99 latency and availability targets)"
+    - id: IG-PLAN-008
+      name: "RTM Coverage"
+      checks: [SR-PLAN-19, SR-PLAN-20]
+      tier: 2
+      threshold: 0
+      severity: HIGH
+      message: "Requirements Traceability incomplete (coverage <90% or orphans exist)"
+    - id: IG-PLAN-009
+      name: "Brainstorm-Curate Enforcement"
+      checks: [SR-PLAN-21, SR-PLAN-22]
+      tier: 2
+      threshold: 0
+      severity: HIGH
+      message: "Brainstorm-Curate protocol not applied or scoring matrix not visible for non-trivial decisions"
+    - id: IG-PLAN-010
+      name: "Observability Defined"
+      checks: [SR-PLAN-23, SR-PLAN-24]
+      tier: 2
+      threshold: 0
+      severity: MEDIUM
+      message: "Observability plan incomplete (need SLIs/SLOs and alerts with runbooks)"
+    - id: IG-PLAN-011
+      name: "Scalability Planned"
+      checks: [SR-PLAN-25, SR-PLAN-26]
+      tier: 2
+      threshold: 0
+      severity: MEDIUM
+      message: "Scalability strategy incomplete (need capacity baseline and scaling triggers)"
 handoffs:
   - label: Create Tasks
     agent: speckit.tasks
@@ -311,9 +360,88 @@ FOR architecture_decision IN [database, caching, auth, deployment, framework]:
     DOCUMENT chosen approach with reasoning in research.md
 ```
 
+### Phase -1: Strategic Context Import (NEW)
+
+**Prerequisites**: concept.md exists (optional but recommended)
+
+**Purpose**: Import strategic context from concept phase to ensure plan aligns with product vision.
+
+1. **PR/FAQ Import**:
+   ```text
+   IF concept.md exists AND has PR/FAQ section:
+     EXTRACT: Product name, target customer, quantified value proposition
+     EXTRACT: MVP scope (what we're building, what we're NOT building)
+     EXTRACT: Time to value milestones
+     EXTRACT: Go/No-Go criteria
+
+     POPULATE: plan.md "Strategic Narrative" section
+
+     LOG: "Imported PR/FAQ from concept.md"
+   ELSE:
+     LOG: "No concept.md PR/FAQ found. Generating strategic narrative from spec..."
+
+     GENERATE using spec.md:
+       - Product/Feature name from spec title
+       - Target customer from personas (if any) or infer from requirements
+       - Value proposition from problem statement
+       - MVP scope from FR-xxx prioritization
+       - Time to value from acceptance criteria complexity
+
+     POPULATE: plan.md "Strategic Narrative" section
+
+     LOG: "Generated strategic narrative from spec.md"
+   ```
+
+2. **Pre-Mortem Generation**:
+   ```text
+   IF concept.md exists AND has Pre-Mortem section:
+     EXTRACT: Failure scenarios
+     EXTRACT: Early warning signs
+     EXTRACT: Kill criteria
+
+     POPULATE: plan.md "Pre-Mortem Analysis" section
+
+     LOG: "Imported Pre-Mortem from concept.md"
+   ELSE:
+     LOG: "Generating Pre-Mortem analysis..."
+
+     GENERATE minimum 3 failure scenarios covering:
+       - Technical failure mode (database, performance, integration)
+       - External/Dependency failure mode (third-party APIs, rate limits)
+       - Integration failure mode (complexity underestimation, scope creep)
+
+     FOR EACH scenario:
+       - Identify early warning signs (metrics, patterns)
+       - Define prevention strategy with owners
+       - Establish kill criteria with specific thresholds
+
+     POPULATE: plan.md "Pre-Mortem Analysis" section
+
+     LOG: "Generated {N} failure scenarios"
+   ```
+
+3. **Go/No-Go Validation**:
+   ```text
+   EVALUATE Go/No-Go criteria:
+     - Technical feasibility: Are all blockers resolved?
+     - Dependencies available: Are PKG/API verified?
+     - Team capacity: Is sprint allocated?
+
+   IF any criterion NOT met:
+     WARN: "Go/No-Go criterion not met: {criterion}"
+     ADD to plan.md Go/No-Go table with current status
+   ```
+
+**Output**:
+- plan.md "Strategic Narrative" section populated
+- plan.md "Pre-Mortem Analysis" section populated (minimum 3 scenarios)
+- Go/No-Go criteria evaluated
+
+---
+
 ### Phase 0: Outline & Research
 
-**Architecture Decision Protocol** (NEW):
+**Architecture Decision Protocol** (ENHANCED):
 
 For each technology decision in Technical Context:
 
@@ -503,6 +631,105 @@ This phase prevents AI agents from hallucinating non-existent APIs.
 
 **Output**: Populated Dependency Registry in plan.md, verified API references
 
+---
+
+### Phase 0.75: NFR Definition (NEW)
+
+**Prerequisites**: Phase 0.5 (API Verification) complete
+
+**Purpose**: Define measurable NFRs with specific targets BEFORE implementation.
+
+1. **Performance NFR Generation**:
+   ```text
+   FOR EACH api_endpoint IN contracts/api.yaml (or inferred from spec):
+     DEFINE NFR-PERF-xxx:
+       - P50, P95, P99, P99.9 latency targets
+       - Throughput requirements (RPS)
+       - Measurement method (OTel traces, load test)
+
+     LINK to ADR if performance drove architecture decision
+
+   EXAMPLE:
+     NFR-PERF-001: API Response Time
+       P50: <50ms, P95: <200ms, P99: <500ms, P99.9: <1000ms
+       Measurement: OTel traces with load test validation
+
+   LOG: "Defined {N} performance NFRs"
+   ```
+
+2. **Reliability NFR Generation**:
+   ```text
+   DEFINE availability_target with justification:
+
+   OPTIONS:
+     - 99.9% (Three 9s) = 43.8 min/month downtime
+     - 99.95% (3.5 9s) = 21.9 min/month downtime
+     - 99.99% (Four 9s) = 4.4 min/month downtime
+
+   SELECT based on:
+     - Business criticality (revenue impact per minute of downtime)
+     - User expectations (B2B vs B2C, async vs real-time)
+     - Cost implications (geo-redundancy, hot standby)
+
+   DOCUMENT justification: "Why this target, why not higher/lower"
+
+   DEFINE MTTR and MTBF targets:
+     - MTTR (Mean Time to Recovery): Target recovery time
+     - MTBF (Mean Time Between Failures): Expected stability
+
+   LOG: "Availability target: {target} with {justification}"
+   ```
+
+3. **Observability NFR Generation**:
+   ```text
+   DEFINE NFR-OBS-xxx for:
+     - Trace coverage: 100% of API endpoints (OTel auto-instrumentation)
+     - Log correlation: Trace ID in all logs (structured logging)
+     - Metric cardinality: <10K unique series (label constraints)
+     - Alert coverage: All NFR-PERF metrics monitored
+
+   LOG: "Defined {N} observability NFRs"
+   ```
+
+4. **Security NFR Generation**:
+   ```text
+   DEFINE NFR-SEC-xxx based on spec requirements:
+     - Authentication method: OAuth2/JWT/Session
+     - Encryption: TLS 1.3 in transit, AES-256 at rest
+     - Input validation: OWASP Top 10 compliance
+
+   LOG: "Defined {N} security NFRs"
+   ```
+
+5. **Load Profile Definition**:
+   ```text
+   EXTRACT from spec or estimate:
+     - Peak concurrent users
+     - Request rate at peak (RPS)
+     - Data volume (records, storage)
+     - Growth rate (monthly % increase)
+
+   POPULATE: plan.md NFR "Load Profile" section
+
+   LOG: "Load profile: {users} users, {rps} RPS, {growth}% monthly growth"
+   ```
+
+**Validation Gate**:
+
+| Condition | Severity | Action |
+|-----------|----------|--------|
+| No NFR-PERF-xxx defined | CRITICAL | Block until P95/P99 targets set |
+| No availability target | HIGH | Block until justified target set |
+| Missing load profile | MEDIUM | Warn and use defaults |
+
+**Output**:
+- plan.md "Non-Functional Requirements (NFRs)" section fully populated
+- Each NFR linked to relevant ADR (if applicable)
+- Measurement methods specified
+- Load profile defined
+
+---
+
 ### Phase 1: Design & Contracts
 
 **Prerequisites:** `research.md` complete
@@ -525,6 +752,225 @@ This phase prevents AI agents from hallucinating non-existent APIs.
    - Preserve manual additions between markers
 
 **Output**: data-model.md, /contracts/*, quickstart.md, agent-specific file
+
+---
+
+### Phase 1.5: Observability & Scalability Planning (NEW)
+
+**Prerequisites**: Phase 1 (Design & Contracts) complete
+
+**Purpose**: Define monitoring, alerting, and scaling strategy BEFORE implementation.
+
+1. **SLI/SLO Definition**:
+   ```text
+   FOR EACH NFR-PERF-xxx and NFR-REL-xxx:
+     DEFINE corresponding SLI:
+       - Name and definition
+       - Good event criteria
+       - Valid event criteria
+
+     DEFINE corresponding SLO:
+       - Target percentage (e.g., 99.5%)
+       - Measurement window (e.g., 30 days)
+       - Error budget calculation
+       - Alert threshold (e.g., 50% budget consumed)
+
+   EXAMPLE:
+     SLI-001: Request Latency
+       Good event: response_time < 500ms
+       Valid event: All HTTP 2xx/4xx requests
+
+     SLO-001: 99.5% of requests < 500ms over 30 days
+       Error budget: 0.5% = 3.6 hours
+       Alert: Trigger at 50% budget consumed
+
+   LOG: "Defined {N} SLIs and {N} SLOs"
+   ```
+
+2. **Dashboard Specification**:
+   ```text
+   DEFINE dashboards:
+     - Overview: Health at a glance (SLO status, error rate, P50/P99)
+     - Performance: Deep dive (latency histogram, throughput, saturation)
+     - Business: Feature adoption (DAU, usage, conversion)
+     - Dependency: External health (API latency, errors, rate limits)
+
+   FOR EACH dashboard:
+     - List key panels with metrics
+     - Specify refresh rate (10s/30s/5m)
+     - Define target audience (on-call, developers, product)
+
+   LOG: "Specified {N} dashboards"
+   ```
+
+3. **Alert Definition**:
+   ```text
+   FOR EACH SLO:
+     DEFINE alert:
+       - Condition: metric threshold and duration
+       - Severity: WARNING or CRITICAL
+       - Runbook link: REQUIRED (no alert without runbook)
+       - Notification channel: Slack, PagerDuty, email
+
+   VALIDATION: Every alert MUST have a runbook reference
+
+   CREATE runbook stubs in specs/[feature]/runbooks/:
+     - runbooks/latency.md
+     - runbooks/errors.md
+     - runbooks/slo-budget.md
+     - runbooks/database.md
+
+   LOG: "Defined {N} alerts, created {N} runbook stubs"
+   ```
+
+4. **Scalability Analysis**:
+   ```text
+   FOR EACH component (API, Database, Cache, Queue, Storage):
+     ANALYZE:
+       - Current capacity
+       - Projected need (6 months)
+       - Projected need (12 months)
+       - Scaling strategy (horizontal/vertical)
+
+     DEFINE scaling_triggers:
+       - Warning threshold (e.g., CPU > 60%)
+       - Scale threshold (e.g., CPU > 80%)
+       - Scale action (add instance, increase size)
+       - Cooldown period
+
+     IDENTIFY bottlenecks:
+       - Current limit
+       - Risk level (High/Medium/Low)
+       - Mitigation strategy
+       - When to implement
+
+   LOG: "Analyzed {N} components, identified {N} bottlenecks"
+   ```
+
+5. **Growth Milestones**:
+   ```text
+   DEFINE growth milestones with architecture triggers:
+     - Launch (100 users, 10 RPS): Current architecture
+     - Early Adoption (1K users, 100 RPS): Add auto-scaling
+     - Growth (10K users, 1K RPS): Add replicas, CDN
+     - Scale (100K users, 10K RPS): Sharding, microservices
+
+   LOG: "Defined {N} growth milestones"
+   ```
+
+**Output**:
+- plan.md "Observability & Monitoring Plan" section populated
+- plan.md "Scalability Strategy" section populated
+- Runbook stubs created in specs/[feature]/runbooks/
+- SLIs/SLOs defined and linked to NFRs
+
+---
+
+### Phase 1.75: RTM Generation (NEW)
+
+**Prerequisites**: Phase 1.5 complete, all ADRs documented
+
+**Purpose**: Generate bidirectional traceability matrix for validation.
+
+1. **FR Coverage Matrix**:
+   ```text
+   FOR EACH FR-xxx IN spec.md:
+     FIND linked ADR-xxx:
+       - Search ADR.Linked_Requirements for FR-xxx
+       - Record all ADRs that reference this FR
+
+     PLAN task references:
+       - Placeholder TASK-xxx entries for /speckit.tasks
+       - Based on FR complexity and ADR implications
+
+     DETERMINE coverage status:
+       - ✓ Covered: Has ADR and planned tasks
+       - ⚠ No ADR: Has tasks but no architecture decision
+       - ✗ Orphan: No ADR and no tasks
+
+     ADD row to FR Coverage Matrix
+
+   CALCULATE: FR Coverage = (Covered + No ADR) / Total
+   TARGET: ≥90% coverage
+
+   LOG: "FR Coverage: {covered}/{total} ({percentage}%)"
+   ```
+
+2. **NFR Coverage Matrix**:
+   ```text
+   FOR EACH NFR-xxx:
+     FIND linked ADR-xxx
+     FIND monitoring reference:
+       - Dashboard panel
+       - Alert definition
+     DETERMINE coverage status
+
+     ADD row to NFR Coverage Matrix
+
+   CALCULATE: NFR Coverage percentage
+
+   LOG: "NFR Coverage: {covered}/{total} ({percentage}%)"
+   ```
+
+3. **Gap Detection**:
+   ```text
+   IDENTIFY gaps:
+     orphan_frs = FRs without ADR or Task plan
+     orphan_adrs = ADRs without FR linkage
+     missing_tests = FRs without expected test coverage
+     missing_monitoring = NFRs without alert/dashboard
+
+   FOR EACH gap:
+     ADD to "Traceability Gaps" table:
+       - Gap type
+       - Item ID
+       - Issue description
+       - Recommended resolution
+
+   LOG: "Detected {N} traceability gaps"
+
+   IF gaps detected:
+     WARN: "Traceability gaps found - review before proceeding"
+   ```
+
+4. **Impact Analysis**:
+   ```text
+   GENERATE impact analysis matrix:
+
+   FOR EACH FR-xxx:
+     DETERMINE downstream impacts:
+       - Which ADRs would need revision if FR changes
+       - Which tasks would be affected
+       - Which tests would need updates
+
+   FOR EACH NFR-xxx:
+     DETERMINE downstream impacts:
+       - Monitoring configurations
+       - Alert thresholds
+       - Scaling triggers
+
+   POPULATE "Impact Analysis" table
+
+   LOG: "Generated impact analysis for {N} requirements"
+   ```
+
+**Validation Gate**:
+
+| Condition | Severity | Action |
+|-----------|----------|--------|
+| FR Coverage < 90% | HIGH | Warn and list uncovered FRs |
+| Orphan FRs exist | HIGH | Recommend creating tasks or ADRs |
+| Orphan ADRs exist | MEDIUM | Recommend linking to FRs |
+| NFR without monitoring | MEDIUM | Recommend adding alerts |
+
+**Output**:
+- plan.md "Requirements Traceability Matrix" section populated
+- FR Coverage percentage calculated
+- NFR Coverage percentage calculated
+- Gaps identified for resolution
+- Impact analysis generated
+
+---
 
 ## Key rules
 
@@ -614,6 +1060,20 @@ Answer each question by validating against the artifacts:
 | SR-PLAN-11 | ADR Coverage | All significant decisions have ADR-xxx | HIGH |
 | SR-PLAN-12 | ADR Traceability | All ADRs linked to ≥1 requirement | MEDIUM |
 | SR-PLAN-13 | Full ADR Files | High-impact decisions have full ADR | MEDIUM |
+| SR-PLAN-14 | Strategic Narrative Present | "Strategic Narrative" section exists with MVP scope | HIGH |
+| SR-PLAN-15 | Pre-Mortem Coverage | At least 3 failure scenarios documented | HIGH |
+| SR-PLAN-16 | Pre-Mortem Categories | Technical + Integration categories covered | MEDIUM |
+| SR-PLAN-17 | NFR Performance Defined | At least 1 NFR-PERF-xxx with P95/P99 targets | CRITICAL |
+| SR-PLAN-18 | NFR Reliability Defined | Availability target with justification | HIGH |
+| SR-PLAN-19 | RTM FR Coverage | FR Coverage ≥ 90% | CRITICAL |
+| SR-PLAN-20 | RTM No Orphans | No orphan FRs or ADRs | HIGH |
+| SR-PLAN-21 | Brainstorm-Curate Applied | All non-trivial ADRs have scoring matrix | HIGH |
+| SR-PLAN-22 | Brainstorm-Curate Visible | Scoring matrix visible (not in collapsed section) | MEDIUM |
+| SR-PLAN-23 | SLI/SLO Defined | At least 2 SLIs with corresponding SLOs | HIGH |
+| SR-PLAN-24 | Alerts Have Runbooks | Every ALERT-xxx has runbook link | MEDIUM |
+| SR-PLAN-25 | Scalability Baseline | Capacity baseline table populated | MEDIUM |
+| SR-PLAN-26 | Scaling Triggers Defined | At least 2 scaling triggers defined | MEDIUM |
+| SR-PLAN-27 | Kill Criteria Present | At least 1 kill criterion in Pre-Mortem | HIGH |
 
 ### Step 3: Dependency Verification
 
