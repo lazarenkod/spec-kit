@@ -145,6 +145,26 @@ claude_code:
     cacheable_fields: [user_input, feature_description]
     ttl: 3600
   cache_hierarchy: full
+  artifact_extraction:
+    enabled: true
+    skip_flag: "--full-context"
+    framework: templates/shared/artifact-extraction.md
+    concept_fields:
+      - epic_ids            # EPIC-001, EPIC-002, ...
+      - feature_ids         # F01, F02, ...
+      - story_ids           # S01, S02, ...
+      - journey_ids         # J001, J002, ...
+      - traceability_skeleton
+      - cqs_score           # Concept Quality Score
+    constitution_fields:
+      - domain_type         # SaaS, Mobile, etc.
+      - language            # Primary language
+      - framework           # Primary framework
+      - design_system       # Design system rules
+    baseline_fields:        # For brownfield mode
+      - current_limitations # CL-xxx
+      - preserved_behaviors # PB-xxx
+      - entities_detected
   orchestration:
     max_parallel: 8
     conflict_resolution: queue

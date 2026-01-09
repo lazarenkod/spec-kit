@@ -619,3 +619,120 @@ AFTER wave_1_complete:
     ...
   ])
 ```
+
+---
+
+## Artifact Extraction
+
+### Purpose
+
+Extract structured data from artifacts to minimize token consumption for subagents.
+See `templates/shared/artifact-extraction.md` for full extraction algorithms.
+
+### EXTRACT_BATCH Algorithm
+
+```text
+FUNCTION EXTRACT_BATCH(artifacts):
+  """
+  Extract structured data from multiple artifacts in parallel.
+  Returns cached extraction results.
+  """
+
+  IMPORT: templates/shared/artifact-extraction.md
+
+  IF len(artifacts) == 0:
+    RETURN {}
+
+  PRINT "📊 Extraction batch ({len(artifacts)} artifacts)..."
+
+  results = {}
+
+  # Process each artifact type
+  FOR artifact IN artifacts:
+    SWITCH artifact.type:
+      CASE "spec":
+        results["spec"] = EXTRACT_SPEC(artifact.path)
+        PRINT "├── ✓ spec: {len(results.spec.fr_list)} FRs, {len(results.spec.as_list)} ASs"
+
+      CASE "plan":
+        results["plan"] = EXTRACT_PLAN(artifact.path)
+        PRINT "├── ✓ plan: {len(results.plan.phases)} phases"
+
+      CASE "concept":
+        result = EXTRACT_CONCEPT(artifact.path)
+        IF result:
+          results["concept"] = result
+          PRINT "├── ✓ concept: {len(results.concept.epic_ids)} epics"
+        ELSE:
+          PRINT "├── ○ concept: not found (optional)"
+
+  # Calculate savings
+  original_size = SUM(artifact.size FOR artifact IN artifacts)
+  extracted_size = estimate_size(results)
+  reduction_pct = round((1 - extracted_size / original_size) * 100)
+
+  PRINT "✓ Extraction complete: {original_size}KB → {extracted_size}KB ({reduction_pct}% reduction)"
+
+  RETURN results
+```
+
+### Integration with Prefetch
+
+```text
+## Step 0: Prefetch and Extract
+
+# 1. Prefetch files (parallel)
+PREFETCH_BATCH(
+  paths=[constitution, templates, spec.md, plan.md],
+  optional_paths=[concept.md]
+)
+
+# 2. Extract data (uses cached file contents)
+IF artifact_extraction.enabled:
+  EXTRACTED = EXTRACT_BATCH([
+    {type: "spec", path: FEATURE_DIR/spec.md},
+    {type: "plan", path: FEATURE_DIR/plan.md},
+    {type: "concept", path: specs/concept.md}
+  ])
+
+  # Make available for subagents
+  SESSION_CACHE["SPEC_DATA"] = EXTRACTED.spec
+  SESSION_CACHE["PLAN_DATA"] = EXTRACTED.plan
+```
+
+### Subagent Context Injection
+
+```text
+# When context_injection: extracted is set on subagent
+
+FUNCTION INJECT_EXTRACTED_CONTEXT(subagent, prompt):
+  """
+  Replace {SPEC_DATA.*} and {PLAN_DATA.*} placeholders
+  with extracted data from SESSION_CACHE.
+  """
+
+  SPEC_DATA = SESSION_CACHE.get("SPEC_DATA", {})
+  PLAN_DATA = SESSION_CACHE.get("PLAN_DATA", {})
+
+  # Replace placeholders
+  prompt = prompt.replace("{SPEC_DATA.fr_list}", format_list(SPEC_DATA.fr_list))
+  prompt = prompt.replace("{SPEC_DATA.fr_summaries}", format_summaries(SPEC_DATA.fr_summaries))
+  prompt = prompt.replace("{SPEC_DATA.as_list}", format_list(SPEC_DATA.as_list))
+  prompt = prompt.replace("{SPEC_DATA.as_summaries}", format_summaries(SPEC_DATA.as_summaries))
+  prompt = prompt.replace("{SPEC_DATA.story_priorities}", format_dict(SPEC_DATA.story_priorities))
+  prompt = prompt.replace("{PLAN_DATA.tech_stack}", PLAN_DATA.tech_stack)
+  prompt = prompt.replace("{PLAN_DATA.dependencies}", PLAN_DATA.dependencies)
+  prompt = prompt.replace("{PLAN_DATA.phases}", format_list(PLAN_DATA.phases))
+  prompt = prompt.replace("{PLAN_DATA.adr_decisions}", format_list(PLAN_DATA.adr_decisions))
+
+  RETURN prompt
+```
+
+### Configuration Reference
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `artifact_extraction.enabled` | `true` | Enable artifact extraction |
+| `artifact_extraction.skip_flag` | `--full-context` | Disable extraction flag |
+| `artifact_extraction.spec_fields` | `[fr_list, as_list, ...]` | Fields to extract from spec |
+| `artifact_extraction.plan_fields` | `[tech_stack, ...]` | Fields to extract from plan |

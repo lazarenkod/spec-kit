@@ -158,6 +158,38 @@ inline_gates:
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
+artifact_extraction:
+  enabled: true
+  skip_flag: "--full-context"
+  framework: templates/shared/artifact-extraction.md
+  spec_fields:
+    - fr_list               # FR-001, FR-002, ...
+    - as_list               # AS-1A, AS-1B, ...
+    - ec_list               # EC-001, EC-002, ...
+    - sc_list               # SC-001, SC-002, ...
+    - story_priorities      # {US1: P1a, ...}
+    - component_registry    # UI components
+    - screen_registry       # Screens for [VR:] validation
+    - fr_summaries
+    - as_summaries
+  plan_fields:
+    - tech_stack            # Language, framework, database
+    - dependencies          # Package list with versions
+    - phases                # Implementation phases
+    - adr_decisions         # ADR summaries
+    - file_structure        # Directory layout
+    - dependency_registry   # API docs URLs for [DEP:] markers
+  task_fields:
+    - task_summary          # Task IDs, names, priorities
+    - dependency_graph      # Task dependencies for batching
+    - wave_grouping         # Wave assignments (0-5)
+    - test_markers          # [TEST:AS-xxx] references
+    - fr_markers            # [FR:FR-xxx] references
+    - vr_markers            # [VR:VR-xxx] for vision validation
+    - wire_markers          # [WIRE:COMP→SCR] for component wiring
+  properties_fields:        # If properties.md exists
+    - property_list         # PROP-001, PROP-002, ...
+    - prop_mappings         # PROP → FR/AS mapping
 auto_fix_rules:
   enabled: true
   skip_flag: "--no-auto-fix"

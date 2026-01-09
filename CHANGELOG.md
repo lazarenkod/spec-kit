@@ -7,6 +7,38 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.115] - 2026-01-09
+
+### Added
+
+- **Artifact Extraction Layer** for token optimization across all commands v0.0.115:
+  - **Problem solved**: Context window compaction 2-3 times due to loading full artifacts (~800K-1.7M tokens)
+  - **Solution**: Extract only needed fields from artifacts (~15KB) instead of full files (~300KB per subagent)
+  - **Token reduction**: ~70-80% reduction, 0 compactions instead of 2-3
+  - **New file**: `templates/shared/artifact-extraction.md` with extraction algorithms:
+    - `EXTRACT_SPEC`: Extracts FR/AS/EC/SC lists, story priorities, component registry, summaries
+    - `EXTRACT_PLAN`: Extracts tech stack, dependencies, phases, ADR decisions
+    - `EXTRACT_CONCEPT`: Extracts epic/feature/story/journey IDs, traceability skeleton
+    - Helper functions: `EXTRACT_SECTION`, `EXTRACT_PATTERN`, `EXTRACT_FR_SUMMARIES`, etc.
+  - **Session caching**: Extracted data cached for reuse within session
+  - **In-memory content**: Self-review uses just-generated content instead of re-reading files
+  - **Subagent context injection**: `context_injection: extracted` config passes compact data to subagents
+  - **Skip flag**: `--full-context` to disable extraction and use full artifacts
+
+- **New configuration** in `tasks.md`:
+  - `artifact_extraction.enabled`: Toggle extraction (default: true)
+  - `artifact_extraction.spec_fields`: Fields to extract from spec.md
+  - `artifact_extraction.plan_fields`: Fields to extract from plan.md
+  - `artifact_extraction.framework`: Reference to artifact-extraction.md
+
+- **Updated files**:
+  - `templates/shared/artifact-extraction.md`: NEW - Core extraction algorithms
+  - `templates/commands/tasks.md`: Added artifact_extraction config (spec_fields, plan_fields)
+  - `templates/commands/specify.md`: Added artifact_extraction config (concept_fields, constitution_fields, baseline_fields)
+  - `templates/commands/plan.md`: Added artifact_extraction config (spec_fields, concept_fields, constitution_fields)
+  - `templates/commands/implement.md`: Added artifact_extraction config (spec_fields, plan_fields, task_fields, properties_fields)
+  - `templates/shared/operation-batching.md`: Added EXTRACT_BATCH algorithm for parallel extraction
+
 ## [0.0.114] - 2026-01-09
 
 ### Added

@@ -129,6 +129,23 @@ claude_code:
       enabled: true
       parallel_mappers: [dependency-analyzer, fr-mapper]  # Run in parallel
       sequential_mappers: [as-mapper]                     # Depends on fr-mapper
+  artifact_extraction:
+    enabled: true
+    skip_flag: "--full-context"
+    framework: templates/shared/artifact-extraction.md
+    spec_fields:
+      - fr_list           # FR-001, FR-002, ...
+      - as_list           # AS-1A, AS-1B, ...
+      - ec_list           # EC-001, EC-002, ...
+      - story_priorities  # {US1: P1a, ...}
+      - component_registry
+      - fr_summaries      # [{id, summary}, ...]
+      - as_summaries      # [{id, name}, ...]
+    plan_fields:
+      - tech_stack
+      - dependencies
+      - phases
+      - adr_decisions
   subagents:
     - role: dependency-analyzer
       role_group: INFRA
@@ -136,7 +153,13 @@ claude_code:
       depends_on: []
       priority: 9
       trigger: "when analyzing task dependencies and build order"
-      prompt: "Analyze dependencies between components in plan.md to determine optimal task ordering"
+      context_injection: extracted  # Use PLAN_DATA instead of full plan.md
+      prompt: |
+        Analyze dependencies between components to determine optimal task ordering.
+
+        Phases: {PLAN_DATA.phases}
+        Dependencies: {PLAN_DATA.dependencies}
+        ADR Decisions: {PLAN_DATA.adr_decisions}
       model_override: haiku
     - role: fr-mapper
       role_group: BACKEND
@@ -144,14 +167,30 @@ claude_code:
       depends_on: []
       priority: 8
       trigger: "when mapping functional requirements to implementation tasks"
-      prompt: "Map functional requirements {FR_IDS} to concrete implementation tasks"
+      context_injection: extracted  # Use SPEC_DATA instead of full spec.md
+      prompt: |
+        Map functional requirements to concrete implementation tasks.
+
+        FR List ({len(SPEC_DATA.fr_list)} items):
+        {format_as_list(SPEC_DATA.fr_summaries)}
+
+        Tech Stack: {PLAN_DATA.tech_stack}
+        Story Priorities: {SPEC_DATA.story_priorities}
     - role: as-mapper
       role_group: TESTING
       parallel: true
       depends_on: [fr-mapper]
       priority: 7
       trigger: "when mapping acceptance scenarios to test tasks"
-      prompt: "Map acceptance scenarios {AS_IDS} to test implementation tasks"
+      context_injection: extracted  # Use SPEC_DATA instead of full spec.md
+      prompt: |
+        Map acceptance scenarios to test implementation tasks.
+
+        AS List ({len(SPEC_DATA.as_list)} items):
+        {format_as_list(SPEC_DATA.as_summaries)}
+
+        EC List: {SPEC_DATA.ec_list}
+        FR-to-Task mapping from fr-mapper: {FR_MAPPER_OUTPUT}
 ---
 
 ## User Input
@@ -193,6 +232,31 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
 
    CACHE all results with session lifetime.
    REPORT: "Prefetched {N} files in {T}ms"
+   ```
+
+   **Artifact Extraction** (reduces subagent context by ~95%):
+
+   ```text
+   IF artifact_extraction.enabled AND NOT "--full-context" IN ARGS:
+
+     IMPORT: templates/shared/artifact-extraction.md
+
+     # Extract structured data from artifacts
+     SPEC_DATA = EXTRACT_SPEC(FEATURE_DIR/spec.md)
+     PLAN_DATA = EXTRACT_PLAN(FEATURE_DIR/plan.md)
+     CONCEPT_DATA = EXTRACT_CONCEPT(specs/concept.md)  # May be null
+
+     PRINT "📊 Artifact extraction complete:"
+     PRINT "├── spec: {len(SPEC_DATA.fr_list)} FRs, {len(SPEC_DATA.as_list)} ASs, {len(SPEC_DATA.ec_list)} ECs"
+     PRINT "├── plan: {len(PLAN_DATA.phases)} phases, {len(PLAN_DATA.adr_decisions)} ADRs"
+     PRINT "└── Context reduction: ~{SPEC_DATA._original_size_kb + PLAN_DATA._original_size_kb}KB → ~15KB"
+
+     # Store for subagent injection
+     SESSION_CACHE["SPEC_DATA"] = SPEC_DATA
+     SESSION_CACHE["PLAN_DATA"] = PLAN_DATA
+
+   ELSE:
+     LOG "⚠️ Full context mode: using complete artifacts (higher token usage)"
    ```
 
 1. **Load project context**:
@@ -414,6 +478,17 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
    - **Coverage Summary** with gaps identified
    - Clear file paths for each task
    - Implementation strategy section (MVP first, incremental delivery)
+
+   **Cache generated content for Self-Review** (avoids re-reading file):
+
+   ```text
+   tasks_content = BUILD_TASKS_CONTENT(...)  # Assembled content
+   WRITE(FEATURE_DIR/tasks.md, tasks_content)
+
+   # Cache for Self-Review phase (saves ~50-100KB read)
+   SESSION_CACHE["GENERATED_TASKS_CONTENT"] = tasks_content
+   LOG "📦 Cached tasks.md content for self-review ({len(tasks_content)} chars)"
+   ```
 
 8. **Validate Traceability**:
 
@@ -1158,12 +1233,20 @@ Apply the self-review framework with:
 - `COMPLEXITY_TIER` = from complexity-scoring.md (determined in Step 0)
 - `MAX_ITERATIONS` = 3
 
-### Step 1: Re-read Generated Artifact
+### Step 1: Load Generated Artifact (In-Memory Preferred)
 
-Read the tasks.md file you just created:
-- `FEATURE_DIR/tasks.md`
+**Use in-memory content to avoid re-reading the file** (saves ~50-100KB tokens):
 
-Parse the file to extract:
+```text
+IF GENERATED_TASKS_CONTENT exists IN SESSION_CACHE:
+  tasks_content = SESSION_CACHE["GENERATED_TASKS_CONTENT"]
+  LOG "📦 Using in-memory tasks content (saved file read)"
+ELSE:
+  tasks_content = READ(FEATURE_DIR/tasks.md)
+  LOG "📖 Reading tasks.md from disk"
+```
+
+Parse the content to extract:
 - All task IDs (T001, T002, ...)
 - All [DEP:] references
 - All [FR:] markers

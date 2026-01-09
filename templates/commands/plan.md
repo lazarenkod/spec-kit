@@ -167,6 +167,28 @@ claude_code:
       searches: true         # Batch research searches
       validations: true      # Batch inline gate checks
       sections: true         # Batch plan sections by dependency wave
+  artifact_extraction:
+    enabled: true
+    skip_flag: "--full-context"
+    framework: templates/shared/artifact-extraction.md
+    spec_fields:
+      - fr_list             # FR-001, FR-002, ...
+      - as_list             # AS-1A, AS-1B, ...
+      - ec_list             # EC-001, EC-002, ...
+      - story_priorities    # {US1: P1a, ...}
+      - problem_statement   # First paragraph only
+      - target_customer     # From personas
+      - fr_summaries        # [{id, summary}, ...]
+      - as_summaries        # [{id, name}, ...]
+    concept_fields:
+      - pr_faq_value_prop   # 1-2 sentences
+      - mvp_scope           # FR IDs in MVP
+      - market_sizing       # {tam, sam, som}
+      - epic_ids            # Epic hierarchy
+    constitution_fields:
+      - domain_type
+      - language
+      - framework
   section_batching:
     enabled: true
     skip_flag: "--sequential-sections"
