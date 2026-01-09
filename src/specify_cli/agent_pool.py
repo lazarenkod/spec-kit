@@ -121,7 +121,7 @@ class PoolConfig:
         max_batch_size: Maximum tasks per aggregated batch
         batch_timeout_ms: Time to wait for more requests before executing batch
     """
-    pool_size: int = 4
+    pool_size: int = 8
     default_model: str = ModelTier.SONNET.value
     requests_per_minute: int = 50
     tokens_per_minute: int = 100000
@@ -129,7 +129,7 @@ class PoolConfig:
     backoff_base: float = 1.0
     backoff_max: float = 10.0
     # Batch aggregation settings (Strategy 1.3)
-    batch_mode: bool = False
+    batch_mode: bool = True
     max_batch_size: int = 10
     batch_timeout_ms: int = 100
 

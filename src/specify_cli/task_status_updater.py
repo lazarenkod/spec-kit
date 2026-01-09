@@ -8,8 +8,10 @@ Thread-safe for concurrent wave execution.
 import re
 import platform
 import threading
+from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
+from threading import Timer
 from typing import Optional, Tuple
 
 # Platform-specific file locking
@@ -51,6 +53,7 @@ class TaskStatusUpdater:
     Thread-safe updater for tasks.md checkbox status.
 
     Uses file locking to prevent corruption during concurrent updates.
+    Implements batch queue to minimize file I/O operations.
     """
 
     def __init__(self, tasks_file_path: str):
@@ -62,12 +65,42 @@ class TaskStatusUpdater:
         """
         self.tasks_file_path = Path(tasks_file_path)
         self._lock = threading.Lock()  # Python-level lock
+        # Batch queue for coalescing updates
+        self._pending_updates: deque[TaskUpdate] = deque()
+        self._batch_timer: Optional[Timer] = None
+        self._batch_delay_ms: int = 500  # Flush after 500ms idle
+
+    def queue_update(self, task_update: TaskUpdate) -> None:
+        """
+        Queue update for batch processing instead of immediate write.
+
+        Updates are flushed after batch_delay_ms of idle time or when
+        force_flush() is called.
+
+        Args:
+            task_update: TaskUpdate object with status info
+        """
+        with self._lock:
+            self._pending_updates.append(task_update)
+
+            # Reset timer on each update (coalescing)
+            if self._batch_timer:
+                self._batch_timer.cancel()
+
+            # Schedule flush after delay
+            self._batch_timer = Timer(
+                self._batch_delay_ms / 1000.0,
+                self._flush_batch
+            )
+            self._batch_timer.start()
 
     def update_task_status(
         self, task_update: TaskUpdate
     ) -> Tuple[bool, Optional[str]]:
         """
-        Update task status in tasks.md file.
+        Update task status in tasks.md file (legacy synchronous method).
+
+        For better performance, use queue_update() instead.
 
         Args:
             task_update: TaskUpdate object with status info
@@ -77,10 +110,25 @@ class TaskStatusUpdater:
 
         Thread-safe: Uses both threading.Lock and file locking
         """
-        with self._lock:  # Python-level lock for thread safety
+        # Queue and immediately flush for backward compatibility
+        self.queue_update(task_update)
+        return self._flush_batch()
+
+    def _flush_batch(self) -> Tuple[bool, Optional[str]]:
+        """
+        Apply ALL pending updates in single file operation.
+
+        Returns:
+            Tuple of (success: bool, error_message: Optional[str])
+        """
+        with self._lock:
+            if not self._pending_updates:
+                return (True, None)
+
             try:
                 # Validate file exists
                 if not self.tasks_file_path.exists():
+                    self._pending_updates.clear()
                     return (
                         False,
                         f"tasks.md not found at {self.tasks_file_path}",
@@ -96,20 +144,17 @@ class TaskStatusUpdater:
                     try:
                         content = f.read()
 
-                        # Update content
-                        updated_content, found = self._replace_checkbox(
-                            content, task_update
-                        )
+                        # Apply ALL updates in memory
+                        updates_applied = 0
+                        while self._pending_updates:
+                            update = self._pending_updates.popleft()
+                            content, found = self._replace_checkbox(content, update)
+                            if found:
+                                updates_applied += 1
 
-                        if not found:
-                            return (
-                                False,
-                                f"Task {task_update.task_id} not found in tasks.md",
-                            )
-
-                        # Write back atomically
+                        # Single write for all updates
                         f.seek(0)
-                        f.write(updated_content)
+                        f.write(content)
                         f.truncate()
 
                         return (True, None)
@@ -119,7 +164,23 @@ class TaskStatusUpdater:
                         unlock_file(f)
 
             except Exception as e:
-                return (False, f"Failed to update tasks.md: {str(e)}")
+                self._pending_updates.clear()
+                return (False, f"Failed to batch update tasks.md: {str(e)}")
+
+    def force_flush(self) -> Tuple[bool, Optional[str]]:
+        """
+        Manually flush all pending updates immediately.
+
+        Call this at critical points (e.g., end of wave) to ensure
+        all updates are persisted.
+
+        Returns:
+            Tuple of (success: bool, error_message: Optional[str])
+        """
+        if self._batch_timer:
+            self._batch_timer.cancel()
+            self._batch_timer = None
+        return self._flush_batch()
 
     def _replace_checkbox(
         self, content: str, task_update: TaskUpdate

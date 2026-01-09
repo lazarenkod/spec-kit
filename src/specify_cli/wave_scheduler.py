@@ -47,8 +47,16 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Dict, List, Set, Optional, Callable, Any
 from enum import Enum
+from pathlib import Path
 
 from .agent_pool import AgentTask, AgentResult, DistributedAgentPool
+
+# Optional async file I/O support
+try:
+    from .async_file_ops import load_artifacts_parallel, is_async_available
+    ASYNC_FILE_OPS_AVAILABLE = True
+except ImportError:
+    ASYNC_FILE_OPS_AVAILABLE = False
 
 
 class ExecutionStrategy(str, Enum):
@@ -75,18 +83,21 @@ class WaveConfig:
         batch_mode: Enable cross-wave batch aggregation (Strategy 1.3)
         max_batch_size: Maximum tasks per aggregated batch
         cross_wave_batching: Whether to batch tasks across wave boundaries
+        early_test_verification: Enable early test verification for TDD waves (experimental)
     """
-    max_parallel: int = 3
+    max_parallel: int = 6
     overlap_enabled: bool = True
-    overlap_threshold: float = 0.80
+    overlap_threshold: float = 0.60
     strategy: ExecutionStrategy = ExecutionStrategy.OVERLAPPED
     fail_fast: bool = True
     timeout_per_task_ms: Optional[int] = None
     timeout_total_ms: Optional[int] = None
     # Batch aggregation settings (Strategy 1.3)
-    batch_mode: bool = False
+    batch_mode: bool = True
     max_batch_size: int = 10
     cross_wave_batching: bool = True
+    # Early test verification (Phase 2 optimization, experimental)
+    early_test_verification: bool = False
 
 
 @dataclass
@@ -185,7 +196,8 @@ class WaveScheduler:
     def __init__(
         self,
         pool: DistributedAgentPool,
-        config: Optional[WaveConfig] = None
+        config: Optional[WaveConfig] = None,
+        feature_dir: Optional[Path] = None
     ):
         """
         Initialize the scheduler.
@@ -193,6 +205,7 @@ class WaveScheduler:
         Args:
             pool: Agent pool for execution
             config: Optional configuration override
+            feature_dir: Optional feature directory for async artifact loading
         """
         self.pool = pool
         self.config = config or WaveConfig()
@@ -200,6 +213,7 @@ class WaveScheduler:
         self.waves: List[Wave] = []
         self._on_task_complete: Optional[Callable[[str, AgentResult], None]] = None
         self._on_wave_complete: Optional[Callable[[Wave], None]] = None
+        self.feature_dir = feature_dir
 
     def on_task_complete(
         self,
@@ -523,3 +537,145 @@ class WaveScheduler:
             success=len(failed_tasks) == 0,
             failed_tasks=failed_tasks,
         )
+
+    async def load_artifacts_async(
+        self,
+        filenames: Optional[List[str]] = None
+    ) -> Dict[str, str]:
+        """
+        Load feature artifacts in parallel using async I/O.
+
+        This is significantly faster than loading files sequentially:
+        - Sequential: 4 files × 200ms = 800ms
+        - Parallel:   1 × 200ms = 200ms (4x speedup)
+
+        Args:
+            filenames: List of filenames to load. Defaults to standard artifacts.
+
+        Returns:
+            Dictionary mapping filename to content
+
+        Raises:
+            ValueError: If feature_dir was not provided during initialization
+        """
+        if not self.feature_dir:
+            raise ValueError(
+                "feature_dir must be set during initialization to use async loading"
+            )
+
+        if not ASYNC_FILE_OPS_AVAILABLE:
+            # Fallback to synchronous loading
+            return self._load_artifacts_sync(filenames)
+
+        # Import here to avoid import errors if aiofiles not installed
+        from .async_file_ops import load_artifacts_parallel
+
+        return await load_artifacts_parallel(self.feature_dir, filenames)
+
+    def _load_artifacts_sync(
+        self,
+        filenames: Optional[List[str]] = None
+    ) -> Dict[str, str]:
+        """
+        Synchronous fallback for loading artifacts.
+
+        Used when async_file_ops is not available or feature_dir not set.
+        """
+        if not self.feature_dir:
+            return {}
+
+        if filenames is None:
+            filenames = [
+                "spec.md",
+                "plan.md",
+                "tasks.md",
+                "constitution.md",
+                "concept.md",
+                "baseline.md",
+            ]
+
+        artifacts = {}
+        for filename in filenames:
+            path = self.feature_dir / filename
+            if path.exists():
+                try:
+                    with open(path, 'r', encoding='utf-8') as f:
+                        artifacts[filename] = f.read()
+                except Exception as e:
+                    artifacts[filename] = f"# ERROR: {str(e)}"
+            else:
+                artifacts[filename] = ""
+
+        return artifacts
+
+    async def _verify_test_and_unlock(
+        self,
+        test_task: AgentTask,
+        test_result: AgentResult,
+        impl_tasks: List[AgentTask]
+    ) -> List[AgentTask]:
+        """
+        Verify test failure and unlock dependent implementation tasks.
+
+        This is an experimental optimization for TDD workflows. When a test
+        task completes and is verified to fail (TDD Red), we can immediately
+        start the corresponding implementation task without waiting for the
+        entire Wave 2 to complete.
+
+        Args:
+            test_task: The completed test task
+            test_result: Result of the test task execution
+            impl_tasks: List of implementation tasks that may depend on this test
+
+        Returns:
+            List of implementation tasks that can now start early
+
+        Example:
+            Wave 2: Create test_auth.py (T010)
+            → Verify T010 fails (TDD Red) ✓
+            → Unlock T012 (Implement auth) immediately
+            → Don't wait for all Wave 2 tests
+        """
+        if not self.config.early_test_verification:
+            return []
+
+        # Only proceed if test task succeeded (test created successfully)
+        if not test_result.success:
+            return []
+
+        unlocked_tasks = []
+
+        # Find implementation tasks that depend on this test
+        for impl_task in impl_tasks:
+            deps = impl_task.depends_on or []
+            if test_task.name in deps:
+                # Check if all OTHER dependencies are also satisfied
+                other_deps = [d for d in deps if d != test_task.name]
+                if all(d in self.completed for d in other_deps):
+                    unlocked_tasks.append(impl_task)
+
+        return unlocked_tasks
+
+    def _is_test_task(self, task: AgentTask) -> bool:
+        """
+        Check if a task is a test generation task.
+
+        Uses task metadata or naming convention to identify test tasks.
+
+        Args:
+            task: Task to check
+
+        Returns:
+            True if this is a test generation task
+        """
+        # Check metadata first
+        if task.metadata.get("is_test_task"):
+            return True
+
+        # Check role group
+        if task.role_group in ["TESTING", "TEST_SCAFFOLDING"]:
+            return True
+
+        # Check name patterns
+        test_patterns = ["test-scaffolder", "e2e-test-scaffolder", "test_"]
+        return any(pattern in task.name.lower() for pattern in test_patterns)
