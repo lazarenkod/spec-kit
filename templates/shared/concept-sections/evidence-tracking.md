@@ -6,6 +6,7 @@
 
 | Tier | Code | Points | Criteria | Examples |
 |------|:----:|:------:|----------|----------|
+| **AUTHORITATIVE** | A | 35 | Official specifications, government regulations, standards body documents | RFC specs, ISO standards, PCI-DSS docs, GDPR text, vendor API docs <90 days |
 | **VERY_STRONG** | VS | 30 | Primary research, verified data, multiple independent sources | Customer interviews (n≥10), A/B test results, financial audits |
 | **STRONG** | S | 25 | Credible secondary sources, recent data (<1 year) | Industry reports (Gartner, IDC), verified case studies, SEC filings |
 | **MEDIUM** | M | 20 | Industry reports, analyst estimates, expert opinions | Analyst estimates, conference talks, blog posts from practitioners |
@@ -167,6 +168,27 @@ Agent outputs include `evidence_links[]` array for automatic registry population
 ```yaml
 tier_assignment:
   rules:
+    # AUTHORITATIVE (A) - 35 points (NEW)
+    - condition: "source_type IN ['rfc', 'iso_standard', 'w3c_spec', 'ietf_standard']"
+      assign: AUTHORITATIVE
+      rationale: "Official technical specifications from standards bodies"
+      freshness: evergreen
+
+    - condition: "source_type IN ['pci_dss', 'gdpr', 'hipaa', 'soc2', 'fedramp', 'iso27001']"
+      assign: AUTHORITATIVE
+      rationale: "Official regulatory or compliance standards"
+      freshness: evergreen
+
+    - condition: "source_type IN ['vendor_api_docs', 'official_documentation'] AND age_days <= 90"
+      assign: AUTHORITATIVE
+      rationale: "Official vendor documentation, recent"
+      freshness: 90 days
+
+    - condition: "source_type IN ['government_regulation', 'federal_register', 'eu_directive']"
+      assign: AUTHORITATIVE
+      rationale: "Government-issued regulations and directives"
+      freshness: evergreen
+
     # VERY_STRONG (VS) - 30 points
     - condition: "source_type == 'primary_research' AND sample_size >= 10"
       assign: VERY_STRONG

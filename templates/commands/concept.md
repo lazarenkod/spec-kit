@@ -118,6 +118,90 @@ claude_code:
         - Pain point inventory
         - WTP analysis per segment
 
+    # NEW: Domain-specific research agents
+    - role: standards-researcher
+      role_group: RESEARCH
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Project: {{PROJECT_ROOT}}
+        User Input: {{ARGUMENTS}}
+
+        ## Task
+        Research compliance standards and regulations for the domain:
+        1. Load domain from memory/constitution.md (Domain Layer)
+        2. For fintech → PCI-DSS, SOX, AML/KYC
+        3. For healthcare → HIPAA, FHIR, HL7, 21 CFR Part 11
+        4. For e-commerce → PCI-DSS, CCPA, GDPR
+
+        Use WebSearch for official sources:
+        - "PCI-DSS requirements 2025 official"
+        - "GDPR compliance checklist"
+        - "HIPAA technical safeguards"
+        - "{DOMAIN} regulatory requirements 2025"
+
+        ## Output
+        - Compliance requirements list
+        - Regulatory checklists
+        - Evidence tier: AUTHORITATIVE
+
+    - role: academic-researcher
+      role_group: RESEARCH
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Project: {{PROJECT_ROOT}}
+        User Input: {{ARGUMENTS}}
+
+        ## Task
+        Research academic papers and whitepapers for best practices:
+        1. Search Google Scholar, arXiv, IEEE Xplore
+        2. Focus on peer-reviewed papers and industry whitepapers
+        3. Extract validated best practices with evidence
+
+        Use WebSearch queries:
+        - "{DOMAIN} best practices research paper"
+        - "{TECHNOLOGY} architecture patterns whitepaper"
+        - "{PROBLEM} academic research"
+
+        ## Output
+        - Best practices catalog with citations
+        - Evidence tier: STRONG
+
+    - role: community-intelligence
+      role_group: RESEARCH
+      parallel: true
+      depends_on: []
+      priority: 10
+      model_override: haiku
+      prompt: |
+        ## Context
+        Project: {{PROJECT_ROOT}}
+        User Input: {{ARGUMENTS}}
+
+        ## Task
+        Mine community knowledge for gotchas, constraints, and workarounds:
+        1. Search Stack Overflow for common issues
+        2. Search GitHub discussions/issues for limitations
+        3. Search Reddit/HackerNews for real-world experiences
+
+        Use WebSearch queries:
+        - "{TECHNOLOGY} rate limits stack overflow"
+        - "{TECHNOLOGY} common issues github"
+        - "{TECHNOLOGY} vs alternatives reddit"
+        - "{TECHNOLOGY} production gotchas"
+
+        ## Output
+        - Technical constraints catalog (rate limits, quotas, API limits)
+        - Known issues and workarounds
+        - Evidence tier: MEDIUM
+
     # Wave 2: Synthesis (after research)
     - role: jtbd-analyst
       role_group: ANALYSIS
@@ -163,6 +247,68 @@ claude_code:
         - Value proposition canvas
         - Positioning statement
         - Key messaging points
+
+    # NEW: Domain knowledge extraction agents
+    - role: glossary-builder
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [market-researcher, standards-researcher, academic-researcher]
+      priority: 20
+      model_override: haiku
+      prompt: |
+        ## Context
+        Market Research: (from market-researcher)
+        Standards Research: (from standards-researcher)
+        Academic Research: (from academic-researcher)
+
+        ## Task
+        Build domain glossary from all research outputs:
+        1. Extract domain-specific terms from all research
+        2. For each term: Definition | Context | Example usage
+        3. Categorize: Regulatory, Technical, Business, Process
+
+        ## Output Format
+        Generate memory/knowledge/glossaries/{DOMAIN}.md:
+        | Term | Definition | Context | Example |
+        |------|------------|---------|---------|
+        | ACH  | Automated Clearing House | US banking | "Process ACH debit" |
+
+        ## Output
+        - Domain glossary markdown file
+        - Terms categorized by type
+        - Evidence tier: AUTHORITATIVE (for regulatory), STRONG (for technical)
+
+    - role: constraints-analyzer
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [community-intelligence]
+      priority: 20
+      model_override: sonnet
+      prompt: |
+        ## Context
+        Community Intelligence: (from community-intelligence)
+
+        ## Task
+        Document technical constraints for NFR generation:
+        1. Analyze community intelligence for rate limits, quotas, timeouts
+        2. Categorize by constraint type (Performance, Reliability, Scale)
+        3. Include workarounds and mitigation strategies
+
+        ## Output Format
+        Generate memory/knowledge/constraints/platforms/{TECH}.md:
+        | Operation | Limit | Scope | Penalty | Workaround |
+        |-----------|-------|-------|---------|------------|
+        | API calls | 100/sec | Account | 429 | Exponential backoff |
+
+        Auto-generate NFR suggestions:
+        - Rate limit → NFR-PERF-{TECH}-001
+        - Timeout → NFR-REL-{TECH}-001
+        - Quota → NFR-SCALE-{TECH}-001
+
+        ## Output
+        - Technical constraints profile
+        - NFR suggestions with traceability
+        - Evidence tier: MEDIUM (community), AUTHORITATIVE (vendor docs)
 
     # Wave 3: Validation Framework (after synthesis)
     - role: metrics-designer

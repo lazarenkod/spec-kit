@@ -247,6 +247,122 @@ claude_code:
         - CQS_SCORE: 0-100 (if concept exists)
         - Priority levels to use (P1a/P1b vs P1/P2/P3)
 
+    - role: domain-context-loader
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [concept-loader]
+      priority: 20
+      model_override: haiku
+      prompt: |
+        Load domain-specific context from knowledge base.
+
+        ## Task
+
+        Load domain knowledge to inform specification:
+
+        1. **Load Domain from Constitution**:
+           - Read memory/constitution.md (Domain Layer)
+           - Extract domain: fintech | healthcare | e-commerce | saas | other
+           - Extract technology stack
+
+        2. **Load Knowledge Base Files**:
+
+           **Glossary**:
+           - Read memory/knowledge/glossaries/{{DOMAIN}}.md (if exists)
+           - Extract: domain terminology for auto-linking
+
+           **Best Practices**:
+           - Read memory/knowledge/best-practices/by-domain/{{DOMAIN}}.md (if exists)
+           - Extract: relevant patterns to reference in Technical Context
+
+           **Standards/Compliance**:
+           - Read memory/knowledge/standards/compliance/*.md
+           - Check if spec keywords trigger compliance requirements
+
+           **Constraints**:
+           - Read memory/knowledge/constraints/platforms/{{TECH}}.md (if exists)
+           - Extract: technical limits for NFR validation
+
+        3. **Auto-Detect Compliance Triggers**:
+
+           Scan user input for trigger keywords:
+
+           **PCI-DSS Triggers**:
+           - "store credit card" → PCI-DSS Req 3.4 (encrypt at rest)
+           - "store card" → PCI-DSS Req 3.4
+           - "display card number" → PCI-DSS Req 3.4 (mask display)
+           - "process payment" → PCI-DSS Req 4.2 (TLS), Req 6.5.10 (injection)
+           - "transmit card data" → PCI-DSS Req 4.2 (TLS 1.2+)
+           - "payment API" → PCI-DSS Req 4.2, 6.5.10
+           - "CVV" → PCI-DSS Req 3.2 (NEVER store)
+           - "card verification" → PCI-DSS Req 3.2
+
+           **GDPR Triggers**:
+           - "EU users" → GDPR Art. 17 (right to erasure)
+           - "personal data" → GDPR Art. 6 (lawful basis), Art. 32 (security)
+           - "user data export" → GDPR Art. 20 (data portability)
+           - "delete user" → GDPR Art. 17 (right to erasure)
+
+           **HIPAA Triggers**:
+           - "patient data" → HIPAA Privacy Rule
+           - "health information" → HIPAA Security Rule
+           - "PHI" → HIPAA Privacy + Security Rules
+           - "medical records" → HIPAA Privacy Rule
+
+        4. **Extract Glossary Terms**:
+           - For each term in glossary, mark for auto-linking in spec
+           - Terms should be linked on first mention only
+           - Format: "ACH" → "ACH (Automated Clearing House) [Glossary: ACH]"
+
+        5. **Identify Relevant Best Practices**:
+           - Match user input to applicable best practices
+           - Example: "payment processing" → "Idempotency Keys" practice
+           - Flag practices for inclusion in Technical Context section
+
+        6. **Validate Against Constraints**:
+           - Check if spec implies operations that hit known limits
+           - Example: "1000 req/sec" vs Stripe limit of 100 req/sec
+           - Flag constraint violations for NFR adjustment
+
+        ## Output Format
+
+        Return structured JSON:
+        ```json
+        {
+          "domain_detected": "fintech",
+          "technology_stack": ["stripe", "postgresql", "redis"],
+          "compliance_required": ["PCI-DSS", "GDPR"],
+          "compliance_triggers": [
+            {
+              "keyword": "store credit card",
+              "standard": "PCI-DSS",
+              "requirement": "Req 3.4",
+              "nfr_template": "NFR-SEC-PCI-003"
+            }
+          ],
+          "glossary_terms": ["ACH", "KYC", "AML", "PCI-DSS", "PAN"],
+          "best_practices": [
+            {
+              "name": "Idempotency Keys for Payments",
+              "category": "Reliability",
+              "evidence_tier": "AUTHORITATIVE",
+              "source": "memory/knowledge/best-practices/by-domain/fintech.md"
+            }
+          ],
+          "constraints": [
+            {
+              "platform": "stripe",
+              "type": "rate_limit",
+              "limit": "100 req/sec",
+              "scope": "per account",
+              "workaround": "exponential backoff"
+            }
+          ]
+        }
+        ```
+
+        **Note**: If knowledge base files don't exist yet (first run), return empty arrays but don't fail.
+
     # Wave 2: Analysis (depends on context gathering)
     - role: requirement-extractor
       role_group: ANALYSIS
@@ -1076,7 +1192,7 @@ claude_code:
     - role: spec-writer
       role_group: DOCS
       parallel: true
-      depends_on: [requirement-extractor, acceptance-criteria-generator, edge-case-detector, completeness-checker, cstm-generator, design-artifact-importer]
+      depends_on: [requirement-extractor, acceptance-criteria-generator, edge-case-detector, completeness-checker, cstm-generator, design-artifact-importer, domain-context-loader]
       priority: 30
       model_override: opus
       prompt: |
@@ -1094,6 +1210,105 @@ claude_code:
            - Success Criteria (SC-xxx) - measurable and tech-agnostic
            - Edge Cases (EC-xxx)
            - Traceability Summary table
+
+        4. **Apply Domain Context** (from domain-context-loader output):
+
+           **A. Auto-Link Glossary Terms:**
+           - For EACH term in glossary_terms array
+           - Find FIRST occurrence in spec text
+           - Replace with: "{{TERM}} ({{DEFINITION}}) [Glossary: {{TERM}}]"
+           - Do NOT link subsequent occurrences
+
+           Example:
+           - Original: "Process ACH payment via API"
+           - Linked: "Process ACH (Automated Clearing House) [Glossary: ACH] payment via API"
+
+           **B. Add Glossary Section** (at end of spec, before Appendix):
+           ```markdown
+           ## Glossary
+
+           This feature uses the following domain-specific terminology:
+
+           | Term | Definition | Context |
+           |------|------------|---------|
+           {{FOR EACH glossary_term}}
+           | {{TERM}} | {{DEFINITION}} | {{CONTEXT}} |
+           {{END FOR}}
+
+           For complete domain glossary, see: memory/knowledge/glossaries/{{DOMAIN}}.md
+           ```
+
+           **C. Auto-Generate Compliance NFRs** (in Non-Functional Requirements section):
+
+           If compliance_required array is not empty:
+
+           For EACH compliance trigger:
+           ```markdown
+           #### Security & Compliance
+
+           **NFR-SEC-{{STANDARD}}-XXX**: {{REQUIREMENT_TITLE}} [{{SEVERITY}}]
+           - Acceptance: {{ACCEPTANCE_CRITERIA}}
+           - Evidence: {{STANDARD}} {{VERSION}} {{REQUIREMENT}} [AUTHORITATIVE]
+           - Verification: {{VERIFICATION_METHOD}}
+           - Traceability: → FR-{{XXX}} ({{TRIGGERED_BY}})
+           ```
+
+           Example auto-generated NFRs:
+           ```markdown
+           **NFR-SEC-PCI-001**: Do not store CVV/CVC [CRITICAL]
+           - Acceptance: No CVV/CVC/CID fields in database schema or logs
+           - Evidence: PCI-DSS v4.0 Req 3.2 [AUTHORITATIVE]
+           - Verification: Schema review + log analysis + code scan
+           - Traceability: → FR-003 (Process payment via Stripe API)
+
+           **NFR-SEC-PCI-002**: Encrypt PAN at rest (AES-256) [CRITICAL]
+           - Acceptance: All stored PANs encrypted with AES-256 or stronger
+           - Evidence: PCI-DSS v4.0 Req 3.4 [AUTHORITATIVE]
+           - Verification: Database audit + encryption validation
+           - Traceability: → FR-003 (Store card for future use)
+           ```
+
+           **D. Reference Best Practices** (in Technical Context section):
+
+           If best_practices array is not empty:
+           ```markdown
+           ## Technical Context
+
+           ### Applicable Best Practices
+
+           This feature should follow these domain best practices:
+
+           {{FOR EACH best_practice}}
+           - **{{NAME}}** ({{CATEGORY}}) [{{EVIDENCE_TIER}}]
+             - Source: {{SOURCE_FILE}}
+             - Description: {{BRIEF_DESCRIPTION}}
+             - Rationale: {{WHY_APPLICABLE}}
+           {{END FOR}}
+
+           See full practices documentation in: memory/knowledge/best-practices/by-domain/{{DOMAIN}}.md
+           ```
+
+           **E. Document Known Constraints** (in Non-Functional Requirements section):
+
+           If constraints array is not empty:
+           ```markdown
+           #### Platform Constraints
+
+           The following technical constraints apply to this feature:
+
+           {{FOR EACH constraint}}
+           - **{{PLATFORM}} {{TYPE}}**: {{LIMIT}} ({{SCOPE}})
+             - Workaround: {{WORKAROUND}}
+             - Source: memory/knowledge/constraints/platforms/{{PLATFORM}}.md
+           {{END FOR}}
+           ```
+
+           Example:
+           ```markdown
+           - **Stripe rate_limit**: 100 req/sec (per account)
+             - Workaround: Implement exponential backoff for 429 responses
+             - Source: memory/knowledge/constraints/platforms/stripe-api.md
+           ```
 
         If WORKSPACE_MODE = true:
            - Add Cross-Repository Dependencies section

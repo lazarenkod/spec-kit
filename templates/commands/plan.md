@@ -576,6 +576,271 @@ FOR architecture_decision IN [database, caching, auth, deployment, framework]:
 
 ---
 
+### Phase 0.1: Best Practices Loading
+
+**Prerequisites:** spec.md complete
+
+**Purpose:** Load domain best practices before architecture decisions.
+
+This phase ensures that architecture decisions are informed by proven patterns from the domain knowledge base.
+
+**Steps:**
+
+1. **Detect Domain & Technology Stack**:
+   ```bash
+   # Read from memory/constitution.md
+   DOMAIN=$(grep "^domain:" memory/constitution.md | cut -d: -f2 | tr -d ' ')
+   TECH_STACK=$(grep "^tech_stack:" memory/constitution.md | cut -d: -f2-)
+   ```
+
+2. **Load Best Practices Catalog**:
+   - Read `memory/knowledge/best-practices/by-domain/{{DOMAIN}}.md` (if exists)
+   - Read `memory/knowledge/best-practices/by-technology/{{TECH}}.md` for each tech in stack (if exists)
+   - If files don't exist yet (first run), skip with warning and proceed
+
+3. **Extract Applicable Practices**:
+   For each practice in catalog:
+   - Match practice applicability against spec requirements
+   - Extract: Name, Category, Implementation pattern, Evidence tier, Trade-offs
+   - Filter out practices not relevant to this feature
+
+4. **Inject into research.md**:
+   Before generating ADRs, add section:
+   ```markdown
+   ## Applicable Best Practices
+
+   The following domain best practices should inform architecture decisions:
+
+   ### {{PRACTICE_NAME}} ({{CATEGORY}})
+
+   **Evidence**: {{SOURCE}} [{{TIER}}]
+
+   **When to Apply**: {{APPLICABILITY}}
+
+   **Implementation Pattern**:
+   {{IMPLEMENTATION_CODE_OR_PATTERN}}
+
+   **Trade-offs**:
+   - ✅ Pros: {{BENEFITS}}
+   - ❌ Cons: {{COSTS}}
+
+   **Related ADRs**: Will be referenced in ADR-xxx if chosen
+   ```
+
+5. **Example** (fintech domain):
+   For payment processing feature:
+   - Practice: "Idempotency Keys for Payments" [AUTHORITATIVE - Stripe docs]
+   - Practice: "Daily Payment Reconciliation" [STRONG - IEEE 2023]
+   - Practice: "AES-256 Encryption with Key Rotation" [AUTHORITATIVE - PCI-DSS]
+   - Practice: "Webhook Signature Verification" [AUTHORITATIVE - Stripe/PayPal]
+
+**Output:**
+- `research.md` "Applicable Best Practices" section populated BEFORE ADR generation
+- Each ADR can reference relevant best practices with evidence citations
+- Prevents reinventing solutions that have authoritative/strong evidence
+
+---
+
+### Phase 0.2: Technical Constraints Loading
+
+**Prerequisites:** Phase 0.1 complete
+
+**Purpose:** Load technical constraints before performance NFRs to prevent impossible requirements.
+
+This phase validates that NFRs don't exceed platform limits.
+
+**Steps:**
+
+1. **Load Constraints Catalog**:
+   For each technology in tech stack:
+   - Read `memory/knowledge/constraints/platforms/{{TECH}}.md` (if exists)
+   - Extract: Rate limits, quotas, timeouts, memory limits, storage limits
+   - If file doesn't exist, skip with warning
+
+2. **Build Constraints Profile**:
+   ```yaml
+   constraints_profile:
+     stripe_api:
+       rate_limit: 100 req/sec (default), 1000 req/sec (high volume)
+       webhook_timeout: 30 seconds
+       file_upload_max: 10 MB
+       idempotency_key_ttl: 24 hours
+
+     postgresql:
+       max_connections: 100 (default)
+       statement_timeout: 30 seconds
+       max_row_size: 8 KB (without TOAST)
+   ```
+
+3. **Validate NFRs Against Constraints**:
+   For each NFR-PERF-xxx in spec.md:
+   ```python
+   IF NFR requires X req/sec:
+     AND constraint = Y req/sec:
+       IF X > Y:
+         FLAG: "NFR-PERF-xxx exceeds {{TECH}} limit ({{Y}} req/sec)"
+         SUGGEST: "Use request batching OR rate limiting queue OR request limit increase"
+         SEVERITY: HIGH
+   ```
+
+4. **Auto-Generate Constraint-Driven NFRs**:
+   For each constraint that affects this feature:
+   ```markdown
+   #### Platform Constraints (Auto-Generated)
+
+   **NFR-PERF-{{TECH}}-XXX**: Handle {{CONSTRAINT_TYPE}} ({{LIMIT}}) [{{PRIORITY}}]
+   - Acceptance: {{IMPLEMENTATION_STRATEGY}}
+   - Evidence: {{SOURCE}} [{{TIER}}]
+   - Constraint: {{LIMIT_VALUE}} per {{SCOPE}}
+   - Workaround: {{WORKAROUND_STRATEGY}}
+   - Traceability: → FR-{{XXX}}
+   ```
+
+5. **Examples**:
+   ```markdown
+   **NFR-PERF-STRIPE-001**: Handle API rate limit (100 req/sec) [HIGH]
+   - Acceptance: Exponential backoff implemented for 429 responses
+   - Evidence: Stripe Rate Limits [AUTHORITATIVE]
+   - Constraint: 100 req/sec per account (default tier)
+   - Workaround: If approaching limit, request increase to 1000 req/sec
+   - Traceability: → FR-003 (Process payments via Stripe)
+
+   **NFR-PERF-STRIPE-002**: Webhook response time <10 seconds [MEDIUM]
+   - Acceptance: Webhook endpoint responds within 10 seconds (30s hard limit)
+   - Evidence: Stripe Webhook Documentation [AUTHORITATIVE]
+   - Constraint: 30 second timeout
+   - Workaround: Use async queue for long-running webhook processing
+   - Traceability: → FR-005 (Receive payment notifications)
+   ```
+
+6. **Flag Violations**:
+   ```markdown
+   ## ⚠️ Constraint Violations
+
+   **VIOLATION-001**: NFR-PERF-001 requires 200 req/sec, but Stripe limit = 100 req/sec
+   - Impact: BLOCKING (cannot achieve requirement)
+   - Resolution Options:
+     1. Request rate limit increase from Stripe (2-4 week lead time)
+     2. Implement request batching to reduce API calls by 50%
+     3. Revise NFR-PERF-001 target to 80 req/sec (with buffer)
+   - Recommendation: Option 2 + Option 3 combined
+   ```
+
+**Output:**
+- `plan.md` NFR section with validated constraints
+- `research.md` with workarounds if constraints violated
+- Constraint violation warnings BEFORE implementation starts
+- Auto-generated NFRs for known platform limits
+
+---
+
+### Phase 0.3: Standards Verification
+
+**Prerequisites:** Phase 0.2 complete
+
+**Purpose:** Verify architecture against official standards before implementation.
+
+This phase ensures compliance requirements are baked into architecture from the start.
+
+**Steps:**
+
+1. **Load Compliance Requirements**:
+   For each standard in COMPLIANCE_REQUIRED (from specify phase):
+   - Read `memory/knowledge/standards/compliance/{{STANDARD}}.md`
+   - Extract: Critical requirements (CRITICAL), High-priority requirements (HIGH)
+   - Build compliance checklist
+
+2. **Map Requirements to Plan**:
+   For EACH requirement:
+   ```markdown
+   {{STANDARD}} Req {{NUMBER}}: "{{REQUIREMENT_TITLE}}"
+
+   **Mapped to:**
+   - FR-{{XXX}}: {{FUNCTIONAL_REQUIREMENT}}
+   - NFR-{{XXX}}: {{NON_FUNCTIONAL_REQUIREMENT}}
+
+   **Implementation Strategy:**
+   {{HOW_THIS_WILL_BE_IMPLEMENTED}}
+
+   **Verification Method:**
+   {{HOW_TO_VERIFY_COMPLIANCE}}
+
+   **Traceability:**
+   {{REQUIREMENT}} → FR-{{XXX}} → Implementation in {{FILE}}
+   ```
+
+3. **Example** (PCI-DSS for payment feature):
+   ```markdown
+   ### PCI-DSS Compliance Mapping
+
+   **PCI-DSS Req 3.2**: "Do not store sensitive authentication data (CVV/CVC) after authorization"
+
+   **Mapped to:**
+   - FR-003: Process payment via Stripe API
+   - NFR-SEC-PCI-001: Do not store CVV/CVC [CRITICAL]
+
+   **Implementation Strategy:**
+   - Use Stripe.js to tokenize card on client side (CVV never reaches server)
+   - Database schema audit: NO cvv, cvc, cvv2 columns
+   - Log sanitization: Strip CVV patterns before logging
+   - Code review: Grep for prohibited storage patterns
+
+   **Verification Method:**
+   - Schema review: `SHOW COLUMNS FROM payments;` → no CVV fields
+   - Code scan: `grep -ri "cvv\|cvc" src/` → no storage patterns
+   - Log analysis: Verify no CVV patterns in application logs
+
+   **Traceability:**
+   PCI-DSS Req 3.2 → NFR-SEC-PCI-001 → Stripe.js tokenization → src/payments/stripe.ts:45
+   ```
+
+4. **Generate Compliance Verification Tasks**:
+   Add to tasks.md (will be created in /speckit.tasks):
+   ```markdown
+   **TASK-SEC-001**: Verify PCI-DSS Req 3.2 compliance [CRITICAL]
+   - Type: Security Validation
+   - Prerequisites: Payment processing implementation complete
+   - Validation Steps:
+     1. Run schema audit: Check for prohibited columns
+     2. Run code scan: Grep for CVV storage patterns
+     3. Review logs: Ensure CVV sanitization
+   - Acceptance: All 3 checks pass
+   - Traceability: → NFR-SEC-PCI-001, PCI-DSS Req 3.2
+   ```
+
+5. **Create Compliance Traceability Matrix**:
+   In plan.md, add section:
+   ```markdown
+   ## Compliance Traceability Matrix
+
+   | Standard | Requirement | FR | NFR | Implementation | Verification | Status |
+   |----------|-------------|:--:|:---:|----------------|--------------|:------:|
+   | PCI-DSS Req 3.2 | No CVV storage | FR-003 | NFR-SEC-PCI-001 | Stripe.js tokenization | Schema audit + code scan | ⏳ |
+   | PCI-DSS Req 3.4 | Encrypt PAN | FR-004 | NFR-SEC-PCI-002 | AES-256 + KMS | Encryption validation | ⏳ |
+   | PCI-DSS Req 4.2 | TLS 1.2+ | FR-003 | NFR-SEC-PCI-005 | Nginx TLS config | SSL Labs scan | ⏳ |
+
+   **Legend**: ⏳ Pending | ✅ Verified | ❌ Non-compliant
+   ```
+
+6. **Flag Missing Implementations**:
+   ```markdown
+   ## ⚠️ Compliance Gaps
+
+   **GAP-001**: PCI-DSS Req 6.5.10 (Injection Prevention) not addressed
+   - Triggered by: FR-003 (Process payment API)
+   - Missing NFR: SQL injection prevention
+   - Required Action: Add NFR-SEC-PCI-007 with parameterized queries
+   - Severity: CRITICAL
+   ```
+
+**Output:**
+- `plan.md` "Compliance Verification" section with traceability matrix
+- `research.md` with compliance implementation strategies
+- Compliance verification tasks flagged for tasks.md
+- Gaps identified BEFORE implementation starts
+
+---
+
 ### Phase 0: Outline & Research
 
 **Architecture Decision Protocol** (ENHANCED):

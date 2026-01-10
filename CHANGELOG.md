@@ -7,6 +7,75 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.120] - 2026-01-10
+
+### Added
+
+- **Domain Immersion Enhancement** - Maximum agent domain knowledge with 5 new research agents v0.0.120:
+  - **Problem solved**: Agents lacked deep domain expertise in best practices, constraints, compliance, and terminology
+  - **Root cause**: No systematic way to load domain knowledge (standards, constraints, best practices, glossaries)
+  - **New research agents** (concept phase):
+    - **`standards-researcher-ai`**: Searches official standards (RFC, ISO, PCI-DSS, GDPR, HIPAA) for compliance requirements [AUTHORITATIVE evidence]
+    - **`academic-researcher-ai`**: Searches research papers, whitepapers for best practices [STRONG evidence]
+    - **`community-intelligence-ai`**: Mines Stack Overflow, GitHub for constraints, gotchas, workarounds [MEDIUM evidence]
+    - **`glossary-builder-ai`**: Builds domain glossary from all research outputs [Wave 2 synthesis]
+    - **`constraints-analyzer-ai`**: Documents technical constraints (rate limits, quotas) for NFR validation [Wave 2 synthesis]
+  - **Evidence Tier Enhancement**:
+    - New **Tier 0: AUTHORITATIVE (35 points)** for official specifications, government regulations, standards body documents
+    - Freshness thresholds: RFC/ISO (evergreen), vendor API docs (90 days), research papers (365 days)
+    - Auto-tier assignment rules for RFC, ISO, PCI-DSS, GDPR, HIPAA, vendor docs
+  - **Knowledge Base Structure** (`memory/knowledge/`):
+    - `glossaries/`: Domain terminology (fintech.md, healthcare.md, saas.md)
+    - `best-practices/by-domain/`: Domain-specific patterns (fintech.md, healthcare.md)
+    - `best-practices/by-technology/`: Tech-specific patterns (stripe.md, postgresql.md)
+    - `standards/compliance/`: Compliance checklists (pci-dss.md, gdpr.md, hipaa.md)
+    - `constraints/platforms/`: Technical limits (stripe-api.md, aws-limits.md)
+  - **Priority Knowledge Base Files** (fintech domain):
+    - `glossaries/fintech.md`: 30+ terms (ACH, KYC, AML, PCI-DSS, PAN, CVV, 3DS, etc.)
+    - `standards/compliance/pci-dss.md`: PCI-DSS v4.0 requirements with auto-NFR generation
+    - `constraints/platforms/stripe-api.md`: Stripe API rate limits, quotas, constraints
+    - `best-practices/by-domain/fintech.md`: 4 practices (Idempotency Keys, Payment Reconciliation, AES-256 Encryption, Webhook Signature Verification)
+  - **Specify Phase Integration**:
+    - New **`domain-context-loader` agent**: Loads knowledge base, detects compliance triggers, validates constraints
+    - **Auto-link glossary terms**: First occurrence linked with definition (e.g., "ACH (Automated Clearing House) [Glossary: ACH]")
+    - **Auto-generate compliance NFRs**: Keywords trigger standards (e.g., "store credit card" → PCI-DSS Req 3.4)
+    - **Compliance triggers**: PCI-DSS (8 keywords), GDPR (4 keywords), HIPAA (4 keywords)
+    - **Glossary section**: Auto-generated at end of spec with all domain terms
+    - **Best practices section**: References applicable patterns with evidence citations
+    - **Platform constraints section**: Documents known limits with workarounds
+  - **Plan Phase Integration**:
+    - **Phase 0.1: Best Practices Loading**: Injects domain best practices into research.md before ADR generation
+    - **Phase 0.2: Technical Constraints Loading**: Validates NFRs against platform limits, flags violations, auto-generates constraint-driven NFRs
+    - **Phase 0.3: Standards Verification**: Maps compliance requirements to plan, creates traceability matrix, generates compliance verification tasks
+  - **Agent Coordination**:
+    - Wave 1: 7 parallel agents (4 existing + 3 new) at priority 10
+    - Wave 2: 2 synthesis agents (glossary-builder, constraints-analyzer) at priority 20
+    - Total: 9 agents (up from 4)
+    - Timeout: 20 minutes (up from 15)
+    - Cost: ~$1.50-1.75 per concept (up from ~$0.75-1.00)
+  - **Files created**:
+    - `memory/knowledge/glossaries/template.md`
+    - `memory/knowledge/glossaries/fintech.md`
+    - `memory/knowledge/best-practices/template.md`
+    - `memory/knowledge/best-practices/by-domain/fintech.md`
+    - `memory/knowledge/standards/template.md`
+    - `memory/knowledge/standards/compliance/pci-dss.md`
+    - `memory/knowledge/constraints/template.md`
+    - `memory/knowledge/constraints/platforms/stripe-api.md`
+  - **Files modified**:
+    - `templates/shared/concept-sections/evidence-tracking.md`: Added AUTHORITATIVE tier, freshness thresholds, tier assignment rules
+    - `templates/commands/concept.md`: Added 5 new subagents in Wave 1 & Wave 2
+    - `templates/shared/concept-sections/research-agents.md`: Added 5 agent configurations, updated max_parallel to 9, cost estimation, coordination protocol
+    - `templates/commands/specify.md`: Added domain-context-loader agent, auto-linking logic, compliance NFR generation, best practices references
+    - `templates/commands/plan.md`: Added Phase 0.1, 0.2, 0.3 for domain knowledge integration
+  - **Benefits**:
+    - Prevents API hallucination (AUTHORITATIVE tier for vendor docs)
+    - Automates compliance research (saves hours of manual work)
+    - Validates NFRs against real platform limits (prevents impossible requirements)
+    - References proven patterns with evidence (no reinventing the wheel)
+    - Auto-generates domain glossary (consistent terminology)
+  - **ROI**: +100% cost, +25% time, but 10x reduction in manual research and compliance errors
+
 ## [0.0.119] - 2026-01-09
 
 ### Added

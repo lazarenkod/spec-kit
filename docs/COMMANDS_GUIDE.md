@@ -77,6 +77,22 @@ graph LR
 
 **Модель:** `opus` (thinking_budget: 16000)
 
+**Domain Immersion (v0.0.120):**
+
+Автоматическое погружение в предметную область с помощью 9 research agents:
+
+- **Wave 1 (Research, 7 agents)**: market-researcher, competitive-analyst, persona-designer, standards-researcher (PCI-DSS, GDPR, HIPAA), academic-researcher (papers, whitepapers), community-intelligence (Stack Overflow, GitHub), trend-analyst
+- **Wave 2 (Synthesis, 2 agents)**: glossary-builder (авто-генерация терминологии), constraints-analyzer (технические ограничения)
+
+**Knowledge Base Generation:**
+- `memory/knowledge/glossaries/{domain}.md` — автоматический глоссарий
+- `memory/knowledge/best-practices/by-domain/{domain}.md` — проверенные паттерны
+- `memory/knowledge/standards/compliance/{standard}.md` — чек-листы соответствия
+- `memory/knowledge/constraints/platforms/{tech}.md` — технические ограничения
+
+**Evidence Tier Enhancement:**
+- **AUTHORITATIVE** (35 points) — RFC, ISO standards, PCI-DSS, GDPR, vendor API docs (<90 days)
+
 **Handoffs:**
 
 - → `/speckit.specify`
@@ -106,6 +122,18 @@ graph LR
 **Модель:** `opus` (thinking_budget: 16000)
 
 **Persona:** `product-agent`
+
+**Domain Context Loading (v0.0.120):**
+
+Автоматическая загрузка контекста предметной области через **domain-context-loader agent**:
+
+- **Auto-Link Glossary Terms**: Автоматическая подстановка определений при первом упоминании терминов
+- **Auto-Generate Compliance NFRs**: Автоматическая генерация NFR для соответствия стандартам на основе ключевых слов:
+  - "store credit card" → `NFR-SEC-PCI-001` (PCI-DSS Req 3.4)
+  - "patient data" → `NFR-SEC-HIPAA-001` (HIPAA Privacy Rule)
+  - "EU users" → `NFR-SEC-GDPR-001` (GDPR Art. 17)
+- **Best Practices References**: Автоматическое добавление ссылок на best practices в Technical Context
+- **Known Constraints**: Документирование известных технических ограничений
 
 **Флаги:**
 
@@ -237,6 +265,22 @@ graph LR
 **Persona:** `architect-agent`
 
 **Требует:** handoffs/specify-to-plan.md
+
+**Domain-Aware Planning (v0.0.120):**
+
+Автоматическая загрузка знаний предметной области перед принятием архитектурных решений:
+
+- **Phase 0.1: Best Practices Loading** — загрузка проверенных паттернов перед генерацией ADR
+  - Инъекция best practices в research.md с цитированием источников
+  - Пример: "Idempotency Keys for Payments (Stripe Best Practice [AUTHORITATIVE])"
+- **Phase 0.2: Constraints Loading** — валидация NFR против технических ограничений
+  - Проверка соответствия требованиям лимитам платформ (rate limits, quotas, timeouts)
+  - Авто-генерация constraint-driven NFRs
+  - Флаги нарушений ДО начала реализации
+- **Phase 0.3: Standards Verification** — верификация архитектуры против официальных стандартов
+  - Маппинг compliance requirements на implementation
+  - Генерация Compliance Traceability Matrix
+  - Создание задач верификации соответствия
 
 **Флаги:**
 
@@ -973,6 +1017,6 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ## Версия документа
 
-**Версия:** 0.0.119
-**Дата генерации:** 2026-01-09
+**Версия:** 0.0.120
+**Дата генерации:** 2026-01-10
 **Автор:** Auto-generated from command templates
