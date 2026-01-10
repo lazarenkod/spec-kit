@@ -7,6 +7,30 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.118] - 2026-01-09
+
+### Added
+
+- **Platform Binding Tests for KMP** - Ensures SwiftUI/Compose correctly calls shared Kotlin code v0.0.118:
+  - **Problem solved**: iOS/Android UI has TODO/stub code while Kotlin unit tests pass (all 323 tests pass but app is broken)
+  - **Root cause**: No tests verify that platform UI correctly binds to shared ViewModel methods
+  - **New features**:
+    - **Phase 2e-BINDING** in `/speckit.tasks`: Generates BINDING-TEST tasks for each ViewModel method and StateFlow
+    - **binding-test-scaffolder** in `/speckit.implement`: Creates binding test files for iOS (XCTest) and Android (Mockk)
+    - **platform-todo-detector**: CRITICAL severity check for TODO/stub in platform files, blocks Wave 4
+    - **QG-BIND-001**: 100% ViewModel method binding coverage required
+    - **QG-BIND-002**: 100% StateFlow observation coverage required
+    - **QG-BIND-003**: Zero TODO/FIXME in platform binding code (CRITICAL, blocks Wave 4)
+  - **Files modified**:
+    - `templates/commands/tasks.md`: Added Phase 2e-BINDING section
+    - `templates/commands/implement.md`: Added binding-test-scaffolder and platform-todo-detector roles
+    - `templates/shared/platforms/kmp-integration-checklist.md`: Added QG-BIND-001/002/003 gates
+  - **Example output**:
+    ```
+    - [ ] T050 [BINDING-TEST:ReaderViewModel:setFontSize] Verify platform UI calls setFontSize()
+    - [ ] T051 [BINDING-TEST:ReaderViewModel:tableOfContents] Verify platform UI observes tableOfContents StateFlow
+    ```
+
 ## [0.0.117] - 2026-01-09
 
 ### Fixed

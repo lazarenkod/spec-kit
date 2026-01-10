@@ -860,6 +860,151 @@ claude_code:
         - Mobile test run summary: X tests created, X failures (expected)
         - Platform detected: [flutter|react_native|kmp|ios_native|android_native]
       model_override: sonnet
+    - role: binding-test-scaffolder
+      role_group: TESTING
+      parallel: true
+      depends_on: [mobile-test-scaffolder]
+      priority: 9
+      trigger: "when platform is kmp"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Spec: {{FEATURE_DIR}}/spec.md
+        Tasks: {{FEATURE_DIR}}/tasks.md
+        Platform: KMP (Kotlin Multiplatform)
+
+        ## Task - Platform Binding Test Scaffolding (TDD Red Phase)
+        Generate binding verification tests for KMP platform layer.
+        These tests verify that platform UI (SwiftUI/Compose) correctly calls shared Kotlin code.
+
+        ## Step 1: Analyze Shared ViewModels
+        FOR EACH ViewModel in shared/src/commonMain/**/*ViewModel.kt:
+          PARSE public methods (fun methodName(...))
+          PARSE StateFlow properties (val propertyName: StateFlow<...>)
+          PARSE SharedFlow properties (val propertyName: SharedFlow<...>)
+
+        ## Step 2: Generate iOS Binding Tests
+        IF iosApp/ exists:
+          CREATE iosApp/iosAppTests/binding/{ViewModel}BindingTests.swift:
+          ```swift
+          import XCTest
+          @testable import iosApp
+          @testable import shared
+
+          class {ViewModel}BindingTests: XCTestCase {
+
+              // BINDING-TEST:{ViewModel}:{method}
+              func test_{method}_callsViewModel() {
+                  // Arrange - Create mock or spy ViewModel
+                  let viewModel = {ViewModel}()
+                  let wrapper = {ViewModel}Wrapper(viewModel: viewModel)
+
+                  // Act - Call wrapper method
+                  wrapper.{method}({testParams})
+
+                  // Assert - Verify Kotlin method was called
+                  // TODO: Implement assertion - must FAIL initially
+                  XCTFail("Binding test not implemented")
+              }
+
+              // BINDING-TEST:{ViewModel}:{stateFlowProperty}
+              func test_{stateFlowProperty}_observesStateFlow() {
+                  // Arrange
+                  let viewModel = {ViewModel}()
+                  let expectation = expectation(description: "StateFlow observed")
+
+                  // Act - Subscribe to StateFlow
+                  var receivedValue: {Type}?
+                  viewModel.{stateFlowProperty}.collect { value in
+                      receivedValue = value
+                      expectation.fulfill()
+                  }
+
+                  // Assert
+                  // TODO: Implement assertion - must FAIL initially
+                  XCTFail("StateFlow observation test not implemented")
+              }
+          }
+          ```
+
+        ## Step 3: Generate Android Binding Tests
+        IF androidApp/ exists:
+          CREATE androidApp/src/androidTest/kotlin/binding/{ViewModel}BindingTest.kt:
+          ```kotlin
+          package com.example.app.binding
+
+          import io.mockk.*
+          import kotlinx.coroutines.flow.first
+          import kotlinx.coroutines.test.runTest
+          import org.junit.Test
+          import org.junit.Assert.*
+
+          class {ViewModel}BindingTest {
+
+              // BINDING-TEST:{ViewModel}:{method}
+              @Test
+              fun `{method} calls ViewModel correctly`() = runTest {
+                  // Arrange - Create mock ViewModel
+                  val viewModel = mockk<{ViewModel}>(relaxed = true)
+
+                  // Act - Simulate UI calling the method
+                  viewModel.{method}({testParams})
+
+                  // Assert - Verify method was called
+                  // TODO: Implement assertion - must FAIL initially
+                  fail("Binding test not implemented")
+              }
+
+              // BINDING-TEST:{ViewModel}:{stateFlowProperty}
+              @Test
+              fun `{stateFlowProperty} StateFlow is collected by UI`() = runTest {
+                  // Arrange
+                  val viewModel = {ViewModel}()
+
+                  // Act - Collect StateFlow
+                  val value = viewModel.{stateFlowProperty}.first()
+
+                  // Assert
+                  // TODO: Implement assertion - must FAIL initially
+                  fail("StateFlow collection test not implemented")
+              }
+          }
+          ```
+
+        ## Step 4: Generate Binding Coverage Report
+        CREATE .speckit/binding-coverage.json:
+        ```json
+        {
+          "viewModels": [
+            {
+              "name": "{ViewModel}",
+              "methods": ["{method1}", "{method2}"],
+              "stateFlows": ["{property1}", "{property2}"],
+              "iosTests": "iosApp/iosAppTests/binding/{ViewModel}BindingTests.swift",
+              "androidTests": "androidApp/src/androidTest/kotlin/binding/{ViewModel}BindingTest.kt"
+            }
+          ],
+          "coverage": {
+            "methodsCovered": 0,
+            "methodsTotal": X,
+            "stateFlowsCovered": 0,
+            "stateFlowsTotal": Y
+          }
+        }
+        ```
+
+        ## Success Criteria (QG-BIND-001 Validation)
+        - Binding test files created for all ViewModels
+        - Each public method has a binding test
+        - Each StateFlow has an observation test
+        - ALL tests FAIL initially (TDD red verified)
+        - Binding coverage report generated
+
+        ## Output
+        - iOS binding tests: iosApp/iosAppTests/binding/*.swift
+        - Android binding tests: androidApp/src/androidTest/kotlin/binding/*.kt
+        - Coverage report: .speckit/binding-coverage.json
+      model_override: sonnet
     # Wave 3: Core Implementation - TDD Green Phase (make tests pass)
     - role: data-layer-builder
       role_group: BACKEND
@@ -1281,6 +1426,114 @@ claude_code:
         ### On Complete
         - Confirm all Wave 3 tasks are marked [X]
         - Proceed to Wave 4 test verification
+      model_override: haiku
+    - role: platform-todo-detector
+      role_group: QUALITY
+      parallel: false
+      depends_on: [component-wiring-implementer]
+      priority: 5
+      trigger: "after Wave 3 implementation, before Wave 4"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Platform: (auto-detected)
+
+        ## Task - Platform Code Completeness Check (CRITICAL)
+        Scan platform-specific files for TODO/stub patterns that indicate incomplete implementation.
+        This check BLOCKS Wave 4 progression if violations found.
+
+        ## Critical File Patterns (KMP Projects)
+        CRITICAL_FILES = [
+          "iosApp/**/*.swift",
+          "androidApp/**/*Activity.kt",
+          "androidApp/**/*Fragment.kt",
+          "androidApp/**/*Screen.kt",
+          "androidApp/**/*Composable.kt",
+          "**/ui/**/*.swift",
+          "**/ui/**/*.kt",
+          "**/*Wrapper.swift",
+          "**/*ViewModelWrapper.swift"
+        ]
+
+        ## Stub/TODO Patterns to Detect
+        PATTERNS = [
+          "// TODO:",
+          "// FIXME:",
+          "// HACK:",
+          "/* TODO",
+          "// TODO: Pass to",
+          "// TODO: Implement",
+          "fatalError(\"Not implemented\")",
+          "fatalError(\"TODO\")",
+          "throw NotImplementedError()",
+          "TODO(\"",
+          "FIXME(\"",
+          "pass  # TODO",
+          "raise NotImplementedError"
+        ]
+
+        ## Hardcoded Value Patterns (KMP-specific)
+        HARDCODED_PATTERNS = [
+          "\"Chapter 1\"",
+          "\"Chapter 2\"",
+          "listOf(\"Chapter",
+          "arrayOf(\"Chapter",
+          "[\"Chapter 1\",",
+          "// Hardcoded",
+          "// TEMP:",
+          "// Temporary"
+        ]
+
+        ## Detection Process
+        FOR EACH file matching CRITICAL_FILES:
+          FOR EACH line in file:
+            IF line contains any PATTERN or HARDCODED_PATTERN:
+              RECORD violation:
+                - file: path
+                - line: number
+                - content: line content
+                - pattern: matched pattern
+                - severity: CRITICAL
+
+        ## Severity Rules
+        - ANY TODO/FIXME in platform UI code = CRITICAL (blocks Wave 4)
+        - ANY hardcoded value that should come from ViewModel = CRITICAL
+        - Threshold: 0 violations allowed
+
+        ## Output Format
+        IF violations found:
+          ```
+          ═══════════════════════════════════════════════════════════════
+          ❌ PLATFORM CODE COMPLETENESS CHECK FAILED
+          ═══════════════════════════════════════════════════════════════
+
+          Found {count} critical violations in platform code:
+
+          1. iosApp/iosApp/ReaderViewModelWrapper.swift:42
+             Pattern: // TODO: Pass to settings repository
+             → Must implement actual repository call
+
+          2. iosApp/iosApp/ReaderView.swift:381
+             Pattern: "Chapter 1" (hardcoded)
+             → Must use ViewModel.tableOfContents StateFlow
+
+          ═══════════════════════════════════════════════════════════════
+          ⛔ BLOCKING: Fix all TODO/stub code before Wave 4
+          ═══════════════════════════════════════════════════════════════
+          ```
+          EXIT with error - do not proceed to Wave 4
+
+        IF no violations:
+          ```
+          ✅ Platform code completeness check passed
+          No TODO/stub patterns found in platform files
+          Proceeding to Wave 4...
+          ```
+
+        ## Quality Gate
+        - QG-BIND-003: Zero TODO/FIXME/stub comments in platform binding code
+        - Severity: CRITICAL
+        - Action on failure: BLOCK Wave 4, require fix
       model_override: haiku
     # Wave 4: Test Verification - TDD Green Phase (verify tests pass after implementation)
     # NOTE: Unit and integration tests run in PARALLEL by default (v0.0.104)

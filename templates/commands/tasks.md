@@ -904,6 +904,85 @@ IF design.md contains User Journey sections
   - Error paths: Validation failure, save failure, concurrent edit
 ```
 
+### Phase 2e-BINDING: Platform Binding Verification (for KMP) 🔗
+
+**Trigger**: Execute when platform is KMP (detected via platform-detection.md)
+
+**Purpose**: Verify that platform UI (SwiftUI/Compose) correctly binds to shared Kotlin ViewModels. Prevents bugs where shared Kotlin code works but platform UI has TODO/stub implementations.
+
+**Detection**:
+```text
+1. Check for shared/ directory with Kotlin ViewModels (*ViewModel.kt)
+2. Check for iosApp/ with SwiftUI files (*.swift)
+3. Check for androidApp/ with Compose files (*Screen.kt, *Activity.kt)
+4. If KMP detected → inject Phase 2e-BINDING tasks
+```
+
+**Task Generation**:
+
+```text
+FOR EACH ViewModel in shared/src/commonMain/**/*ViewModel.kt:
+  PARSE public methods and StateFlow properties
+
+  FOR EACH public method:
+    GENERATE task:
+      - [ ] T### [BINDING-TEST:{ViewModel}:{method}] Verify platform UI calls {ViewModel}.{method}()
+        - iOS: Test SwiftUI wrapper calls Kotlin method
+        - Android: Test Compose calls Kotlin method
+        - Mock ViewModel, verify correct parameters passed
+
+  FOR EACH StateFlow property:
+    GENERATE task:
+      - [ ] T### [BINDING-TEST:{ViewModel}:{property}] Verify platform UI observes {ViewModel}.{property}
+        - iOS: Test .sink/.assign receives state updates
+        - Android: Test .collectAsState() receives state updates
+        - Verify UI re-renders on state change
+```
+
+**Quality Gates (Binding)**:
+- QG-BIND-001: All ViewModel public methods have platform binding tests (100% coverage)
+- QG-BIND-002: All StateFlow properties are observed in platform UI (100% coverage)
+- QG-BIND-003: Zero TODO/FIXME/stub comments in platform binding code
+
+**Example Output (Phase 2e-BINDING)**:
+
+```markdown
+## Phase 2e-BINDING: Platform Binding Verification 🔗
+
+**Purpose**: Verify SwiftUI/Compose correctly binds to shared Kotlin ViewModels
+
+**Quality Gates**: QG-BIND-001, QG-BIND-002, QG-BIND-003
+
+### ReaderViewModel Binding Tests
+
+- [ ] T050 [BINDING-TEST:ReaderViewModel:goToPage] Verify platform UI calls goToPage(page: Int)
+  - iOS: ReaderViewModelWrapper.goToPage() → Kotlin ReaderViewModel.goToPage()
+  - Android: ReaderScreen calls viewModel.goToPage()
+  - Mock: Verify page parameter passed correctly
+
+- [ ] T051 [BINDING-TEST:ReaderViewModel:setFontSize] Verify platform UI calls setFontSize(size: Int)
+  - iOS: ReaderViewModelWrapper.setFontSize() → Kotlin ReaderViewModel.setFontSize()
+  - Android: SettingsScreen calls viewModel.setFontSize()
+  - Mock: Verify size persisted to repository
+
+- [ ] T052 [BINDING-TEST:ReaderViewModel:currentPage] Verify platform UI observes currentPage StateFlow
+  - iOS: Test .sink receives page updates
+  - Android: Test .collectAsState() receives page updates
+  - Verify: Page indicator UI updates on state change
+
+- [ ] T053 [BINDING-TEST:ReaderViewModel:tableOfContents] Verify platform UI observes tableOfContents StateFlow
+  - iOS: Test .sink receives TOC from ViewModel (not hardcoded)
+  - Android: Test .collectAsState() receives TOC
+  - Verify: No hardcoded chapter values in platform code
+
+### SettingsViewModel Binding Tests
+
+- [ ] T054 [BINDING-TEST:SettingsViewModel:fontSize] Verify platform UI observes fontSize StateFlow
+- [ ] T055 [BINDING-TEST:SettingsViewModel:setFontSize] Verify platform UI calls setFontSize()
+
+**Checkpoint**: All platform bindings verified - no TODO/stub code in platform layer
+```
+
 ### Test Task Generation (Enhanced)
 
 **When tests are requested**, generate detailed test task descriptions using the following process:

@@ -191,3 +191,129 @@ When `/speckit.tasks` detects `PLATFORM_DETECTED = "kmp"`:
 | QG-KMP-001 | T-KMP-CFG-002 | Phase 3 start |
 | QG-KMP-002 | T-KMP-VER-001 | iOS story tasks |
 | QG-KMP-003 | T-KMP-VER-002 | Android story tasks |
+
+## Binding Coverage Quality Gates
+
+These gates ensure platform UI correctly binds to shared Kotlin code, preventing bugs where unit tests pass but platform UI has TODO/stub implementations.
+
+### QG-BIND-001: ViewModel Method Coverage
+
+**Purpose**: All public methods in shared ViewModels have platform binding tests
+
+**Threshold**: 100% coverage required
+
+**Verification**:
+```text
+FOR EACH ViewModel in shared/src/commonMain/**/*ViewModel.kt:
+  PARSE public methods (fun methodName(...))
+  CHECK binding test exists:
+    - iOS: iosApp/iosAppTests/binding/{ViewModel}BindingTests.swift
+    - Android: androidApp/src/androidTest/kotlin/binding/{ViewModel}BindingTest.kt
+  CALCULATE coverage = (methods_with_tests / total_methods) * 100
+
+IF coverage < 100%:
+  FAIL with list of untested methods
+```
+
+**Blocks**: Wave 4 (Test Verification)
+
+### QG-BIND-002: StateFlow Observation Coverage
+
+**Purpose**: All StateFlow properties are observed in platform UI
+
+**Threshold**: 100% coverage required
+
+**Verification**:
+```text
+FOR EACH ViewModel in shared/src/commonMain/**/*ViewModel.kt:
+  PARSE StateFlow properties (val propertyName: StateFlow<...>)
+  CHECK observation exists:
+    - iOS: Search for .sink or .assign on property
+    - Android: Search for .collectAsState() on property
+  CALCULATE coverage = (stateflows_observed / total_stateflows) * 100
+
+IF coverage < 100%:
+  FAIL with list of unobserved StateFlows
+```
+
+**Blocks**: Wave 4 (Test Verification)
+
+### QG-BIND-003: No Platform Stubs
+
+**Purpose**: Zero TODO/FIXME comments in platform binding code
+
+**Threshold**: 0 violations allowed
+
+**Verification**:
+```text
+SCAN files:
+  - iosApp/**/*.swift
+  - androidApp/**/*Activity.kt
+  - androidApp/**/*Fragment.kt
+  - androidApp/**/*Screen.kt
+  - **/*Wrapper.swift
+  - **/*ViewModelWrapper.swift
+
+CHECK for patterns:
+  - "// TODO:"
+  - "// FIXME:"
+  - "// HACK:"
+  - "fatalError(\"Not implemented\")"
+  - "throw NotImplementedError()"
+  - Hardcoded values that should come from ViewModel
+
+IF any violations found:
+  FAIL with list of violations and locations
+  BLOCK Wave 4 progression
+```
+
+**Blocks**: Wave 4 (Test Verification)
+
+**Severity**: CRITICAL
+
+### Binding Gate Summary
+
+| Gate ID | Purpose | Threshold | Severity | Blocks |
+|---------|---------|-----------|----------|--------|
+| QG-BIND-001 | ViewModel method binding tests | 100% | HIGH | Wave 4 |
+| QG-BIND-002 | StateFlow observation tests | 100% | HIGH | Wave 4 |
+| QG-BIND-003 | No TODO/stub in platform code | 0 violations | CRITICAL | Wave 4 |
+
+### Example Binding Test Coverage Report
+
+```json
+{
+  "timestamp": "2024-01-09T15:30:00Z",
+  "viewModels": [
+    {
+      "name": "ReaderViewModel",
+      "path": "shared/src/commonMain/kotlin/presentation/ReaderViewModel.kt",
+      "methods": {
+        "total": 5,
+        "tested": 5,
+        "coverage": "100%"
+      },
+      "stateFlows": {
+        "total": 3,
+        "observed": 3,
+        "coverage": "100%"
+      },
+      "iosTests": "iosApp/iosAppTests/binding/ReaderViewModelBindingTests.swift",
+      "androidTests": "androidApp/src/androidTest/kotlin/binding/ReaderViewModelBindingTest.kt"
+    }
+  ],
+  "summary": {
+    "totalMethods": 12,
+    "testedMethods": 12,
+    "methodCoverage": "100%",
+    "totalStateFlows": 8,
+    "observedStateFlows": 8,
+    "stateFlowCoverage": "100%",
+    "stubViolations": 0
+  },
+  "gates": {
+    "QG-BIND-001": "PASS",
+    "QG-BIND-002": "PASS",
+    "QG-BIND-003": "PASS"
+  }
+}
