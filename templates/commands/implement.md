@@ -117,6 +117,20 @@ inline_gates:
       severity: HIGH
       message: "SQS below 80 - improve spec quality first"
     - id: IG-IMPL-005
+      name: "Test Framework Ready"
+      ref: QG-TEST-002
+      tier: 1
+      threshold: 0
+      severity: CRITICAL
+      auto_remediation:
+        enabled: true
+        skip_flag: "--no-auto-framework"
+        agent: framework-installer
+        timeout: 180000  # 3 minutes
+      message: |
+        Test framework not configured. Auto-installing...
+        To skip: use --no-auto-framework flag
+    - id: IG-IMPL-006
       name: "Properties Available"
       tier: 1
       check: "properties.md exists in FEATURE_DIR"
@@ -677,6 +691,385 @@ claude_code:
       model_override: haiku
       skip_when: "platform not in [kmp, flutter, react-native, ios-native, android-native]"
 
+    # Framework Installer Agent (Universal Auto-Remediation)
+    # This agent is automatically invoked when QG-TEST-002 fails during pre-gates check.
+    # It uses the Test Framework Registry for universal framework installation.
+    - role: framework-installer
+      role_group: AUTO_REMEDIATION
+      parallel: false
+      depends_on: []
+      priority: 5  # Runs before Wave 1 if triggered
+      trigger: "on QG-TEST-002 FAIL (auto-remediation)"
+      model_override: haiku  # Fast, cost-efficient for installation tasks
+      timeout: 180000  # 3 minutes
+      prompt: |
+        ## Context
+        QG-TEST-002 quality gate failed: Test framework not properly configured.
+
+        This agent provides universal auto-remediation for ANY test framework using the
+        Test Framework Registry (memory/domains/test-framework-registry.md).
+
+        ## Task
+        Automatically detect and install appropriate test frameworks for all testing layers.
+
+        ### Step 1: Load Registry & Detect Strategy
+
+        **Load the Test Framework Registry:**
+        ```bash
+        Read: memory/domains/test-framework-registry.md
+        ```
+
+        **Run Detection Engine** (4-priority system):
+
+        **Priority 1: Explicit Markers**
+        - Read tasks.md → search for patterns:
+          * "Test Framework: Jest"
+          * "Test Framework: Playwright, Cypress"
+          * "Test Framework: Maestro (iOS/Android), XCUITest (iOS)"
+        - Read plan.md → section "Testing Strategy" or "Test Frameworks"
+        - Parse comma-separated lists
+
+        **Priority 2: Project Structure**
+        - Scan for existing framework configs:
+          * jest.config.js, jest.config.ts
+          * pytest.ini, pyproject.toml
+          * playwright.config.ts
+          * .maestro/, .detoxrc.js
+          * go.mod (go test), Cargo.toml (cargo test)
+        - Check dependencies in package.json/pyproject.toml/build.gradle.kts
+        - If framework already configured → keep it (verify only)
+
+        **Priority 3: Constitution.md**
+        - Extract: language, platform (web/mobile/desktop), tech_stack
+        - Examples:
+          * language=typescript, platform=web, tech_stack=react → Jest (90) + Playwright (95)
+          * language=typescript, platform=web, tech_stack=vite → Vitest (95) + Playwright (95)
+          * language=python, platform=web, tech_stack=fastapi → pytest (95) + Playwright (95)
+          * language=swift, platform=ios → XCTest (85) + XCUITest (95)
+          * language=kotlin, platform=android → JUnit5 (90) + Espresso (95)
+          * language=dart, platform=mobile, tech_stack=flutter → flutter_test (95)
+          * language=go, platform=backend → go-test (100) + httptest (95)
+          * language=rust, platform=any → cargo-test (100)
+
+        **Priority 4: Best Practice Defaults**
+        - IF no unit framework specified:
+          * JavaScript/TypeScript + Vite → Vitest (priority 95)
+          * JavaScript/TypeScript + other → Jest (priority 90)
+          * Python → pytest (priority 95)
+          * Go → go-test (priority 100, built-in)
+          * Rust → cargo-test (priority 100, built-in)
+          * Java/Kotlin → JUnit5 (priority 90)
+          * Swift → XCTest (priority 85, built-in)
+          * Ruby → RSpec (priority 90)
+          * C#/F# → xUnit (priority 85)
+
+        - IF web platform AND no E2E framework:
+          * Default → Playwright (priority 95)
+
+        - IF mobile platform AND no E2E framework:
+          * iOS → XCUITest (priority 95, requires Xcode)
+          * Android → Espresso (priority 95, requires Android SDK)
+          * React Native → Maestro (priority 90) or Detox (priority 90)
+          * Flutter → flutter_test (priority 95, built-in)
+
+        - IF has API endpoints (detect routes/controllers) AND no API test framework:
+          * Node.js → Supertest (priority 90)
+          * Python → requests-mock (priority 85)
+          * Java/Kotlin → REST Assured (priority 90)
+          * Go → httptest (priority 95, built-in)
+
+        **Output: Test Strategy**
+        ```json
+        {
+          "unit": ["jest"],
+          "integration": ["jest"],
+          "e2e_web": ["playwright"],
+          "e2e_mobile": ["maestro", "xcuitest"],
+          "api": ["supertest"],
+          "performance": [],
+          "visual": [],
+          "contract": []
+        }
+        ```
+
+        ### Step 2: Install Missing Frameworks (Universal Loop)
+
+        FOR EACH category IN test_strategy:
+          FOR EACH framework_id IN category:
+
+            # Load framework metadata from registry
+            framework = REGISTRY.get(framework_id)
+
+            # Check if already installed (run verification command)
+            is_installed = false
+            FOR EACH verification IN framework.verification:
+              TRY:
+                result = run(verification.command, timeout=10)
+                IF result.returncode == verification.expected_exit_code:
+                  is_installed = true
+                  BREAK
+              CATCH:
+                CONTINUE
+
+            IF is_installed:
+              LOG: "✅ {framework.name} already installed"
+              CONTINUE
+
+            LOG: "📦 Installing {framework.name} for {category} testing..."
+
+            # Detect package manager
+            package_manager = detect_package_manager()
+            # npm/yarn/pnpm for Node
+            # pip/poetry for Python
+            # cargo for Rust
+            # go for Go
+            # gradle/maven for JVM
+            # etc.
+
+            # Check prerequisites (platform-specific)
+            IF framework.prerequisites:
+              FOR EACH prereq IN framework.prerequisites:
+                IF NOT check_prerequisite(prereq):
+                  ERROR: "{framework.name} requires {prereq}"
+                  LOG: "⚠️  Cannot auto-install {framework.name}"
+                  LOG: "Manual steps: {framework.installation.manual_steps}"
+                  # Don't block entirely - continue to next framework
+                  CONTINUE TO NEXT FRAMEWORK
+
+            # Get installation command for detected package manager
+            install_config = framework.installation.get(package_manager)
+
+            IF NOT install_config:
+              ERROR: "No installation method for {package_manager}"
+              LOG: "Supported: {framework.installation.keys()}"
+              CONTINUE TO NEXT FRAMEWORK
+
+            # Execute installation
+            TRY:
+              run(install_config.command, timeout=120)
+
+              # Run config generator if specified
+              IF install_config.config_gen:
+                run(install_config.config_gen, timeout=30)
+
+              # Apply configuration template if specified
+              IF framework.configuration.template:
+                copy_template(
+                  src=framework.configuration.template,
+                  dest=framework.configuration.required_files[0]
+                )
+
+            CATCH Exception as e:
+              ERROR: "❌ Failed to install {framework.name}: {e}"
+              LOG: "Manual installation:"
+              LOG: "  Command: {install_config.command}"
+              IF framework.installation.manual_steps:
+                LOG: "  Steps: {framework.installation.manual_steps}"
+              LOG: "  Docs: {framework.docs_url}"
+              # Continue to next framework (don't block entirely)
+              CONTINUE TO NEXT FRAMEWORK
+
+            # Verify installation
+            verified = false
+            FOR EACH verification IN framework.verification:
+              TRY:
+                result = run(verification.command, timeout=10, capture_output=true)
+
+                # Check exit code
+                IF result.returncode != verification.expected_exit_code:
+                  RAISE VerificationError()
+
+                # Check output if specified
+                IF verification.expected_output_contains:
+                  FOR EACH expected IN verification.expected_output_contains:
+                    IF expected NOT IN result.stdout:
+                      RAISE VerificationError()
+
+                verified = true
+                LOG: "✅ {framework.name} verified successfully"
+                BREAK
+
+              CATCH VerificationError:
+                ERROR: "⚠️  {framework.name} installed but verification failed"
+                LOG: "Verification command: {verification.command}"
+                LOG: "Expected exit code: {verification.expected_exit_code}"
+
+            IF NOT verified:
+              LOG: "⚠️  {framework.name} installation uncertain - manual verification recommended"
+
+        ### Step 3: Generate test-strategy.json
+
+        Create .speckit/test-strategy.json:
+        ```json
+        {
+          "generated_at": "<ISO8601 timestamp>",
+          "detected_by": "framework-installer",
+          "project_info": {
+            "language": "<detected-language>",
+            "platform": "<detected-platform>",
+            "tech_stack": "<detected-stack>"
+          },
+          "test_strategy": {
+            "unit": ["<framework-ids>"],
+            "integration": ["<framework-ids>"],
+            "e2e_web": ["<framework-ids>"],
+            "e2e_mobile": ["<framework-ids>"],
+            "e2e_desktop": [],
+            "api": ["<framework-ids>"],
+            "performance": [],
+            "visual": [],
+            "contract": []
+          },
+          "installed_frameworks": {
+            "<framework-id>": {
+              "version": "<detected-version>",
+              "installed_at": "<ISO8601 timestamp>",
+              "verified": true|false
+            }
+          }
+        }
+        ```
+
+        ### Step 4: Re-validate QG-TEST-002
+
+        Run QG-TEST-002 validation for each installed framework:
+
+        **Unit/Integration frameworks:**
+        - Jest: `npm test -- --passWithNoTests`
+        - Vitest: `npx vitest --run --reporter=verbose --passWithNoTests`
+        - pytest: `pytest --collect-only`
+        - go-test: `go test ./... -count=0`
+        - cargo-test: `cargo test --no-run`
+        - JUnit5: `./gradlew test --dry-run` OR `mvn test -DskipTests`
+        - XCTest: `xcodebuild test -scheme <scheme> -destination 'platform=iOS Simulator' -dry-run`
+
+        **E2E Web frameworks:**
+        - Playwright: `npx playwright --version`
+        - Cypress: `npx cypress --version`
+        - Selenium: `node -e "require('selenium-webdriver')"`
+
+        **E2E Mobile frameworks:**
+        - Maestro: `maestro --version`
+        - XCUITest: `xcodebuild -list | grep -i test`
+        - Espresso: `./gradlew tasks | grep connectedAndroidTest`
+        - Detox: `npx detox --version`
+        - flutter_test: `flutter test --version`
+
+        **API frameworks:**
+        - Supertest: `npm list supertest`
+        - REST Assured: `./gradlew dependencies | grep rest-assured`
+        - httptest: `go doc net/http/httptest`
+
+        IF all validation commands pass:
+          RETURN {status: "SUCCESS", message: "QG-TEST-002 now passes"}
+
+        IF any critical framework (unit, integration) fails validation:
+          RETURN {
+            status: "FAILED",
+            message: "Critical frameworks failed validation",
+            failed_frameworks: [<list>]
+          }
+
+        IF only optional frameworks fail:
+          RETURN {
+            status: "PARTIAL",
+            message: "Some optional frameworks failed, but continuing",
+            failed_frameworks: [<list>]
+          }
+
+        ### Step 5: Output Summary
+
+        ```
+        ╔══════════════════════════════════════════════════════════════╗
+        ║           Test Framework Installation Summary               ║
+        ╠══════════════════════════════════════════════════════════════╣
+        ║ Unit Testing:         ✅ Jest v29.7.0                       ║
+        ║ Integration Testing:  ✅ Jest v29.7.0                       ║
+        ║ E2E Web Testing:      ✅ Playwright v1.40.0                 ║
+        ║ E2E Mobile Testing:   ✅ Maestro v1.36.0                    ║
+        ║                       ⚠️  XCUITest (requires manual setup)  ║
+        ║ API Testing:          ✅ Supertest v6.3.3                   ║
+        ╠══════════════════════════════════════════════════════════════╣
+        ║ QG-TEST-002 Status:   ✅ PASS                               ║
+        ║ Ready for Wave 2:     ✅ YES                                ║
+        ╚══════════════════════════════════════════════════════════════╝
+        ```
+
+        ## Platform-Specific Handling
+
+        **XCUITest (iOS):**
+        - Requires: macOS + Xcode
+        - Check: `xcodebuild -version`
+        - Cannot auto-install Xcode
+        - Manual steps: Install from App Store
+        - Graceful degradation: Continue without iOS E2E tests
+
+        **Espresso (Android):**
+        - Requires: Android SDK + $ANDROID_HOME
+        - Check: `echo $ANDROID_HOME && adb --version`
+        - Cannot auto-install SDK
+        - Manual steps: Install Android Studio
+        - Graceful degradation: Continue without Android E2E tests
+
+        **Maestro (Cross-platform):**
+        - Network installation: `curl -Ls "https://get.maestro.mobile.dev" | bash`
+        - Add to PATH: `export PATH=$PATH:$HOME/.maestro/bin`
+
+        **Flutter test:**
+        - Requires: Flutter SDK
+        - Check: `flutter --version`
+        - Cannot auto-install Flutter
+        - Manual steps: Install from flutter.dev
+
+        **Built-in frameworks (no installation):**
+        - go-test (Go stdlib)
+        - cargo-test (Rust toolchain)
+        - unittest (Python stdlib)
+        - httptest (Go stdlib)
+        - XCTest (Xcode)
+
+        ## Success Criteria
+        - All critical frameworks (unit, integration) installed and verified
+        - Optional frameworks (e2e, api) installed when possible
+        - QG-TEST-002 re-validation passes
+        - .speckit/test-strategy.json generated
+        - Ready for Wave 2 (Test Scaffolding)
+
+        ## On Failure (Universal Error Handling)
+
+        ```
+        ❌ Auto-installation failed for {framework.name}
+
+        Category: {framework.category}
+        Languages: {", ".join(framework.languages)}
+        Platforms: {", ".join(framework.platforms)}
+
+        Attempted command:
+          {install_config.command}
+
+        Error:
+          {error_message}
+
+        Manual installation steps:
+          1. {framework.installation.manual_steps or "See official docs"}
+          2. Verify: {framework.verification[0].command}
+          3. Re-run /speckit.implement
+
+        Alternative frameworks:
+          {", ".join(framework.alternative_to)}
+
+        Documentation:
+          {framework.docs_url}
+
+        To skip auto-framework installation:
+          /speckit.implement --no-auto-framework
+        ```
+
+        **Exit Codes:**
+        - Exit 0: All critical frameworks installed successfully
+        - Exit 1: Critical framework (unit/integration) failed installation
+        - Exit 0 with warnings: Optional frameworks failed but can continue
+
     # Wave 1: Infrastructure (no deps)
     - role: project-scaffolder
       role_group: INFRA
@@ -711,19 +1104,544 @@ claude_code:
         ## Context
         Feature: {{FEATURE_DIR}}
         Plan: {{FEATURE_DIR}}/plan.md
+        Tasks: {{FEATURE_DIR}}/tasks.md
+        Constitution: memory/constitution.md
         Dependency Registry: memory/domains/dependency-registry.md
+        Test Framework Registry: memory/domains/test-framework-registry.md
 
         ## Task
-        Install and configure dependencies:
-        1. Read dependencies from plan.md and dependency registry
-        2. Install production dependencies (npm install, pip install, etc.)
-        3. Install dev dependencies (testing, linting, types)
-        4. Verify installation succeeds without errors
+        Universal test framework detection and installation for all project types,
+        followed by regular dependency installation.
+
+        ### PART 1: Test Framework Installation (Universal)
+
+        ## Step 1: Load Test Framework Registry
+
+        Read: memory/domains/test-framework-registry.md
+
+        This registry contains metadata for ALL supported test frameworks:
+        - Unit/Integration: Jest, Vitest, pytest, Go test, cargo test, JUnit5, TestNG, RSpec, xUnit, NUnit, Mocha, unittest
+        - E2E Web: Playwright, Cypress, Selenium, Puppeteer, WebdriverIO
+        - E2E Mobile: Maestro, XCUITest, Espresso, Detox, Flutter test, Appium, XCTest
+        - E2E Desktop: Tauri test, Spectron, WebdriverIO Electron
+        - API Testing: Supertest, REST Assured, Newman, requests-mock, httptest
+        - Performance: k6, Artillery, Locust, JMeter
+        - Visual Regression: Percy, Chromatic, BackstopJS, Playwright Visual
+        - Contract Testing: Pact, Spring Cloud Contract
+
+        ## Step 2: Detect Test Strategy (4-Priority Detection Engine)
+
+        Run detection engine to determine which test frameworks are needed for this project.
+
+        ### Priority 1: Explicit Markers (Highest Priority)
+
+        Read tasks.md → look for "Test Framework: {name}" patterns:
+        - Single framework: "Test Framework: Jest"
+        - Multiple frameworks: "Test Framework: Jest, Playwright, Supertest"
+        - Platform-specific: "Test Framework: Maestro (iOS/Android), XCUITest (iOS), Espresso (Android)"
+
+        Read plan.md → section "Testing Strategy" or "Test Frameworks"
+        - Parse any explicit framework mentions
+        - Look for patterns like "We will use {framework} for testing"
+
+        Parse comma-separated lists into framework names.
+
+        ### Priority 2: Project Structure Analysis
+
+        Scan for existing framework configurations:
+
+        **JavaScript/TypeScript:**
+        - jest.config.js, jest.config.ts, package.json contains "jest" → Jest
+        - vitest.config.ts, vite.config.ts exists → Vitest
+        - playwright.config.ts, package.json contains "@playwright/test" → Playwright
+        - cypress.config.ts, package.json contains "cypress" → Cypress
+        - .mocharc.json, package.json contains "mocha" → Mocha
+        - package.json contains "supertest" → Supertest
+        - .detoxrc.js, package.json contains "detox" → Detox
+
+        **Python:**
+        - pytest.ini, pyproject.toml contains "[tool.pytest" → pytest
+        - requirements.txt contains "pytest" → pytest
+        - requirements.txt contains "requests-mock" → requests-mock
+
+        **Go:**
+        - go.mod exists → go-test (built-in)
+        - Any *_test.go files → go-test
+
+        **Rust:**
+        - Cargo.toml exists → cargo-test (built-in)
+
+        **Java/Kotlin:**
+        - build.gradle.kts contains "junit-jupiter" → JUnit5
+        - build.gradle.kts contains "testng" → TestNG
+        - build.gradle.kts contains "rest-assured" → REST Assured
+        - build.gradle.kts contains "espresso-core" → Espresso
+
+        **Swift:**
+        - *.xcodeproj exists → XCTest (built-in)
+
+        **Flutter:**
+        - pubspec.yaml contains "flutter_test" → flutter_test (built-in)
+        - pubspec.yaml contains "integration_test" → flutter_test
+
+        **Mobile:**
+        - .maestro/ directory exists → Maestro
+
+        IF framework config detected → Mark as "existing" (verify only, don't reinstall)
+
+        ### Priority 3: Constitution.md Context
+
+        Read memory/constitution.md and extract:
+        - language (javascript, typescript, python, go, rust, java, kotlin, swift, dart, ruby, csharp)
+        - platform (web, mobile, desktop, backend, fullstack, cli)
+        - tech_stack (react, vue, angular, vite, next, nest, fastapi, django, flask, spring, etc.)
+
+        Map to frameworks:
+
+        **Web Projects:**
+        - language=typescript, tech_stack=vite → Vitest (95) + Playwright (95)
+        - language=typescript, tech_stack=react → Jest (90) + Playwright (95)
+        - language=typescript, tech_stack=next → Jest (90) + Playwright (95)
+        - language=python, tech_stack=fastapi → pytest (95) + Playwright (95)
+        - language=python, tech_stack=django → pytest (95) + Playwright (95)
+
+        **Mobile Projects:**
+        - language=swift, platform=ios → XCTest (85) + XCUITest (95)
+        - language=kotlin, platform=android → JUnit5 (90) + Espresso (95)
+        - language=dart, tech_stack=flutter → flutter_test (95)
+        - language=typescript, tech_stack=react-native → Jest (90) + Maestro (90) + Detox (90)
+
+        **Backend Projects:**
+        - language=go, platform=backend → go-test (100) + httptest (95)
+        - language=rust, platform=backend → cargo-test (100)
+        - language=java, tech_stack=spring → JUnit5 (90) + REST Assured (90)
+        - language=python, platform=backend → pytest (95) + requests-mock (85)
+
+        **Desktop Projects:**
+        - tech_stack=tauri → Tauri test (90) + cargo-test (100)
+        - tech_stack=electron → Spectron (80) OR WebdriverIO Electron (85)
+
+        ### Priority 4: Best Practice Defaults
+
+        IF no unit/integration framework specified after Priority 1-3:
+
+        **By Language:**
+        - JavaScript/TypeScript (no Vite) → Jest (90)
+        - JavaScript/TypeScript + Vite detected → Vitest (95)
+        - Python → pytest (95)
+        - Go → go-test (100)
+        - Rust → cargo-test (100)
+        - Java/Kotlin → JUnit5 (90)
+        - Swift → XCTest (85)
+        - Ruby → RSpec (90)
+        - C#/F# → xUnit (85)
+
+        **By Platform:**
+
+        IF platform=web AND no E2E framework:
+        → Playwright (95)
+
+        IF platform=mobile AND no E2E framework:
+        - iOS → XCUITest (95)
+        - Android → Espresso (95)
+        - React Native → Maestro (90)
+        - Flutter → flutter_test (95)
+
+        IF platform=desktop AND no E2E framework:
+        - Tauri → Tauri test (90)
+        - Electron → WebdriverIO Electron (85)
+
+        IF has_api_endpoints AND no API framework:
+        (Detect: routes/, controllers/, api/, server.ts, app.py patterns)
+        - Node.js → Supertest (90)
+        - Python → requests-mock (85)
+        - Java/Kotlin → REST Assured (90)
+        - Go → httptest (95)
+
+        ### Prioritize Frameworks (When Multiple Candidates)
+
+        IF multiple frameworks fit the same category:
+        - Sort by priority field (higher = better)
+        - Select framework(s) with highest priority
+
+        Example: TypeScript + Vite project
+        - Candidates: Vitest (95), Jest (90)
+        - Winner: Vitest (higher priority)
+
+        ### Output: Test Strategy
+
+        Generate test strategy structure:
+        ```json
+        {
+          "unit": ["jest"],
+          "integration": ["jest"],
+          "e2e_web": ["playwright"],
+          "e2e_mobile": ["maestro", "xcuitest"],
+          "e2e_desktop": [],
+          "api": ["supertest"],
+          "performance": [],
+          "visual": [],
+          "contract": []
+        }
+        ```
+
+        ## Step 3: Install Frameworks by Category
+
+        FOR EACH category IN [unit, integration, e2e_web, e2e_mobile, e2e_desktop, api, performance, visual, contract]:
+
+          frameworks = test_strategy[category]
+
+          IF frameworks is empty:
+            CONTINUE
+
+          FOR EACH framework_id IN frameworks:
+
+            # Load framework metadata from registry
+            framework = REGISTRY.get(framework_id)
+
+            IF framework NOT FOUND:
+              ERROR: "Framework {framework_id} not in registry"
+              CONTINUE
+
+            LOG: "📦 Processing {framework.name} for {category} testing..."
+
+            # Check if already installed (Priority 2 detected it)
+            IF framework marked as "existing":
+              # Verify it works
+              FOR EACH verification IN framework.verification:
+                TRY:
+                  result = run(verification.command, timeout=10)
+                  IF result.returncode == verification.expected_exit_code:
+                    LOG: "✅ {framework.name} already installed and verified"
+                    installed_frameworks[framework_id] = {
+                      "version": extract_version(result.stdout),
+                      "verified": true,
+                      "source": "existing"
+                    }
+                    CONTINUE TO NEXT FRAMEWORK
+                CATCH:
+                  WARN: "⚠️ {framework.name} config exists but verification failed"
+                  # Fall through to installation
+
+            # Check prerequisites (platform-specific)
+            IF framework.prerequisites:
+              FOR EACH prereq IN framework.prerequisites:
+                TRY:
+                  check_prerequisite(prereq)
+                CATCH:
+                  ERROR: "❌ {framework.name} requires {prereq}"
+                  LOG: "Cannot auto-install {framework.name}"
+                  IF framework.installation.manual_steps:
+                    LOG: "Manual steps: {framework.installation.manual_steps}"
+                  LOG: "Docs: {framework.docs_url}"
+
+                  # Critical vs Optional handling
+                  IF category IN ["unit", "integration"]:
+                    ERROR: "CRITICAL: Unit/integration framework missing"
+                    BLOCK_WAVE_2 = true
+                  ELSE:
+                    WARN: "Optional framework skipped: {framework.name}"
+
+                  CONTINUE TO NEXT FRAMEWORK
+
+            # Detect package manager
+            package_manager = detect_package_manager()
+            # npm (package.json + package-lock.json)
+            # yarn (package.json + yarn.lock)
+            # pnpm (package.json + pnpm-lock.yaml)
+            # pip (requirements.txt)
+            # poetry (pyproject.toml + poetry.lock)
+            # cargo (Cargo.toml)
+            # go (go.mod)
+            # gradle (build.gradle.kts)
+            # maven (pom.xml)
+
+            # Get installation command for package manager
+            install_config = framework.installation.get(package_manager)
+
+            IF NOT install_config:
+              ERROR: "No installation method for {package_manager}"
+              LOG: "Supported: {framework.installation.keys()}"
+              LOG: "Manual install: see {framework.docs_url}"
+              CONTINUE TO NEXT FRAMEWORK
+
+            # Execute installation
+            LOG: "⏳ Installing {framework.name}..."
+            LOG: "Command: {install_config.command}"
+
+            TRY:
+              run(install_config.command, timeout=120)
+
+              # Run config generator if specified
+              IF install_config.config_gen:
+                LOG: "⚙️  Generating config..."
+                run(install_config.config_gen, timeout=30)
+
+              # Apply configuration template if specified
+              IF framework.configuration.template:
+                LOG: "📝 Applying config template..."
+                copy_template(
+                  src=framework.configuration.template,
+                  dest=framework.configuration.required_files[0]
+                )
+
+            CATCH Exception as e:
+              ERROR: "❌ Failed to install {framework.name}: {e}"
+              LOG: "Attempted: {install_config.command}"
+              IF framework.installation.manual_steps:
+                LOG: "Manual steps: {framework.installation.manual_steps}"
+              LOG: "Docs: {framework.docs_url}"
+
+              # Critical vs Optional handling
+              IF category IN ["unit", "integration"]:
+                ERROR: "CRITICAL: Unit/integration framework installation failed"
+                BLOCK_WAVE_2 = true
+              ELSE:
+                WARN: "Optional framework installation failed: {framework.name}"
+
+              CONTINUE TO NEXT FRAMEWORK
+
+            # Verify installation
+            verified = false
+            version = "unknown"
+
+            FOR EACH verification IN framework.verification:
+              TRY:
+                result = run(verification.command, timeout=10, capture_output=true)
+
+                # Check exit code
+                IF result.returncode != verification.expected_exit_code:
+                  CONTINUE
+
+                # Check output if specified
+                IF verification.expected_output_contains:
+                  FOR EACH expected IN verification.expected_output_contains:
+                    IF expected NOT IN result.stdout:
+                      CONTINUE
+
+                # Success
+                verified = true
+                version = extract_version(result.stdout)
+                LOG: "✅ {framework.name} v{version} verified"
+
+                installed_frameworks[framework_id] = {
+                  "version": version,
+                  "verified": true,
+                  "source": "installed"
+                }
+
+                BREAK
+
+              CATCH:
+                CONTINUE
+
+            IF NOT verified:
+              WARN: "⚠️ {framework.name} installed but verification uncertain"
+              installed_frameworks[framework_id] = {
+                "version": "unknown",
+                "verified": false,
+                "source": "installed"
+              }
+
+        ## Step 4: Generate test-strategy.json
+
+        Create .speckit/test-strategy.json:
+        ```json
+        {
+          "generated_at": "<ISO8601 timestamp>",
+          "detected_by": "dependency-installer",
+          "project_info": {
+            "language": "<from constitution>",
+            "platform": "<from constitution>",
+            "tech_stack": "<from constitution>"
+          },
+          "test_strategy": {
+            "unit": ["<framework-ids>"],
+            "integration": ["<framework-ids>"],
+            "e2e_web": ["<framework-ids>"],
+            "e2e_mobile": ["<framework-ids>"],
+            "e2e_desktop": ["<framework-ids>"],
+            "api": ["<framework-ids>"],
+            "performance": ["<framework-ids>"],
+            "visual": ["<framework-ids>"],
+            "contract": ["<framework-ids>"]
+          },
+          "installed_frameworks": {
+            "<framework-id>": {
+              "version": "<version>",
+              "installed_at": "<ISO8601>",
+              "verified": true|false,
+              "source": "existing"|"installed"
+            }
+          },
+          "blocked": false|true,
+          "block_reason": "<reason if blocked>"
+        }
+        ```
+
+        ## Step 5: Verify QG-TEST-002
+
+        Run simplified test command for each installed framework:
+
+        **Unit/Integration:**
+        - Jest: `npm test -- --passWithNoTests`
+        - Vitest: `npx vitest --run --passWithNoTests`
+        - pytest: `pytest --collect-only`
+        - go-test: `go test ./... -count=0`
+        - cargo-test: `cargo test --no-run`
+        - JUnit5: `./gradlew test --dry-run` OR `mvn test -DskipTests`
+        - RSpec: `rspec --dry-run`
+        - XCTest: `xcodebuild test -scheme <app> -destination 'platform=iOS Simulator' -dry-run`
+
+        **E2E Web:**
+        - Playwright: `npx playwright --version` (already verified in Step 3)
+        - Cypress: `npx cypress --version`
+        - Selenium: verified in Step 3
+
+        **E2E Mobile:**
+        - Maestro: `maestro --version` (already verified)
+        - XCUITest: `xcodebuild -list | grep -i test`
+        - Espresso: `./gradlew tasks | grep connectedAndroidTest`
+        - Detox: `npx detox --version`
+        - flutter_test: `flutter test --version`
+
+        **API:**
+        - Supertest: `npm list supertest`
+        - REST Assured: `./gradlew dependencies | grep rest-assured`
+        - httptest: `go doc net/http/httptest`
+
+        IF any CRITICAL framework (unit, integration) verification fails:
+          ERROR: "QG-TEST-002 failed: {framework} not properly configured"
+          SET test-strategy.json blocked=true
+          BLOCK Wave 2
+
+        IF only optional framework verification fails:
+          WARN: "Optional framework verification failed: {framework}"
+          Continue (don't block)
+
+        ### PART 2: Regular Dependencies
+
+        ## Step 6: Install Production & Dev Dependencies
+
+        Read plan.md → extract dependencies:
+        - Production dependencies (runtime libraries, frameworks)
+        - Dev dependencies (linting, formatting, types, build tools)
+
+        Read memory/domains/dependency-registry.md for library-specific guidance.
+
+        **For Node.js:**
+        ```bash
+        npm install <prod-deps>
+        npm install -D <dev-deps>
+        npm install -D typescript @types/node
+        npm install -D eslint prettier
+        ```
+
+        **For Python:**
+        ```bash
+        pip install <prod-deps>
+        pip install <dev-deps>
+        pip install black mypy ruff
+        ```
+
+        **For Go:**
+        ```bash
+        go get <dependencies>
+        go mod tidy
+        ```
+
+        **For Rust:**
+        ```bash
+        cargo add <dependencies>
+        cargo add --dev <dev-dependencies>
+        ```
+
+        **For Java/Kotlin:**
+        Update build.gradle.kts with dependencies from plan.md
+
+        ## Step 7: Generate Lock Files
+
+        **Node.js:**
+        - package-lock.json (npm)
+        - yarn.lock (yarn)
+        - pnpm-lock.yaml (pnpm)
+
+        **Python:**
+        - poetry.lock (poetry lock)
+        - pip: requirements.txt already is the lock
+
+        **Go:**
+        - go.sum (auto-generated by go mod tidy)
+
+        **Rust:**
+        - Cargo.lock (auto-generated by cargo build)
 
         ## Success Criteria
-        - All dependencies installed without conflicts
-        - Lock file generated (package-lock.json, poetry.lock)
-        - No security vulnerabilities in major dependencies
+
+        **Test Frameworks:**
+        - All frameworks from test_strategy installed successfully
+        - Critical frameworks (unit, integration) verified
+        - test-strategy.json generated
+        - QG-TEST-002 validation passes for critical frameworks
+
+        **Regular Dependencies:**
+        - All production dependencies installed without conflicts
+        - All dev dependencies installed
+        - Lock file generated (package-lock.json, poetry.lock, go.sum, Cargo.lock)
+        - No critical security vulnerabilities in dependencies
+
+        ## On Failure
+
+        **Critical Framework Failure:**
+        ```
+        ❌ BLOCKING: Critical test framework installation failed
+
+        Framework: {framework.name}
+        Category: {category}
+        Error: {error_message}
+
+        Attempted: {install_config.command}
+
+        Manual installation:
+        1. {framework.installation.manual_steps}
+        2. Verify: {framework.verification[0].command}
+        3. Re-run /speckit.implement
+
+        Alternatives:
+        {", ".join(framework.alternative_to)}
+
+        Documentation: {framework.docs_url}
+
+        BLOCKED: Cannot proceed to Wave 2 (Test Scaffolding) without {category} framework.
+        ```
+
+        **Optional Framework Failure:**
+        ```
+        ⚠️ WARNING: Optional test framework installation failed
+
+        Framework: {framework.name}
+        Category: {category}
+        Error: {error_message}
+
+        Continuing with available frameworks.
+        To install manually: see {framework.docs_url}
+        ```
+
+        **Dependency Conflict:**
+        ```
+        ❌ Dependency installation failed: {error}
+
+        Check:
+        1. Package versions in plan.md
+        2. Compatibility with existing dependencies
+        3. Lock file conflicts
+
+        Try:
+        - Remove lock file and reinstall
+        - Update conflicting packages
+        - Check dependency-registry.md for known issues
+        ```
+
       model_override: haiku
     # Wave 2: Test Scaffolding - TDD Red Phase (create failing tests FIRST)
     - role: test-scaffolder
@@ -738,6 +1656,196 @@ claude_code:
         Spec: {{FEATURE_DIR}}/spec.md
         Tasks: {{FEATURE_DIR}}/tasks.md
         Staging Config: .speckit/staging/test-config.env
+        Test Framework Registry: memory/domains/test-framework-registry.md
+        Test Strategy: .speckit/test-strategy.json
+
+        ## ⚠️ CRITICAL: Framework Pre-Check (Universal)
+
+        Before creating tests, verify ALL required frameworks are installed.
+
+        ### Step 1: Load Test Strategy
+
+        Read: .speckit/test-strategy.json (generated by dependency-installer)
+
+        IF file does not exist:
+          ERROR: "test-strategy.json missing - dependency-installer didn't run"
+          BLOCK
+
+        Extract test_strategy object from JSON.
+
+        ### Step 2: Verify Frameworks for Unit/Integration Testing
+
+        **Required categories for this scaffolder:**
+        - "unit"
+        - "integration"
+
+        required_frameworks = test_strategy["unit"] + test_strategy["integration"]
+
+        IF required_frameworks is empty:
+          ERROR: "No unit/integration frameworks specified in test strategy"
+          LOG: "Expected frameworks detected during dependency installation"
+          BLOCK
+
+        ### Step 3: Run Verification Commands (Registry-Driven)
+
+        Read: memory/domains/test-framework-registry.md
+
+        missing_frameworks = []
+
+        FOR EACH framework_id IN required_frameworks:
+          # Load framework metadata from registry
+          framework = REGISTRY.get(framework_id)
+
+          IF framework NOT FOUND:
+            ERROR: "Framework {framework_id} not in registry"
+            missing_frameworks.append(framework_id)
+            CONTINUE
+
+          LOG: "🔍 Verifying {framework.name}..."
+
+          # Run verification commands
+          verified = false
+
+          FOR EACH verification IN framework.verification:
+            TRY:
+              result = run(verification.command, timeout=10, capture_output=true)
+
+              IF result.returncode == verification.expected_exit_code:
+                # Check output if specified
+                IF verification.expected_output_contains:
+                  all_found = true
+                  FOR EACH expected IN verification.expected_output_contains:
+                    IF expected NOT IN result.stdout:
+                      all_found = false
+                      BREAK
+                  IF all_found:
+                    verified = true
+                    BREAK
+                ELSE:
+                  verified = true
+                  BREAK
+
+            CATCH Exception as e:
+              CONTINUE
+
+          IF verified:
+            LOG: "✅ {framework.name} verified"
+          ELSE:
+            ERROR: "❌ {framework.name} verification failed"
+            missing_frameworks.append(framework)
+
+        ### Step 4: Auto-Remediation on Missing Framework
+
+        IF missing_frameworks:
+          LOG: "🔧 Attempting automatic installation of missing frameworks..."
+
+          # This scaffolder is in Wave 2, so if frameworks are missing here,
+          # it means both Wave 0 pre-gate AND Wave 1 dependency-installer failed.
+          # This is the LAST RESORT attempt.
+
+          FOR EACH framework IN missing_frameworks:
+            LOG: "⚠️  Last resort installation attempt for {framework.name}..."
+
+            # Detect package manager
+            package_manager = detect_package_manager()
+
+            # Get installation config
+            install_config = framework.installation.get(package_manager)
+
+            IF NOT install_config:
+              ERROR: "Cannot auto-install {framework.name} - no method for {package_manager}"
+              CONTINUE
+
+            # Check prerequisites
+            IF framework.prerequisites:
+              prereq_met = true
+              FOR EACH prereq IN framework.prerequisites:
+                IF NOT check_prerequisite(prereq):
+                  ERROR: "{framework.name} requires {prereq}"
+                  prereq_met = false
+                  BREAK
+
+              IF NOT prereq_met:
+                LOG: "Manual installation required:"
+                LOG: "  {framework.installation.manual_steps}"
+                LOG: "  Docs: {framework.docs_url}"
+                CONTINUE
+
+            # Attempt installation
+            TRY:
+              LOG: "Running: {install_config.command}"
+              run(install_config.command, timeout=120)
+
+              # Config generation
+              IF install_config.config_gen:
+                run(install_config.config_gen, timeout=30)
+
+              # Verify
+              FOR EACH verification IN framework.verification:
+                result = run(verification.command, timeout=10)
+                IF result.returncode == verification.expected_exit_code:
+                  LOG: "✅ {framework.name} installed successfully"
+                  # Remove from missing list
+                  missing_frameworks.remove(framework)
+                  BREAK
+
+            CATCH Exception as e:
+              ERROR: "Failed to install {framework.name}: {e}"
+
+        ### Step 5: Final Check - Block if Still Missing
+
+        IF missing_frameworks:
+          ERROR_MESSAGE = """
+╔═══════════════════════════════════════════════════════════════╗
+║  ❌ Test Framework Missing for UNIT/INTEGRATION Testing      ║
+╠═══════════════════════════════════════════════════════════════╣
+║ Required frameworks: {required_frameworks}                    ║
+║ Missing: {[f.name for f in missing_frameworks]}               ║
+╠═══════════════════════════════════════════════════════════════╣
+║ BLOCKED: Cannot create tests without framework                ║
+║                                                                ║
+║ This means:                                                    ║
+║ 1. Wave 0 pre-gate (IG-IMPL-005) failed or was skipped        ║
+║ 2. Wave 1 dependency-installer failed to install              ║
+║ 3. Wave 2 last-resort installation also failed                ║
+║                                                                ║
+║ Options:                                                       ║
+║ 1. Install manually:                                          ║
+          """
+
+          FOR EACH framework IN missing_frameworks:
+            ERROR_MESSAGE += f"""
+║    {framework.name}:                                           ║
+║      Command: {framework.installation[package_manager].command}║
+║      Verify: {framework.verification[0].command}               ║
+║      Docs: {framework.docs_url}                                ║
+          """
+
+          ERROR_MESSAGE += """
+║                                                                ║
+║ 2. Re-run with auto-install:                                  ║
+║    /speckit.implement                                         ║
+║    (remove --no-auto-framework if present)                    ║
+║                                                                ║
+║ 3. Alternative frameworks:                                     ║
+          """
+
+          FOR EACH framework IN missing_frameworks:
+            IF framework.alternative_to:
+              ERROR_MESSAGE += f"""
+║    Instead of {framework.name}: {", ".join(framework.alternative_to)}║
+          """
+
+          ERROR_MESSAGE += """
+╚═══════════════════════════════════════════════════════════════╝
+          """
+
+          PRINT ERROR_MESSAGE
+          EXIT(1)  # BLOCK
+
+        LOG: "✅ All unit/integration frameworks verified - proceeding to test creation"
+
+        ---
 
         ## Task - TDD RED PHASE
         Create failing test scaffolds BEFORE implementation:
@@ -776,6 +1884,156 @@ claude_code:
         Spec: {{FEATURE_DIR}}/spec.md
         Tasks: {{FEATURE_DIR}}/tasks.md
         Playwright Container: speckit-playwright
+        Test Framework Registry: memory/domains/test-framework-registry.md
+        Test Strategy: .speckit/test-strategy.json
+
+        ## ⚠️ CRITICAL: Framework Pre-Check (Universal)
+
+        Before creating E2E tests, verify required frameworks are installed.
+
+        ### Step 1: Load Test Strategy
+
+        Read: .speckit/test-strategy.json
+
+        IF file does not exist:
+          WARN: "test-strategy.json missing - detecting E2E frameworks manually"
+          # Fallback detection
+          required_frameworks = detect_e2e_frameworks_from_tasks()
+
+        ELSE:
+          required_frameworks = test_strategy["e2e_web"]
+
+        ### Step 2: Check if E2E Web Tests Needed
+
+        IF required_frameworks is empty:
+          LOG: "⚠️  No E2E web frameworks specified in test strategy"
+          LOG: "Checking tasks.md for E2E test requirements..."
+
+          # Check if tasks.md mentions e2e, playwright, cypress, selenium
+          has_e2e_tests = check_tasks_for_e2e_markers()
+
+          IF NOT has_e2e_tests:
+            LOG: "No E2E web tests required - skipping E2E test scaffolding"
+            EXIT(0)  # Graceful skip
+
+          ELSE:
+            WARN: "E2E tests mentioned in tasks.md but no framework in strategy"
+            LOG: "Defaulting to Playwright (best practice)"
+            required_frameworks = ["playwright"]
+
+        ### Step 3: Run Verification Commands
+
+        Read: memory/domains/test-framework-registry.md
+
+        missing_frameworks = []
+
+        FOR EACH framework_id IN required_frameworks:
+          framework = REGISTRY.get(framework_id)
+
+          IF NOT framework:
+            missing_frameworks.append(framework_id)
+            CONTINUE
+
+          LOG: "🔍 Verifying {framework.name} for E2E web testing..."
+
+          verified = false
+          FOR EACH verification IN framework.verification:
+            TRY:
+              result = run(verification.command, timeout=10)
+              IF result.returncode == verification.expected_exit_code:
+                verified = true
+                LOG: "✅ {framework.name} verified"
+                BREAK
+            CATCH:
+              CONTINUE
+
+          IF NOT verified:
+            ERROR: "❌ {framework.name} verification failed"
+            missing_frameworks.append(framework)
+
+        ### Step 4: Auto-Remediation (Last Resort)
+
+        IF missing_frameworks:
+          LOG: "🔧 Last resort installation attempt..."
+
+          FOR EACH framework IN missing_frameworks:
+            package_manager = detect_package_manager()
+            install_config = framework.installation.get(package_manager)
+
+            IF NOT install_config:
+              ERROR: "Cannot auto-install {framework.name}"
+              CONTINUE
+
+            # Check prerequisites
+            IF framework.prerequisites:
+              prereqs_met = True
+              FOR EACH prereq IN framework.prerequisites:
+                IF NOT check_prerequisite(prereq):
+                  ERROR: "{framework.name} requires {prereq}"
+                  prereqs_met = False
+                  BREAK
+              IF NOT prereqs_met:
+                CONTINUE
+
+            # Install
+            TRY:
+              run(install_config.command, timeout=120)
+
+              # Special handling for Playwright browser installation
+              IF framework_id == "playwright":
+                LOG: "📥 Installing Playwright browsers..."
+                run("npx playwright install chromium", timeout=120)
+
+              # Verify
+              FOR EACH verification IN framework.verification:
+                result = run(verification.command, timeout=10)
+                IF result.returncode == verification.expected_exit_code:
+                  LOG: "✅ {framework.name} installed"
+                  missing_frameworks.remove(framework)
+                  BREAK
+
+            CATCH Exception as e:
+              ERROR: "Failed: {e}"
+
+        ### Step 5: Final Check
+
+        IF missing_frameworks:
+          WARN_MESSAGE = """
+⚠️  E2E Web Framework Missing
+
+Required: {[f.name for f in required_frameworks]}
+Missing: {[f.name for f in missing_frameworks]}
+
+E2E web tests will be SKIPPED.
+
+To install manually:
+          """
+
+          FOR EACH framework IN missing_frameworks:
+            WARN_MESSAGE += f"""
+  {framework.name}:
+    {framework.installation[package_manager].command}
+    Verify: {framework.verification[0].command}
+    Docs: {framework.docs_url}
+          """
+
+          WARN_MESSAGE += """
+Alternatives:
+          """
+
+          FOR EACH framework IN missing_frameworks:
+            IF framework.alternative_to:
+              WARN_MESSAGE += f"  {', '.join(framework.alternative_to)}\n"
+
+          PRINT WARN_MESSAGE
+
+          # E2E web tests are optional - don't block, just skip
+          LOG: "Skipping E2E web test scaffolding (framework missing)"
+          EXIT(0)  # Graceful skip
+
+        LOG: "✅ E2E web frameworks verified - proceeding to test creation"
+
+        ---
 
         ## Task - E2E Test Scaffolding
         Create Playwright test scaffolds:
@@ -815,6 +2073,208 @@ claude_code:
         Tasks: {{FEATURE_DIR}}/tasks.md
         Constitution: memory/constitution.md
         Staging Config: .speckit/staging/test-config.env
+        Test Framework Registry: memory/domains/test-framework-registry.md
+        Test Strategy: .speckit/test-strategy.json
+
+        ## ⚠️ CRITICAL: Framework Pre-Check (Universal)
+
+        Before creating mobile tests, verify required frameworks are installed.
+
+        ### Step 1: Load Test Strategy
+
+        Read: .speckit/test-strategy.json
+
+        IF file does not exist:
+          WARN: "test-strategy.json missing - detecting mobile frameworks manually"
+          required_frameworks = detect_mobile_frameworks_from_platform()
+
+        ELSE:
+          required_frameworks = test_strategy["e2e_mobile"]
+
+        ### Step 2: Check if Mobile Tests Needed
+
+        IF required_frameworks is empty:
+          LOG: "⚠️  No mobile test frameworks specified in test strategy"
+          LOG: "Checking if mobile platform is detected..."
+
+          # Detect platform
+          platform = detect_mobile_platform()
+          # Check: pubspec.yaml, package.json (react-native), *.xcodeproj, app/build.gradle
+
+          IF platform is None:
+            LOG: "No mobile platform detected - skipping mobile test scaffolding"
+            EXIT(0)  # Graceful skip
+
+          ELSE:
+            LOG: "Mobile platform detected: {platform}"
+            LOG: "But no test framework in strategy - checking tasks.md..."
+
+            has_mobile_tests = check_tasks_for_mobile_test_markers()
+
+            IF NOT has_mobile_tests:
+              LOG: "No mobile tests mentioned in tasks.md - skipping"
+              EXIT(0)  # Graceful skip
+
+            ELSE:
+              WARN: "Mobile tests required but no framework in strategy"
+              # Default based on platform
+              IF platform == "flutter":
+                required_frameworks = ["flutter-test"]
+              ELIF platform == "ios":
+                required_frameworks = ["xcuitest"]
+              ELIF platform == "android":
+                required_frameworks = ["espresso"]
+              ELIF platform == "react-native":
+                required_frameworks = ["maestro"]  # Cross-platform
+              ELSE:
+                required_frameworks = ["maestro"]  # Universal default
+
+        ### Step 3: Run Verification Commands
+
+        Read: memory/domains/test-framework-registry.md
+
+        missing_frameworks = []
+
+        FOR EACH framework_id IN required_frameworks:
+          framework = REGISTRY.get(framework_id)
+
+          IF NOT framework:
+            missing_frameworks.append(framework_id)
+            CONTINUE
+
+          LOG: "🔍 Verifying {framework.name} for mobile testing..."
+
+          verified = false
+          FOR EACH verification IN framework.verification:
+            TRY:
+              result = run(verification.command, timeout=10)
+              IF result.returncode == verification.expected_exit_code:
+                verified = true
+                LOG: "✅ {framework.name} verified"
+                BREAK
+            CATCH:
+              CONTINUE
+
+          IF NOT verified:
+            ERROR: "❌ {framework.name} verification failed"
+            missing_frameworks.append(framework)
+
+        ### Step 4: Auto-Remediation (Last Resort)
+
+        IF missing_frameworks:
+          LOG: "🔧 Last resort installation attempt for mobile frameworks..."
+
+          FOR EACH framework IN missing_frameworks:
+            LOG: "Attempting to install {framework.name}..."
+
+            # Check prerequisites FIRST (mobile frameworks often have platform requirements)
+            IF framework.prerequisites:
+              prereqs_met = True
+              missing_prereqs = []
+
+              FOR EACH prereq IN framework.prerequisites:
+                IF NOT check_prerequisite(prereq):
+                  missing_prereqs.append(prereq)
+                  prereqs_met = False
+
+              IF NOT prereqs_met:
+                WARN: """
+⚠️  {framework.name} requires prerequisites:
+  Missing: {', '.join(missing_prereqs)}
+
+  {framework.installation.manual_steps}
+
+  Docs: {framework.docs_url}
+
+Cannot auto-install - manual setup required.
+                """
+                CONTINUE  # Skip to next framework
+
+            # Prerequisites met - attempt installation
+            package_manager = detect_package_manager()
+            install_config = framework.installation.get(package_manager)
+
+            IF NOT install_config:
+              ERROR: "No installation method for {package_manager}"
+              CONTINUE
+
+            TRY:
+              run(install_config.command, timeout=180)  # Mobile tools can be slow
+
+              # Config generation
+              IF install_config.config_gen:
+                run(install_config.config_gen, timeout=30)
+
+              # Verify
+              FOR EACH verification IN framework.verification:
+                result = run(verification.command, timeout=10)
+                IF result.returncode == verification.expected_exit_code:
+                  LOG: "✅ {framework.name} installed successfully"
+                  missing_frameworks.remove(framework)
+                  BREAK
+
+            CATCH Exception as e:
+              ERROR: "Failed to install {framework.name}: {e}"
+
+        ### Step 5: Final Check - Handle Platform-Specific Constraints
+
+        IF missing_frameworks:
+          WARN_MESSAGE = """
+⚠️  Mobile Test Framework Missing
+
+Required: {[f.name for f in required_frameworks]}
+Missing: {[f.name for f in missing_frameworks]}
+
+Platform-specific requirements:
+          """
+
+          FOR EACH framework IN missing_frameworks:
+            WARN_MESSAGE += f"""
+  {framework.name}:
+    Prerequisites: {', '.join(framework.prerequisites) if framework.prerequisites else 'None'}
+          """
+
+            IF framework.prerequisites:
+              WARN_MESSAGE += f"""
+    Manual setup required:
+      {framework.installation.manual_steps}
+              """
+            ELSE:
+              WARN_MESSAGE += f"""
+    Install command:
+      {framework.installation[package_manager].command if install_config else 'See docs'}
+              """
+
+            WARN_MESSAGE += f"""
+    Verify: {framework.verification[0].command}
+    Docs: {framework.docs_url}
+          """
+
+          WARN_MESSAGE += """
+Mobile tests will be SKIPPED.
+
+Common issues:
+- XCUITest: Requires macOS + Xcode (install from App Store)
+- Espresso: Requires Android SDK + $ANDROID_HOME set
+- Maestro: Requires network access for installation script
+- Flutter test: Requires Flutter SDK installed
+
+Alternatives:
+          """
+
+          FOR EACH framework IN missing_frameworks:
+            IF framework.alternative_to:
+              WARN_MESSAGE += f"  Instead of {framework.name}: {', '.join(framework.alternative_to)}\n"
+
+          PRINT WARN_MESSAGE
+
+          # Mobile tests are optional - don't block, just skip
+          LOG: "Skipping mobile test scaffolding (framework missing or prerequisites not met)"
+          EXIT(0)  # Graceful skip
+
+        LOG: "✅ Mobile frameworks verified - proceeding to test creation"
+
+        ---
 
         ## Platform Detection
         Detect mobile platform from project files:

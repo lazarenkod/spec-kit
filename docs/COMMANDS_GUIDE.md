@@ -479,6 +479,7 @@ graph LR
 - `--fast` — Fast mode - run only Tier 1-2 validation
 - `--sequential-tasks` — Disable task batching (execute tasks one-by-one)
 - `--sequential-waves` — Disable wave overlap optimization
+- `--no-auto-framework` — Disable automatic test framework installation (skip auto-remediation)
 
 **Task Batching (v0.0.110):**
 
@@ -1002,6 +1003,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 | `/speckit.analyze` | `--json` | Output as JSON for programmatic consumption |
 | `/speckit.implement` | `--skip-pre-gates` | Skip pre-implementation gates |
 | `/speckit.implement` | `--fast` | Fast mode - run only Tier 1-2 validation |
+| `/speckit.implement` | `--no-auto-framework` | Disable automatic test framework installation (ski... |
 | `/speckit.preview` | `--all-alternatives` | Generate preview gallery for ALL alternatives |
 | `/speckit.preview` | `--all-variants` | Generate previews for all scope variants |
 | `/speckit.preview` | `--compare` | Generate side-by-side comparison view |

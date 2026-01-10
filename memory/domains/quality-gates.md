@@ -253,6 +253,69 @@ go test ./... -count=0
 
 **Violations**: CRITICAL - Cannot verify implementation without test infrastructure
 
+**Enforcement**:
+
+QG-TEST-002 is now enforced as a CRITICAL pre-gate in `/speckit.implement`:
+
+**Pre-Implementation (Wave 0)**:
+- Added as `IG-IMPL-005` in pre_gates section
+- Severity: CRITICAL (blocking)
+- Auto-remediation: Enabled by default
+
+**Auto-Remediation Flow**:
+When QG-TEST-002 fails:
+1. Automatically invokes `framework-installer` agent (3-minute timeout)
+2. Detects platform and required frameworks from:
+   - tasks.md ("Test Framework:" markers)
+   - constitution.md (language, platform, tech_stack)
+   - Project structure (existing configs, dependencies)
+   - Best practice defaults (registry-based)
+3. Installs missing frameworks using Test Framework Registry
+4. Re-validates QG-TEST-002
+5. If still failing → blocks Wave 2 with manual remediation steps
+
+**Skip Auto-Remediation**:
+```bash
+/speckit.implement --no-auto-framework
+```
+
+**Supported Frameworks** (via Test Framework Registry):
+- **Unit/Integration**: Jest, Vitest, pytest, Go test, cargo test, JUnit5, TestNG, RSpec, xUnit, NUnit, Mocha, unittest
+- **E2E Web**: Playwright, Cypress, Selenium, Puppeteer, WebdriverIO
+- **E2E Mobile**: Maestro, XCUITest, Espresso, Detox, Flutter test, Appium, XCTest
+- **E2E Desktop**: Tauri test, Spectron, WebdriverIO Electron
+- **API Testing**: Supertest, REST Assured, Newman, requests-mock, httptest
+- **Performance**: k6, Artillery, Locust, JMeter
+- **Visual Regression**: Percy, Chromatic, BackstopJS, Playwright Visual
+- **Contract Testing**: Pact, Spring Cloud Contract
+
+**Manual Validation** (if auto-remediation disabled):
+```bash
+# Node.js
+npm test -- --passWithNoTests
+
+# Python
+pytest --collect-only
+
+# iOS
+xcodebuild test -scheme YourAppTests -destination 'platform=iOS Simulator,name=iPhone 15 Pro' -dry-run
+
+# Android
+./gradlew testDebugUnitTest --dry-run
+
+# Go
+go test ./... -count=0
+
+# Rust
+cargo test --no-run
+```
+
+**Platform-Specific Notes**:
+- **XCUITest**: Requires macOS + Xcode (cannot auto-install, manual setup via App Store)
+- **Espresso**: Requires Android SDK + `$ANDROID_HOME` environment variable
+- **Flutter test**: Requires Flutter SDK installed
+- **Built-in frameworks** (no installation): go-test, cargo-test, unittest, httptest, XCTest
+
 ---
 
 ### QG-TEST-003: TDD Red-Green Verification

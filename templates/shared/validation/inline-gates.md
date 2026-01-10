@@ -379,6 +379,184 @@ inline_gates:
       message: "Lint errors present"
 ```
 
+## Auto-Remediation Pattern
+
+Inline gates can trigger automatic remediation when failures occur. This pattern enables self-healing workflows that reduce manual intervention.
+
+### Example: Auto-Framework Installation (IG-IMPL-005)
+
+```yaml
+pre_gates:
+  - id: IG-IMPL-005
+    name: "Test Framework Ready"
+    ref: QG-TEST-002
+    tier: 1
+    threshold: 0
+    severity: CRITICAL
+    auto_remediation:
+      enabled: true
+      skip_flag: "--no-auto-framework"
+      agent: framework-installer
+      timeout: 180000  # 3 minutes
+    message: |
+      Test framework not configured. Auto-installing...
+      To skip: use --no-auto-framework flag
+```
+
+**Execution Flow:**
+
+```text
+EXECUTE_GATE_WITH_AUTO_REMEDIATION(gate):
+
+  # Run gate check
+  result = RUN_QUALITY_GATE_CHECK(gate.ref, artifact)
+
+  IF result.status == "PASS":
+    RETURN {status: "PASS", remediation: null}
+
+  # Gate failed - check for auto-remediation
+  IF NOT gate.auto_remediation.enabled:
+    RETURN {status: "FAIL", remediation: null}
+
+  # Check if skip flag present
+  IF gate.auto_remediation.skip_flag IN cli_flags:
+    OUTPUT "⏭️ Auto-remediation skipped ({gate.auto_remediation.skip_flag})"
+    RETURN {status: "FAIL", remediation: "SKIPPED"}
+
+  # Trigger auto-remediation
+  OUTPUT "🔧 Triggering auto-remediation: {gate.auto_remediation.agent}"
+  OUTPUT ""
+
+  TRY:
+    # Invoke remediation agent
+    remediation_result = INVOKE_AGENT(
+      agent=gate.auto_remediation.agent,
+      timeout=gate.auto_remediation.timeout
+    )
+
+    # Re-validate gate
+    result = RUN_QUALITY_GATE_CHECK(gate.ref, artifact)
+
+    IF result.status == "PASS":
+      OUTPUT "✅ Auto-remediation successful"
+      OUTPUT "{gate.name} now passes"
+      RETURN {status: "PASS", remediation: "SUCCESS"}
+
+    ELSE:
+      OUTPUT "⚠️  Auto-remediation completed but gate still fails"
+      OUTPUT ""
+      OUTPUT "Manual remediation required:"
+      OUTPUT remediation_result.manual_steps
+      RETURN {status: "FAIL", remediation: "PARTIAL"}
+
+  CATCH TimeoutError:
+    OUTPUT "❌ Auto-remediation timeout ({gate.auto_remediation.timeout}ms)"
+    RETURN {status: "FAIL", remediation: "TIMEOUT"}
+
+  CATCH Error as e:
+    OUTPUT "❌ Auto-remediation failed: {e}"
+    RETURN {status: "FAIL", remediation: "ERROR"}
+```
+
+**Output Example (Success):**
+
+```text
+### Inline Quality Gates (Pre-Implementation)
+
+| Gate | Status | Details |
+|------|--------|---------|
+| IG-IMPL-001: Tasks Exist | PASS | tasks.md present |
+| IG-IMPL-002: Plan Exists | PASS | plan.md present |
+| IG-IMPL-003: Staging Ready | PASS | All services healthy |
+| IG-IMPL-004: SQS Threshold | PASS | SQS = 92 |
+| IG-IMPL-005: Test Framework Ready | FAIL | No test framework configured |
+
+🔧 Triggering auto-remediation: framework-installer
+
+📦 Installing Jest for unit/integration testing...
+⏳ Running: npm install -D jest @types/jest ts-jest
+✅ Jest v29.7.0 verified
+
+📦 Installing Playwright for E2E web testing...
+⏳ Running: npm install -D @playwright/test
+📥 Installing Playwright browsers...
+✅ Playwright v1.40.0 verified
+
+📦 Installing Supertest for API testing...
+⏳ Running: npm install -D supertest @types/supertest
+✅ Supertest v6.3.3 verified
+
+╔══════════════════════════════════════════════════════════════╗
+║           Test Framework Installation Summary               ║
+╠══════════════════════════════════════════════════════════════╣
+║ Unit Testing:         ✅ Jest v29.7.0                       ║
+║ Integration Testing:  ✅ Jest v29.7.0                       ║
+║ E2E Web Testing:      ✅ Playwright v1.40.0                 ║
+║ API Testing:          ✅ Supertest v6.3.3                   ║
+╠══════════════════════════════════════════════════════════════╣
+║ QG-TEST-002 Status:   ✅ PASS                               ║
+║ Ready for Wave 2:     ✅ YES                                ║
+╚══════════════════════════════════════════════════════════════╝
+
+✅ Auto-remediation successful
+IG-IMPL-005: Test Framework Ready now passes
+
+**Result**: PASS (5/5 gates passed)
+
+Proceeding to Wave 1...
+```
+
+**Output Example (Partial Success with Manual Steps):**
+
+```text
+| IG-IMPL-005: Test Framework Ready | FAIL | XCUITest not configured |
+
+🔧 Triggering auto-remediation: framework-installer
+
+⚠️  XCUITest requires prerequisites:
+  Missing: macOS, Xcode
+
+Cannot auto-install - manual setup required.
+
+Manual steps:
+1. Install Xcode from App Store (macOS only)
+2. Create UI Test target in Xcode project
+3. Verify: xcodebuild -list | grep -i test
+4. Re-run /speckit.implement
+
+⚠️  Auto-remediation completed but gate still fails
+
+**Result**: BLOCKED
+
+Fix issues before proceeding:
+- IG-IMPL-005: Test framework not properly configured
+  XCUITest requires manual installation (platform constraints)
+
+To skip auto-framework installation:
+  /speckit.implement --no-auto-framework
+```
+
+### Auto-Remediation Best Practices
+
+**When to Use Auto-Remediation:**
+- ✅ Infrastructure setup (framework installation, dependency management)
+- ✅ Configuration generation (config files, boilerplate)
+- ✅ Simple fixes (formatting, linting auto-fixes)
+- ✅ Predictable failures with known solutions
+
+**When NOT to Use:**
+- ❌ Logic errors requiring human judgment
+- ❌ Complex architectural decisions
+- ❌ Failures caused by specification ambiguity
+- ❌ Platform-specific manual setup (Xcode, Android SDK)
+
+**Design Principles:**
+1. **Timeout Enforcement**: Always specify timeouts to prevent hanging
+2. **Skip Flags**: Provide escape hatches for users who want manual control
+3. **Re-Validation**: Always re-check the gate after remediation
+4. **Graceful Degradation**: Provide clear manual steps when auto-remediation fails
+5. **Partial Success**: Distinguish between "fixed" and "partially fixed" states
+
 ## Integration with Checkpoints
 
 Inline gates complement streaming checkpoints:
