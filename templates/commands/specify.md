@@ -510,6 +510,107 @@ claude_code:
            - What specific risk does it mitigate?
            - What user value does it validate?
 
+        ## STEP 5.5: CONVERT TO EXECUTABLE GHERKIN
+
+        For each acceptance scenario from STEP 5, transform into Gherkin format compatible with BDD frameworks (Cucumber, Behave, SpecFlow).
+
+        **Transformation Rules:**
+
+        1. **Feature Block:** Group scenarios by user story
+           - Format: `Feature: [User Story Title]`
+           - Description: Optional 1-2 sentence context
+
+        2. **Scenario Header:** Include metadata in tags
+           - Format: `Scenario: [AS-ID] - [Description] [Classification] [Confidence: X.XX]`
+           - Example: `Scenario: AS-1A - Successful login [HAPPY_PATH] [Confidence: 0.95]`
+
+        3. **Given Steps:** Setup state with specific data
+           - Use actual values, not placeholders: ✅ `user "test@example.com"` ❌ `user exists`
+           - Multiple Given steps with `And` for complex setup
+           - Include prerequisite states: `And user account is active`
+
+        4. **When Steps:** Specify exact API call or user action
+           - For API: `When I [METHOD] [ENDPOINT] with:` + data table
+           - For UI: `When I click "[button label]"` or `When I enter "[value]" in "[field name]"`
+           - Use data tables for structured input:
+             ```
+             When I POST /api/auth/login with:
+               | email    | test@example.com |
+               | password | SecurePass123    |
+             ```
+
+        5. **Then Steps:** Specific assertions
+           - Start with status: `Then response status is 200`
+           - Field checks: `And response contains "accessToken"`
+           - Nested field checks: `And response.user.email is "test@example.com"`
+           - Timing: `And accessToken expires in 15 minutes`
+           - State changes: `And user session is created`
+           - Negative assertions: `And no tokens are returned`
+
+        6. **API Contract Details:**
+           - For POST/PUT/PATCH: Always include request body in data table
+           - For responses: List expected fields with types
+           - For errors: Specify error message format
+           - For timing: Include duration expectations
+
+        **Output Format:**
+
+        For each user story, generate:
+
+        ```gherkin
+        Feature: [User Story Title]
+
+        [Optional: 1-2 sentence description]
+
+        Scenario: [AS-ID] - [Description] [Classification] [Confidence: X.XX]
+          Given [specific state with data]
+          And [additional state if needed]
+          When I [METHOD] [ENDPOINT] with:
+            | field1 | value1 |
+            | field2 | value2 |
+          Then response status is [code]
+          And response contains "[field]"
+          And [specific assertion]
+          And [timing/state assertion]
+        ```
+
+        **Entity-Specific Patterns:**
+
+        | Entity Type | Given Pattern | When Pattern | Then Pattern |
+        |-------------|---------------|--------------|--------------|
+        | **Auth** | `user "email@example.com" exists with password "Pass123"` | `I POST /api/auth/login with: [table]` | `response status is 200`, `response contains "accessToken"` |
+        | **CRUD** | `resource "[name]" exists with id "[uuid]"` | `I GET /api/resources/[id]` | `response status is 200`, `response.name is "[name]"` |
+        | **File Upload** | `file "test.pdf" exists (size: 2MB, type: application/pdf)` | `I POST /api/upload with: [multipart table]` | `response status is 201`, `response.url matches /uploads/` |
+        | **Search** | `database contains 10 products` | `I GET /api/products?search=[term]` | `response status is 200`, `response.results.length >= 1` |
+        | **Payment** | `user has credit card ending 4242` | `I POST /api/payments with: [amount, currency]` | `response status is 200`, `payment.status is "succeeded"` |
+
+        **Confidence Mapping:**
+        - Confidence >= 0.90: Include in MVP scenarios
+        - Confidence 0.70-0.89: Include in regression suite
+        - Confidence < 0.70: Mark as optional, review necessity
+
+        **Example Transformation:**
+
+        Table format (from STEP 5):
+        ```
+        | AS-1A | HAPPY_PATH | user exists | I POST /api/auth/login | response status is 200 | YES | 0.95 |
+        ```
+
+        Gherkin format (STEP 5.5):
+        ```gherkin
+        Scenario: AS-1A - Successful login with valid credentials [HAPPY_PATH] [Confidence: 0.95]
+          Given user "test@example.com" exists with password "SecurePass123"
+          And user account is active
+          When I POST /api/auth/login with:
+            | email    | test@example.com |
+            | password | SecurePass123    |
+          Then response status is 200
+          And response contains "accessToken"
+          And response contains "refreshToken"
+          And accessToken expires in 15 minutes
+          And user session is created
+        ```
+
         ## STEP 6: VALIDATE COMPLETENESS
 
         Cross-check scenarios against predicted edge cases to identify coverage gaps.
@@ -654,6 +755,235 @@ claude_code:
           "Story 1": "P1a"
           "Story 2": "P1b"
         ```
+
+    - role: visual-acceptance-generator
+      role_group: ANALYSIS
+      parallel: true
+      depends_on: [acceptance-criteria-generator, ui-state-matrix-generator]
+      priority: 25
+      model_override: sonnet
+      prompt: |
+        Generate visual acceptance criteria in YAML format for UI features only.
+
+        Load Component Registry and UI State Matrix from spec.
+
+        For each user story with UI components, generate YAML specification.
+
+        ## DETECTION: Is this a UI feature?
+
+        Check Component Registry for UI elements:
+        - If component_registry contains interactive elements (inputs, buttons, selects, forms) → UI feature
+        - If ui_state_matrix is present → UI feature
+        - If user story mentions "screen", "page", "form", "button", "display" → UI feature
+        - Otherwise → Skip (API-only feature, no visual YAML needed)
+
+        ## STRUCTURE
+
+        ```yaml
+        [screen_or_component_name]:
+          elements:
+            - [element_name]:
+                visible: [true|false]
+                type: [input|button|select|text|checkbox|radio|toggle|textarea|etc]
+                placeholder: "[text]"
+                validation: [real-time|on_blur|on_submit]
+                disabled: [true|false]
+                label: "[text]"
+                # ... other properties
+
+          states:
+            [state_name]:  # loading, error, success, empty, disabled
+              - [element]: [property changes]
+              - [element]: [property changes]
+
+          responsive:
+            mobile:  # <640px
+              layout: [single_column|grid|list]
+              input_width: [100%|fixed]
+              spacing: [px]
+
+            tablet:  # 640-1024px
+              layout: [single_column|two_column|grid]
+
+            desktop:  # >1024px
+              layout: [centered_card|multi_column|grid]
+              card_max_width: [px]
+
+          accessibility:
+            - [element]: aria-label="[descriptive label]"
+            - [element]: role="[ARIA role]"
+            - [dynamic_element]: aria-live="[assertive|polite]"
+            - [form]: keyboard_navigation="[Tab order description]"
+        ```
+
+        ## ELEMENT DETECTION
+
+        From Component Registry, extract all elements:
+        - **Interactive elements**: inputs, buttons, selects, toggles, checkboxes, radio buttons
+        - **Display elements**: labels, messages, icons, images
+        - **Container elements**: forms, cards, modals, dialogs
+
+        For each element, infer:
+        - `visible`: Default visibility state (true if shown on load, false if conditional)
+        - `type`: Element type (input, button, select, text, etc.)
+        - `placeholder`: Placeholder text from design or common patterns
+        - `validation`: Based on entity type:
+          - email, phone, URL → real-time
+          - password, credit card → on_blur
+          - form submission → on_submit
+        - `disabled`: Conditional disable rules (e.g., submit disabled until form valid)
+        - `label`: Display label from Component Registry or inferred from element name
+
+        ## STATE GENERATION
+
+        From UI State Matrix, for each applicable state:
+
+        **loading:**
+        - Interactive elements → disabled
+        - Submit buttons → show spinner, disabled
+        - Display loading message with text
+        - Example:
+          ```yaml
+          loading:
+            - submit_button: shows spinner, disabled
+            - email_input: disabled
+            - password_input: disabled
+            - loading_message: "Signing in..."
+          ```
+
+        **error:**
+        - Error message element with properties:
+          - color: red (or theme error color)
+          - position: [above_form|below_field|toast|inline]
+          - dismissible: [true|false]
+          - duration: [ms] (for auto-dismiss)
+        - Invalid inputs → red border
+        - Error icon if applicable
+        - Example:
+          ```yaml
+          error:
+            - error_message:
+                color: red
+                position: above_form
+                dismissible: true
+                duration: 5000ms
+            - email_input: red border if invalid email format
+            - password_input: red border if validation failed
+          ```
+
+        **success:**
+        - Success message or redirect
+        - If redirect: specify target path and delay
+        - Success animation if applicable
+        - Example:
+          ```yaml
+          success:
+            - redirect_to: /dashboard
+            - redirect_delay: 500ms
+            - success_message: "Welcome back!"
+            - message_duration: 2000ms
+          ```
+
+        **empty:**
+        - Empty state message
+        - Empty state illustration (if design includes it)
+        - Call-to-action button if applicable
+        - Example:
+          ```yaml
+          empty:
+            - empty_message: "No products found"
+            - empty_illustration: true
+            - cta_button: "Browse All Products"
+          ```
+
+        **disabled:**
+        - All interactive elements → disabled
+        - Visual indication (opacity: 0.5, cursor: not-allowed)
+        - Example:
+          ```yaml
+          disabled:
+            - all_inputs: disabled, opacity: 0.5
+            - submit_button: disabled, cursor: not-allowed
+          ```
+
+        ## RESPONSIVE BEHAVIOR
+
+        For each breakpoint (mobile <640px, tablet 640-1024px, desktop >1024px):
+        - **Layout changes**: single_column, two_column, grid, multi_column
+        - **Width adjustments**: 100%, fixed px, max-width
+        - **Spacing adjustments**: padding, margin values
+        - **Element reordering**: if layout changes require it
+
+        **Default patterns by screen type:**
+        - **Forms**: mobile = single_column, desktop = centered_card
+        - **Lists**: mobile = single_column, tablet = 2 columns, desktop = 3 columns
+        - **Dashboards**: mobile = stacked, tablet = 2 columns, desktop = multi-column
+
+        ## ACCESSIBILITY REQUIREMENTS
+
+        For each interactive element:
+        - `aria-label`: Descriptive label for screen readers (if label not visible)
+        - `role`: ARIA role if not semantic HTML (e.g., role="button" for div acting as button)
+        - `aria-live`: For dynamic content (errors → "assertive", status updates → "polite")
+        - Keyboard navigation: Tab order and focus management rules
+
+        **Required for:**
+        - Form inputs → aria-label or associated <label>
+        - Buttons → aria-label describing action
+        - Error messages → role="alert", aria-live="assertive"
+        - Success messages → role="status", aria-live="polite"
+        - Interactive non-semantic elements → role attribute
+
+        ## VALIDATION
+
+        Before output, ensure:
+        - ✓ All elements from Component Registry → included in YAML elements section
+        - ✓ All states from UI State Matrix → specified with element changes
+        - ✓ All breakpoints (mobile, tablet, desktop) → responsive specs provided
+        - ✓ All interactive elements → accessibility attributes defined
+        - ✓ State transitions make sense (loading → success OR loading → error)
+
+        ## OUTPUT
+
+        Generate YAML block for each screen/component with UI elements:
+
+        ```yaml
+        visual_acceptance_criteria:
+          [screen_name]:
+            elements:
+              - [element_1]:
+                  visible: true
+                  type: input
+                  # ... properties
+              - [element_2]:
+                  visible: true
+                  type: button
+                  # ... properties
+
+            states:
+              loading:
+                - [element]: [changes]
+              error:
+                - [element]: [changes]
+              success:
+                - [element]: [changes]
+
+            responsive:
+              mobile:
+                layout: single_column
+              tablet:
+                layout: single_column
+              desktop:
+                layout: centered_card
+
+            accessibility:
+              - [element_1]: aria-label="[label]"
+              - [element_2]: role="button"
+        ```
+
+        Include Visual YAML after Gherkin scenarios for each user story with UI components.
+
+        If no UI components detected for a user story, skip visual acceptance criteria generation for that story.
 
     - role: edge-case-detector
       role_group: ANALYSIS

@@ -7,6 +7,89 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.121] - 2026-01-10
+
+### Added
+
+- **Executable Acceptance Criteria in Gherkin Format** - Auto-generate BDD-compatible scenarios v0.0.121:
+  - **Problem solved**: Table-based acceptance criteria were not executable by BDD frameworks (Cucumber, Behave, SpecFlow), lacked detailed API contracts, had no visual UI specifications
+  - **Root cause**: Simple table format (ID | Classification | Given | When | Then) didn't capture:
+    - Request/response structures for API tests
+    - Timing expectations and performance requirements
+    - Visual UI states (loading, error, success, empty, disabled)
+    - Responsive behavior across mobile/tablet/desktop
+    - Accessibility requirements (ARIA labels, keyboard navigation)
+  - **Gherkin Format Features**:
+    - **Feature blocks**: Group related scenarios by user story
+    - **Executable scenarios**: Direct input for Cucumber, Behave, SpecFlow, Pytest-BDD
+    - **Data tables**: Structured request bodies for POST/PUT/PATCH operations
+    - **Multiple assertions**: Response status, fields, timing, state changes (using Then/And)
+    - **Specific values**: Concrete test data (e.g., `user "test@example.com"`) instead of placeholders
+    - **Entity-specific patterns**: Auth, CRUD, File Upload, Search, Payment with proven patterns
+    - **Scenario IDs**: AS-xxx preserved for traceability to tasks.md
+    - **Classification tags**: [HAPPY_PATH], [ERROR_PATH], [BOUNDARY], [SECURITY], [ALT_PATH]
+    - **Confidence scores**: 0.0-1.0 indicating scenario importance (≥0.90 = MVP critical)
+  - **Visual Acceptance Criteria (YAML)**:
+    - **Elements section**: All UI components (inputs, buttons, selects) with properties (visible, type, placeholder, validation)
+    - **States section**: loading, error, success, empty, disabled with element changes
+    - **Responsive section**: mobile (<640px), tablet (640-1024px), desktop (>1024px) with layout/spacing changes
+    - **Accessibility section**: ARIA labels, roles, keyboard navigation, live regions
+    - **Interactions section**: Triggers, validations, actions, timing expectations
+    - **Performance section**: Target timing for each user interaction
+  - **Template Changes** (`templates/spec-template.md`):
+    - Replaced table-based "Acceptance Scenarios" (lines 89-138) with Gherkin format
+    - Added "Visual Acceptance Criteria" YAML section (lines 159-257) for UI features
+    - Detailed inline documentation with patterns, examples, entity-specific templates
+  - **Agent Enhancements** (`templates/commands/specify.md`):
+    - **acceptance-criteria-generator**: Added STEP 5.5 "Convert to Executable Gherkin" (lines 513-612)
+      - Transformation rules: Feature blocks, Scenario headers with metadata, Given/When/Then/And patterns
+      - Entity-specific patterns table: Auth, CRUD, File Upload, Search, Payment
+      - Example transformation from table → Gherkin with data tables
+      - Confidence mapping: ≥0.90 MVP, 0.70-0.89 regression, <0.70 optional
+    - **visual-acceptance-generator** (NEW agent, lines 759-986):
+      - Detects UI features from Component Registry and UI State Matrix
+      - Generates YAML for: elements, states, responsive, accessibility, interactions, performance
+      - Element detection: Interactive (inputs, buttons), display (labels, messages), containers (forms, modals)
+      - State generation: loading, error, success, empty, disabled with element property changes
+      - Responsive behavior: Default patterns for forms, lists, dashboards across breakpoints
+      - Accessibility requirements: ARIA labels/roles for all interactive elements, keyboard navigation
+      - Depends on: [acceptance-criteria-generator, ui-state-matrix-generator]
+      - Priority: 25, parallel: true, model: sonnet
+  - **Example Files** (`templates/shared/examples/`):
+    - `gherkin-api-example.md`: Payment Processing API with 8 scenarios (happy path, errors, boundaries, security, refunds)
+      - Demonstrates: Data tables, nested field checks, timing assertions, side effects (emails, logging)
+      - Patterns: POST with request body table, response field validation, idempotency, fraud detection
+      - Test implementation examples: Behave + Playwright code snippets
+    - `gherkin-ui-example.md`: Product Search UI with 10 scenarios + Visual YAML
+      - Demonstrates: User interactions (click, type, keyboard), visual feedback (spinners, errors), timing
+      - Patterns: Autocomplete, filtering, sorting, pagination, empty states, mobile responsive
+      - Visual YAML: 11 elements, 7 states, 3 responsive breakpoints, 10 accessibility attributes
+      - Test implementation examples: Behave + Playwright, Storybook stories, Percy visual regression
+  - **Benefits**:
+    - **Executable**: Scenarios directly consumable by Cucumber/Behave/SpecFlow without manual conversion
+    - **Complete API contracts**: Request/response structures explicit with data tables
+    - **Testability**: Easy to generate test code from structured Gherkin (vs table guessing)
+    - **Visual specs**: YAML format machine-readable for Storybook generation, visual regression tests
+    - **Timing expectations**: Performance requirements explicit in scenarios (e.g., "within 500ms")
+    - **Traceability**: AS-xxx IDs preserved for tasks.md mapping
+    - **Backward compatible**: Old table format still valid during migration
+  - **Trade-offs**:
+    - Verbosity: Gherkin blocks longer than tables (+150% lines) but more complete
+    - Template size: Spec files increase from ~2KB to ~5KB average with Visual YAML
+    - Learning curve: Users need to understand Gherkin syntax (mitigated by auto-generation and examples)
+  - **Files modified**:
+    - `templates/spec-template.md`: Replaced table format with Gherkin blocks (lines 89-157), added Visual YAML section (lines 159-257), updated User Story 2 & 3 templates
+    - `templates/commands/specify.md`: Added STEP 5.5 to acceptance-criteria-generator (lines 513-612), added visual-acceptance-generator agent (lines 759-986)
+  - **Files created**:
+    - `templates/shared/examples/gherkin-api-example.md`: Payment Processing API with 8 Gherkin scenarios
+    - `templates/shared/examples/gherkin-ui-example.md`: Product Search UI with 10 Gherkin scenarios + Visual YAML
+  - **Verification**:
+    - ✓ Gherkin syntax parseable by Cucumber/Behave (validated with regex patterns)
+    - ✓ Visual YAML valid YAML format (validated with YAML parser)
+    - ✓ AS-xxx IDs preserved for traceability
+    - ✓ Entity-specific patterns cover 5 common scenarios (Auth, CRUD, File, Search, Payment)
+    - ✓ Example files demonstrate both API and UI features comprehensively
+
 ## [0.0.120] - 2026-01-10
 
 ### Added

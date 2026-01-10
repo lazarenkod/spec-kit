@@ -135,6 +135,36 @@ graph LR
 - **Best Practices References**: Автоматическое добавление ссылок на best practices в Technical Context
 - **Known Constraints**: Документирование известных технических ограничений
 
+**Acceptance Criteria Format (v0.0.121):**
+
+Автоматическая генерация исполняемых критериев приемки в формате Gherkin:
+
+- **Gherkin Format**: Сценарии совместимы с BDD-фреймворками (Cucumber, Behave, SpecFlow, Pytest-BDD)
+  - **Feature blocks**: Группировка связанных сценариев по user story
+  - **Data tables**: Структурированные тела запросов для POST/PUT/PATCH операций
+  - **Multiple assertions**: Статус ответа, поля, тайминг, изменения состояния (Then/And)
+  - **Specific values**: Конкретные тестовые данные (например, `user "test@example.com"`) вместо заполнителей
+  - **Entity-specific patterns**: Готовые паттерны для Auth, CRUD, File Upload, Search, Payment
+  - **Scenario IDs**: AS-xxx сохранены для трассировки в tasks.md
+  - **Classification tags**: [HAPPY_PATH], [ERROR_PATH], [BOUNDARY], [SECURITY], [ALT_PATH]
+  - **Confidence scores**: 0.0-1.0 оценка важности сценария (≥0.90 = критично для MVP)
+
+- **Visual Acceptance Criteria (YAML)**: Для UI-фич автоматически генерируется визуальная спецификация
+  - **Elements**: Все UI-компоненты с свойствами (visible, type, placeholder, validation)
+  - **States**: loading, error, success, empty, disabled с изменениями элементов
+  - **Responsive**: mobile (<640px), tablet (640-1024px), desktop (>1024px) с адаптацией layout/spacing
+  - **Accessibility**: ARIA-метки, роли, навигация с клавиатуры, live regions
+  - **Interactions**: Триггеры, валидация, действия, ожидаемое время отклика
+  - **Performance**: Целевые показатели времени для каждого взаимодействия
+
+**Примеры** доступны в:
+- `templates/shared/examples/gherkin-api-example.md` — API с Payment Processing (8 сценариев)
+- `templates/shared/examples/gherkin-ui-example.md` — UI с Product Search (10 сценариев + Visual YAML)
+
+**Агенты**:
+- **acceptance-criteria-generator**: STEP 5.5 конвертирует таблицы в Gherkin
+- **visual-acceptance-generator** (NEW): Генерирует Visual YAML для UI-фич
+
 **Флаги:**
 
 - `--model` — Override model selection
