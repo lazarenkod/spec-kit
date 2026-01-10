@@ -741,15 +741,21 @@ IF PLATFORM_DETECTED != null:
 
 ### Phase 2d-UX: UX Validation Foundation (for UI features) 🎯
 
-**Trigger**: Execute when spec.md contains UI State Matrix section.
+**Trigger**: Execute when ANY of the following conditions are met:
+- spec.md contains UI State Matrix section
+- spec.md contains Component Registry section
+- spec.md contains AS-UI-xxx or AS-RWD-xxx or AS-INT-xxx scenarios
+- design.md exists in feature directory or specs/app-design/
 
 **Purpose**: Establish UX testing infrastructure before user story implementation. Validates that all UI states, responsive layouts, and interactions have test coverage.
 
 **Detection**:
 ```text
 1. Check spec.md for "### UI State Matrix" section
-2. Check spec.md for Component Registry section
-3. If both exist → inject Phase 2d-UX tasks
+2. Check spec.md for "### Component Registry" section
+3. Check spec.md for AS-UI-xxx, AS-RWD-xxx, or AS-INT-xxx scenario IDs
+4. Check for design.md in FEATURE_DIR or specs/app-design/
+5. If ANY condition met → inject Phase 2d-UX tasks
 ```
 
 **Quality Gates (UX)**:
@@ -868,7 +874,9 @@ IF .preview/ directory exists:
 **E2E Journey Tests (auto-generated from design.md journeys)**:
 
 ```text
-IF design.md contains User Journey sections OR journeys/ directory exists:
+IF design.md contains User Journey sections
+   OR journeys/ directory exists in FEATURE_DIR
+   OR specs/app-design/journeys/ directory exists:
   FOR EACH journey:
     GENERATE task:
       - [ ] T### [E2E:{journey.slug}] End-to-end test: {journey.name}

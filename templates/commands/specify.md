@@ -974,14 +974,14 @@ claude_code:
         ```markdown
         ### Interaction State Scenarios
 
-        | ID | Component | Trigger | From State | To State | Duration | Easing | A11y Announcement |
-        |----|-----------|---------|------------|----------|----------|--------|-------------------|
-        | AS-INT-001 | Button | hover | default | hover | 150ms | ease-out | - |
-        | AS-INT-002 | Button | focus | default | focus | 0ms | - | "Button focused" |
-        | AS-INT-003 | Button | click | hover | active | 100ms | ease-in | - |
-        | AS-INT-004 | Button | release | active | loading | 0ms | - | "Loading..." |
-        | AS-INT-005 | Input | focus | default | focus | 0ms | - | "{label} input focused" |
-        | AS-INT-006 | Input | blur+invalid | focus | error | 200ms | shake | "Error: {message}" |
+        | ID | Component | Trigger | From State | To State | Duration | Easing | A11y Announcement | Requires Test |
+        |----|-----------|---------|------------|----------|----------|--------|-------------------|---------------|
+        | AS-INT-001 | Button | hover | default | hover | 150ms | ease-out | - | YES |
+        | AS-INT-002 | Button | focus | default | focus | 0ms | - | "Button focused" | YES |
+        | AS-INT-003 | Button | click | hover | active | 100ms | ease-in | - | YES |
+        | AS-INT-004 | Button | release | active | loading | 0ms | - | "Loading..." | YES |
+        | AS-INT-005 | Input | focus | default | focus | 0ms | - | "{label} input focused" | YES |
+        | AS-INT-006 | Input | blur+invalid | focus | error | 200ms | shake | "Error: {message}" | YES |
 
         **Interaction Coverage**: X components × Y triggers = Z scenarios
         **A11y Announcement Coverage**: X/Z scenarios have announcements

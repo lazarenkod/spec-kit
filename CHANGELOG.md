@@ -7,6 +7,25 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.117] - 2026-01-09
+
+### Fixed
+
+- **UX test generation now triggers by default** for UI features v0.0.117:
+  - **Problem**: STATE-TEST, RWD-TEST, INT-TEST, E2E tests were not generated because:
+    - AS-INT-xxx scenarios lacked "Requires Test" column
+    - E2E journey detection looked in wrong paths
+    - Phase 2d-UX only triggered when UI State Matrix existed
+  - **Solution**:
+    - **specify.md**: Added `Requires Test = YES` column to AS-INT-xxx (Interaction State) table
+    - **tasks.md**: E2E journey detection now checks `specs/app-design/journeys/` in addition to feature directory
+    - **tasks.md**: Phase 2d-UX now triggers when ANY of:
+      - UI State Matrix section exists
+      - Component Registry section exists
+      - AS-UI-xxx, AS-RWD-xxx, or AS-INT-xxx scenarios exist
+      - design.md exists in feature directory or `specs/app-design/`
+  - **Result**: All UX test types (STATE-TEST, RWD-TEST, INT-TEST, E2E, A11Y-AUDIT, VRT, DS-AUDIT) now generate automatically for UI features
+
 ## [0.0.116] - 2026-01-09
 
 ### Fixed
