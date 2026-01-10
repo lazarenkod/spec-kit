@@ -48,6 +48,31 @@ class ModelTier(str, Enum):
     HAIKU = "claude-3-5-haiku-20241022"
 
 
+# Pricing per 1M tokens (USD) - as of January 2025
+MODEL_RATES: Dict[str, Dict[str, float]] = {
+    "opus": {"input": 15.00, "output": 75.00},
+    "sonnet": {"input": 3.00, "output": 15.00},
+    "haiku": {"input": 0.25, "output": 1.25},
+}
+
+
+def model_id_to_tier(model_id: str) -> str:
+    """Convert full model ID to tier name (opus/sonnet/haiku)."""
+    if "opus" in model_id.lower():
+        return "opus"
+    elif "sonnet" in model_id.lower():
+        return "sonnet"
+    elif "haiku" in model_id.lower():
+        return "haiku"
+    return "sonnet"  # default
+
+
+def calculate_cost(model_tier: str, tokens_in: int, tokens_out: int) -> float:
+    """Calculate cost in USD for given token usage."""
+    rates = MODEL_RATES.get(model_tier, MODEL_RATES["sonnet"])
+    return (tokens_in * rates["input"] + tokens_out * rates["output"]) / 1_000_000
+
+
 @dataclass
 class AgentTask:
     """
@@ -88,8 +113,10 @@ class AgentResult:
         success: Whether the task completed successfully
         duration_ms: Execution time in milliseconds
         model_used: Actual model that was used
+        model_tier: Model tier (opus/sonnet/haiku)
         tokens_in: Input tokens consumed
         tokens_out: Output tokens generated
+        cost: Cost in USD for this request
         error: Error message if success is False
         stop_reason: Reason the model stopped generating
     """
@@ -98,8 +125,10 @@ class AgentResult:
     success: bool
     duration_ms: int
     model_used: str
+    model_tier: str
     tokens_in: int
     tokens_out: int
+    cost: float
     error: Optional[str] = None
     stop_reason: Optional[str] = None
 
@@ -188,6 +217,13 @@ class DistributedAgentPool:
         self.total_tokens_out = 0
         self.total_duration_ms = 0
 
+        # Per-model statistics
+        self.by_model: Dict[str, Dict[str, Any]] = {
+            "opus": {"tokens_in": 0, "tokens_out": 0, "requests": 0, "cost": 0.0},
+            "sonnet": {"tokens_in": 0, "tokens_out": 0, "requests": 0, "cost": 0.0},
+            "haiku": {"tokens_in": 0, "tokens_out": 0, "requests": 0, "cost": 0.0},
+        }
+
     async def execute_wave(
         self,
         tasks: List[AgentTask]
@@ -225,8 +261,10 @@ class DistributedAgentPool:
                     success=False,
                     duration_ms=0,
                     model_used=task.model,
+                    model_tier=model_id_to_tier(task.model),
                     tokens_in=0,
                     tokens_out=0,
+                    cost=0.0,
                     error=str(result),
                 )
             else:
@@ -295,14 +333,24 @@ class DistributedAgentPool:
             self.total_tokens_out += response.usage.output_tokens
             self.total_duration_ms += duration_ms
 
+            # Update per-model statistics
+            tier = model_id_to_tier(task.model)
+            cost = calculate_cost(tier, response.usage.input_tokens, response.usage.output_tokens)
+            self.by_model[tier]["tokens_in"] += response.usage.input_tokens
+            self.by_model[tier]["tokens_out"] += response.usage.output_tokens
+            self.by_model[tier]["requests"] += 1
+            self.by_model[tier]["cost"] += cost
+
             return AgentResult(
                 name=task.name,
                 output=output,
                 success=True,
                 duration_ms=duration_ms,
                 model_used=task.model,
+                model_tier=tier,
                 tokens_in=response.usage.input_tokens,
                 tokens_out=response.usage.output_tokens,
+                cost=cost,
                 stop_reason=response.stop_reason,
             )
 
@@ -314,18 +362,22 @@ class DistributedAgentPool:
                 success=False,
                 duration_ms=duration_ms,
                 model_used=task.model,
+                model_tier=model_id_to_tier(task.model),
                 tokens_in=0,
                 tokens_out=0,
+                cost=0.0,
                 error=str(e),
             )
 
     def get_statistics(self) -> Dict[str, Any]:
-        """Return pool execution statistics."""
+        """Return pool execution statistics with per-model breakdown."""
+        total_cost = sum(m["cost"] for m in self.by_model.values())
         return {
             "total_requests": self.total_requests,
             "total_tokens_in": self.total_tokens_in,
             "total_tokens_out": self.total_tokens_out,
             "total_tokens": self.total_tokens_in + self.total_tokens_out,
+            "total_cost": total_cost,
             "total_duration_ms": self.total_duration_ms,
             "avg_duration_ms": (
                 self.total_duration_ms / self.total_requests
@@ -333,6 +385,17 @@ class DistributedAgentPool:
             ),
             "pool_size": self.pool_size,
             "completed_tasks": len(self.results),
+            "by_model": {
+                tier: {
+                    "requests": stats["requests"],
+                    "tokens_in": stats["tokens_in"],
+                    "tokens_out": stats["tokens_out"],
+                    "tokens_total": stats["tokens_in"] + stats["tokens_out"],
+                    "cost": stats["cost"],
+                }
+                for tier, stats in self.by_model.items()
+                if stats["requests"] > 0  # Only include models that were used
+            },
         }
 
     async def close(self) -> None:

@@ -7,6 +7,39 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.116] - 2026-01-09
+
+### Fixed
+
+- **Per-model token statistics display** now works correctly v0.0.116:
+  - **Problem**: Token consumption was shown only as total sum, not broken down by model
+  - **Solution**: Added per-model tracking (opus/sonnet/haiku) with cost calculation
+  - **Inline display**: Each agent completion shows `[model]: +X in / +Y out | $cost`
+  - **Summary table**: Final statistics table with per-model breakdown:
+    ```
+    ══════════════════════════════════════════════════════════════════════════════
+                             📊 TOKEN STATISTICS
+    ══════════════════════════════════════════════════════════════════════════════
+
+    Model      Requests      Input        Output       Cost
+    opus              3     24,500       18,200       $0.4725
+    sonnet            5     18,300       12,400       $0.1305
+    haiku             8      8,200        3,100       $0.0088
+    ────────────────────────────────────────────────────────────────────────────
+    TOTAL            16     51,000       33,700       $0.6118
+
+    ⏱️  Duration: 47.3s | 💰 Cost/min: $0.7762
+    ```
+  - **New in agent_pool.py**:
+    - `MODEL_RATES`: Pricing per 1M tokens (opus: $15/$75, sonnet: $3/$15, haiku: $0.25/$1.25)
+    - `model_id_to_tier()`: Converts model ID to tier name
+    - `calculate_cost()`: Calculates USD cost for token usage
+    - `by_model` dict in `DistributedAgentPool`: Tracks stats per model
+    - `model_tier` and `cost` fields in `AgentResult`
+  - **Updated in __init__.py**:
+    - `on_task_complete`: Shows model tier and cost inline
+    - Summary section: Renders per-model table with totals
+
 ## [0.0.115] - 2026-01-09
 
 ### Added

@@ -2750,8 +2750,11 @@ def orchestrate(
             completed_count += 1
             status = "[green]OK[/green]" if result.success else "[red]FAIL[/red]"
             duration = f"{result.duration_ms}ms"
-            tokens = f"{result.tokens_in + result.tokens_out} tokens"
-            console.print(f"  [{completed_count}/{total_count}] {name}: {status} ({duration}, {tokens})")
+            tokens = f"+{result.tokens_in:,} in / +{result.tokens_out:,} out"
+            model = getattr(result, 'model_tier', 'sonnet')
+            cost = getattr(result, 'cost', 0.0)
+            console.print(f"  [{completed_count}/{total_count}] {name} [{model}]: {status} ({duration})")
+            console.print(f"    [dim]📊 {tokens} | ${cost:.4f}[/dim]")
 
             if verbose and result.output:
                 # Show first 200 chars of output
@@ -2818,12 +2821,74 @@ def orchestrate(
     success_count = sum(1 for r in results.values() if r.success)
     fail_count = len(results) - success_count
     total_duration = sum(r.duration_ms for r in results.values())
-    total_tokens = sum(r.tokens_in + r.tokens_out for r in results.values())
+
+    # Build per-model statistics from results
+    by_model = {"opus": {"requests": 0, "tokens_in": 0, "tokens_out": 0, "cost": 0.0},
+                "sonnet": {"requests": 0, "tokens_in": 0, "tokens_out": 0, "cost": 0.0},
+                "haiku": {"requests": 0, "tokens_in": 0, "tokens_out": 0, "cost": 0.0}}
+
+    for result in results.values():
+        tier = getattr(result, 'model_tier', 'sonnet')
+        cost = getattr(result, 'cost', 0.0)
+        if tier in by_model:
+            by_model[tier]["requests"] += 1
+            by_model[tier]["tokens_in"] += result.tokens_in
+            by_model[tier]["tokens_out"] += result.tokens_out
+            by_model[tier]["cost"] += cost
+
+    # Calculate totals
+    total_tokens_in = sum(m["tokens_in"] for m in by_model.values())
+    total_tokens_out = sum(m["tokens_out"] for m in by_model.values())
+    total_tokens = total_tokens_in + total_tokens_out
+    total_cost = sum(m["cost"] for m in by_model.values())
+
+    # Print token statistics table
+    console.print("═" * 78)
+    console.print("[bold cyan]                         📊 TOKEN STATISTICS[/bold cyan]")
+    console.print("═" * 78)
+    console.print()
+
+    token_table = Table(show_header=True, header_style="bold", box=None)
+    token_table.add_column("Model", style="cyan", width=10)
+    token_table.add_column("Requests", justify="right", width=10)
+    token_table.add_column("Input", justify="right", width=12)
+    token_table.add_column("Output", justify="right", width=12)
+    token_table.add_column("Cost", justify="right", width=12)
+
+    for tier in ["opus", "sonnet", "haiku"]:
+        stats = by_model[tier]
+        if stats["requests"] > 0:
+            token_table.add_row(
+                tier,
+                str(stats["requests"]),
+                f"{stats['tokens_in']:,}",
+                f"{stats['tokens_out']:,}",
+                f"${stats['cost']:.4f}"
+            )
+
+    # Add total row
+    token_table.add_row("─" * 8, "─" * 8, "─" * 10, "─" * 10, "─" * 10)
+    token_table.add_row(
+        "[bold]TOTAL[/bold]",
+        f"[bold]{sum(m['requests'] for m in by_model.values())}[/bold]",
+        f"[bold]{total_tokens_in:,}[/bold]",
+        f"[bold]{total_tokens_out:,}[/bold]",
+        f"[bold]${total_cost:.4f}[/bold]"
+    )
+
+    console.print(token_table)
+    console.print()
+
+    # Duration and cost per minute
+    duration_sec = total_duration / 1000
+    cost_per_min = (total_cost / duration_sec) * 60 if duration_sec > 0 else 0
+    console.print(f"[dim]⏱️  Duration: {duration_sec:.1f}s | 💰 Cost/min: ${cost_per_min:.4f}[/dim]")
+    console.print()
 
     if fail_count == 0:
-        console.print(f"[bold green]Completed {success_count} agents[/bold green] in {total_duration}ms ({total_tokens} tokens)")
+        console.print(f"[bold green]✓ Completed {success_count} agents[/bold green]")
     else:
-        console.print(f"[bold yellow]Completed {success_count} agents, {fail_count} failed[/bold yellow] in {total_duration}ms")
+        console.print(f"[bold yellow]Completed {success_count} agents, {fail_count} failed[/bold yellow]")
         for name, result in results.items():
             if not result.success:
                 console.print(f"  [red]FAILED:[/red] {name}: {result.error}")
