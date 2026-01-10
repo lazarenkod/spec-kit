@@ -53,6 +53,26 @@ handoffs:
         domain_ref: "QG-006"
     post_actions:
       - "log: Implementation complete, running QA verification"
+  - label: Comprehensive Verification
+    agent: speckit.verify
+    prompt: |
+      Run comprehensive post-implementation verification:
+      - Acceptance Criteria: Verify all AS-xxx scenarios implemented and passing
+      - API Contracts: Validate endpoints match spec.md definitions
+      - Visual Verification: UI matches Visual YAML specs (screenshots + pixelmatch)
+      - Behavior: E2E user flows work as specified
+      - NFRs: Performance, accessibility, security thresholds met
+
+      Generates detailed report with auto-fix suggestions for common issues.
+      Requires 90% overall pass rate to proceed.
+
+      Note: This is a comprehensive alternative to /speckit.analyze that includes
+      visual regression testing and behavior verification.
+    auto: false
+    condition:
+      - "All waves completed"
+      - "User wants comprehensive validation"
+      - "Visual or behavioral verification needed"
   - label: Fix QA Issues
     agent: speckit.implement
     prompt: Address issues identified in QA verification report
@@ -4919,6 +4939,7 @@ When all P1 tasks are marked `[X]`, implementation **auto-transitions to QA veri
 | Condition | Handoff | Auto |
 |-----------|---------|------|
 | P1 tasks complete | QA Verification (`/speckit.analyze`) | ✅ Yes |
+| User wants comprehensive verification | Comprehensive Verification (`/speckit.verify`) | ❌ No |
 | QA Verdict == FAIL | Fix QA Issues (`/speckit.implement`) | ❌ No |
 | Found missing tasks | Update Tasks (`/speckit.tasks`) | ❌ No |
 | Discovered spec gaps | Update Spec (`/speckit.specify`) | ❌ No |
@@ -4931,6 +4952,7 @@ Users can always choose to:
 - Re-run specific phases if issues discovered
 - Skip QA verification (not recommended)
 - Manually trigger QA at any point
+- Run `/speckit.verify` for comprehensive verification (includes visual regression and behavioral testing)
 
 ---
 

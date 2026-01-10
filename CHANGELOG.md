@@ -76,6 +76,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Time savings: 70-80 minutes per project (automatic vs. manual installation)
   - **Backwards Compatibility**: Fully backwards compatible. Existing projects with installed frameworks continue working. Opt-out via `--no-auto-framework` flag.
 
+- **Post-Implementation Verification Command** - Comprehensive verification with auto-fix v0.1.0:
+  - **New command**: `/speckit.verify` - Verify implementation against specification after /speckit.implement
+  - **5 Verification Layers**:
+    1. **Acceptance Criteria**: Verify all AS-xxx scenarios implemented and passing
+    2. **API Contracts**: Validate endpoints match spec.md definitions (schema, status codes)
+    3. **Visual Verification**: UI matches Visual YAML specs (Playwright screenshots + pixelmatch pixel comparison)
+    4. **Behavior Verification**: E2E user flows work as specified
+    5. **NFR Verification**: Performance, accessibility, security thresholds met (Lighthouse, bundle size)
+  - **Auto-Fix Logic**:
+    - Simple changes auto-fixed: constant values, import optimization, CSS properties, class names
+    - Complex changes flagged for manual fix: component additions, refactoring, logic changes
+    - Max 3 iterations per fix attempt
+    - Disable with `--no-auto-fix` flag
+  - **Quality Gates** (`memory/domains/quality-gates.md`):
+    - QG-VERIFY-001: Acceptance Criteria Coverage (100% coverage required)
+    - QG-VERIFY-002: Acceptance Criteria Pass Rate (≥90% pass required)
+    - QG-VERIFY-003: API Contract Compliance (100% compliance required)
+    - QG-VERIFY-004: Visual Regression Threshold (≥95% pass, <5% visual diff)
+    - QG-VERIFY-005: Behavior Verification (100% correct required)
+    - QG-VERIFY-006: NFR Compliance (≥80% met required)
+  - **Inline Gates**:
+    - Pre-gates: IG-VERIFY-001 (Implementation Complete), IG-VERIFY-002 (Staging Available), IG-VERIFY-003 (Test Framework Ready)
+    - Post-gates: IG-VERIFY-101 (Verification Threshold ≥90%), IG-VERIFY-102 (Critical Failures = 0)
+  - **Generated Artifacts**:
+    - `reports/verify-report.md`: Detailed markdown report with box-drawn tables, auto-fix suggestions
+    - `reports/verify-summary.json`: JSON summary for CI/CD integration
+    - `.verify/baselines/`: Reference screenshots for visual regression
+    - `.verify/current/`: Latest screenshots
+    - `.verify/diffs/`: Diff images with pixel highlights
+  - **Command Flags**:
+    - `--no-auto-fix`: Disable automatic fix application (report only)
+    - `--threshold N`: Override pass threshold (0-100, default: 90)
+    - `--skip-visual`: Skip visual regression testing
+    - `--skip-nfr`: Skip NFR verification
+    - `--baseline`: Update visual baselines instead of comparing
+    - `--json`: Output JSON summary only (no markdown report)
+    - `--ci`: CI mode (no interactive prompts, fail on threshold)
+    - `--fix-and-verify`: Apply fixes and re-run verification automatically
+    - `--skip-gates`: Skip all inline quality gates
+  - **Subagents** (7):
+    - ac-verifier: Verify acceptance criteria coverage and pass rate
+    - contract-verifier: Validate API contract compliance
+    - visual-verifier: Screenshot comparison with pixelmatch
+    - behavior-verifier: E2E user flow validation
+    - nfr-verifier: Performance, accessibility, security metrics
+    - report-aggregator: Generate comprehensive verification report
+    - auto-fixer: Apply eligible fixes automatically
+  - **Prerequisite Scripts**:
+    - `scripts/bash/verify-prerequisites.sh`: Check implementation complete, staging available, test framework ready
+    - `scripts/powershell/verify-prerequisites.ps1`: Windows equivalent
+  - **Report Template**: `templates/verify-report-template.md` with executive summary, detailed findings per layer, auto-fix suggestions
+  - **Handoffs**:
+    - → `/speckit.implement` (if verification fails)
+    - → `/speckit.analyze` (for deeper QA audit)
+  - **Documentation**:
+    - `docs/COMMANDS_GUIDE.md`: Added section 13 for /speckit.verify
+    - `templates/commands/implement.md`: Updated handoffs to include /speckit.verify
+  - **Exit Codes**: 0 (pass/warn), 1 (fail - blocks CI/CD if <90% threshold)
+  - **Workflow Integration**: Manual command after /speckit.implement, alternative to /speckit.analyze for comprehensive verification
+
+- **Design Quality Research Report** - Comprehensive research on achieving world-class design and mockup quality v0.1.0:
+  - **Research Document**: `design-quality-research-2026.md` (~25,000 words, 100+ citations)
+  - **6 Research Streams** conducted in parallel:
+    1. **AI Design Tools & Techniques**: Analysis of v0.dev, Galileo AI (Google Stitch), Builder.io Visual Copilot, Uizard, Microsoft Designer, Figma AI; identified multi-stage quality pipelines, design system integration strategies, 70-80% automation rate with human refinement
+    2. **Design Quality Metrics & Evaluation**: Developed comprehensive Design Quality Score (DQS) framework with weighted dimensions (Accessibility 25%, Performance 20%, Visual Design 20%, Usability 20%, Reusability 15%); researched WCAG evolution (2.2 → 3.0), Core Web Vitals thresholds, component reusability metrics
+    3. **2026 UI/UX Trends**: Identified dominant trends (glassmorphism, bento box layouts, kinetic typography, variable fonts); researched platform-specific guidelines (iOS Liquid Glass, Material 3 Expressive); documented anti-patterns to avoid
+    4. **Advanced Prompt Engineering**: Researched chain-of-thought design reasoning (40% improvement per Stanford study), few-shot prompting optimal range (3-5 examples), constraint-based prompting for accessibility/performance, negative prompting (59-64% anti-pattern reduction), multi-modal prompting techniques
+    5. **Visual Mockup Generation**: Compared AI image generation tools (Midjourney v7 vs DALL-E 3), wireframe conversion platforms, Playwright/Puppeteer HiDPI configuration (deviceScaleFactor: 2 for Retina quality), device mockup generators, quality enhancement best practices
+    6. **Implementation Recommendations**: Comprehensive roadmap for Spec Kit v0.2.0-v0.4.0 integration
+  - **Key Findings**:
+    - **Design Quality Score (DQS)**: Weighted framework: Accessibility (WCAG 2.2/3.0 compliance), Performance (Core Web Vitals: LCP <2.5s, INP <200ms, CLS <0.1), Visual Design (color contrast ≥4.5:1, typography scale, spacing consistency), Usability (task success rate ≥80%, error rate <10%), Reusability (component abstraction, design token usage)
+    - **2026 UI/UX Trends**: Glassmorphism (backdrop-filter blur + saturation), Soft UI/Neo-Neumorphism, Bento box layouts (asymmetric grid), Kinetic typography (variable fonts, scroll-triggered animations), Responsive everything (720px-3840px range)
+    - **Prompt Engineering for Design**: Chain-of-thought reasoning (6-step: understand context → analyze requirements → explore patterns → make decisions → validate → iterate), Few-shot prompting (3-5 examples optimal per MIT study), Constraint-based prompting (accessibility: WCAG 2.2 AA + semantic HTML; performance: Lighthouse ≥90; brand: color palette + typography + tone)
+    - **AI Image Generation**: Midjourney v7 --cref (character consistency) + --sref (style consistency) for brand cohesion; DALL-E 3 95% text accuracy for UI mockups with readable text; Recraft for precise control over layout/composition
+    - **Screenshot Optimization**: Playwright/Puppeteer deviceScaleFactor: 2 for Retina (2x pixel density), WebP format at 80-90 quality (30% smaller than PNG), capture at multiple breakpoints (360px, 768px, 1440px, 2560px)
+  - **Implementation Roadmap**:
+    - **v0.2.0**: Design system templates (Material/iOS/Fluent presets), Chain-of-thought prompting in design agent, DQS quality gates for design.md validation
+    - **v0.3.0**: Few-shot design prompt library, Multi-modal support (wireframe + brand guidelines), Visual regression testing integration
+    - **v0.4.0**: Design-to-code pipeline (Figma/Sketch import → code generation), Automated DQS scoring in /speckit.analyze, MCP Servers for design tool integration
+  - **Code Examples**:
+    - Glassmorphism CSS implementation
+    - Playwright Retina screenshot configuration
+    - Chain-of-thought design prompt template
+    - DQS calculation algorithm
+  - **Purpose**: Inform future enhancements to `/speckit.design` and `/speckit.preview` commands for world-class design quality output
+
 ## [0.0.121] - 2026-01-10
 
 ### Added

@@ -1001,6 +1001,205 @@ npx jsdoc-coverage src/
 
 ---
 
+## Verification Gates (QG-VERIFY-xxx)
+
+> **Post-Implementation Verification** gates ensure complete validation across all layers after implementation.
+> See `templates/commands/verify.md` for the `/speckit.verify` command.
+
+### QG-VERIFY-001: Acceptance Criteria Coverage
+
+**Level**: MUST
+**Applies to**: All features with acceptance scenarios
+**Phase**: Post-Implement
+
+Every AS-xxx scenario from spec.md MUST have a corresponding test task with [TEST:AS-xxx] marker.
+
+**Threshold**: 100% coverage of acceptance scenarios with tests
+
+**Validation**:
+```bash
+/speckit.verify
+# OR manually:
+# Parse spec.md for AS-xxx scenarios
+# Parse tasks.md for [TEST:AS-xxx] markers
+# Coverage = (scenarios with tests) / (total scenarios) × 100
+```
+
+**Formula**:
+```
+AS Test Coverage = (AS with [TEST:] markers) / (Total AS scenarios) × 100
+```
+
+**Violations**: CRITICAL - Untested acceptance scenarios
+**Remediation**: Create test tasks for missing scenarios: {{missing_scenarios}}
+
+---
+
+### QG-VERIFY-002: Acceptance Criteria Pass Rate
+
+**Level**: MUST
+**Applies to**: All features with test scenarios
+**Phase**: Post-Implement
+
+At least 90% of acceptance criteria tests MUST pass.
+
+**Threshold**: >= 90% test pass rate
+
+**Validation**:
+```bash
+/speckit.verify
+# Runs all tests marked with [TEST:AS-xxx]
+# Calculates: (passing tests) / (total tests) × 100
+```
+
+**Thresholds**:
+- **≥90%**: Ready to proceed
+- **80-89%**: Warning - fix remaining issues
+- **<80%**: BLOCK - too many failures
+
+**Violations**: CRITICAL - Only {{pass_rate}}% of AC tests passing (threshold: 90%)
+**Remediation**: Fix failing tests: {{failing_scenarios}}
+
+---
+
+### QG-VERIFY-003: API Contract Compliance
+
+**Level**: HIGH
+**Applies to**: Features with API endpoints
+**Phase**: Post-Implement
+
+All API endpoints MUST match spec.md contract definitions.
+
+**Threshold**: 100% contract compliance (no undocumented drift)
+
+**Validation**:
+```bash
+/speckit.verify
+# Parses Gherkin "When I [METHOD] [ENDPOINT]" steps
+# Tests actual API against expected request/response schemas
+# Detects: missing fields, extra fields, type mismatches, status code diffs
+```
+
+**Contract Checks**:
+- Request schema matches spec
+- Response schema matches spec
+- Status codes match spec
+- No undocumented fields in responses
+
+**Violations**: HIGH - {{drift_count}} API endpoints have contract drift
+**Remediation**: Update spec or fix implementation for: {{drifted_endpoints}}
+
+---
+
+### QG-VERIFY-004: Visual Regression Threshold
+
+**Level**: HIGH
+**Applies to**: UI features with Visual YAML specifications
+**Phase**: Post-Implement
+
+Visual diff between baseline and current screenshots MUST be < 5% for all screens.
+
+**Threshold**: >= 95% screens pass (< 5% visual diff)
+
+**Validation**:
+```bash
+/speckit.verify
+# Uses Playwright for screenshots
+# Uses pixelmatch for pixel comparison
+# Generates diff images with highlights
+```
+
+**Diff Thresholds**:
+- **0-1%**: PASS (negligible diff)
+- **1-5%**: WARN (minor drift, may be acceptable)
+- **>5%**: FAIL (significant visual change)
+
+**Violations**: HIGH - {{fail_count}} screens have >5% visual diff
+**Remediation**: Review visual diffs: {{failed_screens}}
+
+**Update Baselines**:
+```bash
+# After intentional UI changes
+/speckit.verify --baseline
+```
+
+---
+
+### QG-VERIFY-005: Behavior Verification
+
+**Level**: MUST
+**Applies to**: All features with user flows
+**Phase**: Post-Implement
+
+All user flows from spec.md MUST work end-to-end as specified.
+
+**Threshold**: 100% behavior correctness
+
+**Validation**:
+```bash
+/speckit.verify
+# Runs E2E tests for multi-step scenarios
+# Verifies: navigation, state persistence, cross-page flows
+```
+
+**Behavior Checks**:
+- Redirects work as expected
+- State persists across pages
+- Multi-step flows complete successfully
+- Error handling works correctly
+
+**Violations**: CRITICAL - {{fail_count}} behaviors not working as specified
+**Remediation**: Fix behaviors: {{failed_behaviors}}
+
+---
+
+### QG-VERIFY-006: NFR Compliance
+
+**Level**: MEDIUM
+**Applies to**: Features with non-functional requirements
+**Phase**: Post-Implement
+
+At least 80% of non-functional requirements (NFRs) MUST be met.
+
+**Threshold**: >= 80% NFR compliance
+
+**Validation**:
+```bash
+/speckit.verify
+# Runs Lighthouse for performance
+# Runs axe-core for accessibility
+# Checks bundle size, test coverage, security scan
+```
+
+**NFR Categories**:
+- **Performance**: Lighthouse score >= 90, LCP < 2.5s, bundle size targets
+- **Accessibility**: WCAG 2.1 AA compliance, axe-core scan clean
+- **Security**: No critical/high vulnerabilities, secret scanning clean
+- **Coverage**: >= 80% test coverage
+
+**Thresholds**:
+- **≥80%**: Ready to proceed
+- **60-79%**: Warning - optimization recommended
+- **<60%**: BLOCK - significant NFR failures
+
+**Violations**: MEDIUM - {{fail_count}} NFRs not met
+**Remediation**: Optimize: {{failed_nfrs}}
+
+---
+
+### Verification Gate Summary
+
+| Gate ID | Phase | Level | Threshold | Validation | Severity |
+|---------|-------|-------|-----------|------------|----------|
+| QG-VERIFY-001 | Post-Implement | MUST | 100% coverage | AS test markers | CRITICAL |
+| QG-VERIFY-002 | Post-Implement | MUST | >= 90% pass | Test results | CRITICAL |
+| QG-VERIFY-003 | Post-Implement | HIGH | 100% compliance | API contract check | HIGH |
+| QG-VERIFY-004 | Post-Implement | HIGH | >= 95% pass | Visual diff | HIGH |
+| QG-VERIFY-005 | Post-Implement | MUST | 100% correct | E2E behavior | CRITICAL |
+| QG-VERIFY-006 | Post-Implement | MEDIUM | >= 80% met | NFR checks | MEDIUM |
+
+---
+
 ## Pre-Deploy Gates
 
 ### QG-010: All Tests Pass
@@ -1283,6 +1482,12 @@ pytest -k "security or auth"
 | QG-007 | Post-Implement | SHOULD | >= 90 | `lighthouse` | MEDIUM |
 | QG-008 | Post-Implement | SHOULD | WCAG AA | `axe-core` | MEDIUM |
 | QG-009 | Post-Implement | SHOULD | 100% public | TypeDoc coverage | LOW |
+| QG-VERIFY-001 | Post-Implement | MUST | 100% coverage | `/speckit.verify` | CRITICAL |
+| QG-VERIFY-002 | Post-Implement | MUST | >= 90% pass | `/speckit.verify` | CRITICAL |
+| QG-VERIFY-003 | Post-Implement | HIGH | 100% compliance | `/speckit.verify` | HIGH |
+| QG-VERIFY-004 | Post-Implement | HIGH | >= 95% pass | `/speckit.verify` | HIGH |
+| QG-VERIFY-005 | Post-Implement | MUST | 100% correct | `/speckit.verify` | CRITICAL |
+| QG-VERIFY-006 | Post-Implement | MEDIUM | >= 80% met | `/speckit.verify` | MEDIUM |
 | QG-010 | Pre-Deploy | MUST | 100% pass | `npm test` | CRITICAL |
 | QG-011 | Pre-Deploy | MUST | 0 found | grep patterns | HIGH |
 | QG-012 | Pre-Deploy | MUST | 100% | env coverage script | HIGH |
@@ -1431,12 +1636,13 @@ PQS = (
 | Test-First Development Gates | 4 |
 | Pre-Implement Gates | 5 |
 | Post-Implement Gates | 7 |
+| Verification Gates | 6 |
 | Pre-Deploy Gates | 5 |
 | Security Gates | 5 |
 | Migration Gates | 3 |
 | Property-Based Testing Gates | 7 |
-| **Total QG Principles** | **38** |
-| MUST level | 27 |
+| **Total QG Principles** | **44** |
+| MUST level | 31 |
 | SHOULD level | 4 |
 
 ---

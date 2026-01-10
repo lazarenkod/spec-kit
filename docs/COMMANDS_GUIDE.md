@@ -1,7 +1,7 @@
 # Spec-Kit Commands Guide
 
 <!-- AUTO-GENERATED - DO NOT EDIT MANUALLY -->
-<!-- Generated at: 2026-01-09 14:02:55 -->
+<!-- Generated at: 2026-01-10 -->
 <!-- Source: templates/commands/*.md -->
 
 Полное руководство по командам Spec Kit для Spec-Driven Development.
@@ -22,22 +22,23 @@
 - [10. /speckit.staging](#speckitstaging)
 - [11. /speckit.analyze](#speckitanalyze)
 - [12. /speckit.implement](#speckitimplement)
-- [13. /speckit.preview](#speckitpreview)
-- [14. /speckit.list](#speckitlist)
-- [15. /speckit.switch](#speckitswitch)
-- [16. /speckit.extend](#speckitextend)
-- [17. /speckit.merge](#speckitmerge)
-- [18. /speckit.baseline](#speckitbaseline)
-- [19. /speckit.checklist](#speckitchecklist)
-- [20. /speckit.discover](#speckitdiscover)
-- [21. /speckit.integrate](#speckitintegrate)
-- [22. /speckit.monitor](#speckitmonitor)
-- [23. /speckit.launch](#speckitlaunch)
-- [24. /speckit.ship](#speckitship)
-- [25. /speckit.concept-variants](#speckitconcept-variants)
-- [26. /speckit.migrate](#speckitmigrate)
-- [27. /speckit.properties](#speckitproperties)
-- [28. /speckit.mobile](#speckitmobile)
+- [13. /speckit.verify](#speckitverify)
+- [14. /speckit.preview](#speckitpreview)
+- [15. /speckit.list](#speckitlist)
+- [16. /speckit.switch](#speckitswitch)
+- [17. /speckit.extend](#speckitextend)
+- [18. /speckit.merge](#speckitmerge)
+- [19. /speckit.baseline](#speckitbaseline)
+- [20. /speckit.checklist](#speckitchecklist)
+- [21. /speckit.discover](#speckitdiscover)
+- [22. /speckit.integrate](#speckitintegrate)
+- [23. /speckit.monitor](#speckitmonitor)
+- [24. /speckit.launch](#speckitlaunch)
+- [25. /speckit.ship](#speckitship)
+- [26. /speckit.concept-variants](#speckitconcept-variants)
+- [27. /speckit.migrate](#speckitmigrate)
+- [28. /speckit.properties](#speckitproperties)
+- [29. /speckit.mobile](#speckitmobile)
 
 ---
 
@@ -518,13 +519,70 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 **Handoffs:**
 
 - → `/speckit.analyze` (for full QA audit)
+- → `/speckit.verify` (for comprehensive verification)
 - → `/speckit.implement`
 - → `/speckit.tasks`
 - → `/speckit.specify`
 
 ---
 
-### 13. `/speckit.preview` {#speckitpreview}
+### 13. `/speckit.verify` {#speckitverify}
+
+**Назначение:** Verify implementation against specification after /speckit.implement. Comprehensive post-implementation verification covering 5 layers: acceptance criteria (AS-xxx scenarios), API contracts, visual verification (screenshots + pixelmatch), E2E behaviors, and NFR compliance. Generates detailed report with auto-fix suggestions for common issues. Requires 90% overall pass rate to proceed.
+
+**Модель:** `sonnet` (thinking_budget: 8000)
+
+**Persona:** `qa-agent`
+
+**Флаги:**
+
+- `--no-auto-fix` — Disable automatic fix application (report only)
+- `--threshold N` — Override pass threshold (0-100, default: 90)
+- `--skip-visual` — Skip visual regression testing
+- `--skip-nfr` — Skip NFR verification (performance, accessibility)
+- `--baseline` — Update visual baselines instead of comparing
+- `--json` — Output JSON summary only (no markdown report)
+- `--ci` — CI mode: no interactive prompts, fail on threshold
+- `--fix-and-verify` — Apply fixes and re-run verification automatically
+- `--skip-gates` — Skip all inline quality gates
+
+**Pre-Implementation Inline Gates:**
+
+| Gate ID | Name | Severity |
+|---------|------|----------|
+| IG-VERIFY-001 | Implementation Complete | CRITICAL |
+| IG-VERIFY-002 | Staging Available | HIGH |
+| IG-VERIFY-003 | Test Framework Ready | CRITICAL |
+
+**Post-Implementation Inline Gates:**
+
+| Gate ID | Name | Severity | Threshold |
+|---------|------|----------|-----------|
+| IG-VERIFY-101 | Verification Threshold | CRITICAL | 90% |
+| IG-VERIFY-102 | Critical Failures | CRITICAL | 0 |
+
+**Verification Layers:**
+
+1. **Acceptance Criteria** — All AS-xxx scenarios implemented and passing
+2. **API Contracts** — Endpoints match spec.md definitions (schema, status codes)
+3. **Visual Verification** — UI matches Visual YAML specs (Playwright + pixelmatch)
+4. **Behavior** — E2E user flows work as specified
+5. **NFRs** — Performance, accessibility, security thresholds met
+
+**Auto-Fix Logic:**
+
+- Simple changes auto-fixed: constant values, imports, CSS properties, class names
+- Complex changes flagged for manual fix: component additions, refactoring, logic changes
+- Max 3 iterations per fix attempt
+
+**Handoffs:**
+
+- → `/speckit.implement` (if verification fails)
+- → `/speckit.analyze` (for deeper analysis)
+
+---
+
+### 14. `/speckit.preview` {#speckitpreview}
 
 **Назначение:** Generate interactive previews from design specifications. Converts wireframes to visual HTML, generates component previews, captures screenshots, and runs design quality validation.
 
@@ -550,7 +608,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 14. `/speckit.list` {#speckitlist}
+### 15. `/speckit.list` {#speckitlist}
 
 **Назначение:** List all features in the project with their current status. Shows feature registry from manifest and indicates which feature is currently active.
 
@@ -568,7 +626,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 15. `/speckit.switch` {#speckitswitch}
+### 16. `/speckit.switch` {#speckitswitch}
 
 **Назначение:** Switch to a different feature to continue working on it. Updates the active feature state and optionally checks out the corresponding git branch.
 
@@ -589,7 +647,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 16. `/speckit.extend` {#speckitextend}
+### 17. `/speckit.extend` {#speckitextend}
 
 **Назначение:** Extend a merged feature with new capabilities. Creates a new feature branch with Feature Lineage pre-populated, loading context from the parent feature and its system specs.
 
@@ -611,7 +669,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 17. `/speckit.merge` {#speckitmerge}
+### 18. `/speckit.merge` {#speckitmerge}
 
 **Назначение:** Finalize feature and update system specs after PR merge. Converts feature requirements into living system documentation.
 
@@ -624,7 +682,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 18. `/speckit.baseline` {#speckitbaseline}
+### 19. `/speckit.baseline` {#speckitbaseline}
 
 **Назначение:** Capture current state of system components for brownfield specifications. Generates baseline.md documenting existing behaviors, code structure, and dependencies.
 
@@ -652,7 +710,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 19. `/speckit.checklist` {#speckitchecklist}
+### 20. `/speckit.checklist` {#speckitchecklist}
 
 **Назначение:** Generate a custom checklist for the current feature based on user requirements.
 
@@ -660,7 +718,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 20. `/speckit.discover` {#speckitdiscover}
+### 21. `/speckit.discover` {#speckitdiscover}
 
 **Назначение:** Validate problem-solution fit before building through customer discovery
 
@@ -684,7 +742,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 21. `/speckit.integrate` {#speckitintegrate}
+### 22. `/speckit.integrate` {#speckitintegrate}
 
 **Назначение:** Quick integration with common third-party services
 
@@ -698,7 +756,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 22. `/speckit.monitor` {#speckitmonitor}
+### 23. `/speckit.monitor` {#speckitmonitor}
 
 **Назначение:** Set up production observability with OpenTelemetry, dashboards, and alerting
 
@@ -718,7 +776,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 23. `/speckit.launch` {#speckitlaunch}
+### 24. `/speckit.launch` {#speckitlaunch}
 
 **Назначение:** Automate product launch and go-to-market activities
 
@@ -743,7 +801,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 24. `/speckit.ship` {#speckitship}
+### 25. `/speckit.ship` {#speckitship}
 
 **Назначение:** Provision infrastructure, deploy application, and verify running system in one command
 
@@ -796,7 +854,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 25. `/speckit.concept-variants` {#speckitconcept-variants}
+### 26. `/speckit.concept-variants` {#speckitconcept-variants}
 
 **Назначение:** Generate MINIMAL/BALANCED/AMBITIOUS scope variants for existing concept
 
@@ -804,7 +862,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 26. `/speckit.migrate` {#speckitmigrate}
+### 27. `/speckit.migrate` {#speckitmigrate}
 
 **Назначение:** Plan and execute spec-driven modernization between architectures, versions, and cloud providers
 
@@ -843,7 +901,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 27. `/speckit.properties` {#speckitproperties}
+### 28. `/speckit.properties` {#speckitproperties}
 
 **Назначение:** Extract properties from spec artifacts and generate property-based tests with EARS transformation. Creates PROP-xxx traced to AS/EC/FR/NFR for comprehensive edge case discovery via PGS (Property-Generated Solver) methodology.
 
@@ -866,7 +924,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 28. `/speckit.mobile` {#speckitmobile}
+### 29. `/speckit.mobile` {#speckitmobile}
 
 **Назначение:** Orchestrate mobile development with specialized agents. Activates platform-specific expertise (KMP/Flutter/React Native), calculates Mobile Quality Score (MQS), and ensures production-ready mobile applications.
 
@@ -1049,6 +1107,6 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ## Версия документа
 
-**Версия:** 0.0.120
+**Версия:** 0.1.0
 **Дата генерации:** 2026-01-10
 **Автор:** Auto-generated from command templates
