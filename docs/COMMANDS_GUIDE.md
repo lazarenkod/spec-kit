@@ -37,6 +37,7 @@
 - [25. /speckit.concept-variants](#speckitconcept-variants)
 - [26. /speckit.migrate](#speckitmigrate)
 - [27. /speckit.properties](#speckitproperties)
+- [28. /speckit.mobile](#speckitmobile)
 
 ---
 
@@ -790,6 +791,79 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
+### 28. `/speckit.mobile` {#speckitmobile}
+
+**Назначение:** Orchestrate mobile development with specialized agents. Activates platform-specific expertise (KMP/Flutter/React Native), calculates Mobile Quality Score (MQS), and ensures production-ready mobile applications.
+
+**Модель:** `sonnet` (thinking_budget: high)
+
+**Persona:** `mobile-developer-agent`
+
+**Режимы:**
+
+| Mode | Trigger | Purpose |
+|------|---------|---------|
+| `auto` | Platform detected via platform-detection.md | Automatically select platform and apply expertise |
+| `kmp` | `--platform kmp` OR `shared/build.gradle.kts` exists | Apply KMP-specific patterns and validation |
+| `flutter` | `--platform flutter` OR `pubspec.yaml` exists | Apply Flutter-specific patterns and validation |
+| `react_native` | `--platform react-native` OR `metro.config.js` exists | Apply React Native-specific patterns and validation |
+
+**Skills:**
+
+- `mobile-architecture` — Cross-platform architecture decisions
+- `mobile-performance` — Performance optimization
+- `mobile-testing` — Testing strategy
+- `kmp-expert` — KMP-specific patterns (conditional)
+- `flutter-expert` — Flutter-specific patterns (conditional)
+- `react-native-expert` — React Native-specific patterns (conditional)
+
+**Флаги:**
+
+- `--platform <kmp|flutter|react-native|native>` — Override auto-detection
+- `--skip-mqs` — Skip MQS calculation (not recommended)
+- `--mqs-threshold <N>` — Override default 75 threshold
+
+**Mobile Quality Score (MQS):**
+
+| Dimension | Points | Criteria |
+|-----------|--------|----------|
+| Architecture | 25 | Layer separation, DI, state management |
+| Performance | 20 | Cold start <2s, 60 FPS, memory <150MB |
+| Platform Parity | 20 | Feature/UX consistency across platforms |
+| Testing | 20 | Unit 80%, binding 100%, E2E critical paths |
+| Accessibility | 15 | A11y labels, screen reader, touch targets |
+| **Total** | **100** | **Threshold: ≥75** |
+
+**Pre-Gates:**
+
+- QG-MOBILE-001: Platform successfully detected
+- QG-MOBILE-002: Required dependencies present
+
+**Quality Gates:**
+
+- QG-MQS-001: Architecture score ≥ 20/25
+- QG-MQS-002: Performance score ≥ 15/20
+- QG-MQS-003: Platform parity ≥ 15/20
+- QG-MQS-004: Testing coverage ≥ 15/20 (CRITICAL)
+- QG-MQS-005: Accessibility ≥ 10/15
+- QG-MQS: Total MQS ≥ 75/100 (CRITICAL)
+
+**Handoffs:**
+
+- → `/speckit.plan` — Create technical plan with mobile architecture decisions
+- → `/speckit.tasks` — Generate tasks with platform-specific and binding test tasks
+- → `/speckit.implement` — Execute implementation with mobile patterns
+- → `/speckit.analyze` — Validate MQS and binding coverage
+
+**Выходные файлы:**
+
+- `memory/mqs-report.md` — Detailed quality breakdown
+- `memory/mobile-architecture.md` — Architecture decisions
+- `memory/mobile-improvements.md` — Recommended fixes
+- `memory/binding-coverage.md` — ViewModel test mapping
+
+---
+
 ## Quick Reference
 
 ### Команды по категориям
@@ -803,6 +877,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 | Implementation | `/speckit.staging`, `/speckit.implement`, `/speckit.preview` |
 | Quality | `/speckit.analyze`, `/speckit.checklist` |
 | Navigation | `/speckit.list`, `/speckit.switch`, `/speckit.extend`, `/speckit.merge` |
+| Mobile | `/speckit.mobile` |
 | Operations | `/speckit.baseline`, `/speckit.integrate`, `/speckit.monitor`, `/speckit.launch`, `/speckit.ship` |
 
 ### Флаги команд
@@ -890,11 +965,14 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 | `/speckit.migrate` | `--scope` | Limit analysis to specific paths (default: entire ... |
 | `/speckit.migrate` | `--output` | Output verbosity (minimal, standard, detailed). De... |
 | `/speckit.migrate` | `--dry-run` | Show migration plan without generating files |
+| `/speckit.mobile` | `--platform` | Override auto-detection (kmp, flutter, react-native, native) |
+| `/speckit.mobile` | `--skip-mqs` | Skip MQS calculation (not recommended) |
+| `/speckit.mobile` | `--mqs-threshold` | Override default 75 threshold |
 
 ---
 
 ## Версия документа
 
-**Версия:** 0.0.109
+**Версия:** 0.0.119
 **Дата генерации:** 2026-01-09
 **Автор:** Auto-generated from command templates

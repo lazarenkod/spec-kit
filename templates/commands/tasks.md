@@ -737,6 +737,63 @@ IF PLATFORM_DETECTED != null:
 **Quality Gates (Platform)**:
 - QG-PLATFORM-001: All platform tasks marked [CRITICAL] must complete before Phase 3
 - QG-PLATFORM-002: Platform verification tasks must pass before story implementation
+
+### Mobile Agent Integration (Step 2.6)
+
+**Trigger**: Execute when any mobile platform is detected (KMP, Flutter, React Native, Native iOS/Android).
+
+**Purpose**: Load specialized mobile development expertise via `mobile-developer-agent` persona and platform-specific skills.
+
+**Activation Process**:
+```text
+IF PLATFORM_DETECTED in [kmp, flutter, react-native, ios-native, android-native]:
+  1. LOAD persona: templates/personas/mobile-developer-agent.md
+  2. LOAD skill: templates/skills/mobile-architecture.md
+  3. LOAD skill: templates/skills/mobile-performance.md
+  4. LOAD skill: templates/skills/mobile-testing.md
+
+  THEN based on platform:
+    IF platform == "kmp":
+      LOAD skill: templates/skills/kmp-expert.md
+    ELSE IF platform == "flutter":
+      LOAD skill: templates/skills/flutter-expert.md
+    ELSE IF platform == "react-native":
+      LOAD skill: templates/skills/react-native-expert.md
+
+  OUTPUT: "📱 Mobile Agent activated: {persona} with {skills}"
+```
+
+**MQS Pre-calculation**:
+```text
+CALCULATE preliminary MQS to identify task priorities:
+  - Architecture score → Generate architecture setup tasks
+  - Performance score → Generate optimization tasks if score < 15/20
+  - Testing score → Ensure binding test tasks injected
+  - Accessibility score → Generate a11y remediation tasks if score < 10/15
+
+ADD to task metadata:
+  - [MQS-ARCH] for architecture improvement tasks
+  - [MQS-PERF] for performance optimization tasks
+  - [MQS-TEST] for testing coverage tasks
+  - [MQS-A11Y] for accessibility improvement tasks
+```
+
+**Task Enrichment**:
+```text
+FOR EACH task in Phase 2-3:
+  IF task relates to mobile component:
+    APPLY platform-specific patterns from loaded skill
+    ADD implementation hints in task description
+    REFERENCE skill section for detailed guidance
+
+FOR EACH ViewModel/BLoC/Store detected:
+  IF platform is cross-platform (KMP, Flutter, RN):
+    INJECT binding test tasks (Phase 2e-BINDING)
+    VERIFY 100% method coverage required
+```
+
+**Quality Gate (Mobile)**:
+- QG-MQS: Mobile Quality Score ≥ 75 required for release (validated after implementation)
 - QG-PLATFORM-003: iOS and Android builds must succeed
 
 ### Phase 2d-UX: UX Validation Foundation (for UI features) 🎯

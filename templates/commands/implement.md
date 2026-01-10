@@ -605,6 +605,78 @@ claude_code:
           - Log warning: "⚠️ AUTONOMOUS MODE: Staging not validated (QG-STAGING-001 skipped)"
           - Continue to Wave 1 (soft fail - tests may fail later)
       model_override: haiku
+
+    # Wave 0.5: Mobile Architecture Review (if mobile platform detected)
+    - role: mobile-architecture-reviewer
+      role_group: VALIDATION
+      parallel: false
+      depends_on: []
+      priority: 5
+      trigger: "when mobile platform detected (KMP, Flutter, React Native, Native)"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Platform: {{PLATFORM_DETECTED}}
+
+        ## Purpose
+        Review mobile architecture BEFORE implementation to ensure patterns align with platform best practices. This catches architectural issues early, preventing costly refactoring later.
+
+        ## Task
+        Load and apply mobile expertise:
+
+        1. **Load Mobile Agent**:
+           - Persona: mobile-developer-agent
+           - Skills: mobile-architecture, mobile-performance, mobile-testing
+           - Platform skill: {{PLATFORM}}-expert (kmp-expert, flutter-expert, react-native-expert)
+
+        2. **Architecture Pre-Check**:
+           - Verify layer separation in plan.md (Presentation → Domain → Data)
+           - Check DI framework configuration planned
+           - Validate offline-first strategy (if user data involved)
+           - Review state management approach
+
+        3. **Calculate Preliminary MQS**:
+           - Estimate architecture score based on plan
+           - Identify potential performance concerns
+           - Flag missing test coverage areas
+           - Note accessibility requirements
+
+        4. **Generate Architecture Recommendations**:
+           IF any issues found:
+             - Create memory/mobile-architecture-recommendations.md
+             - List required changes before implementation
+             - Provide code patterns from loaded skill
+
+        ## Success Criteria
+        - Mobile agent loaded and skills activated
+        - Architecture alignment verified (or recommendations generated)
+        - Preliminary MQS score estimated
+        - No blocking architectural issues
+
+        ## Output
+        ```text
+        📱 Mobile Architecture Review
+
+        Platform: {platform}
+        Skills: mobile-architecture, {platform}-expert
+
+        Architecture Alignment:
+        ✅ Layer separation planned correctly
+        ✅ Koin DI configured for KMP
+        ⚠️ Missing offline cache for user annotations
+        ✅ ViewModel with StateFlow pattern
+
+        Preliminary MQS Estimate: 75-85 (target: ≥75)
+
+        Recommendations:
+        - Add offline cache for annotations in ReaderRepository
+        - Include binding tests for all ViewModels
+
+        Proceeding to Wave 1...
+        ```
+      model_override: haiku
+      skip_when: "platform not in [kmp, flutter, react-native, ios-native, android-native]"
+
     # Wave 1: Infrastructure (no deps)
     - role: project-scaffolder
       role_group: INFRA
@@ -1740,6 +1812,147 @@ claude_code:
         - QG-MOB-003: PASSED/FAILED (platforms: android, ios)
         - QG-MOB-004: PASSED/FAILED (devices tested: N)
       model_override: sonnet
+
+# Wave 4.5: MQS Validation (Mobile Quality Score)
+    - role: mqs-validator
+      role_group: VALIDATION
+      parallel: false
+      depends_on: [mobile-test-verifier, binding-test-scaffolder]
+      priority: 4
+      trigger: "when mobile platform detected AND Wave 4 mobile tests complete"
+      skip_if: "no mobile platform detected"
+      prompt: |
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Platform: {{MOBILE_PLATFORM}} (kmp, flutter, react-native, ios-native, android-native)
+        Persona: mobile-developer-agent
+        Skills: mobile-architecture, mobile-performance, mobile-testing, {{PLATFORM}}-expert
+
+        ## Purpose
+        Calculate final Mobile Quality Score (MQS) and validate against threshold.
+        MQS gates release readiness for mobile applications.
+
+        ## MQS Calculation
+
+        ```text
+        MQS = architecture_score     # 0-25 points
+            + performance_score      # 0-20 points
+            + parity_score          # 0-20 points
+            + testing_score         # 0-20 points
+            + accessibility_score   # 0-15 points
+                                    # Total: 0-100 points
+        ```
+
+        ### Architecture Score (0-25)
+
+        | Criteria | Points | Check |
+        |----------|--------|-------|
+        | Clean layer separation | 8 | presentation/domain/data layers exist |
+        | DI configured | 7 | Koin/GetIt/Hilt modules registered |
+        | Shared code ratio | 5 | ≥70% code in shared modules (cross-platform) |
+        | State management | 5 | ViewModel/BLoC unidirectional flow |
+
+        ### Performance Score (0-20)
+
+        | Criteria | Points | Check |
+        |----------|--------|-------|
+        | Cold start time | 6 | < 2s measured or estimated |
+        | Frame rate | 6 | 60 FPS, no jank in lists |
+        | Memory usage | 4 | Peak < 150MB |
+        | Battery impact | 4 | No polling, efficient background |
+
+        ### Platform Parity Score (0-20) - Cross-Platform Only
+
+        | Criteria | Points | Check |
+        |----------|--------|-------|
+        | Feature parity | 10 | Same features on all platforms |
+        | UX adaptation | 5 | HIG on iOS, Material on Android |
+        | Platform bugs | 5 | No platform-specific bugs |
+
+        For native-only projects, award full 20 points.
+
+        ### Testing Score (0-20)
+
+        | Criteria | Points | Check |
+        |----------|--------|-------|
+        | Unit coverage | 8 | ≥80% coverage |
+        | Binding tests | 6 | 100% ViewModel methods tested |
+        | E2E coverage | 6 | Critical paths covered |
+
+        ### Accessibility Score (0-15)
+
+        | Criteria | Points | Check |
+        |----------|--------|-------|
+        | A11y labels | 5 | All interactive elements labeled |
+        | Screen reader | 5 | VoiceOver/TalkBack navigation works |
+        | Touch targets | 5 | ≥44pt iOS / ≥48dp Android |
+
+        ## Validation
+
+        ```text
+        CALCULATE scores:
+          FOR EACH dimension:
+            - Analyze codebase against criteria
+            - Award points based on compliance
+            - Note gaps and recommendations
+
+        EVALUATE threshold:
+          IF MQS >= 75:
+            STATUS = "✅ Production Ready"
+            ALLOW release
+          ELSE:
+            STATUS = "❌ Below Threshold"
+            BLOCK release (unless --skip-mqs flag)
+            GENERATE improvement_plan.md
+        ```
+
+        ## Quality Gates
+
+        | Gate ID | Purpose | Threshold | Severity |
+        |---------|---------|-----------|----------|
+        | QG-MQS-001 | Architecture | ≥ 20/25 | HIGH |
+        | QG-MQS-002 | Performance | ≥ 15/20 | HIGH |
+        | QG-MQS-003 | Platform Parity | ≥ 15/20 | HIGH |
+        | QG-MQS-004 | Testing | ≥ 15/20 | CRITICAL |
+        | QG-MQS-005 | Accessibility | ≥ 10/15 | MEDIUM |
+        | QG-MQS | Total Score | ≥ 75/100 | CRITICAL |
+
+        ## Output
+
+        Generate MQS report:
+
+        ```text
+        ┌─────────────────────────────────────────────────────────────┐
+        │                   MOBILE QUALITY SCORE                       │
+        ├─────────────────────────────────────────────────────────────┤
+        │  Architecture    ████████████████████░░░░░  20/25           │
+        │  Performance     ████████████████░░░░░░░░░  16/20           │
+        │  Platform Parity ████████████████████░░░░░  18/20           │
+        │  Testing         ████████████████████░░░░░  18/20           │
+        │  Accessibility   ████████████░░░░░░░░░░░░░  12/15           │
+        ├─────────────────────────────────────────────────────────────┤
+        │  TOTAL                                       84/100  ✅     │
+        │  Status: Production Ready                                   │
+        └─────────────────────────────────────────────────────────────┘
+
+        Recommendations:
+        1. [HIGH] Increase touch targets for 3 buttons
+        2. [MEDIUM] Add lazy Koin initialization
+        3. [LOW] Improve cold start by 200ms
+        ```
+
+        IF MQS < 75:
+          - Create memory/mqs-improvements.md with prioritized fixes
+          - Block Wave 5 (polish) until fixed or --skip-mqs used
+
+        ## Success Criteria
+        - MQS calculated for all 5 dimensions
+        - QG-MQS: Total score ≥ 75/100 (CRITICAL)
+        - QG-MQS-004: Testing score ≥ 15/20 (CRITICAL)
+        - All binding tests pass (QG-BIND-001/002/003)
+        - Improvement recommendations generated if score < 90
+      model_override: sonnet
+
     - role: unit-test-generator
       role_group: TESTING
       parallel: true

@@ -7,6 +7,40 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.119] - 2026-01-09
+
+### Added
+
+- **Mobile Developer Agent with Specialized Skills** - Comprehensive mobile development expertise v0.0.119:
+  - **Problem solved**: Mobile development lacked specialized agent with cross-platform expertise and quality scoring
+  - **New ecosystem**:
+    - **`mobile-developer-agent` persona**: Expertise in KMP, Flutter, React Native, Native iOS/Android
+    - **Platform-specific skills**: `kmp-expert`, `flutter-expert`, `react-native-expert`
+    - **Cross-platform skills**: `mobile-architecture`, `mobile-performance`, `mobile-testing`
+    - **`/speckit.mobile` command**: Orchestrates mobile development with MQS validation
+  - **Mobile Quality Score (MQS)** - 100-point scoring system:
+    - Architecture (25 pts): Layer separation, DI, state management
+    - Performance (20 pts): Cold start <2s, 60 FPS, memory <150MB
+    - Platform Parity (20 pts): Feature/UX consistency across platforms
+    - Testing (20 pts): Unit 80%, binding 100%, E2E critical paths
+    - Accessibility (15 pts): A11y labels, screen reader, touch targets
+    - **Threshold**: MQS ≥ 75 required for release
+  - **Wave 0.5**: Mobile Architecture Review (pre-implementation validation)
+  - **Wave 4.5**: MQS Validation with `mqs-validator` role
+  - **Quality Gates**: QG-MQS-001..005, QG-MQS (total ≥75)
+  - **Files created**:
+    - `templates/personas/mobile-developer-agent.md`
+    - `templates/skills/kmp-expert.md`
+    - `templates/skills/flutter-expert.md`
+    - `templates/skills/react-native-expert.md`
+    - `templates/skills/mobile-architecture.md`
+    - `templates/skills/mobile-performance.md`
+    - `templates/skills/mobile-testing.md`
+    - `templates/commands/mobile.md`
+  - **Files modified**:
+    - `templates/commands/tasks.md`: Added Mobile Agent Integration (Step 2.6)
+    - `templates/commands/implement.md`: Added Wave 0.5 and Wave 4.5 for mobile
+
 ## [0.0.118] - 2026-01-09
 
 ### Added
