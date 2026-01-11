@@ -36,6 +36,16 @@ handoffs:
     condition:
       - "Traceability gaps (FR without tasks) detected"
       - "Dependency issues require task restructuring"
+  - label: Fix Drift
+    agent: speckit.fix
+    prompt: Synchronize specifications with code changes to reduce drift
+    auto: false
+    condition:
+      - "Drift detection profile active (drift, qa, full)"
+      - "Drift items detected (forward, reverse, or behavioral)"
+      - "Drift count > 0 in drift-report.md"
+    post_actions:
+      - "log: Drift detected - consider running /speckit.fix to synchronize specs"
   - label: Proceed to Implementation
     agent: speckit.implement
     prompt: Start implementation (only if no CRITICAL issues and SQS >= 80)

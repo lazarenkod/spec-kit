@@ -2825,9 +2825,16 @@ generate_agent_file() {
 
 **Example Output**:
 ```markdown
-## What's New in v0.4.0
+## What's New in v0.5.0
 
 ### Added
+- **`/speckit.fix` Command** - Automatic drift repair with six-wave orchestration (Detection → Analysis → Proposal → Interaction → Application → Validation)
+- **Git Integration** - Analyze only changed files via `git diff HEAD` (10-50x faster)
+- **Interactive Mode** - User approval workflow for each proposal with diff preview
+- **Incremental & Regenerate Strategies** - Add missing FRs or full spec regeneration with three-way merge
+- **Proposal System** - Structured change recommendations with confidence scoring (0.0-1.0)
+
+### Previous Releases (v0.4.0)
 - **Spec-Code Drift Detection** - Bidirectional traceability between specs and code
 - **Reverse-Engineering Command** - Extract specifications from existing code
 - **Universal Plan Mode** - 4-level depth system with exploration phases

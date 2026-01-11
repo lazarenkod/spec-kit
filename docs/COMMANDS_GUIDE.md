@@ -22,24 +22,25 @@
 - [10. /speckit.staging](#speckitstaging)
 - [11. /speckit.analyze](#speckitanalyze)
 - [12. /speckit.reverse-engineer](#speckitreverse-engineer)
-- [13. /speckit.implement](#speckitimplement)
-- [14. /speckit.verify](#speckitverify)
-- [15. /speckit.preview](#speckitpreview)
-- [16. /speckit.list](#speckitlist)
-- [17. /speckit.switch](#speckitswitch)
-- [18. /speckit.extend](#speckitextend)
-- [19. /speckit.merge](#speckitmerge)
-- [20. /speckit.baseline](#speckitbaseline)
-- [21. /speckit.checklist](#speckitchecklist)
-- [22. /speckit.discover](#speckitdiscover)
-- [23. /speckit.integrate](#speckitintegrate)
-- [24. /speckit.monitor](#speckitmonitor)
-- [25. /speckit.launch](#speckitlaunch)
-- [26. /speckit.ship](#speckitship)
-- [27. /speckit.concept-variants](#speckitconcept-variants)
-- [28. /speckit.migrate](#speckitmigrate)
-- [29. /speckit.properties](#speckitproperties)
-- [30. /speckit.mobile](#speckitmobile)
+- [13. /speckit.fix](#speckitfix)
+- [14. /speckit.implement](#speckitimplement)
+- [15. /speckit.verify](#speckitverify)
+- [16. /speckit.preview](#speckitpreview)
+- [17. /speckit.list](#speckitlist)
+- [18. /speckit.switch](#speckitswitch)
+- [19. /speckit.extend](#speckitextend)
+- [20. /speckit.merge](#speckitmerge)
+- [21. /speckit.baseline](#speckitbaseline)
+- [22. /speckit.checklist](#speckitchecklist)
+- [23. /speckit.discover](#speckitdiscover)
+- [24. /speckit.integrate](#speckitintegrate)
+- [25. /speckit.monitor](#speckitmonitor)
+- [26. /speckit.launch](#speckitlaunch)
+- [27. /speckit.ship](#speckitship)
+- [28. /speckit.concept-variants](#speckitconcept-variants)
+- [29. /speckit.migrate](#speckitmigrate)
+- [30. /speckit.properties](#speckitproperties)
+- [31. /speckit.mobile](#speckitmobile)
 
 ---
 
@@ -773,7 +774,218 @@ cat reverse-engineered/.extraction-manifest.yaml
 
 ---
 
-### 13. `/speckit.implement` {#speckitimplement}
+### 13. `/speckit.fix` {#speckitfix}
+
+**Назначение:** Синхронизация спецификаций с вручную измененным кодом. Обнаруживает дрейф (drift) между spec.md/plan.md/tasks.md и реальной реализацией, генерирует предложения по обновлению и применяет изменения с сохранением полной трассируемости.
+
+**Модель:** `sonnet` (thinking_budget: 12000)
+
+**Persona:** `drift-repair-agent`
+
+**Проблема:** Когда разработчики вносят изменения через Claude Code (минуя workflow `/speckit.specify` → `/speckit.plan` → `/speckit.tasks` → `/speckit.implement`), спецификации устаревают:
+- ✅ Код имеет новые API → ❌ Не задокументированы в spec.md
+- ✅ Поведение кода изменилось → ❌ spec.md описывает старое поведение
+- ✅ Добавлены тесты → ❌ Нет AS-xxx в spec.md
+- ✅ FR удалены из реализации → ❌ Остались в spec.md (forward drift)
+
+**Решение:** `/speckit.fix` обнаруживает дрейф, генерирует предложения по обновлению и применяет изменения с полной трассируемостью.
+
+**Флаги:**
+
+- `--scope <pattern>` — Паттерн файлов/директорий (default: текущая feature dir)
+  - Примеры: `src/auth/`, `**/*.py`, `.` (все файлы)
+- `--mode <interactive|auto|preview>` — Режим работы (default: `interactive`)
+  - `interactive` — Запрос подтверждения для каждого изменения
+  - `auto` — Автоматическое применение (требует `--force`)
+  - `preview` — Генерация отчета без применения изменений
+- `--artifact <spec|plan|tasks|all>` — Какие артефакты обновлять (default: `all`)
+- `--strategy <incremental|regenerate>` — Стратегия обновления (default: `incremental`)
+  - `incremental` — Добавить недостающие FR/AS, сохранить структуру (2-3 мин)
+  - `regenerate` — Полная перегенерация с трехсторонним слиянием (5-10 мин)
+- `--git-diff` — Анализировать только измененные файлы через `git diff HEAD` (default: `true`)
+- `--force` — Пропустить подтверждения (только для `--mode auto`)
+- `--dry-run` — Показать предложения без применения
+
+**6-Wave Orchestration:**
+
+1. **Wave 1: Detection (Parallel)** — 3 agents
+   - `code-scanner`: Обнаружение измененных файлов (git diff или full scan)
+   - `drift-detector`: Запуск drift detection framework
+   - `annotation-collector`: Сбор всех `@speckit:FR:`, `@speckit:AS:`, `[TEST:AS-xxx]` аннотаций
+
+2. **Wave 2: Analysis (Parallel)** — 3 agents
+   - `impact-analyzer`: Определение затронутых FR/AS
+   - `gap-analyzer`: Поиск недостающих требований
+   - `conflict-detector`: Обнаружение orphan annotations, дубликатов FR
+
+3. **Wave 3: Proposal Generation (Sequential)** — 3 agents
+   - `spec-proposer`: Генерация предложений для spec.md
+   - `plan-proposer`: Генерация предложений для plan.md
+   - `tasks-proposer`: Генерация предложений для tasks.md
+
+4. **Wave 4: User Interaction (Conditional)** — Только для `--mode interactive`
+   - Отображение каждого предложения с diff preview
+   - Запрос пользователя: `[Y/n/e/skip/quit]`
+
+5. **Wave 5: Application (Sequential)** — 3 agents
+   - `artifact-updater`: Применение изменений к spec/plan/tasks/code
+   - `registry-updater`: Обновление `.artifact-registry.yaml` (checksums, versions, drift metrics)
+   - `system-spec-updater`: Обновление system specs (append-only history)
+
+6. **Wave 6: Validation (Parallel)** — 3 agents
+   - `drift-validator`: Повторный запуск drift detection
+   - `traceability-validator`: Валидация FR/AS IDs
+   - `cross-reference-validator`: Проверка зависимостей
+
+**Типы дрейфа:**
+
+| Тип | Описание | Пример |
+|-----|----------|--------|
+| Forward Drift | Spec описывает функцию, не реализованную в коде | FR-007 не имеет реализации |
+| Reverse Drift | Код содержит функцию, не описанную в spec | API `archiveUser()` без FR |
+| Behavioral Drift | Поведение кода отличается от описания в spec | Spec: возврат 401, код: возврат 403 |
+
+**Стратегии обновления:**
+
+**Incremental (default):**
+- Добавить недостающие FR-xxx (новые ID: FR-009, FR-010, ...)
+- Добавить недостающие AS-xxx (AS-9A, AS-9B, ...)
+- Добавить `@speckit:FR:` аннотации в код
+- Добавить задачи в tasks.md с правильными зависимостями
+- **Pros**: Быстро (2-3 мин), низкий риск, сохраняет структуру
+- **Cons**: Может накапливать несоответствия со временем
+
+**Regenerate:**
+- Запуск `/speckit.reverse-engineer` для извлечения полной спецификации
+- Трехстороннее слияние: canonical spec + extracted spec → merged spec
+- Сохранение ручных правок в canonical spec
+- **Pros**: Комплексный, исправляет behavioral drift
+- **Cons**: Медленнее (5-10 мин), риск перезаписи ручных правок
+
+**Git Integration:**
+- По умолчанию анализирует только файлы из `git diff HEAD`
+- Скорость: 10-50x быстрее для больших кодовых баз
+- Fallback на full scan если не git repo
+
+**Предложения (Proposals):**
+
+Каждое предложение содержит:
+- **Type**: `ADD_FR`, `UPDATE_FR`, `REMOVE_FR`, `MOVE_FR_TO_OUT_OF_SCOPE`, `ADD_AS`, `ADD_ANNOTATION`, `ADD_TASK`, etc.
+- **Severity**: `CRITICAL` 🔴 | `HIGH` 🟠 | `MEDIUM` 🟡 | `LOW` 🟢
+- **Confidence**: 0.0-1.0 (на основе аннотаций, тестов, naming clarity, docstrings)
+- **Diff preview**: Unified diff формат для просмотра изменений
+- **Secondary changes**: Связанные изменения (например, добавление аннотации после FR)
+
+**Пример предложения (Interactive Mode):**
+
+```text
+═══════════════════════════════════════════════════════════════════════════════
+Proposal 1/15: ADD_FR
+═══════════════════════════════════════════════════════════════════════════════
+
+🟠 HIGH  [+ ADD FR]  ✓ High (0.82)
+
+## Summary
+Add new functional requirement for undocumented API
+
+## Current State
+API exists but not documented in spec
+
+Evidence:
+  • Function archiveUser found at src/api/users.ts:142
+  • No @speckit:FR: annotation
+  • No corresponding FR in spec.md
+  • 3 tests reference this function
+
+## Proposed Change
+Target: spec.md § Functional Requirements
+Action: add
+
+New Functional Requirement:
+
+  FR-009: User can archive their account
+
+  Description:
+    The system MUST provide an API endpoint POST /api/v1/users/:id/archive
+    that allows users to archive their account...
+
+## Secondary Changes
+  ADD_ANNOTATION → src/api/users.ts:142
+
+## Impact
+Files affected: spec.md, src/api/users.ts
+Traceability: FR-009
+Risk: LOW
+
+## Diff Preview
+--- spec.md
++++ spec.md
+@@ -45,6 +45,15 @@
+
+ ## Functional Requirements
+
++### FR-009: User Account Archival
++
++**Description**: User can archive their account...
+...
+
+───────────────────────────────────────────────────────────────────────────────
+Apply this change? [Y/n/e/skip/quit]
+───────────────────────────────────────────────────────────────────────────────
+```
+
+**Usage:**
+
+```bash
+# Interactive fix (default)
+/speckit.fix
+
+# Fix только измененные файлы (git diff)
+/speckit.fix --scope "src/auth/" --git-diff
+
+# Auto-fix с принудительным применением
+/speckit.fix --mode auto --force
+
+# Preview без применения изменений
+/speckit.fix --mode preview
+
+# Regenerate стратегия (полная перегенерация)
+/speckit.fix --strategy regenerate --artifact spec
+
+# Fix только spec.md
+/speckit.fix --artifact spec --mode interactive
+```
+
+**Handoffs:**
+
+- → `/speckit.implement` (продолжить реализацию после fix)
+- → `/speckit.analyze --profile drift` (повторная проверка после fix)
+
+**Pre-Gates (QG-FIX-001 to QG-FIX-003):**
+
+- Artifacts Exist Gate: spec.md существует
+- Clean Working Directory Gate: Нет uncommitted изменений в spec/plan/tasks (если не `--force`)
+- Git Repo Available Gate: git status возвращает 0 (если `--git-diff`)
+
+**Post-Gates (QG-FIX-101 to QG-FIX-104):**
+
+- Drift Reduction Gate: Оставшийся drift < Исходный drift
+- Traceability Valid Gate: Все FR IDs уникальны и последовательны
+- Registry Updated Gate: `.artifact-registry.yaml` checksums соответствуют файлам
+- Validation Passed Gate: Все валидаторы вернули SUCCESS
+
+**Edge Cases:**
+
+- **ID Collision**: Если FR-009 уже существует → использовать FR-010
+- **Orphan Annotations**: `@speckit:FR:FR-999` без FR-999 в spec → удалить или добавить placeholder
+- **Concurrent Modification**: Изменения в spec.md во время работы → обнаружение по checksum, откат
+- **Validation Failure**: Откат из backup файлов при ошибке валидации
+
+**Behavioral Drift Policy:** "Code is truth" — обновлять spec в соответствии с кодом
+
+---
+
+### 14. `/speckit.implement` {#speckitimplement}
 
 **Назначение:** Execute the implementation plan, generate documentation (RUNNING.md, README.md), and validate with self-review. Enforces inline quality gates for pre-implementation checks and post-implementation validation.
 
@@ -837,7 +1049,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 14. `/speckit.verify` {#speckitverify}
+### 15. `/speckit.verify` {#speckitverify}
 
 **Назначение:** Verify implementation against specification after /speckit.implement. Comprehensive post-implementation verification covering 5 layers: acceptance criteria (AS-xxx scenarios), API contracts, visual verification (screenshots + pixelmatch), E2E behaviors, and NFR compliance. Generates detailed report with auto-fix suggestions for common issues. Requires 90% overall pass rate to proceed.
 
@@ -893,7 +1105,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 15. `/speckit.preview` {#speckitpreview}
+### 16. `/speckit.preview` {#speckitpreview}
 
 **Назначение:** Generate interactive previews from design specifications. Converts wireframes to visual HTML, generates component previews, captures screenshots, and runs design quality validation.
 
@@ -944,7 +1156,7 @@ await page.screenshot({
 
 ---
 
-### 16. `/speckit.list` {#speckitlist}
+### 17. `/speckit.list` {#speckitlist}
 
 **Назначение:** List all features in the project with their current status. Shows feature registry from manifest and indicates which feature is currently active.
 
@@ -962,7 +1174,7 @@ await page.screenshot({
 
 ---
 
-### 17. `/speckit.switch` {#speckitswitch}
+### 18. `/speckit.switch` {#speckitswitch}
 
 **Назначение:** Switch to a different feature to continue working on it. Updates the active feature state and optionally checks out the corresponding git branch.
 
@@ -983,7 +1195,7 @@ await page.screenshot({
 
 ---
 
-### 18. `/speckit.extend` {#speckitextend}
+### 19. `/speckit.extend` {#speckitextend}
 
 **Назначение:** Extend a merged feature with new capabilities. Creates a new feature branch with Feature Lineage pre-populated, loading context from the parent feature and its system specs.
 
@@ -1005,7 +1217,7 @@ await page.screenshot({
 
 ---
 
-### 19. `/speckit.merge` {#speckitmerge}
+### 20. `/speckit.merge` {#speckitmerge}
 
 **Назначение:** Finalize feature and update system specs after PR merge. Converts feature requirements into living system documentation.
 
@@ -1018,7 +1230,7 @@ await page.screenshot({
 
 ---
 
-### 20. `/speckit.baseline` {#speckitbaseline}
+### 21. `/speckit.baseline` {#speckitbaseline}
 
 **Назначение:** Capture current state of system components for brownfield specifications. Generates baseline.md documenting existing behaviors, code structure, and dependencies.
 
@@ -1046,7 +1258,7 @@ await page.screenshot({
 
 ---
 
-### 21. `/speckit.checklist` {#speckitchecklist}
+### 22. `/speckit.checklist` {#speckitchecklist}
 
 **Назначение:** Generate a custom checklist for the current feature based on user requirements.
 
@@ -1054,7 +1266,7 @@ await page.screenshot({
 
 ---
 
-### 22. `/speckit.discover` {#speckitdiscover}
+### 23. `/speckit.discover` {#speckitdiscover}
 
 **Назначение:** Validate problem-solution fit before building through customer discovery
 
@@ -1078,7 +1290,7 @@ await page.screenshot({
 
 ---
 
-### 23. `/speckit.integrate` {#speckitintegrate}
+### 24. `/speckit.integrate` {#speckitintegrate}
 
 **Назначение:** Quick integration with common third-party services
 
@@ -1092,7 +1304,7 @@ await page.screenshot({
 
 ---
 
-### 24. `/speckit.monitor` {#speckitmonitor}
+### 25. `/speckit.monitor` {#speckitmonitor}
 
 **Назначение:** Set up production observability with OpenTelemetry, dashboards, and alerting
 
@@ -1112,7 +1324,7 @@ await page.screenshot({
 
 ---
 
-### 25. `/speckit.launch` {#speckitlaunch}
+### 26. `/speckit.launch` {#speckitlaunch}
 
 **Назначение:** Automate product launch and go-to-market activities
 
@@ -1137,7 +1349,7 @@ await page.screenshot({
 
 ---
 
-### 26. `/speckit.ship` {#speckitship}
+### 27. `/speckit.ship` {#speckitship}
 
 **Назначение:** Provision infrastructure, deploy application, and verify running system in one command
 
@@ -1190,7 +1402,7 @@ await page.screenshot({
 
 ---
 
-### 27. `/speckit.concept-variants` {#speckitconcept-variants}
+### 28. `/speckit.concept-variants` {#speckitconcept-variants}
 
 **Назначение:** Generate MINIMAL/BALANCED/AMBITIOUS scope variants for existing concept
 
@@ -1198,7 +1410,7 @@ await page.screenshot({
 
 ---
 
-### 28. `/speckit.migrate` {#speckitmigrate}
+### 29. `/speckit.migrate` {#speckitmigrate}
 
 **Назначение:** Plan and execute spec-driven modernization between architectures, versions, and cloud providers
 
@@ -1237,7 +1449,7 @@ await page.screenshot({
 
 ---
 
-### 29. `/speckit.properties` {#speckitproperties}
+### 30. `/speckit.properties` {#speckitproperties}
 
 **Назначение:** Extract properties from spec artifacts and generate property-based tests with EARS transformation. Creates PROP-xxx traced to AS/EC/FR/NFR for comprehensive edge case discovery via PGS (Property-Generated Solver) methodology.
 
@@ -1260,7 +1472,7 @@ await page.screenshot({
 
 ---
 
-### 30. `/speckit.mobile` {#speckitmobile}
+### 31. `/speckit.mobile` {#speckitmobile}
 
 **Назначение:** Orchestrate mobile development with specialized agents. Activates platform-specific expertise (KMP/Flutter/React Native), calculates Mobile Quality Score (MQS), and ensures production-ready mobile applications.
 
@@ -1449,6 +1661,6 @@ await page.screenshot({
 
 ## Версия документа
 
-**Версия:** 0.4.0
+**Версия:** 0.5.0
 **Дата генерации:** 2026-01-11
 **Автор:** Auto-generated from command templates

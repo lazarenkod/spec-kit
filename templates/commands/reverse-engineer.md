@@ -40,6 +40,15 @@ handoffs:
         message: "Extraction found no code to analyze - check scan scope and language support"
     post_actions:
       - "log: Extraction complete with {extracted_frs} FRs (avg confidence: {avg_confidence})"
+  - label: Apply Extracted Spec
+    agent: speckit.fix
+    prompt: Apply extracted spec using regenerate strategy to merge into canonical spec.md
+    auto: false
+    condition:
+      - "Extraction completed successfully"
+      - "User wants to apply extracted spec to canonical artifacts"
+    post_actions:
+      - "log: Consider running /speckit.fix --strategy regenerate to merge extracted spec"
 
 pre_gates:
   - name: "Scope Definition Gate"

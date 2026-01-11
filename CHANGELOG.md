@@ -7,6 +7,88 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-01-11
+
+### Added
+
+- **`/speckit.fix` Command - Automatic Drift Repair** v0.5.0:
+  - **Problem solved**: When developers make ad-hoc code changes via Claude Code prompts (bypassing `/speckit.specify` → `/speckit.plan` → `/speckit.tasks` → `/speckit.implement` workflow), specifications become stale. Manual synchronization is time-consuming and error-prone.
+  - **Solution: Six-Wave Orchestration for Automated Drift Repair**
+    - **Wave 1: Detection (Parallel)** - 3 agents:
+      - `code-scanner`: Discover changed files via `git diff HEAD` or full scan
+      - `drift-detector`: Run drift detection framework
+      - `annotation-collector`: Collect all `@speckit:FR:`, `@speckit:AS:`, `[TEST:AS-xxx]` annotations
+    - **Wave 2: Analysis (Parallel)** - 3 agents:
+      - `impact-analyzer`: Determine affected FRs/AS
+      - `gap-analyzer`: Find missing requirements
+      - `conflict-detector`: Detect orphan annotations, duplicate FRs
+    - **Wave 3: Proposal Generation (Sequential)** - 3 agents:
+      - `spec-proposer`: Generate spec.md update proposals
+      - `plan-proposer`: Generate plan.md update proposals
+      - `tasks-proposer`: Generate tasks.md update proposals
+    - **Wave 4: User Interaction (Conditional)** - Only for `--mode interactive`
+    - **Wave 5: Application (Sequential)** - 3 agents:
+      - `artifact-updater`: Apply changes to spec/plan/tasks/code
+      - `registry-updater`: Update `.artifact-registry.yaml`
+      - `system-spec-updater`: Update system specs (append-only)
+    - **Wave 6: Validation (Parallel)** - 3 agents:
+      - `drift-validator`: Re-run drift detection
+      - `traceability-validator`: Validate FR/AS IDs
+      - `cross-reference-validator`: Check dependencies
+  - **Modes**:
+    - `interactive` (default): User approval for each proposal with diff preview
+    - `auto`: Automatic application (requires `--force`)
+    - `preview`: Generate report without applying changes
+  - **Strategies**:
+    - `incremental` (default): Add missing FR-xxx/AS-xxx, preserve structure (2-3 min)
+    - `regenerate`: Full spec regeneration with three-way merge (5-10 min)
+  - **Git Integration**:
+    - Analyze only changed files via `git diff HEAD` (default enabled)
+    - 10-50x faster for large codebases
+    - Fallback to full scan if not a git repository
+  - **Proposal System**:
+    - Proposal types: `ADD_FR`, `UPDATE_FR`, `REMOVE_FR`, `MOVE_FR_TO_OUT_OF_SCOPE`, `ADD_AS`, `ADD_ANNOTATION`, `ADD_TASK`, etc.
+    - Severity levels: `CRITICAL` 🔴 | `HIGH` 🟠 | `MEDIUM` 🟡 | `LOW` 🟢
+    - Confidence scoring: 0.0-1.0 based on annotations, tests, naming clarity, docstrings
+    - Unified diff format for change preview
+    - Secondary changes (e.g., add annotation after adding FR)
+  - **Behavioral Drift Policy**: "Code is truth" - update spec to match code behavior
+  - **Quality Gates**:
+    - **Pre-Fix Gates** (QG-FIX-001 to QG-FIX-003):
+      - Artifacts Exist Gate, Clean Working Directory Gate, Git Repo Available Gate
+    - **Post-Fix Gates** (QG-FIX-101 to QG-FIX-104):
+      - Drift Reduction Gate, Traceability Valid Gate, Registry Updated Gate, Validation Passed Gate
+  - **Edge Cases**:
+    - ID Collision: Auto-allocate next available FR ID
+    - Orphan Annotations: Remove or add placeholder FR
+    - Concurrent Modification: Checksum detection, automatic rollback
+    - Validation Failure: Restore from backup files
+  - **File Updates**:
+    - **`templates/commands/speckit.fix.md` (NEW, 11,800+ lines)**: Main command template with six-wave orchestration
+    - **`templates/shared/drift/fix-strategies.md` (NEW, 6,500+ lines)**: Incremental and regenerate update algorithms, FR/AS ID allocation, confidence scoring
+    - **`templates/shared/drift/git-integration.md` (NEW, 6,500+ lines)**: Git diff analysis patterns, scope filtering, file classification
+    - **`templates/shared/drift/proposal-template.md` (NEW, 7,500+ lines)**: Proposal schema, display format, user interaction patterns
+    - **`templates/commands/analyze.md` (lines 39-48)**: Added "Fix Drift" handoff to `/speckit.fix`
+    - **`templates/commands/reverse-engineer.md` (lines 43-51)**: Added "Apply Extracted Spec" handoff to `/speckit.fix --strategy regenerate`
+    - **`docs/COMMANDS_GUIDE.md`**: Added section 13 for `/speckit.fix` command (150+ lines), renumbered subsequent sections
+    - **`ARCHITECTURE.md` (lines 2828-2840)**: Updated "What's New" section for v0.5.0
+  - **Performance**:
+    - Git diff mode: 10-50x faster than full scan
+    - Incremental strategy: 2-3 minutes for typical features
+    - Regenerate strategy: 5-10 minutes for comprehensive rebuild
+  - **Usage**:
+    - Interactive fix: `/speckit.fix`
+    - Scoped fix: `/speckit.fix --scope "src/auth/" --git-diff`
+    - Auto-fix: `/speckit.fix --mode auto --force`
+    - Preview: `/speckit.fix --mode preview`
+    - Regenerate: `/speckit.fix --strategy regenerate --artifact spec`
+  - **References**:
+    - Command template: `templates/commands/speckit.fix.md`
+    - Fix strategies: `templates/shared/drift/fix-strategies.md`
+    - Git integration: `templates/shared/drift/git-integration.md`
+    - Proposal template: `templates/shared/drift/proposal-template.md`
+    - Command guide: `docs/COMMANDS_GUIDE.md` (section 13)
+
 ## [0.4.0] - 2026-01-11
 
 ### Added
