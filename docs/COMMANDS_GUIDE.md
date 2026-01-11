@@ -21,24 +21,25 @@
 - [9. /speckit.taskstoissues](#speckittaskstoissues)
 - [10. /speckit.staging](#speckitstaging)
 - [11. /speckit.analyze](#speckitanalyze)
-- [12. /speckit.implement](#speckitimplement)
-- [13. /speckit.verify](#speckitverify)
-- [14. /speckit.preview](#speckitpreview)
-- [15. /speckit.list](#speckitlist)
-- [16. /speckit.switch](#speckitswitch)
-- [17. /speckit.extend](#speckitextend)
-- [18. /speckit.merge](#speckitmerge)
-- [19. /speckit.baseline](#speckitbaseline)
-- [20. /speckit.checklist](#speckitchecklist)
-- [21. /speckit.discover](#speckitdiscover)
-- [22. /speckit.integrate](#speckitintegrate)
-- [23. /speckit.monitor](#speckitmonitor)
-- [24. /speckit.launch](#speckitlaunch)
-- [25. /speckit.ship](#speckitship)
-- [26. /speckit.concept-variants](#speckitconcept-variants)
-- [27. /speckit.migrate](#speckitmigrate)
-- [28. /speckit.properties](#speckitproperties)
-- [29. /speckit.mobile](#speckitmobile)
+- [12. /speckit.reverse-engineer](#speckitreverse-engineer)
+- [13. /speckit.implement](#speckitimplement)
+- [14. /speckit.verify](#speckitverify)
+- [15. /speckit.preview](#speckitpreview)
+- [16. /speckit.list](#speckitlist)
+- [17. /speckit.switch](#speckitswitch)
+- [18. /speckit.extend](#speckitextend)
+- [19. /speckit.merge](#speckitmerge)
+- [20. /speckit.baseline](#speckitbaseline)
+- [21. /speckit.checklist](#speckitchecklist)
+- [22. /speckit.discover](#speckitdiscover)
+- [23. /speckit.integrate](#speckitintegrate)
+- [24. /speckit.monitor](#speckitmonitor)
+- [25. /speckit.launch](#speckitlaunch)
+- [26. /speckit.ship](#speckitship)
+- [27. /speckit.concept-variants](#speckitconcept-variants)
+- [28. /speckit.migrate](#speckitmigrate)
+- [29. /speckit.properties](#speckitproperties)
+- [30. /speckit.mobile](#speckitmobile)
 
 ---
 
@@ -93,6 +94,30 @@ graph LR
 
 **Evidence Tier Enhancement:**
 - **AUTHORITATIVE** (35 points) — RFC, ISO standards, PCI-DSS, GDPR, vendor API docs (<90 days)
+
+**Plan Mode Enhancement (v0.4.0):**
+
+Опциональное улучшение (агрессивные настройки — concept выигрывает от глубокого исследования):
+
+**Уровни глубины:**
+
+| Уровень | Авто-включение | Описание |
+|---------|----------------|----------|
+| L0 | TRIVIAL | Standard mode |
+| L1 | SIMPLE | Lite: 2 агента exploration (90s) |
+| L2 | MODERATE | Moderate: 4 агента + constitution review (210s) |
+| L3 | COMPLEX | Full: exploration + 4 review passes (300s) |
+
+**Причина агрессивности:** Концептуальная проработка критична для успеха проекта
+**Exploration (L1+):** Расширенное исследование паттернов и альтернатив
+**Review (L2+):** Полная валидация constitution, completeness, edge cases
+**Выход:** `research.md` с глубоким анализом
+
+**Флаги:**
+
+- `--depth-level <0-3>` — Явное указание уровня глубины
+- `--plan-mode` — Алиас для `--depth-level 3` (Full)
+- `--no-plan-mode` — Алиас для `--depth-level 0` (Standard)
 
 **Handoffs:**
 
@@ -166,8 +191,28 @@ graph LR
 - **acceptance-criteria-generator**: STEP 5.5 конвертирует таблицы в Gherkin
 - **visual-acceptance-generator** (NEW): Генерирует Visual YAML для UI-фич
 
+**Plan Mode Enhancement (v0.4.0):**
+
+Опциональное улучшение с 4 уровнями глубины (аналогично /speckit.plan):
+
+**Уровни глубины:**
+
+| Уровень | Авто-включение | Описание |
+|---------|----------------|----------|
+| L0 | TRIVIAL, SIMPLE | Standard mode (без exploration) |
+| L1 | MODERATE | Lite: 2 агента exploration (90s) |
+| L2 | COMPLEX | Moderate: 4 агента + constitution review (210s) |
+| L3 | --plan-mode | Full: exploration + 4 review passes (300s) |
+
+**Exploration (L1+):** research.md с паттернами, альтернативами (L2+), constraints
+**Review (L2+):** Constitution alignment + completeness/edge case/testability (L3)
+**Выход:** `research.md` → context injection в Wave 2 (Analysis) agents
+
 **Флаги:**
 
+- `--depth-level <0-3>` — Явное указание уровня глубины
+- `--plan-mode` — Алиас для `--depth-level 3` (Full)
+- `--no-plan-mode` — Алиас для `--depth-level 0` (Standard)
 - `--model` — Override model selection
 - `--skip-gates` — Bypass inline quality gates
 - `--strict-gates` — Treat HIGH severity as blocking
@@ -397,8 +442,43 @@ Comprehensive negative prompting with 47 anti-patterns across 7 categories:
   - Генерация Compliance Traceability Matrix
   - Создание задач верификации соответствия
 
+**Plan Mode Enhancement (v0.4.0):**
+
+Опциональное улучшение с 4 уровнями глубины для более качественной архитектурной проработки:
+
+**Уровни глубины:**
+
+| Уровень | Название | Exploration | Review | Время | Стоимость | Авто-включение |
+|---------|----------|-------------|--------|-------|-----------|----------------|
+| L0 | Standard | None | None | ~13 min | $0.60 | TRIVIAL, SIMPLE |
+| L1 | Lite | 2 агента (90s) | None | ~14.5 min (+12%) | $0.61 (+1%) | MODERATE |
+| L2 | Moderate | 4 агента (180s) | 1 проход (30s) | ~16.5 min (+27%) | $0.63 (+6%) | COMPLEX |
+| L3 | Full | 4 агента (180s) | 4 прохода (120s) | ~18.5 min (+42%) | $0.67 (+12%) | --plan-mode |
+
+**Триггеры:**
+- Авто: Сложность ≥ 71 (COMPLEX tier)
+- Авто: Ключевые слова (distributed, microservices, migration, security-critical, real-time, high-availability)
+- Вручную: `--plan-mode` (→ L3) или `--depth-level <0-3>`
+
+**Exploration Phase (L1+):**
+- pattern-researcher: Поиск похожих реализаций в кодовой базе
+- alternative-analyzer: Генерация 3-5 альтернатив со скорингом (L2+ only)
+- constraint-mapper: Маппинг NFR → implementation constraints
+- best-practice-synthesizer: Синтез находок с рекомендацией (L2+ only)
+
+**Review Phase (L2+):**
+- Constitution alignment (L2+): Проверка соответствия constitution
+- Completeness check (L3): FR/NFR покрытие ≥90%
+- Edge case detection (L3): Pre-Mortem ≥3 сценария
+- Testability audit (L3): Критерии приемки + observability
+
+**Выход:** `research.md` с exploration findings (L1+)
+
 **Флаги:**
 
+- `--depth-level <0-3>` — Явное указание уровня глубины
+- `--plan-mode` — Алиас для `--depth-level 3` (Full)
+- `--no-plan-mode` — Алиас для `--depth-level 0` (Standard)
 - `--skip-gates` — Bypass inline quality gates
 - `--strict-gates` — Treat HIGH severity as blocking
 - `--full-gates` — Run full validation passes
@@ -436,8 +516,27 @@ Comprehensive negative prompting with 47 anti-patterns across 7 categories:
 
 **Требует:** handoffs/plan-to-tasks.md
 
+**Plan Mode Enhancement (v0.4.0):**
+
+Опциональное улучшение (консервативные настройки):
+
+**Уровни глубины:**
+
+| Уровень | Авто-включение | Описание |
+|---------|----------------|----------|
+| L0 | TRIVIAL, SIMPLE, MODERATE | Standard mode (tasks generation is fast) |
+| L1 | COMPLEX | Lite: 2 агента exploration (90s) |
+
+**Причина консервативности:** Генерация tasks быстрая (~2-3 min), минимальный overhead
+**Exploration (L1):** Только pattern-researcher + constraint-mapper
+**Review:** Не используется (даже на L1)
+**Выход:** `research.md` (только при L1)
+
 **Флаги:**
 
+- `--depth-level <0-3>` — Явное указание уровня глубины (макс. полезность L1)
+- `--plan-mode` — Алиас для `--depth-level 3` (но эффект как L1)
+- `--no-plan-mode` — Алиас для `--depth-level 0` (Standard)
 - `--skip-gates` — Bypass inline quality gates
 - `--strict-gates` — Treat HIGH severity as blocking
 - `--full-gates` — Run full validation passes
@@ -536,10 +635,31 @@ The `/speckit.tasks` command now enforces strict clarity requirements to ensure 
 
 **Флаги:**
 
-- `--profile` — Select validation profile: `full` (all passes), `qa` (post-implementation), `quick` (critical only)
+- `--profile` — Select validation profile: `full` (all passes), `qa` (post-implementation), `drift` (spec-code alignment), `quick` (critical only)
 - `--quiet` — Suppress non-essential output (only gates + result)
 - `--strict` — Lower thresholds (e.g., ambiguity < 3 instead of 5)
 - `--json` — Output as JSON for programmatic consumption
+
+**Pass AA: Drift Detection (v0.4.0):**
+
+Bidirectional spec-code alignment analysis:
+- **Forward Drift (Spec → Code)**: Detects unimplemented requirements (FR-xxx in spec.md without code)
+- **Reverse Drift (Code → Spec)**: Detects undocumented APIs (public APIs without FR-xxx mapping)
+- **Behavioral Drift**: LLM-powered semantic analysis of implementation vs spec intent
+
+**Drift Detection Output:**
+- `drift-report.md` with severity breakdown (CRITICAL/HIGH/MEDIUM/LOW)
+- Coverage metrics: FR → Code (target: ≥80%), Code → Spec (target: ≥70%)
+- Traceability matrix with @speckit annotation tracking
+- Auto-fix suggestions for annotation gaps
+
+**Supported Languages:** TypeScript, Python, Go, Java/Kotlin
+
+**Usage:**
+```bash
+/speckit.analyze --profile drift
+# Output: drift-report.md in project root
+```
 
 **Quality Gates:**
 
@@ -548,6 +668,8 @@ The `/speckit.tasks` command now enforces strict clarity requirements to ensure 
 - SQS Quality Gate
 - QA Issues Exist Gate
 - QA Pass Gate
+- QG-DRIFT-001: No Critical Drift (0 critical items)
+- QG-DRIFT-003: FR → Code Coverage (≥80%)
 
 **Handoffs:**
 
@@ -558,7 +680,100 @@ The `/speckit.tasks` command now enforces strict clarity requirements to ensure 
 
 ---
 
-### 12. `/speckit.implement` {#speckitimplement}
+### 12. `/speckit.reverse-engineer` {#speckitreverse-engineer}
+
+**Назначение:** Extract specifications from existing codebase using LLM-powered analysis. Creates `reverse-engineered/` directory with extracted-spec.md for review and merging into canonical spec.
+
+**Модель:** `sonnet` (thinking_budget: 16000)
+
+**Persona:** `documentation-agent`
+
+**Флаги:**
+
+- `--scope` — Scan scope patterns (required): `"src/**/*.ts"`, `"api/**/*.py"`, etc.
+- `--exclude` — Exclude patterns (default: `node_modules/`, `dist/`, `build/`)
+- `--min-confidence` — Minimum confidence threshold for extraction (0.0-1.0, default: 0.70)
+- `--language` — Force language detection (typescript, python, go, java, kotlin)
+- `--output-dir` — Override output directory (default: `reverse-engineered/`)
+- `--merge-mode` — Auto-merge verified FRs into canonical spec (requires confirmation)
+
+**4-Wave Extraction Algorithm:**
+
+1. **Wave 1: Discovery** (Parallel)
+   - Scan files matching `--scope` patterns
+   - Extract existing `@speckit:FR:` annotations
+   - Build file inventory and annotation registry
+
+2. **Wave 2: Structure Analysis** (Parallel)
+   - Extract public APIs (functions, methods, endpoints)
+   - Extract domain entities (classes, models, interfaces)
+   - Parse test files for scenario patterns
+
+3. **Wave 3: LLM Synthesis** (Sequential - expensive)
+   - Synthesize FR-xxx from APIs and entities
+   - Convert tests to Gherkin AS-xxx scenarios
+   - Assign confidence scores (0.0-1.0) with hallucination detection
+
+4. **Wave 4: Reporting** (Sequential)
+   - Compile `extracted-spec.md` following spec-template.md format
+   - Compare with canonical spec.md (if exists) → `drift-report.md`
+   - Generate `.extraction-manifest.yaml` with metadata
+
+**Confidence Scoring:**
+
+| Range | Level | Description |
+|-------|-------|-------------|
+| 0.90-1.00 | EXPLICIT | Has `@speckit:FR:` annotation (verified) |
+| 0.70-0.89 | HIGH | Clear naming + test coverage + patterns |
+| 0.50-0.69 | MEDIUM | Inferred from API/entity patterns |
+| 0.00-0.49 | LOW | Speculative (flagged for manual review) |
+
+**Output Structure:**
+```
+specs/{feature}/
+└── reverse-engineered/
+    ├── .extraction-manifest.yaml  # Metadata and statistics
+    ├── extracted-spec.md          # LLM-synthesized specification
+    ├── drift-report.md            # Diff vs canonical spec
+    └── extraction-log.md          # Agent reasoning trace
+```
+
+**Supported Languages:** TypeScript, Python, Go, Java/Kotlin
+
+**Framework Detection:** Express, NestJS, Next.js, FastAPI, Flask, Django, Gin, Echo, Spring, JAX-RS
+
+**Usage:**
+```bash
+# Extract from TypeScript source
+/speckit.reverse-engineer --scope "src/**/*.ts" --exclude "*.test.ts"
+
+# Extract from Python API
+/speckit.reverse-engineer --scope "api/**/*.py" --min-confidence 0.80
+
+# Review extraction
+cat reverse-engineered/extracted-spec.md
+cat reverse-engineered/.extraction-manifest.yaml
+```
+
+**Handoffs:**
+
+- → `/speckit.specify` (to review and merge extracted requirements)
+- → `/speckit.analyze --profile drift` (to validate alignment)
+
+**Pre-Gates:**
+
+- Scope Definition Gate: User provided `--scope` flag
+- No Existing Extraction Gate: `reverse-engineered/` does not exist
+
+**Post-Gates:**
+
+- Extraction Quality Gate: Extracted spec has ≥ 5 FR-xxx
+- Hallucination Check Gate: Average confidence ≥ 0.70
+- Low Confidence Review Gate: < 20% of FRs have confidence < 0.70
+
+---
+
+### 13. `/speckit.implement` {#speckitimplement}
 
 **Назначение:** Execute the implementation plan, generate documentation (RUNNING.md, README.md), and validate with self-review. Enforces inline quality gates for pre-implementation checks and post-implementation validation.
 
@@ -622,7 +837,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 13. `/speckit.verify` {#speckitverify}
+### 14. `/speckit.verify` {#speckitverify}
 
 **Назначение:** Verify implementation against specification after /speckit.implement. Comprehensive post-implementation verification covering 5 layers: acceptance criteria (AS-xxx scenarios), API contracts, visual verification (screenshots + pixelmatch), E2E behaviors, and NFR compliance. Generates detailed report with auto-fix suggestions for common issues. Requires 90% overall pass rate to proceed.
 
@@ -678,7 +893,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ---
 
-### 14. `/speckit.preview` {#speckitpreview}
+### 15. `/speckit.preview` {#speckitpreview}
 
 **Назначение:** Generate interactive previews from design specifications. Converts wireframes to visual HTML, generates component previews, captures screenshots, and runs design quality validation.
 
@@ -729,7 +944,7 @@ await page.screenshot({
 
 ---
 
-### 15. `/speckit.list` {#speckitlist}
+### 16. `/speckit.list` {#speckitlist}
 
 **Назначение:** List all features in the project with their current status. Shows feature registry from manifest and indicates which feature is currently active.
 
@@ -747,7 +962,7 @@ await page.screenshot({
 
 ---
 
-### 16. `/speckit.switch` {#speckitswitch}
+### 17. `/speckit.switch` {#speckitswitch}
 
 **Назначение:** Switch to a different feature to continue working on it. Updates the active feature state and optionally checks out the corresponding git branch.
 
@@ -768,7 +983,7 @@ await page.screenshot({
 
 ---
 
-### 17. `/speckit.extend` {#speckitextend}
+### 18. `/speckit.extend` {#speckitextend}
 
 **Назначение:** Extend a merged feature with new capabilities. Creates a new feature branch with Feature Lineage pre-populated, loading context from the parent feature and its system specs.
 
@@ -790,7 +1005,7 @@ await page.screenshot({
 
 ---
 
-### 18. `/speckit.merge` {#speckitmerge}
+### 19. `/speckit.merge` {#speckitmerge}
 
 **Назначение:** Finalize feature and update system specs after PR merge. Converts feature requirements into living system documentation.
 
@@ -803,7 +1018,7 @@ await page.screenshot({
 
 ---
 
-### 19. `/speckit.baseline` {#speckitbaseline}
+### 20. `/speckit.baseline` {#speckitbaseline}
 
 **Назначение:** Capture current state of system components for brownfield specifications. Generates baseline.md documenting existing behaviors, code structure, and dependencies.
 
@@ -831,7 +1046,7 @@ await page.screenshot({
 
 ---
 
-### 20. `/speckit.checklist` {#speckitchecklist}
+### 21. `/speckit.checklist` {#speckitchecklist}
 
 **Назначение:** Generate a custom checklist for the current feature based on user requirements.
 
@@ -839,7 +1054,7 @@ await page.screenshot({
 
 ---
 
-### 21. `/speckit.discover` {#speckitdiscover}
+### 22. `/speckit.discover` {#speckitdiscover}
 
 **Назначение:** Validate problem-solution fit before building through customer discovery
 
@@ -863,7 +1078,7 @@ await page.screenshot({
 
 ---
 
-### 22. `/speckit.integrate` {#speckitintegrate}
+### 23. `/speckit.integrate` {#speckitintegrate}
 
 **Назначение:** Quick integration with common third-party services
 
@@ -877,7 +1092,7 @@ await page.screenshot({
 
 ---
 
-### 23. `/speckit.monitor` {#speckitmonitor}
+### 24. `/speckit.monitor` {#speckitmonitor}
 
 **Назначение:** Set up production observability with OpenTelemetry, dashboards, and alerting
 
@@ -897,7 +1112,7 @@ await page.screenshot({
 
 ---
 
-### 24. `/speckit.launch` {#speckitlaunch}
+### 25. `/speckit.launch` {#speckitlaunch}
 
 **Назначение:** Automate product launch and go-to-market activities
 
@@ -922,7 +1137,7 @@ await page.screenshot({
 
 ---
 
-### 25. `/speckit.ship` {#speckitship}
+### 26. `/speckit.ship` {#speckitship}
 
 **Назначение:** Provision infrastructure, deploy application, and verify running system in one command
 
@@ -975,7 +1190,7 @@ await page.screenshot({
 
 ---
 
-### 26. `/speckit.concept-variants` {#speckitconcept-variants}
+### 27. `/speckit.concept-variants` {#speckitconcept-variants}
 
 **Назначение:** Generate MINIMAL/BALANCED/AMBITIOUS scope variants for existing concept
 
@@ -983,7 +1198,7 @@ await page.screenshot({
 
 ---
 
-### 27. `/speckit.migrate` {#speckitmigrate}
+### 28. `/speckit.migrate` {#speckitmigrate}
 
 **Назначение:** Plan and execute spec-driven modernization between architectures, versions, and cloud providers
 
@@ -1022,7 +1237,7 @@ await page.screenshot({
 
 ---
 
-### 28. `/speckit.properties` {#speckitproperties}
+### 29. `/speckit.properties` {#speckitproperties}
 
 **Назначение:** Extract properties from spec artifacts and generate property-based tests with EARS transformation. Creates PROP-xxx traced to AS/EC/FR/NFR for comprehensive edge case discovery via PGS (Property-Generated Solver) methodology.
 
@@ -1045,7 +1260,7 @@ await page.screenshot({
 
 ---
 
-### 29. `/speckit.mobile` {#speckitmobile}
+### 30. `/speckit.mobile` {#speckitmobile}
 
 **Назначение:** Orchestrate mobile development with specialized agents. Activates platform-specific expertise (KMP/Flutter/React Native), calculates Mobile Quality Score (MQS), and ensures production-ready mobile applications.
 
@@ -1129,7 +1344,7 @@ await page.screenshot({
 | Specification | `/speckit.specify`, `/speckit.clarify`, `/speckit.design` |
 | Planning | `/speckit.plan`, `/speckit.tasks`, `/speckit.taskstoissues` |
 | Implementation | `/speckit.staging`, `/speckit.implement`, `/speckit.preview` |
-| Quality | `/speckit.analyze`, `/speckit.checklist` |
+| Quality | `/speckit.analyze`, `/speckit.reverse-engineer`, `/speckit.checklist` |
 | Navigation | `/speckit.list`, `/speckit.switch`, `/speckit.extend`, `/speckit.merge` |
 | Mobile | `/speckit.mobile` |
 | Operations | `/speckit.baseline`, `/speckit.integrate`, `/speckit.monitor`, `/speckit.launch`, `/speckit.ship` |
@@ -1180,6 +1395,12 @@ await page.screenshot({
 | `/speckit.analyze` | `--quiet` | Suppress non-essential output (only gates + result... |
 | `/speckit.analyze` | `--strict` | Lower thresholds (e.g., ambiguity < 3 instead of 5... |
 | `/speckit.analyze` | `--json` | Output as JSON for programmatic consumption |
+| `/speckit.reverse-engineer` | `--scope` | Scan scope patterns (required): `"src/**/*.ts"`, `"api/**/*.py"` |
+| `/speckit.reverse-engineer` | `--exclude` | Exclude patterns (default: `node_modules/`, `dist/`) |
+| `/speckit.reverse-engineer` | `--min-confidence` | Minimum confidence threshold (0.0-1.0, default: 0.70) |
+| `/speckit.reverse-engineer` | `--language` | Force language (typescript, python, go, java, kotlin) |
+| `/speckit.reverse-engineer` | `--output-dir` | Override output directory (default: `reverse-engineered/`) |
+| `/speckit.reverse-engineer` | `--merge-mode` | Auto-merge verified FRs into canonical spec |
 | `/speckit.implement` | `--skip-pre-gates` | Skip pre-implementation gates |
 | `/speckit.implement` | `--fast` | Fast mode - run only Tier 1-2 validation |
 | `/speckit.implement` | `--no-auto-framework` | Disable automatic test framework installation (ski... |
@@ -1228,6 +1449,6 @@ await page.screenshot({
 
 ## Версия документа
 
-**Версия:** 0.2.0
-**Дата генерации:** 2026-01-10
+**Версия:** 0.4.0
+**Дата генерации:** 2026-01-11
 **Автор:** Auto-generated from command templates

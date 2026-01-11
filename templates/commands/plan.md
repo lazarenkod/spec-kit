@@ -90,6 +90,30 @@ inline_gates:
       threshold: 0
       severity: MEDIUM
       message: "Scalability strategy incomplete (need capacity baseline and scaling triggers)"
+    - id: IG-PLAN-012
+      name: "Plan Mode Exploration Complete"
+      checks: [PM-001, PM-002]
+      tier: 1
+      threshold: 0
+      severity: CRITICAL
+      message: "Plan Mode exploration phase incomplete"
+      condition: "plan_mode.enabled AND plan_mode.depth_level >= 1"
+    - id: IG-PLAN-013
+      name: "Plan Mode Review Pass"
+      checks: [PM-004, PM-005]
+      tier: 2
+      threshold: 0
+      severity: HIGH
+      message: "Plan Mode review detected critical issues"
+      condition: "plan_mode.enabled AND plan_mode.depth_level >= 2"
+    - id: IG-PLAN-014
+      name: "Plan Mode Quality Threshold"
+      checks: [PM-006]
+      tier: 3
+      threshold: 80
+      severity: CRITICAL
+      message: "Aggregate quality score below threshold (PQS < 80)"
+      condition: "plan_mode.enabled AND plan_mode.depth_level >= 2"
 handoffs:
   - label: Create Tasks
     agent: speckit.tasks
@@ -117,6 +141,59 @@ handoffs:
     auto: false
     condition:
       - "Planning revealed spec gaps or ambiguities"
+plan_mode:
+  enabled: auto  # auto (depth-based), explicit depth level, or legacy flags
+
+  # Default depth levels by complexity tier
+  depth_defaults:
+    TRIVIAL: 0   # 0-25: Standard mode
+    SIMPLE: 0    # 26-50: Standard mode
+    MODERATE: 1  # 51-70: Lite exploration
+    COMPLEX: 2   # 71+: Moderate (exploration + constitution review)
+
+  # Depth level definitions
+  depth_levels:
+    0:  # Standard
+      name: "Standard"
+      exploration: false
+      review_passes: []
+    1:  # Lite
+      name: "Lite"
+      exploration:
+        agents: [pattern-researcher, constraint-mapper]
+        budget_s: 90
+      review_passes: []
+    2:  # Moderate
+      name: "Moderate"
+      exploration:
+        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer]
+        budget_s: 180
+      review_passes: [constitution_alignment]
+      budget_s: 210  # 180 + 30
+    3:  # Full
+      name: "Full"
+      exploration:
+        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer]
+        budget_s: 180
+      review_passes: [constitution_alignment, completeness_check, edge_case_detection, testability_audit]
+      budget_s: 300  # 180 + 120
+
+  # Keyword triggers upgrade depth level by +1 (max 3)
+  keyword_triggers:
+    - distributed
+    - multi-service
+    - migration
+    - security-critical
+    - real-time
+    - high-availability
+    - microservices
+    - event-driven
+    - data-intensive
+
+  flags:
+    depth: "--depth-level <0-3>"  # Primary flag
+    enable: "--plan-mode"         # Alias for --depth-level 3
+    disable: "--no-plan-mode"     # Alias for --depth-level 0
 claude_code:
   model: opus
   reasoning_mode: extended
@@ -843,6 +920,10 @@ This phase ensures compliance requirements are baked into architecture from the 
 
 ### Phase 0: Outline & Research
 
+#### Standard Mode (Default)
+
+Phase 0 runs in Standard Mode when Plan Mode is disabled (depth level 0).
+
 **Architecture Decision Protocol** (ENHANCED):
 
 For each technology decision in Technical Context:
@@ -974,6 +1055,156 @@ For each technology decision in Technical Context:
 - `plan.md` Architecture Decisions section populated with inline ADRs
 - `specs/[feature]/adrs/ADR-xxx-slug.md` files for complex decisions (if threshold met)
 - `specs/[feature]/adrs/README.md` ADR index (if any full ADRs generated)
+
+---
+
+#### Plan Mode (Depth Level ≥ 1)
+
+**Trigger Conditions:**
+- Auto: Complexity ≥ 71 (COMPLEX tier)
+- Auto: Keyword triggers (distributed, microservices, migration, security-critical, real-time, high-availability)
+- Manual: `--plan-mode` flag (forces depth level 3)
+- Manual: `--depth-level <1-3>` flag (explicit level)
+
+**Depth Level Selection:**
+- **Level 1 (Lite)**: MODERATE features (complexity 51-70) - Quick exploration only
+- **Level 2 (Moderate)**: COMPLEX features (complexity 71+) - Exploration + constitution review
+- **Level 3 (Full)**: Explicit `--plan-mode` - Complete exploration + all review passes
+
+**Budget:** +90s (L1), +210s (L2), +300s (L3)
+
+---
+
+**Phase 0 Exploration (Before Standard Mode)**
+
+When Plan Mode is enabled, Phase 0 begins with a research phase using 4 specialized agents:
+
+**Agent Execution Flow:**
+
+```text
+# Depth Level 1 (Lite) - 90s
+EMIT SINGLE MESSAGE with 2 parallel Task calls:
+  Task(role="pattern-researcher", subagent_type="Explore", model="haiku", timeout=45s)
+  Task(role="constraint-mapper", subagent_type="Explore", model="haiku", timeout=45s)
+  ↓ (wait for both, 45s wall time)
+Total: 90s
+
+# Depth Level 2-3 (Moderate/Full) - 180s
+EMIT SINGLE MESSAGE with 3 parallel Task calls:
+  Task(role="pattern-researcher", subagent_type="Explore", model="haiku", timeout=45s)
+  Task(role="alternative-analyzer", subagent_type="general-purpose", model="haiku", timeout=45s)
+  Task(role="constraint-mapper", subagent_type="Explore", model="haiku", timeout=45s)
+  ↓ (wait for all 3, 45s wall time)
+
+EMIT Task(role="best-practice-synthesizer", subagent_type="general-purpose", model="sonnet", timeout=60s)
+  ↓ (wait, 60s wall time)
+Total: 180s
+```
+
+**Agent Specifications:**
+
+1. **pattern-researcher** (haiku, 45s, parallel)
+   - Search codebase for similar implementations (Glob + Read)
+   - Extract architectural patterns (layering, error handling)
+   - Document conventions (naming, file structure)
+   - Output: Existing Patterns section in research.md
+
+2. **alternative-analyzer** (haiku, 45s, parallel) - *Only Depth 2+*
+   - Generate 3-5 alternatives (Conventional, Minimal, Future-Proof, Unconventional)
+   - Score each: Complexity (1-5), Testability (1-5), Maintainability (1-5), Performance (1-5), Constitution Alignment (1-5)
+   - Recommend highest-scoring approach (or justify deviation)
+   - Output: Alternative Approaches with scoring matrix
+
+3. **constraint-mapper** (haiku, 45s, parallel)
+   - Extract NFRs from spec.md (performance, security, scalability)
+   - Map each NFR → implementation constraint
+   - Detect conflicts (e.g., performance vs. security)
+   - Flag unconstrained areas
+   - Output: Constraint Map with conflict resolutions
+
+4. **best-practice-synthesizer** (sonnet, 60s, sequential) - *Only Depth 2+*
+   - Synthesize findings from above 3 agents
+   - Reconcile alternatives with patterns
+   - Apply constraint filters
+   - Provide final recommendation with edge case analysis
+   - Output: Synthesis & Recommendation section
+
+**Output Artifact:** `research.md` in feature directory
+
+**research.md Structure:**
+
+```markdown
+# Research Findings
+
+## Existing Patterns
+
+- **Pattern 1**: [description]
+- **Pattern 2**: [description]
+
+## Alternative Approaches
+
+| Approach | Complexity | Testability | Maintainability | Performance | Alignment | Total |
+|----------|-----------|------------|-----------------|-------------|-----------|-------|
+| Conventional | 4 | 4 | 4 | 3 | 5 | 20/25 |
+| Minimal | 5 | 3 | 3 | 4 | 3 | 18/25 |
+| Future-Proof | 2 | 5 | 5 | 3 | 4 | 19/25 |
+
+**Recommended:** Conventional (20/25)
+- Pros: Aligns with constitution, well-tested pattern
+- Cons: Slightly lower performance
+- Justification: Team expertise + maintainability priority
+
+## Constraint Map
+
+| NFR | Constraint | Conflict | Resolution |
+|-----|-----------|----------|------------|
+| NFR-001 (P95 <100ms) | Use Redis cache | Conflicts with NFR-003 (security) | Encrypt cache at rest |
+| NFR-002 (99.9% availability) | Multi-region deployment | None | Implement in Phase 3 |
+
+## Synthesis & Recommendation
+
+[Synthesized findings with final approach recommendation and edge case analysis]
+```
+
+**Context Injection:**
+
+Exploration findings are prepended to all subsequent phase prompts:
+
+```text
+# Original prompt (Phase 1 agent)
+Design the API layer for {feature}.
+
+# Enhanced prompt (with Plan Mode context)
+🔍 **Plan Mode Context:**
+- Recommended Approach: OAuth 2.0 + JWT (scored 22/25)
+- Key Constraint: P95 <100ms → Use Redis cache
+- Edge Cases Identified: Rate limiting, token rotation
+
+Design the API layer for {feature}. Consider the exploration findings above.
+```
+
+**Graceful Fallback:**
+
+```text
+IF exploration_phase_fails:
+  LOG: "⚠️ Plan Mode exploration failed, falling back to Standard Mode"
+  DISABLE_PLAN_MODE = true
+  CONTINUE with Standard Mode (Architecture Decision Protocol)
+```
+
+**Quality Gates:**
+
+Exploration phase is validated by IG-PLAN-012:
+- PM-001: All required agents completed (CRITICAL)
+- PM-002: ≥3 alternatives with scoring matrix (CRITICAL, depth 2+ only)
+
+---
+
+**Phase 0 Standard Mode Execution (After Exploration)**
+
+After exploration (or if Plan Mode disabled), execute the standard Architecture Decision Protocol documented above, enriched with exploration context if available.
+
+---
 
 ### Phase 0.5: API Verification
 

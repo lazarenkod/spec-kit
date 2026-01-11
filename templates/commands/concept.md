@@ -8,6 +8,59 @@ handoffs:
   - label: Validate Concept
     agent: speckit.analyze
     prompt: Check concept completeness and consistency
+plan_mode:
+  enabled: auto
+
+  # Default depth levels by complexity tier
+  # Concept benefits from deep exploration even for SIMPLE features
+  depth_defaults:
+    TRIVIAL: 0   # Standard
+    SIMPLE: 1    # Lite (exploration even for simple concepts)
+    MODERATE: 2  # Moderate
+    COMPLEX: 3   # Full depth
+
+  # Depth level definitions (same as other commands)
+  depth_levels:
+    0:
+      name: "Standard"
+      exploration: false
+      review_passes: []
+    1:
+      name: "Lite"
+      exploration:
+        agents: [pattern-researcher, constraint-mapper]
+        budget_s: 90
+      review_passes: []
+    2:
+      name: "Moderate"
+      exploration:
+        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer]
+        budget_s: 180
+      review_passes: [constitution_alignment]
+      budget_s: 210
+    3:
+      name: "Full"
+      exploration:
+        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer]
+        budget_s: 180
+      review_passes: [constitution_alignment, completeness_check, edge_case_detection, testability_audit]
+      budget_s: 300
+
+  keyword_triggers:
+    - distributed
+    - multi-service
+    - migration
+    - security-critical
+    - real-time
+    - high-availability
+    - microservices
+    - event-driven
+    - data-intensive
+
+  flags:
+    depth: "--depth-level <0-3>"
+    enable: "--plan-mode"
+    disable: "--no-plan-mode"
 claude_code:
   model: opus
   reasoning_mode: extended

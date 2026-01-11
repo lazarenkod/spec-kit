@@ -75,6 +75,58 @@ handoffs:
     auto: false
     condition:
       - "Plan or spec was modified after initial task generation"
+plan_mode:
+  enabled: auto
+
+  # Default depth levels by complexity tier
+  depth_defaults:
+    TRIVIAL: 0   # Standard
+    SIMPLE: 0    # Standard
+    MODERATE: 0  # Standard (tasks is fast, minimize overhead)
+    COMPLEX: 1   # Lite only
+
+  # Depth level definitions (same as other commands)
+  depth_levels:
+    0:
+      name: "Standard"
+      exploration: false
+      review_passes: []
+    1:
+      name: "Lite"
+      exploration:
+        agents: [pattern-researcher, constraint-mapper]
+        budget_s: 90
+      review_passes: []
+    2:
+      name: "Moderate"
+      exploration:
+        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer]
+        budget_s: 180
+      review_passes: [constitution_alignment]
+      budget_s: 210
+    3:
+      name: "Full"
+      exploration:
+        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer]
+        budget_s: 180
+      review_passes: [constitution_alignment, completeness_check, edge_case_detection, testability_audit]
+      budget_s: 300
+
+  keyword_triggers:
+    - distributed
+    - multi-service
+    - migration
+    - security-critical
+    - real-time
+    - high-availability
+    - microservices
+    - event-driven
+    - data-intensive
+
+  flags:
+    depth: "--depth-level <0-3>"
+    enable: "--plan-mode"
+    disable: "--no-plan-mode"
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json
   ps: scripts/powershell/check-prerequisites.ps1 -Json

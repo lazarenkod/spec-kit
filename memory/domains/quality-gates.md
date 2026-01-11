@@ -716,6 +716,383 @@ FOR EACH wire_task WHERE status = "[x]":
 
 ---
 
+## Plan Mode Gates (PM-xxx)
+
+> **Plan Mode Quality Gates** ensure exploration and review phases meet quality standards when Plan Mode is enabled (depth levels 1-3).
+
+### PM-001: Exploration Phase Completeness
+
+**Level**: MUST (blocking)
+**Phase**: Phase 0 (Exploration)
+**Applies to**: All commands with depth level ≥ 1
+
+All exploration agents must complete successfully with valid outputs.
+
+**Threshold**: 100% of required agents completed with valid outputs
+
+**Required Agents by Depth Level**:
+- **Depth 1 (Lite)**: pattern-researcher, constraint-mapper
+- **Depth 2-3 (Moderate/Full)**: pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer
+
+**Validation**:
+```python
+def validate_exploration_completeness(depth_level, research_md):
+    required_agents = {
+        1: ["pattern-researcher", "constraint-mapper"],
+        2: ["pattern-researcher", "alternative-analyzer", "constraint-mapper", "best-practice-synthesizer"],
+        3: ["pattern-researcher", "alternative-analyzer", "constraint-mapper", "best-practice-synthesizer"]
+    }
+
+    agents = required_agents[depth_level]
+
+    # Check pattern-researcher
+    IF NOT research_md.has_section("Existing Patterns"):
+        FAIL: "pattern-researcher did not complete"
+    IF research_md.get_pattern_count() < 1:
+        FAIL: "pattern-researcher found no patterns"
+
+    # Check constraint-mapper (depth 1+)
+    IF depth_level >= 1:
+        IF NOT research_md.has_section("Constraint Map"):
+            FAIL: "constraint-mapper did not complete"
+        nfrs_mapped = research_md.get_nfr_count()
+        IF nfrs_mapped == 0:
+            WARN: "No NFRs mapped (feature may have no NFRs)"
+
+    # Check alternative-analyzer (depth 2+)
+    IF depth_level >= 2:
+        IF NOT research_md.has_section("Alternative Approaches"):
+            FAIL: "alternative-analyzer did not complete"
+        alternatives = research_md.get_alternatives()
+        IF len(alternatives) < 3:
+            FAIL: "alternative-analyzer generated < 3 alternatives"
+
+    # Check best-practice-synthesizer (depth 2+)
+    IF depth_level >= 2:
+        IF NOT research_md.has_section("Synthesis & Recommendation"):
+            FAIL: "best-practice-synthesizer did not complete"
+        IF NOT research_md.has_recommendation():
+            FAIL: "No recommendation provided"
+
+    RETURN "PM-001: PASS"
+```
+
+**Severity**: CRITICAL
+
+**Violations**:
+- CRITICAL: Any required agent failed or timed out
+- CRITICAL: Missing required sections in research.md
+- WARNING: 0 patterns found (may indicate empty codebase)
+
+**Graceful Fallback**: On failure, log warning and fall back to standard mode (depth 0)
+
+---
+
+### PM-002: Alternative Analysis Quality
+
+**Level**: MUST (blocking)
+**Phase**: Phase 0 (Exploration)
+**Applies to**: Commands with depth level ≥ 2
+
+Alternative approaches must include ≥3 options with complete scoring matrix.
+
+**Threshold**: ≥3 alternatives with 5-dimensional scores
+
+**Validation**:
+```python
+def validate_alternative_quality(research_md):
+    alternatives = research_md.get_alternatives()
+
+    IF len(alternatives) < 3:
+        FAIL: "Only {len(alternatives)} alternatives generated (minimum: 3)"
+
+    # Check each alternative has required fields
+    FOR EACH alt IN alternatives:
+        REQUIRE: alt.name
+        REQUIRE: alt.description
+        REQUIRE: alt.pros (list, ≥1 item)
+        REQUIRE: alt.cons (list, ≥1 item)
+        REQUIRE: alt.score (dict with 5 keys)
+
+        # Validate scoring dimensions
+        required_dimensions = ["complexity", "testability", "maintainability", "performance", "alignment"]
+        FOR EACH dim IN required_dimensions:
+            IF dim NOT IN alt.score:
+                FAIL: "Alternative '{alt.name}' missing score dimension: {dim}"
+            IF NOT (1 <= alt.score[dim] <= 5):
+                FAIL: "Alternative '{alt.name}' score '{dim}' out of range [1-5]: {alt.score[dim]}"
+
+        # Calculate aggregate score (0-25)
+        alt.aggregate_score = sum(alt.score.values())
+
+    # Check recommendation
+    recommended = research_md.get_recommended_approach()
+    IF NOT recommended:
+        FAIL: "No recommended approach specified"
+
+    # Validate recommendation is highest-scoring OR has justification
+    highest_score = max([alt.aggregate_score for alt in alternatives])
+    IF recommended.aggregate_score < highest_score:
+        IF NOT recommended.justification:
+            WARN: "Recommended approach not highest-scoring and no justification provided"
+
+    RETURN "PM-002: PASS"
+```
+
+**Severity**: CRITICAL
+
+**Violations**:
+- CRITICAL: < 3 alternatives generated
+- CRITICAL: Missing scoring dimensions
+- CRITICAL: Scores out of valid range [1-5]
+- WARNING: Recommended approach not highest-scoring without justification
+
+---
+
+### PM-003: Constraint Conflict Resolution
+
+**Level**: SHOULD (non-blocking)
+**Phase**: Phase 0 (Exploration)
+**Applies to**: Commands with depth level ≥ 1
+
+All NFR conflicts must be detected and resolved.
+
+**Threshold**: 0 unresolved CRITICAL conflicts
+
+**Validation**:
+```python
+def validate_constraint_conflicts(research_md):
+    constraint_map = research_md.get_constraint_map()
+
+    # Check if conflicts section exists
+    IF NOT constraint_map.has_section("Conflicts Detected"):
+        # No conflicts detected is acceptable
+        RETURN "PM-003: PASS (no conflicts detected)"
+
+    conflicts = constraint_map.get_conflicts()
+
+    FOR EACH conflict IN conflicts:
+        REQUIRE: conflict.severity IN ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+        REQUIRE: conflict.description
+        REQUIRE: conflict.nfr_a
+        REQUIRE: conflict.nfr_b
+
+        # Check resolution
+        IF conflict.severity == "CRITICAL":
+            IF NOT conflict.resolution:
+                FAIL: "CRITICAL conflict unresolved: {conflict.description}"
+            IF NOT conflict.resolution_rationale:
+                WARN: "CRITICAL conflict resolution lacks rationale"
+
+        ELIF conflict.severity == "HIGH":
+            IF NOT conflict.resolution:
+                WARN: "HIGH severity conflict unresolved: {conflict.description}"
+
+    RETURN "PM-003: PASS"
+```
+
+**Severity**:
+- CRITICAL for unresolved CRITICAL conflicts
+- WARNING for unresolved HIGH conflicts
+
+**Violations**:
+- CRITICAL: Unresolved CRITICAL conflicts block implementation
+- WARNING: Unresolved HIGH conflicts may cause issues
+
+---
+
+### PM-004: Review Pass Compliance
+
+**Level**: MUST (blocking)
+**Phase**: Phase 2 (Review)
+**Applies to**: Commands with depth level ≥ 2
+
+All review passes must complete with 0 CRITICAL failures.
+
+**Threshold**: 0 CRITICAL failures across all review passes
+
+**Review Passes by Depth Level**:
+- **Depth 2 (Moderate)**: constitution_alignment only
+- **Depth 3 (Full)**: constitution_alignment, completeness_check, edge_case_detection, testability_audit
+
+**Validation**:
+```python
+def validate_review_compliance(depth_level, review_results):
+    required_passes = {
+        2: ["constitution_alignment"],
+        3: ["constitution_alignment", "completeness_check", "edge_case_detection", "testability_audit"]
+    }
+
+    passes = required_passes[depth_level]
+
+    FOR EACH pass_name IN passes:
+        result = review_results.get_pass_result(pass_name)
+
+        IF NOT result:
+            FAIL: "Review pass '{pass_name}' did not complete"
+
+        IF result.status == "FAIL" AND result.severity == "CRITICAL":
+            FAIL: "CRITICAL failure in {pass_name}: {result.violations}"
+
+        ELIF result.status == "FAIL" AND result.severity == "HIGH":
+            WARN: "HIGH severity failure in {pass_name}: {result.violations}"
+
+    RETURN "PM-004: PASS"
+```
+
+**Pass Definitions**:
+
+1. **constitution_alignment** (CRITICAL)
+   - All tech stack choices in `constitution.allowed_stack`
+   - No security anti-patterns (hardcoded secrets, SQL injection)
+   - Dependencies in `constitution.approved_dependencies`
+
+2. **completeness_check** (HIGH)
+   - FR coverage ≥ 90% (all FRs addressed in plan/spec)
+   - NFR coverage ≥ 90% (all NFRs have measurable criteria)
+   - All AS-xxx scenarios have test strategy
+
+3. **edge_case_detection** (HIGH)
+   - Pre-Mortem has ≥ 3 failure scenarios
+   - Each API call has error handling strategy
+   - Data validation for all user inputs
+
+4. **testability_audit** (MEDIUM)
+   - Each FR has measurable acceptance criteria
+   - Each NFR has measurement method
+   - Test doubles/mocks strategy defined for external deps
+   - Observability: SLIs, SLOs, alerts defined
+
+**Severity**:
+- CRITICAL for constitution_alignment failures
+- HIGH for completeness_check and edge_case_detection failures
+- MEDIUM for testability_audit failures
+
+**Violations**:
+- CRITICAL: Constitution violations block workflow
+- HIGH: Completeness/edge case failures log warnings
+- MEDIUM: Testability issues log warnings
+
+**Block Behavior**: Only CRITICAL failures block workflow
+
+---
+
+### PM-005: Edge Case Coverage
+
+**Level**: SHOULD (non-blocking)
+**Phase**: Phase 2 (Review)
+**Applies to**: Commands with depth level ≥ 3
+
+Pre-Mortem section must identify ≥3 edge cases/failure scenarios.
+
+**Threshold**: ≥3 edge cases identified
+
+**Validation**:
+```python
+def validate_edge_case_coverage(review_results, complexity_tier):
+    edge_case_result = review_results.get_pass_result("edge_case_detection")
+
+    IF NOT edge_case_result:
+        # Pass not run (depth level < 3)
+        RETURN "PM-005: SKIP (not applicable)"
+
+    # Extract edge cases from Pre-Mortem section
+    edge_cases = extract_edge_cases_from_pre_mortem(spec_md, plan_md)
+
+    IF len(edge_cases) < 3:
+        IF complexity_tier == "COMPLEX":
+            FAIL: "Only {len(edge_cases)} edge cases identified (minimum: 3 for COMPLEX features)"
+        ELSE:
+            WARN: "Only {len(edge_cases)} edge cases identified (recommended: 3+)"
+
+    # Validate edge case quality
+    FOR EACH case IN edge_cases:
+        REQUIRE: case.description
+        REQUIRE: case.impact IN ["HIGH", "MEDIUM", "LOW"]
+        REQUIRE: case.mitigation
+
+        IF NOT case.mitigation:
+            WARN: "Edge case '{case.description}' lacks mitigation strategy"
+
+    # Check coverage types
+    technical_cases = [c for c in edge_cases if c.type == "technical"]
+    integration_cases = [c for c in edge_cases if c.type == "integration"]
+
+    IF len(technical_cases) == 0:
+        WARN: "No technical edge cases identified"
+    IF len(integration_cases) == 0:
+        WARN: "No integration edge cases identified"
+
+    RETURN "PM-005: PASS"
+```
+
+**Severity**:
+- CRITICAL if 0 edge cases AND complexity tier = COMPLEX
+- WARNING if < 3 edge cases
+
+**Violations**:
+- CRITICAL: No edge cases for COMPLEX features blocks workflow
+- WARNING: < 3 edge cases logged but not blocking
+
+---
+
+### PM-006: Quality Score Threshold
+
+**Level**: MUST (blocking)
+**Phase**: Phase 3 (Finalize)
+**Applies to**: Commands with depth level ≥ 2
+
+Aggregate quality score must meet minimum threshold.
+
+**Threshold**: ≥80 for COMPLEX features, ≥70 for MODERATE features
+
+**Quality Score by Command**:
+- `/speckit.plan`: PQS (Plan Quality Score, 0-100)
+- `/speckit.specify`: SQS (Spec Quality Score, 0-100)
+- `/speckit.concept`: CQS (Concept Quality Score, 0-120)
+
+**Validation**:
+```python
+def validate_quality_score(command, complexity_tier, quality_score):
+    # Determine threshold based on complexity
+    thresholds = {
+        "TRIVIAL": 60,
+        "SIMPLE": 65,
+        "MODERATE": 70,
+        "COMPLEX": 80
+    }
+
+    threshold = thresholds[complexity_tier]
+
+    # Get score name
+    score_names = {
+        "speckit.plan": "PQS",
+        "speckit.specify": "SQS",
+        "speckit.concept": "CQS"
+    }
+    score_name = score_names.get(command, "Quality Score")
+
+    IF quality_score < threshold:
+        IF complexity_tier == "COMPLEX":
+            FAIL: "{score_name} = {quality_score} < {threshold} (COMPLEX threshold)"
+        ELSE:
+            WARN: "{score_name} = {quality_score} < {threshold} ({complexity_tier} threshold)"
+
+    RETURN "PM-006: PASS ({score_name} = {quality_score})"
+```
+
+**Severity**:
+- CRITICAL if score < threshold AND complexity tier = COMPLEX
+- WARNING if score < threshold AND complexity tier ≠ COMPLEX
+
+**Violations**:
+- CRITICAL: Below-threshold score for COMPLEX features blocks workflow
+- WARNING: Below-threshold score for other features logged
+
+**Score Calculation**: See respective command templates (plan.md, specify.md, concept.md) for scoring rubrics
+
+---
+
 ## UI Testing Gates (QG-UI-xxx)
 
 > **UI Testing Quality Gates** ensure 100% coverage of UI acceptance scenarios with E2E tests and validate that UI tests pass with self-healing auto-fix loops.
@@ -1764,6 +2141,117 @@ Coupling analysis MUST be completed before phase planning for monolith decomposi
 
 ---
 
+## Drift Detection Gates
+
+| Gate ID | Name | Threshold | Severity | Description |
+|---------|------|-----------|----------|-------------|
+| QG-DRIFT-001 | No Critical Drift | 0 critical items | CRITICAL | No critical spec-code misalignment detected |
+| QG-DRIFT-002 | High Drift Limit | ≤ 5 high items | HIGH | High-severity drift within acceptable range |
+| QG-DRIFT-003 | FR → Code Coverage | ≥ 80% | HIGH | Functional requirements have implementation |
+| QG-DRIFT-004 | Code → Spec Coverage | ≥ 70% | HIGH | Public APIs documented in spec |
+
+### QG-DRIFT-001: No Critical Drift
+
+**Level**: MUST (production blocking)
+**Applies to**: Post-Implement, Pre-Merge
+
+Ensures no critical spec-code misalignment exists. Critical drift includes:
+- Public APIs removed from spec but still exist in code (breaking change risk)
+- Security requirements in spec with no implementation
+- Backwards-incompatible changes not reflected in spec
+
+**Threshold**: 0 critical drift items
+
+**Validation**:
+```bash
+/speckit.analyze --profile drift
+# Output: drift-report.md with severity breakdown
+```
+
+**Violations**: CRITICAL - Blocks merge/deploy until resolved
+
+---
+
+### QG-DRIFT-002: High Drift Limit
+
+**Level**: SHOULD (warning threshold)
+**Applies to**: Post-Implement, Pre-Merge
+
+Limits high-severity drift items to manageable number. High drift includes:
+- Unimplemented requirements (spec → code gap)
+- Undocumented APIs (code → spec gap)
+- Missing test coverage for acceptance scenarios
+
+**Threshold**: ≤ 5 high-severity drift items
+
+**Validation**:
+```bash
+/speckit.analyze --profile drift
+# Output: "High drift: 3/5 (60%)" in drift-report.md
+```
+
+**Violations**: HIGH - Review recommended, not blocking
+
+---
+
+### QG-DRIFT-003: FR → Code Coverage
+
+**Level**: MUST (for production)
+**Applies to**: Post-Implement
+
+Ensures at least 80% of functional requirements have implementation. Measures forward traceability (spec drives code).
+
+**Threshold**: ≥ 80% of FR-xxx have @speckit:FR: annotations in codebase
+
+**Validation**:
+```bash
+/speckit.analyze --profile drift
+# Output: "FR → Code Coverage: 85% (17/20 FRs)"
+```
+
+**Auto-Remediation**: Suggest adding @speckit:FR: annotations to implementations
+
+**Violations**:
+- CRITICAL: < 50% coverage (major spec-code divergence)
+- HIGH: 50-79% coverage (below target, improvement needed)
+
+---
+
+### QG-DRIFT-004: Code → Spec Coverage
+
+**Level**: SHOULD (documentation quality)
+**Applies to**: Post-Implement
+
+Ensures at least 70% of public APIs are documented in spec. Measures reverse traceability (code reflects in spec).
+
+**Threshold**: ≥ 70% of public APIs have corresponding FR-xxx in spec.md
+
+**Validation**:
+```bash
+/speckit.analyze --profile drift
+# Output: "Code → Spec Coverage: 75% (15/20 APIs)"
+```
+
+**Auto-Remediation**:
+- Run `/speckit.reverse-engineer` to extract missing specs
+- Add FR-xxx entries to spec.md
+- Mark internal APIs with @internal comment
+
+**Violations**: HIGH - Public APIs lack documentation (technical debt)
+
+---
+
+### Drift Gate Summary
+
+| Gate ID | Phase | Level | Threshold | Validation | Violation |
+|---------|-------|-------|-----------|------------|-----------|
+| QG-DRIFT-001 | Post-Implement | MUST | 0 critical | drift profile | CRITICAL |
+| QG-DRIFT-002 | Post-Implement | SHOULD | ≤ 5 high | drift profile | HIGH |
+| QG-DRIFT-003 | Post-Implement | MUST | ≥ 80% FR→Code | drift profile | HIGH/CRITICAL |
+| QG-DRIFT-004 | Post-Implement | SHOULD | ≥ 70% Code→Spec | drift profile | HIGH |
+
+---
+
 ## Property-Based Testing Gates
 
 | Gate ID | Name | Threshold | Severity | Description |
@@ -1810,10 +2298,11 @@ PQS = (
 | Pre-Deploy Gates | 5 |
 | Security Gates | 5 |
 | Migration Gates | 3 |
+| Drift Detection Gates | 4 |
 | Property-Based Testing Gates | 7 |
-| **Total QG Principles** | **44** |
-| MUST level | 31 |
-| SHOULD level | 4 |
+| **Total QG Principles** | **48** |
+| MUST level | 33 |
+| SHOULD level | 6 |
 
 ---
 

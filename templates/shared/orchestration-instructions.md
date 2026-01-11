@@ -204,6 +204,92 @@ IF "--no-adaptive-model" IN ARGS:
 
 ---
 
+## Plan Mode Integration Hook
+
+**Trigger:** Before wave execution (after model routing, before Step 1)
+
+```text
+FUNCTION orchestrate_with_plan_mode(subagents, feature_dir, user_input, flags):
+    """
+    Universal orchestration with Plan Mode support.
+
+    Phases:
+    - Phase 0: Exploration (depth-dependent, 0-180s)
+    - Phase 1: Design (existing waves, context-enriched)
+    - Phase 2: Review (depth-dependent, 0-120s)
+    - Phase 3: Finalize (quality scoring, handoff)
+    """
+
+    # Step 0: Detect depth level
+    depth_level, reason = determine_depth_level(
+        command=command,
+        user_input=user_input,
+        spec_path=f"{feature_dir}/spec.md",
+        flags=flags
+    )
+
+    depth_name = DEPTH_LEVELS[depth_level]["name"]
+
+    IF depth_level == 0:
+        LOG f"📝 Depth Level 0 (Standard): ENABLED ({reason})"
+        RETURN orchestrate_standard(subagents)
+
+    LOG f"🔍 Depth Level {depth_level} ({depth_name}): ENABLED ({reason})"
+
+    # Phase 0: Exploration (if depth >= 1)
+    exploration_findings = None
+    IF depth_level >= 1:
+        LOG "📂 Phase 0: Exploration"
+        exploration_findings = execute_exploration_phase(
+            feature_dir=feature_dir,
+            user_input=user_input,
+            depth_level=depth_level
+        )
+
+        IF exploration_findings.failed:
+            WARN "Exploration phase failed, falling back to standard mode"
+            RETURN orchestrate_standard(subagents)
+
+    # Phase 1: Design (with context injection)
+    LOG "📂 Phase 1: Design"
+    enriched_subagents = inject_exploration_context(subagents, exploration_findings)
+    design_results = orchestrate_standard(enriched_subagents)
+
+    # Phase 2: Review (if depth >= 2)
+    IF depth_level >= 2:
+        LOG "📂 Phase 2: Review"
+        review_results = execute_review_phase(
+            feature_dir=feature_dir,
+            design_results=design_results,
+            depth_level=depth_level
+        )
+
+        IF review_results.has_critical_failures:
+            BLOCK: Report violations and exit
+
+    # Phase 3: Finalize
+    LOG "📂 Phase 3: Finalize"
+    finalize_results = execute_finalize_phase(
+        feature_dir=feature_dir,
+        exploration_findings=exploration_findings,
+        review_results=review_results if depth_level >= 2 else None
+    )
+
+    RETURN design_results
+```
+
+**Details:** See `templates/shared/plan-mode/framework.md` for complete algorithm, agent specifications, and review pass definitions.
+
+**Depth Levels:**
+- **Level 0 (Standard)**: Current behavior, no Plan Mode (0% overhead)
+- **Level 1 (Lite)**: Quick exploration (2 agents, 90s, +12% time)
+- **Level 2 (Moderate)**: Full exploration + constitution review (180s + 30s, +27% time)
+- **Level 3 (Full)**: Exploration + 4 review passes (180s + 120s, +42% time)
+
+**Auto-Enable:** Depth level determined by command defaults, complexity tier, and keyword triggers. See `templates/shared/plan-mode/triggers.md`.
+
+---
+
 ## Execution Algorithm
 
 ### Step 1: Parse Subagents

@@ -67,6 +67,59 @@ handoffs:
     agent: speckit.analyze
     prompt: Validate spec completeness and traceability
     auto: false
+plan_mode:
+  enabled: auto  # auto (depth-based), explicit depth level, or legacy flags
+
+  # Default depth levels by complexity tier
+  depth_defaults:
+    TRIVIAL: 0   # Standard
+    SIMPLE: 0    # Standard
+    MODERATE: 1  # Lite
+    COMPLEX: 2   # Moderate
+
+  # Depth level definitions (same as plan.md)
+  depth_levels:
+    0:  # Standard
+      name: "Standard"
+      exploration: false
+      review_passes: []
+    1:  # Lite
+      name: "Lite"
+      exploration:
+        agents: [pattern-researcher, constraint-mapper]
+        budget_s: 90
+      review_passes: []
+    2:  # Moderate
+      name: "Moderate"
+      exploration:
+        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer]
+        budget_s: 180
+      review_passes: [constitution_alignment]
+      budget_s: 210  # 180 + 30
+    3:  # Full
+      name: "Full"
+      exploration:
+        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer]
+        budget_s: 180
+      review_passes: [constitution_alignment, completeness_check, edge_case_detection, testability_audit]
+      budget_s: 300  # 180 + 120
+
+  # Keyword triggers upgrade depth level by +1 (max 3)
+  keyword_triggers:
+    - distributed
+    - multi-service
+    - migration
+    - security-critical
+    - real-time
+    - high-availability
+    - microservices
+    - event-driven
+    - data-intensive
+
+  flags:
+    depth: "--depth-level <0-3>"  # Primary flag
+    enable: "--plan-mode"         # Alias for --depth-level 3
+    disable: "--no-plan-mode"     # Alias for --depth-level 0
 scripts:
   sh: scripts/bash/create-new-feature.sh --json "{ARGS}"
   ps: scripts/powershell/create-new-feature.ps1 -Json "{ARGS}"
@@ -1868,6 +1921,128 @@ ELSE:
    - "fix bug" → Bugfix
    - "optimize", "performance" → Performance
    - "security", "vulnerability" → Security
+
+---
+
+## Wave 0.5: Plan Mode Exploration (Conditional)
+
+**Trigger:** Depth level ≥ 1 (auto-enabled for COMPLEX features or via --plan-mode/--depth-level flags)
+
+**Execution:** This phase runs BEFORE Wave 1 (Context Gathering) when Plan Mode is enabled.
+
+**Purpose:** Pre-research the feature to identify patterns, alternatives, and constraints before specification work begins.
+
+---
+
+### Depth Level Detection
+
+```text
+FUNCTION determine_depth_level():
+    # Priority 1: Explicit --depth-level flag
+    IF "--depth-level" IN flags:
+        RETURN parse_int(flags["--depth-level"], min=0, max=3)
+
+    # Priority 2: Backward compat flags
+    IF "--plan-mode" IN flags:
+        RETURN 3  # Full depth
+    IF "--no-plan-mode" IN flags:
+        RETURN 0  # Standard mode
+
+    # Priority 3: Complexity-based default for specify command
+    complexity_tier = calculate_complexity_tier(spec_path)
+    defaults = {
+        "TRIVIAL": 0,   # Standard
+        "SIMPLE": 0,    # Standard
+        "MODERATE": 1,  # Lite
+        "COMPLEX": 2    # Moderate
+    }
+    default_level = defaults[complexity_tier]
+
+    # Priority 4: Keyword triggers upgrade by +1 level
+    keywords = ["distributed", "microservices", "migration",
+                "security-critical", "real-time", "high-availability"]
+    FOR keyword IN keywords:
+        IF keyword IN user_input.lower():
+            RETURN min(default_level + 1, 3)
+
+    RETURN default_level
+```
+
+---
+
+### Exploration Agents
+
+**Depth Level 1 (Lite) - 90s:**
+
+```text
+EMIT SINGLE MESSAGE with 2 parallel Task calls:
+  Task(role="pattern-researcher", subagent_type="Explore", model="haiku", timeout=45s)
+  Task(role="constraint-mapper", subagent_type="Explore", model="haiku", timeout=45s)
+```
+
+**Depth Level 2-3 (Moderate/Full) - 180s:**
+
+```text
+# Parallel phase (3 agents, 45s wall time)
+EMIT SINGLE MESSAGE with 3 parallel Task calls:
+  Task(role="pattern-researcher", subagent_type="Explore", model="haiku", timeout=45s)
+  Task(role="alternative-analyzer", subagent_type="general-purpose", model="haiku", timeout=45s)
+  Task(role="constraint-mapper", subagent_type="Explore", model="haiku", timeout=45s)
+
+# Sequential phase (1 agent synthesizes findings, 60s wall time)
+EMIT Task(role="best-practice-synthesizer", subagent_type="general-purpose", model="sonnet", timeout=60s)
+```
+
+**Agent Roles:**
+
+1. **pattern-researcher**: Search codebase for similar features → document patterns
+2. **alternative-analyzer**: Generate 3-5 alternatives → score (complexity, testability, maintainability, performance, alignment)
+3. **constraint-mapper**: Extract NFRs from user input/concept → map constraints → detect conflicts
+4. **best-practice-synthesizer**: Synthesize findings → recommend approach → identify edge cases
+
+**Output:** `research.md` in feature directory
+
+---
+
+### Context Injection
+
+Exploration findings are prepended to Wave 2 (Analysis) agent prompts:
+
+```text
+# Original prompt (requirement-extractor, Wave 2)
+Extract functional requirements from {user_input}.
+
+# Enhanced prompt (with Plan Mode)
+🔍 **Plan Mode Context:**
+- Recommended Approach: OAuth 2.0 + JWT (scored 22/25)
+- Key Constraint: P95 <100ms → Use Redis cache
+- Edge Cases Identified: Rate limiting, token rotation, session hijacking
+
+Extract functional requirements from {user_input}.
+Consider the exploration findings above when defining requirements.
+```
+
+**Benefit:** Wave 2+ agents generate higher-quality artifacts informed by pre-research
+
+---
+
+### Graceful Fallback
+
+```text
+IF exploration_phase_fails:
+    LOG: "⚠️ Plan Mode exploration failed, falling back to Standard Mode"
+    depth_level = 0
+    SKIP context injection
+    PROCEED with Wave 1 (Context Gathering) as normal
+```
+
+---
+
+### Quality Gates
+
+- IG-SPEC-012: Exploration Phase Completeness (checks PM-001, PM-002)
+- IG-SPEC-013: Review Pass Compliance (checks PM-004, PM-005)
+- IG-SPEC-014: Quality Score Threshold (checks PM-006 for SQS ≥ 80)
 
 ---
 
