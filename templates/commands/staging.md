@@ -251,6 +251,33 @@ Parse arguments for:
          - appium
    ```
 
+   **Desktop services (added with `--electron` or `--tauri` flag):**
+   ```yaml
+     # Playwright Electron Container
+     playwright-electron:
+       image: mcr.microsoft.com/playwright:v1.40.0-jammy
+       container_name: speckit-playwright-electron
+       working_dir: /app
+       environment:
+         - DISPLAY=:99
+         - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+         - CI=true
+       volumes:
+         - ${PROJECT_ROOT:-.}:/app
+         - playwright-data:/ms-playwright
+       healthcheck:
+         test: ["CMD-SHELL", "npx playwright --version"]
+         interval: 30s
+         timeout: 10s
+         retries: 3
+       profiles:
+         - electron
+
+     # Tauri WebDriver (requires native setup)
+     # Note: Tauri WebDriver runs on host, not in Docker
+     # This is a placeholder for future Docker support
+   ```
+
 3. **Generate test-config.env:**
    ```env
    # .speckit/staging/test-config.env
@@ -286,6 +313,14 @@ Parse arguments for:
    # Appium Server (if --appium enabled)
    APPIUM_HOST=localhost
    APPIUM_PORT=4723
+
+   # Desktop Testing - Electron (if --electron enabled)
+   ELECTRON_ENABLE_LOGGING=true
+   PLAYWRIGHT_ELECTRON=true
+
+   # Desktop Testing - Tauri (if --tauri enabled)
+   # Note: Tauri WebDriver runs on host, native setup required
+   TAURI_WEBDRIVER_PORT=4444
 
    # Test Configuration
    NODE_ENV=test

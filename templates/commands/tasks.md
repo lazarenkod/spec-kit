@@ -313,6 +313,106 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
       → Store: STORY_PRIORITIES = {US1: P1a, US2: P1b, ...}
    ```
 
+3.5. **Detect UI Test Requirements** [REF:UI-DETECT-001]:
+
+   For each acceptance scenario (AS-xxx), determine if it requires UI testing:
+
+   ```text
+   UI_AS_LIST = []
+   UI_KEYWORDS = {
+     actions: ["click", "tap", "press", "swipe", "scroll", "drag", "type", "select", "submit"],
+     elements: ["button", "form", "input", "textfield", "dropdown", "modal", "dialog",
+                "checkbox", "radio", "toggle", "slider", "menu", "navbar", "toolbar"],
+     states: ["visible", "hidden", "disabled", "enabled", "selected", "checked", "focused"],
+     mobile: ["screen", "view", "activity", "fragment", "navigation"],
+     web: ["page", "link", "href", "route"]
+   }
+
+   FOR EACH as IN AS_LIST:
+     # Parse AS content from spec.md
+     as_content = EXTRACT_AS_CONTENT(spec.md, as.id)
+
+     # Check for UI keywords
+     has_ui_keywords = false
+     FOR EACH category IN UI_KEYWORDS:
+       FOR EACH keyword IN UI_KEYWORDS[category]:
+         IF keyword IN as_content.lower():
+           has_ui_keywords = true
+           BREAK
+
+     # Tag AS with UI requirement
+     IF has_ui_keywords:
+       UI_AS_LIST.append({
+         id: as.id,
+         requires_ui_test: true,
+         detected_keywords: [found keywords],
+         platform: DETECT_PLATFORM()  # See platform detection below
+       })
+
+   # Platform Detection
+   DETECT_PLATFORM():
+     platforms = []
+
+     # Web detection
+     IF package.json contains "react" OR "vue" OR "angular" OR "svelte":
+       platforms.append("web")
+       framework = "playwright"  # Default for web
+
+     # Mobile detection
+     IF EXISTS Xcode project (*.xcodeproj):
+       platforms.append("ios")
+       framework = "xcuitest"
+
+     IF EXISTS build.gradle with "android":
+       platforms.append("android")
+       framework = "espresso"
+
+     IF package.json contains "react-native":
+       platforms.append("ios", "android")
+       framework = "detox"  # Cross-platform
+
+     IF EXISTS pubspec.yaml (Flutter):
+       platforms.append("ios", "android")
+       framework = "flutter_test"
+
+     IF EXISTS build.gradle.kts with kotlin("multiplatform"):
+       platforms.append("ios", "android")
+       framework = "maestro"
+
+     # Desktop detection
+     IF package.json contains "electron":
+       platforms.append("desktop_electron")
+       framework = "playwright-electron"
+
+     IF EXISTS src-tauri/ directory:
+       platforms.append("desktop_tauri")
+       framework = "tauri-webdriver"
+
+     RETURN {
+       platforms: platforms,
+       framework: framework
+     }
+
+   # Generate UI test requirement table
+   IF len(UI_AS_LIST) > 0:
+     OUTPUT """
+     ## UI Test Requirements Detected
+
+     {len(UI_AS_LIST)} acceptance scenarios require E2E UI testing.
+
+     | AS ID | Detected Keywords | Platform | Framework |
+     |-------|-------------------|----------|-----------|
+     """
+     FOR EACH ui_as IN UI_AS_LIST:
+       OUTPUT "| {ui_as.id} | {ui_as.detected_keywords} | {ui_as.platform.platforms} | {ui_as.platform.framework} |"
+
+     STORE: "UI_AS_LIST" for use in test task generation (Step 4)
+   ELSE:
+     OUTPUT "No UI testing requirements detected."
+   ```
+
+   **Output**: UI_AS_LIST with platform and framework metadata for E2E test generation.
+
 4. **Execute task generation workflow**:
    - Load plan.md and extract tech stack, libraries, project structure
    - Load spec.md and extract user stories with their priorities (P1a, P1b, P2a, etc.)
@@ -1488,6 +1588,97 @@ For each edge case from spec.md's `suggested_edge_cases` field (from section 1.1
 
 **Estimated Effort**: {minutes_or_hours}
 ```
+
+**STEP 4.5: Generate UI E2E Test Tasks** [REF:UI-TEST-GEN-001]
+
+For acceptance scenarios in UI_AS_LIST (detected in Step 3.5), generate E2E UI test tasks:
+
+```text
+FOR EACH ui_as IN UI_AS_LIST:
+  # Extract scenario details
+  scenario = FIND AS in AS_LIST WHERE as.id == ui_as.id
+  platform = ui_as.platform
+  framework = platform.framework
+
+  # Determine test file path based on framework
+  test_file_path = GENERATE_TEST_PATH(framework, ui_as.id)
+
+  # Generate E2E test task
+  GENERATE task:
+    ID: T{next_id}
+    Markers: [E2E-TEST:{ui_as.id}] [TEST:{ui_as.id}]
+    Description: "E2E test for {scenario.summary} using {framework}"
+    File: {test_file_path}
+    Subtasks:
+      - **Framework**: {framework}
+      - **Platform**: {', '.join(platform.platforms)}
+      - **Scenario**: {scenario.given_when_then}
+      - **Selectors**: testId-first, fallback to aria-label
+      - **Auto-fix**: Basic mode (2 attempts) - retry + fallback selectors
+      - **Quality Gate**: QG-UI-002 (test must pass after auto-fix)
+
+# Test file path generation
+GENERATE_TEST_PATH(framework, as_id):
+  IF framework == "playwright":
+    RETURN "tests/e2e/{as_id.lower()}.spec.ts"
+  ELSE IF framework == "playwright-electron":
+    RETURN "tests/e2e/electron/{as_id.lower()}.spec.ts"
+  ELSE IF framework == "xcuitest":
+    RETURN "UITests/{as_id}Test.swift"
+  ELSE IF framework == "espresso":
+    RETURN "app/src/androidTest/java/{package}/{as_id}Test.kt"
+  ELSE IF framework == "maestro":
+    RETURN ".maestro/{as_id.lower()}.yaml"
+  ELSE IF framework == "detox":
+    RETURN "e2e/{as_id.lower()}.e2e.ts"
+  ELSE IF framework == "tauri-webdriver":
+    RETURN "tests/e2e/tauri/{as_id.lower()}.spec.ts"
+  ELSE:
+    RETURN "tests/e2e/{as_id.lower()}.test.js"
+
+# Generate scaffold template reference
+FOR EACH ui_test_task:
+  ADD note: "Scaffold: templates/shared/test-scaffolds/{framework}-scaffold.md"
+
+# Validate QG-UI-001 (100% UI AS coverage)
+ui_test_count = len([task for task in TASKS if "[E2E-TEST:" in task.markers])
+ui_as_count = len(UI_AS_LIST)
+
+IF ui_test_count < ui_as_count:
+  FAIL QG-UI-001:
+    message: "QG-UI-001 FAILED: {ui_as_count - ui_test_count} UI scenarios lack E2E tests"
+    missing: [as.id for as in UI_AS_LIST if not has_e2e_test(as.id)]
+ELSE:
+  LOG "QG-UI-001 PASSED: {ui_test_count}/{ui_as_count} UI scenarios have E2E tests"
+```
+
+**Test Task Example** (Playwright Web):
+```markdown
+- [ ] T025 [US2] [E2E-TEST:AS-2A] [TEST:AS-2A] E2E test: User can submit form with valid data
+
+**Framework**: Playwright (Web)
+**Platform**: web
+**Scenario**: AS-2A - Given user is on form page, When user fills all required fields and clicks submit, Then form is submitted successfully and confirmation is shown
+**Selectors**: testId-first (`data-testid="submit-button"`), fallback to `button[aria-label="Submit"]`
+**Auto-fix**: Basic mode (2 attempts: retry with explicit wait, fallback selector)
+**File**: tests/e2e/as-2a.spec.ts
+**Scaffold**: templates/shared/test-scaffolds/playwright-web-scaffold.md
+```
+
+**Test Task Example** (XCUITest iOS):
+```markdown
+- [ ] T032 [US3] [E2E-TEST:AS-3B] [TEST:AS-3B] E2E test: User can navigate to settings screen
+
+**Framework**: XCUITest (iOS)
+**Platform**: ios
+**Scenario**: AS-3B - Given user is on home screen, When user taps settings button, Then settings screen is displayed
+**Selectors**: Accessibility identifier first, fallback to label
+**Auto-fix**: Basic mode (2 attempts: waitForExistence, scrollIntoView)
+**File**: UITests/AS3BTest.swift
+**Scaffold**: templates/shared/test-scaffolds/xcuitest-scaffold.md
+```
+
+**Output**: E2E test tasks for all UI scenarios with framework-specific paths and scaffold references.
 
 **STEP 5: Suggest Property-Based Testing (Optional)**
 

@@ -140,6 +140,8 @@ class WaveConfig:
     early_test_verification: bool = False
     # TDD verification sub-config (see TddVerificationConfig for details)
     tdd_config: Optional["TddVerificationConfig"] = None
+    # UI auto-fix sub-config (see UIAutoFixConfig for details)
+    ui_autofix_config: Optional["UIAutoFixConfig"] = None
 
 
 @dataclass
@@ -168,6 +170,40 @@ class TddVerificationConfig:
     max_retries: int = 3
     fallback_to_normal_flow: bool = True  # Graceful degradation
     block_on_qg_test_003: bool = False  # Phase 2: block on TDD violation
+
+
+@dataclass
+class UIAutoFixConfig:
+    """
+    Configuration for UI test auto-fix loop.
+
+    Controls how UI E2E tests are verified with self-healing selectors.
+    Two modes:
+    - Basic Mode (Default): 2 attempts - retry + fallback selectors - NO AI
+    - Advanced Mode (Optional): 3 attempts - basic + AI selector suggestion
+
+    Attributes:
+        enabled: Whether UI auto-fix is enabled
+        mode: "basic" (default) or "advanced" (requires GEMINI_API_KEY)
+        timeout_ms: Max time to wait for UI test execution (60s default)
+        ai_model: Gemini model for selector suggestions (advanced mode only)
+        fallback_to_normal_flow: Fall back to normal flow on any error
+    """
+    enabled: bool = False
+    mode: str = "basic"  # "basic" or "advanced"
+    timeout_ms: int = 60000  # 1 minute per UI test
+    ai_model: str = "gemini-2.0-flash-exp"  # Only used in advanced mode
+    fallback_to_normal_flow: bool = True
+
+    @property
+    def max_attempts(self) -> int:
+        """2 attempts for basic, 3 for advanced."""
+        return 2 if self.mode == "basic" else 3
+
+    @property
+    def ai_enabled(self) -> bool:
+        """AI only in advanced mode."""
+        return self.mode == "advanced"
 
 
 @dataclass
@@ -384,6 +420,8 @@ class WaveScheduler:
         # TDD verification state
         self._unlocks_this_wave: int = 0  # Circuit breaker counter
         self._tdd_config = self.config.tdd_config or TddVerificationConfig()
+        # UI auto-fix state
+        self._ui_autofix_config = self.config.ui_autofix_config or UIAutoFixConfig()
 
     def on_task_complete(
         self,
@@ -1004,6 +1042,133 @@ class WaveScheduler:
 
         return unlocked_tasks
 
+    async def _verify_ui_test_and_heal(
+        self,
+        test_task: AgentTask,
+        test_result: AgentResult
+    ) -> "TestVerificationResult":
+        """
+        Execute UI test with auto-fix loop.
+
+        Integrates with ui_test_autofix module to provide self-healing
+        selectors for E2E UI tests across Web, Mobile, and Desktop platforms.
+
+        Two modes:
+        - Basic Mode (Default): 2 attempts - retry + fallback selectors - NO AI
+        - Advanced Mode (Optional): 3 attempts - basic + AI selector suggestion
+
+        Args:
+            test_task: The UI test task
+            test_result: Result of the test task execution
+
+        Returns:
+            Test verification result with healing details
+        """
+        if not self._ui_autofix_config.enabled:
+            # Fall back to normal TDD Red verification
+            return await self._verify_tdd_red(test_task, test_result)
+
+        # Import auto-fix module
+        try:
+            from specify_cli.ui_test_autofix import UIAutoFixRunner, TestVerificationResult as UITestResult
+        except ImportError:
+            # Graceful fallback if module not available
+            if self._ui_autofix_config.fallback_to_normal_flow:
+                return await self._verify_tdd_red(test_task, test_result)
+            raise
+
+        # Extract test file path from result
+        test_file = self._extract_test_file_path(test_task, test_result)
+        if not test_file:
+            # No test file found - fall back to normal flow
+            if self._ui_autofix_config.fallback_to_normal_flow:
+                return await self._verify_tdd_red(test_task, test_result)
+            return TestVerificationResult(
+                test_ran=False,
+                test_failed=False,
+                exit_code=-1,
+                stdout="",
+                stderr="Could not extract test file path from task result",
+                test_file=None,
+                error="NO_TEST_FILE"
+            )
+
+        # Execute auto-fix loop
+        runner = UIAutoFixRunner(config=self._ui_autofix_config)
+
+        try:
+            ui_result: UITestResult = await runner.execute_with_autofix(
+                test_file=test_file,
+                test_command=None  # Auto-inferred from file extension
+            )
+
+            # Convert UI result to TDD verification result
+            return TestVerificationResult(
+                test_ran=ui_result.attempts > 0,
+                test_failed=not ui_result.success,
+                exit_code=0 if ui_result.success else 1,
+                stdout=json.dumps(ui_result.healing_applied, indent=2),
+                stderr=ui_result.final_error or "",
+                test_file=ui_result.test_file,
+                duration_ms=ui_result.total_duration_ms,
+                error=None if ui_result.success else "UI_TEST_FAILED"
+            )
+
+        except Exception as e:
+            # Graceful fallback on error
+            if self._ui_autofix_config.fallback_to_normal_flow:
+                return await self._verify_tdd_red(test_task, test_result)
+            return TestVerificationResult(
+                test_ran=False,
+                test_failed=False,
+                exit_code=-1,
+                stdout="",
+                stderr=f"UI auto-fix failed: {str(e)}",
+                test_file=test_file,
+                error=type(e).__name__
+            )
+
+    def _extract_test_file_path(
+        self,
+        test_task: AgentTask,
+        test_result: AgentResult
+    ) -> Optional[str]:
+        """
+        Extract test file path from task result.
+
+        Args:
+            test_task: The test task
+            test_result: Result of task execution
+
+        Returns:
+            Test file path or None
+        """
+        # Try to extract from result output
+        output = test_result.output or ""
+
+        # Common patterns
+        file_patterns = [
+            r"Created test file[: ]+([^\s]+)",
+            r"Test file[: ]+([^\s]+)",
+            r"File[: ]+([^\s]+\.(?:spec\.ts|spec\.js|test\.ts|test\.js|swift|kt|yaml))",
+        ]
+
+        for pattern in file_patterns:
+            match = re.search(pattern, output, re.IGNORECASE)
+            if match:
+                return match.group(1)
+
+        # Fallback: check task name for file path
+        # Format: "... in tests/e2e/as-2a.spec.ts"
+        if " in " in test_task.name:
+            parts = test_task.name.split(" in ")
+            if len(parts) == 2:
+                potential_path = parts[1].strip()
+                if any(ext in potential_path for ext in [".spec.", ".test.", ".swift", ".kt", ".yaml"]):
+                    return potential_path
+
+        return None
+
     def _is_test_task(self, task: AgentTask) -> bool:
         """
         Check if a task is a test generation task.
@@ -1027,3 +1192,19 @@ class WaveScheduler:
         # Check name patterns
         test_patterns = ["test-scaffolder", "e2e-test-scaffolder", "test_"]
         return any(pattern in task.name.lower() for pattern in test_patterns)
+
+    def _is_ui_test(self, task: AgentTask) -> bool:
+        """
+        Check if a task is a UI E2E test task.
+
+        Detects tasks with [E2E-TEST:] or [UI-TEST:] markers.
+
+        Args:
+            task: Task to check
+
+        Returns:
+            True if this is a UI E2E test task
+        """
+        # Check for E2E test markers
+        ui_test_markers = ["[E2E-TEST:", "[UI-TEST:", "E2E test"]
+        return any(marker in task.name for marker in ui_test_markers)

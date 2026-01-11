@@ -1224,6 +1224,55 @@ docs_url: https://developer.apple.com/documentation/xctest
 
 ## E2E Desktop Testing Frameworks
 
+### playwright-electron
+
+```yaml
+framework_id: playwright-electron
+name: Playwright for Electron
+description: E2E testing for Electron apps via Playwright
+category: e2e_desktop
+languages: [javascript, typescript]
+platforms: [electron]
+priority: 95
+alternative_to: [spectron]
+compatible_with: [jest, vitest]
+
+detection:
+  explicit_markers:
+    - pattern: "Test Framework: Playwright Electron"
+      source: [tasks.md, plan.md]
+  project_files:
+    - file: package.json
+      contains: '"electron"'
+  dependencies:
+    - package: playwright
+      type: dev
+
+installation:
+  npm:
+    command: "npm install -D playwright @playwright/test"
+  yarn:
+    command: "yarn add -D playwright @playwright/test"
+  pnpm:
+    command: "pnpm add -D playwright @playwright/test"
+
+verification:
+  - command: "npx playwright --version"
+    expected_exit_code: 0
+
+configuration:
+  required_files: [playwright.config.ts]
+  template: playwright-electron.config.ts
+
+quality_gate: QG-TEST-002
+prerequisites:
+  - Node.js >= 16
+  - Electron app with main process
+docs_url: https://playwright.dev/docs/api/class-electron
+```
+
+---
+
 ### tauri-test
 
 ```yaml

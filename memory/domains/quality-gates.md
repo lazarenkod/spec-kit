@@ -716,6 +716,176 @@ FOR EACH wire_task WHERE status = "[x]":
 
 ---
 
+## UI Testing Gates (QG-UI-xxx)
+
+> **UI Testing Quality Gates** ensure 100% coverage of UI acceptance scenarios with E2E tests and validate that UI tests pass with self-healing auto-fix loops.
+
+### QG-UI-001: UI Test Coverage
+
+**Level**: MUST (blocking)
+**Applies to**: All `/speckit.tasks` outputs for features with UI components
+**Phase**: Pre-Implement (tasks.md validation)
+
+Every acceptance scenario (AS-xxx) with UI components MUST have a corresponding E2E test task.
+
+**Threshold**: 100% of AS-xxx with UI components have [E2E-TEST:AS-xxx] or [UI-TEST:AS-xxx] markers
+
+**Validation**:
+```bash
+/speckit.analyze --profile ui-test-coverage
+```
+
+**Formula**: `(AS with [E2E-TEST:] markers) / (AS with "Requires UI Test = YES") × 100`
+
+**Implementation**:
+```
+# Step 1: Parse spec.md for AS-xxx with UI keywords
+UI_AS = detect_ui_acceptance_scenarios(spec_md)
+
+# Step 2: Parse tasks.md for E2E test tasks
+E2E_TASKS = extract_tasks_with_markers(tasks_md, "[E2E-TEST:", "[UI-TEST:")
+
+# Step 3: Calculate coverage
+FOR EACH as_id IN UI_AS:
+  IF NOT EXISTS task WHERE task.markers CONTAINS "[E2E-TEST:{as_id}]":
+    ERROR: "Missing E2E test for UI scenario: {as_id}"
+
+coverage = (len(E2E_TASKS) / len(UI_AS)) × 100
+IF coverage < 100:
+  FAIL QG-UI-001
+```
+
+**Severity**: CRITICAL
+
+**Violations**: CRITICAL - UI scenarios not covered by E2E tests
+
+---
+
+### QG-UI-002: All UI Tests Pass
+
+**Level**: MUST
+**Applies to**: All `/speckit.implement` executions
+**Phase**: Post-Implement (Wave 4)
+
+All UI E2E tests MUST pass after auto-fix attempts (2 attempts for basic mode, 3 for advanced mode).
+
+**Threshold**: 100% of UI tests pass (after auto-fix loop)
+
+**Validation**:
+```bash
+# Playwright (Web/Electron)
+npm test -- --testPathPattern=e2e
+
+# XCUITest (iOS)
+xcodebuild test -scheme UITests -destination 'platform=iOS Simulator,name=iPhone 15 Pro'
+
+# Espresso (Android)
+./gradlew connectedAndroidTest
+
+# Maestro (Cross-platform mobile)
+maestro test .maestro/
+```
+
+**Implementation**:
+```python
+# In Wave 4 of /speckit.implement
+ui_test_results = []
+
+FOR EACH test_task IN ui_test_tasks:
+  result = await _verify_ui_test_and_heal(
+    test_task=test_task,
+    mode=ui_autofix_config.mode  # "basic" or "advanced"
+  )
+  ui_test_results.append(result)
+
+passed = [r for r in ui_test_results if r.success]
+failed = [r for r in ui_test_results if not r.success]
+
+IF len(failed) > 0:
+  FAIL QG-UI-002 with details:
+    - Total tests: len(ui_test_results)
+    - Passed: len(passed)
+    - Failed: len(failed)
+    - Failed tests: [f.test_file for f in failed]
+```
+
+**Severity**: CRITICAL
+
+**Violations**: CRITICAL - UI tests failing block feature completion
+
+---
+
+### QG-UI-003: No Hardcoded Waits
+
+**Level**: SHOULD
+**Applies to**: All UI test code
+**Phase**: Post-Implement (code analysis)
+
+UI tests MUST NOT use hardcoded waits (sleep, delay, setTimeout). Use explicit waits (waitFor, waitForSelector) instead.
+
+**Threshold**: 0 hardcoded waits in test code
+
+**Validation**: Regex scan for hardcoded wait patterns
+
+**Patterns** (language-specific):
+```yaml
+javascript/typescript:
+  - "setTimeout\\("
+  - "setInterval\\("
+  - "\\.sleep\\("
+  - "await page\\.waitForTimeout\\("  # Playwright discouraged pattern
+
+python:
+  - "time\\.sleep\\("
+  - "sleep\\("
+
+swift:
+  - "Thread\\.sleep\\("
+  - "usleep\\("
+
+kotlin/java:
+  - "Thread\\.sleep\\("
+  - "SystemClock\\.sleep\\("
+```
+
+**Implementation**:
+```bash
+# Scan all test files for hardcoded waits
+rg "(setTimeout|sleep|waitForTimeout)" tests/e2e/ --type js --type ts
+rg "time\.sleep" tests/e2e/ --type py
+rg "Thread\.sleep" tests/ --type swift --type kotlin --type java
+
+IF matches_found > 0:
+  WARN QG-UI-003 with locations
+```
+
+**Severity**: HIGH
+
+**Violations**: HIGH - Hardcoded waits cause flaky tests
+
+**Remediation**:
+```typescript
+// ❌ Bad
+await page.waitForTimeout(2000);
+await page.click('button');
+
+// ✅ Good
+await page.waitForSelector('button[data-testid="submit"]', { state: 'visible' });
+await page.click('button[data-testid="submit"]');
+```
+
+---
+
+### UI Testing Gates Summary
+
+| Gate ID | Phase | Level | Threshold | Validation | Severity |
+|---------|-------|-------|-----------|------------|----------|
+| QG-UI-001 | Pre-Implement | MUST | 100% UI AS with E2E tasks | [E2E-TEST:] check | CRITICAL |
+| QG-UI-002 | Post-Implement | MUST | 100% UI tests pass | Test execution | CRITICAL |
+| QG-UI-003 | Post-Implement | SHOULD | 0 hardcoded waits | Regex scan | HIGH |
+
+---
+
 ### Component Integration Gates Summary
 
 | Gate ID | Phase | Level | Threshold | Validation | Violation |
