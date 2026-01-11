@@ -334,15 +334,134 @@ validation_profiles:
         message: "Critical drift detected - resolve immediately"
     timeout_seconds: 180
     output_mode: detailed
+  parity:
+    description: "Cross-platform parity validation (iOS/Android feature parity, UX adaptation, regression detection)"
+    applicable: "is_cross_platform"
+    platforms: [kmp, flutter, react_native]
+    persona: parity-validator-agent
+    skill: platform-parity
+    passes: [PARITY]
+    gates:
+      feature_parity:
+        pass: PARITY
+        threshold: 95
+        severity: CRITICAL
+        message: "Feature parity below 95% - missing core features on one platform"
+      ux_adaptation:
+        pass: PARITY
+        threshold: 80
+        severity: HIGH
+        message: "UX adaptation score below 80% - platform patterns incorrectly applied"
+      zero_regressions:
+        pass: PARITY
+        threshold: 0
+        severity: CRITICAL
+        message: "Platform-specific regressions detected - resolve before release"
+    timeout_seconds: 600
+    output_mode: detailed
+    output_artifacts:
+      - reports/parity-report.md
+      - reports/parity-score.json
+    integration:
+      mqs_component: platform_parity
+      mqs_weight: 20
+  performance:
+    description: "Automated performance profiling (iOS/Android/Unity cold start, FPS, memory, battery)"
+    applicable: "is_mobile_project"
+    platforms: [ios, android, kmp, flutter, react_native, unity]
+    persona: performance-profiler-agent
+    skill: native-profiling
+    passes: [PERFORMANCE]
+    gates:
+      cold_start:
+        pass: PERFORMANCE
+        threshold: 2000  # iOS threshold (Android: 1500ms validated in skill)
+        severity: CRITICAL
+        message: "Cold start time exceeds threshold - optimize app initialization"
+      frame_rate:
+        pass: PERFORMANCE
+        threshold: 60  # 60 FPS at 95th percentile
+        severity: HIGH
+        message: "Frame rate below 60 FPS - optimize rendering pipeline"
+      memory_peak:
+        pass: PERFORMANCE
+        threshold: 150  # 150 MB
+        severity: HIGH
+        message: "Peak memory usage exceeds 150MB - implement memory optimization"
+      memory_leaks:
+        pass: PERFORMANCE
+        threshold: 0  # Zero leaked allocations
+        severity: CRITICAL
+        message: "Memory leaks detected - fix before release"
+      battery:
+        pass: PERFORMANCE
+        threshold: 5  # 5% per hour
+        severity: MEDIUM
+        message: "Battery drain exceeds 5%/hour - optimize background tasks"
+    timeout_seconds: 600
+    output_mode: detailed
+    output_artifacts:
+      - reports/performance-report.md
+      - reports/performance-metrics.json
+      - reports/profiling-artifacts/
+    integration:
+      mqs_component: performance
+      mqs_weight: 20
+  game-economy:
+    description: "Monte Carlo game economy simulation (Gini, inflation, F2P progression, P2W detection)"
+    applicable: "is_game_project AND has_economy_design"
+    platforms: [unity, godot, native_game]
+    persona: game-economist-agent
+    skill: economy-simulation
+    passes: [ECONOMY]
+    gates:
+      gini_coefficient:
+        pass: ECONOMY
+        threshold: 0.6  # Gini < 0.6 (moderate wealth inequality)
+        severity: HIGH
+        message: "Wealth inequality too high - adjust F2P earn rates or whale pricing"
+      inflation_rate:
+        pass: ECONOMY
+        threshold: 10  # < 10% per month
+        severity: MEDIUM
+        message: "Currency inflation exceeds 10%/month - balance sinks and sources"
+      f2p_milestones:
+        pass: ECONOMY
+        threshold: 100  # 100% of milestones reachable
+        severity: CRITICAL
+        message: "F2P cannot reach all milestones - reduce power requirements or extend time budgets"
+      p2w_detection:
+        pass: ECONOMY
+        threshold: 2.0  # Power gap < 2.0x
+        severity: CRITICAL
+        message: "Pay-to-win detected in PvP - reduce whale power advantage or increase F2P progression"
+    timeout_seconds: 900  # Monte Carlo simulation takes longer
+    output_mode: detailed
+    output_artifacts:
+      - reports/economy-simulation-report.md
+      - reports/economy-metrics.json
+    integration:
+      mqs_component: game_economy_balance
+      mqs_weight: 15  # For game projects only
   full:
     description: "Complete pre-implementation analysis"
     passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q, Z, AA]
     timeout_seconds: 300
     output_mode: detailed
   qa:
-    description: "Post-implementation QA verification"
-    passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, AA]
-    timeout_seconds: 600
+    description: "Post-implementation QA verification (includes parity + performance + economy validation)"
+    passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, AA, PARITY, PERFORMANCE, ECONOMY]
+    conditional_passes:
+      PARITY:
+        condition: "is_cross_platform"
+        platforms: [kmp, flutter, react_native]
+      PERFORMANCE:
+        condition: "is_mobile_project"
+        platforms: [ios, android, kmp, flutter, react_native, unity]
+      ECONOMY:
+        condition: "is_game_project AND has_economy_design"
+        platforms: [unity, godot, native_game]
+    timeout_seconds: 900
     output_mode: detailed
 ---
 

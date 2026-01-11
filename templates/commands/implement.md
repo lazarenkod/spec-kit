@@ -2417,17 +2417,26 @@ Alternatives:
       parallel: true
       depends_on: [mobile-test-scaffolder]
       priority: 9
-      trigger: "when platform is kmp"
+      trigger: "when platform is kmp OR flutter OR react_native"
+      persona: test-generator-agent
+      skill: binding-test-generator
       prompt: |
         ## Context
         Feature: {{FEATURE_DIR}}
         Spec: {{FEATURE_DIR}}/spec.md
         Tasks: {{FEATURE_DIR}}/tasks.md
-        Platform: KMP (Kotlin Multiplatform)
+        Platform: {{MOBILE_PLATFORM}} (KMP, Flutter, or React Native)
+        Persona: test-generator-agent
+        Skill: binding-test-generator
+        Templates:
+          - templates/test-templates/ios-binding-test.swift.template
+          - templates/test-templates/android-binding-test.kt.template
 
-        ## Task - Platform Binding Test Scaffolding (TDD Red Phase)
-        Generate binding verification tests for KMP platform layer.
-        These tests verify that platform UI (SwiftUI/Compose) correctly calls shared Kotlin code.
+        ## Task - Platform Binding Test Generation (TDD Red Phase)
+        Generate binding verification tests for cross-platform wrappers using automated test generation.
+        These tests verify that platform UI (SwiftUI/Compose/React Native) correctly calls shared code.
+
+        **Reference**: See templates/skills/binding-test-generator.md for comprehensive code generation patterns.
 
         ## Step 1: Analyze Shared ViewModels
         FOR EACH ViewModel in shared/src/commonMain/**/*ViewModel.kt:
@@ -2545,17 +2554,26 @@ Alternatives:
         }
         ```
 
-        ## Success Criteria (QG-BIND-001 Validation)
-        - Binding test files created for all ViewModels
-        - Each public method has a binding test
-        - Each StateFlow has an observation test
+        ## Success Criteria (QG-BIND Validation)
+        - QG-BIND-001: Binding test files created for all ViewModels (100% coverage)
+        - QG-BIND-002: Each StateFlow/observable has an observation test
+        - QG-BIND-004: No stub methods in generated tests (all fully implemented)
         - ALL tests FAIL initially (TDD red verified)
         - Binding coverage report generated
 
+        ## Quality Gate Checks
+        ```bash
+        # QG-BIND-004: No stub methods or TODOs in generated tests
+        grep -r "// TODO: Implement" iosApp/iosAppTests/binding/ && exit 1
+        grep -r "fatalError(" iosApp/iosAppTests/binding/ && exit 1
+        grep -r "throw NotImplementedError" androidApp/src/androidTest/kotlin/binding/ && exit 1
+        # All checks must pass (exit code 0)
+        ```
+
         ## Output
-        - iOS binding tests: iosApp/iosAppTests/binding/*.swift
-        - Android binding tests: androidApp/src/androidTest/kotlin/binding/*.kt
-        - Coverage report: .speckit/binding-coverage.json
+        - iOS binding tests: iosApp/iosAppTests/binding/*.swift (fully implemented, no stubs)
+        - Android binding tests: androidApp/src/androidTest/kotlin/binding/*.kt (fully implemented, no stubs)
+        - Coverage report: .speckit/binding-coverage.json (100% method coverage)
       model_override: sonnet
     # Wave 3: Core Implementation - TDD Green Phase (make tests pass)
     - role: data-layer-builder

@@ -210,10 +210,30 @@ VALIDATE test coverage:
      - Check test quality
 
   2. Binding Tests (for cross-platform)
-     - FOR EACH ViewModel:
+     **Agent**: test-generator-agent
+     **Skill**: binding-test-generator
+     **Purpose**: Automated generation and validation of platform binding tests
+
+     - FOR EACH ViewModel/Controller/Store:
          - Check iOS wrapper tests exist
          - Check Android tests exist
-         - Verify 100% method coverage
+         - Verify 100% method coverage (QG-BIND-001)
+         - Validate no stub methods (QG-BIND-004)
+         - Check all observable properties tested (QG-BIND-002)
+
+     **Validation Commands**:
+     ```bash
+     # QG-BIND-004: No stub methods in generated tests
+     grep -r "// TODO: Implement" ios/Tests/*BindingTests.swift && FAIL
+     grep -r "fatalError(" ios/Tests/ && FAIL
+     grep -r "throw NotImplementedError" android/app/src/test/*BindingTest.kt && FAIL
+     ```
+
+     **Templates Used**:
+     - templates/test-templates/ios-binding-test.swift.template
+     - templates/test-templates/android-binding-test.kt.template
+
+     **Reference**: See templates/skills/binding-test-generator.md for patterns
 
   3. E2E Tests
      - Check critical paths covered
@@ -224,11 +244,102 @@ OUTPUT testing_score (0-20):
   | Type           | Score | Max | Notes |
   |----------------|-------|-----|-------|
   | Unit coverage  | X     | 8   | X%    |
-  | Binding tests  | X     | 6   | X%    |
+  | Binding tests  | X     | 6   | X% (QG-BIND-001/004) |
   | E2E coverage   | X     | 6   | X paths |
 ```
 
-### Phase 6: Accessibility Check
+### Phase 6: Automated Performance Profiling
+
+```text
+AGENT: performance-profiler-agent
+SKILL: native-profiling
+
+AUTOMATED profiling with native platform tools:
+  **Tier 1 (Ideal)**: Full automation with native tools
+  **Tier 2 (Fallback)**: CLI-based automation
+  **Tier 3 (Manual)**: Provide manual profiling instructions
+
+  1. iOS Profiling (if iOS platform detected)
+     a. Cold Start Measurement (QG-PERF-001)
+        - Launch app with xcrun xctrace (App Launch template)
+        - Parse trace for didFinishLaunching time
+        - Threshold: < 2000ms
+        - Auto-fail if ≥ 2000ms
+
+     b. Frame Rate Measurement (QG-PERF-002)
+        - Profile with Game Performance template
+        - Extract 95th percentile frame time
+        - Threshold: ≤ 16.67ms (60 FPS)
+        - Auto-fail if < 60 FPS at p95
+
+     c. Memory Profiling (QG-PERF-003, QG-PERF-004)
+        - Profile with Allocations template
+        - Track peak memory usage
+        - Detect leaked allocations
+        - Thresholds: < 150MB, 0 leaks
+
+  2. Android Profiling (if Android platform detected)
+     a. Cold Start Measurement (QG-PERF-001)
+        - adb shell am start -W
+        - Parse TotalTime from output
+        - Threshold: < 1500ms
+        - Auto-fail if ≥ 1500ms
+
+     b. Frame Rate Measurement (QG-PERF-002)
+        - adb shell dumpsys gfxinfo
+        - Extract 95th percentile frame time
+        - Threshold: ≤ 16.67ms (60 FPS)
+        - Auto-fail if < 60 FPS at p95
+
+     c. Memory Profiling (QG-PERF-003)
+        - adb shell dumpsys meminfo
+        - Sample every 5 seconds
+        - Track peak PSS value
+        - Threshold: < 150MB
+
+  3. Unity Profiling (if Unity project detected)
+     - Use UnityProfilerExporter.cs (API mode)
+     - OR parse Editor.log (fallback mode)
+     - Extract: FPS, GC alloc, draw calls, memory
+
+  4. Battery Impact (QG-PERF-005)
+     - Optional: Requires physical device + 60+ minutes
+     - Estimate drain rate (%/hour)
+     - Threshold: < 5%/hour
+     - Skip if not feasible
+
+SCRIPTS USED:
+  - scripts/bash/mobile-profile.sh (iOS/Android on macOS/Linux)
+  - scripts/bash/unity-profiler-export.sh (Unity projects)
+  - scripts/powershell/Mobile-Profile.ps1 (Android on Windows)
+
+OUTPUT: reports/performance-report.md, reports/performance-metrics.json
+  {
+    "cold_start_ms": 1234,
+    "fps_p95": 58,
+    "memory_peak_mb": 142,
+    "leaked_allocations": 0,
+    "battery_drain_percent": 4.2,
+    "quality_gates": {
+      "QG-PERF-001": "PASS|FAIL",
+      "QG-PERF-002": "PASS|FAIL",
+      "QG-PERF-003": "PASS|FAIL",
+      "QG-PERF-004": "PASS|FAIL",
+      "QG-PERF-005": "PASS|SKIP"
+    },
+    "performance_score": 17
+  }
+
+INTEGRATION with MQS:
+  - Automated profiling score overrides Phase 3 static assessment
+  - If automated profiling available → use runtime metrics (0-20 points)
+  - If automated profiling unavailable → fallback to static assessment
+  - Priority: Runtime metrics > Static code analysis
+
+REFERENCE: templates/skills/native-profiling.md for detailed patterns
+```
+
+### Phase 7: Accessibility Check
 
 ```text
 CHECK accessibility:
@@ -254,7 +365,7 @@ OUTPUT accessibility_score (0-15):
   | Touch targets   | X     | 5   | ...   |
 ```
 
-### Phase 7: MQS Calculation
+### Phase 8: MQS Calculation
 
 ```text
 CALCULATE Mobile Quality Score:

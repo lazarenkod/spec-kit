@@ -560,6 +560,1047 @@ flutter test integration_test/ -d "iPad Pro"
 | QG-MOB-002 | Post-Implement | MUST | >= 70% coverage | Coverage report | HIGH |
 | QG-MOB-003 | Post-Implement | MUST | 100% both platforms | Test pass rate | CRITICAL |
 | QG-MOB-004 | Post-Implement | SHOULD | Device categories | Multi-device tests | MEDIUM |
+| QG-BIND-001 | Post-Implement | MUST | 100% method coverage | Binding test coverage | CRITICAL |
+| QG-BIND-002 | Post-Implement | MUST | 100% observables tested | Observable test coverage | CRITICAL |
+| QG-BIND-003 | Post-Implement | MUST | 0 TODO/stub comments | Code pattern scan | HIGH |
+| QG-BIND-004 | Post-Implement | MUST | 0 stub methods | Generated test validation | HIGH |
+| QG-PARITY-001 | Post-Implement / Pre-Release | MUST | ≥ 95% feature parity | Feature parity analysis | CRITICAL |
+| QG-PARITY-002 | Post-Implement / Pre-Release | MUST | ≥ 80% UX adaptation | UX adaptation scoring | HIGH |
+| QG-PARITY-003 | Post-Implement / Pre-Release | MUST | 0 platform regressions | Regression detection | CRITICAL |
+
+---
+
+## Platform Binding Test Gates (QG-BIND-xxx)
+
+> **Platform Binding Test Gates** ensure cross-platform apps have comprehensive binding tests.
+> Prevents "wrapper bugs" - shared code works but platform wrappers have stubs/TODOs.
+> **Agent**: test-generator-agent (persona) with binding-test-generator (skill)
+
+### QG-BIND-001: 100% ViewModel Method Coverage
+
+**Level**: MUST
+**Applies to**: KMP, Flutter, React Native features
+**Phase**: Post-Implement (Wave 2 - Test Scaffolding)
+
+All public methods in shared ViewModels/Controllers MUST have platform binding tests.
+
+**Threshold**: 100% of public methods tested on both iOS and Android
+
+**Validation**:
+```bash
+# Generate binding coverage report
+.speckit/binding-coverage.json
+
+# Check method coverage
+jq '.coverage.methodsCovered / .coverage.methodsTotal * 100' .speckit/binding-coverage.json
+# Expected: 100%
+```
+
+**What to Test**:
+- iOS: XCTest wrapper tests that mock ViewModel and verify iOS wrapper calls Kotlin/Dart code
+- Android: JUnit/Mockito tests that verify Android wrapper calls shared code
+- Every `fun methodName()` → test that verifies platform calls it
+
+**Generated Files**:
+- iOS: `ios/Tests/*BindingTests.swift` (using `ios-binding-test.swift.template`)
+- Android: `android/app/src/test/*BindingTest.kt` (using `android-binding-test.kt.template`)
+
+**Violations**: CRITICAL - Missing binding tests = undetected wrapper bugs
+
+---
+
+### QG-BIND-002: 100% Observable Property Coverage
+
+**Level**: MUST
+**Applies to**: KMP, Flutter, React Native features
+**Phase**: Post-Implement (Wave 2 - Test Scaffolding)
+
+All observable properties (StateFlow, Flow, LiveData, etc.) MUST be observed in platform UI tests.
+
+**Threshold**: 100% of StateFlow/Flow/LiveData properties tested
+
+**Validation**:
+```bash
+# Check from binding coverage report
+jq '.coverage.stateFlowsCovered / .coverage.stateFlowsTotal * 100' .speckit/binding-coverage.json
+# Expected: 100%
+```
+
+**What to Test**:
+- iOS: Test `.sink`/`.assign`/Combine publisher receives state updates from Kotlin StateFlow
+- Android: Test `.collectAsState()`/`.observe()` receives state updates
+- Verify UI re-renders on state change
+
+**Example**:
+```swift
+// iOS test for StateFlow observation
+func test_currentPage_observesStateFlow() {
+    let expectation = expectation(description: "StateFlow observed")
+    viewModel.currentPage.sink { page in
+        XCTAssertEqual(page, 5)
+        expectation.fulfill()
+    }
+    wait(for: [expectation], timeout: 1.0)
+}
+```
+
+**Violations**: CRITICAL - Missing observable tests = undetected state sync bugs
+
+---
+
+### QG-BIND-003: Zero TODO/Stub Comments in Platform Code
+
+**Level**: MUST
+**Applies to**: All cross-platform features
+**Phase**: Post-Implement (Wave 3 - Core Implementation)
+
+Platform binding code MUST NOT contain TODO/FIXME/stub comments.
+
+**Threshold**: 0 TODO/FIXME/stub patterns found
+
+**Validation**:
+```bash
+# Scan for stub patterns
+grep -r "// TODO" ios/App/ android/app/src/main/
+grep -r "// FIXME" ios/App/ android/app/src/main/
+grep -r "fatalError(\"not implemented\")" ios/App/
+grep -r "throw NotImplementedError()" android/app/src/main/
+
+# Expected: No matches (exit code 1 from grep = good)
+```
+
+**Violations**: HIGH - Incomplete platform code = crashes, broken features
+
+---
+
+### QG-BIND-004: No Stub Methods in Generated Binding Tests
+
+**Level**: MUST
+**Applies to**: All cross-platform features with binding tests
+**Phase**: Post-Implement (Wave 2 - Test Scaffolding)
+
+Generated binding tests MUST be fully implemented with no stub methods or TODO comments.
+
+**Threshold**: 0 stub methods, 0 TODO comments in generated tests
+
+**Validation**:
+```bash
+# Scan generated test files for stubs
+grep -r "// TODO: Implement" ios/Tests/*BindingTests.swift && exit 1
+grep -r "fatalError(" ios/Tests/*BindingTests.swift && exit 1
+grep -r "throw NotImplementedError" android/app/src/test/*BindingTest.kt && exit 1
+
+# All commands should exit with code 1 (no matches) for gate to pass
+```
+
+**Why This Matters**:
+- Generated tests with stubs = false sense of security
+- Automated test generation MUST produce complete, runnable tests
+- Prevents "TDD theater" - tests exist but don't actually test anything
+
+**Generation Process**:
+1. `test-generator-agent` analyzes ViewModel method signatures
+2. Uses `binding-test-generator` skill patterns (4 patterns: void, value, Flow, suspend)
+3. Generates complete tests using templates:
+   - `templates/test-templates/ios-binding-test.swift.template`
+   - `templates/test-templates/android-binding-test.kt.template`
+4. QG-BIND-004 validates no stubs remain
+
+**Violations**: HIGH - Stub tests provide no value, waste CI/CD resources
+
+**Reference**: See `templates/skills/binding-test-generator.md` for comprehensive patterns
+
+---
+
+## Cross-Platform Parity Gates (QG-PARITY-xxx)
+
+> **Platform Parity Quality Gates** ensure cross-platform mobile applications (KMP, Flutter, React Native) maintain feature consistency, appropriate UX adaptations, and zero platform-specific regressions across iOS and Android implementations.
+
+### QG-PARITY-001: Feature Parity ≥ 95%
+
+**Level**: MUST (for cross-platform mobile apps)
+**Applies to**: All cross-platform projects (KMP, Flutter, React Native)
+**Phase**: Post-Implement (Wave 4) OR Pre-Release
+
+Cross-platform applications MUST have ≥95% of features available on both iOS and Android platforms.
+
+**Threshold**: Feature Parity Score ≥ 95%
+
+**Formula**:
+```
+Feature Parity Score = (Common Features / Total Unique Features) × 100%
+
+Where:
+- Common Features = Features implemented on both iOS and Android
+- Total Unique Features = Common + iOS-only + Android-only
+```
+
+**Validation**:
+```bash
+# Run parity validation
+specify analyze --profile parity
+
+# Check parity score
+parity_score=$(jq '.parity_score' reports/parity-score.json)
+if [ "$parity_score" -ge 95 ]; then
+    echo "QG-PARITY-001: PASS ($parity_score%)"
+    exit 0
+else
+    echo "QG-PARITY-001: FAIL ($parity_score% < 95% threshold)"
+    jq '.ios_only_features' reports/parity-score.json
+    jq '.android_only_features' reports/parity-score.json
+    exit 1
+fi
+```
+
+**Feature Detection**:
+
+iOS:
+```bash
+# Detect ViewControllers
+grep -r "class.*ViewController.*UIViewController" ios/ --include="*.swift" | \
+  sed -E 's/.*class ([A-Za-z0-9]+)ViewController.*/\1/' | sort -u
+
+# Detect SwiftUI Views
+grep -r "struct.*View.*View" ios/ --include="*.swift" | \
+  sed -E 's/.*struct ([A-Za-z0-9]+)View.*/\1/' | sort -u
+```
+
+Android:
+```bash
+# Detect Activities
+grep -r "class.*Activity.*AppCompatActivity" android/ --include="*.kt" | \
+  sed -E 's/.*class ([A-Za-z0-9]+)Activity.*/\1/' | sort -u
+
+# Detect Fragments/Composables
+grep -r "class.*Fragment.*Fragment" android/ --include="*.kt" | \
+  sed -E 's/.*class ([A-Za-z0-9]+)Fragment.*/\1/' | sort -u
+```
+
+**Why This Matters**:
+- Users expect feature parity across platforms
+- Missing features on one platform lead to user churn
+- Platform-specific limitations should be rare (<5%)
+- Feature gaps indicate incomplete implementations
+
+**Acceptable Exceptions** (<5% allowed):
+- Platform-exclusive features (e.g., iOS HealthKit, Android NFC)
+- Platform-specific APIs with no equivalent (document in `platform-differences.md`)
+
+**Violations**: CRITICAL - Feature missing on one platform
+
+**Integration**:
+- **Persona**: `parity-validator-agent`
+- **Skill**: `platform-parity`
+- **Command**: `/speckit.analyze --profile parity`
+- **MQS Impact**: Contributes 10/20 points to Platform Parity component
+
+**Reference**: See `templates/skills/platform-parity.md` for feature detection algorithms
+
+---
+
+### QG-PARITY-002: UX Adaptation Score ≥ 80%
+
+**Level**: MUST (for cross-platform mobile apps)
+**Applies to**: All cross-platform projects (KMP, Flutter, React Native)
+**Phase**: Post-Implement (Wave 4) OR Pre-Release
+
+Cross-platform applications MUST correctly adapt UX patterns to each platform's guidelines (≥80% adaptation quality).
+
+**Threshold**: UX Adaptation Score ≥ 80%
+
+**Formula**:
+```
+UX Adaptation Score = Average(iOS Screen Scores, Android Screen Scores)
+
+Per-Screen Score (0-100):
+- Navigation patterns: 20pt
+- Primary action placement: 20pt
+- Modal/dialog presentation: 15pt
+- List interactions: 15pt
+- Haptic feedback: 10pt
+- Share functionality: 10pt
+- Search UI: 10pt
+```
+
+**Validation**:
+```bash
+# Run parity validation
+specify analyze --profile parity
+
+# Check adaptation score
+adaptation_score=$(jq '.adaptation_score' reports/parity-score.json)
+if [ "$adaptation_score" -ge 80 ]; then
+    echo "QG-PARITY-002: PASS ($adaptation_score%)"
+    exit 0
+else
+    echo "QG-PARITY-002: FAIL ($adaptation_score% < 80% threshold)"
+    jq '.adaptation_issues' reports/parity-score.json
+    exit 1
+fi
+```
+
+**iOS Platform Patterns (Expected)**:
+- ✅ UINavigationController with back button (top-left)
+- ✅ UITabBarController at bottom
+- ✅ Sheet presentation with swipe-to-dismiss
+- ✅ Swipe actions on list items (leading/trailing)
+- ✅ UIFeedbackGenerator for haptics
+- ✅ UIActivityViewController for sharing
+- ✅ UISearchController in navigation bar
+
+**Android Platform Patterns (Expected)**:
+- ✅ Jetpack Navigation with back gesture
+- ✅ BottomNavigationView or NavigationBar
+- ✅ FloatingActionButton for primary action
+- ✅ Material Snackbar for feedback
+- ✅ Material motion transitions
+- ✅ Intent.ACTION_SEND for sharing
+- ✅ SearchView in ActionBar/Toolbar
+
+**Why This Matters**:
+- Platform-appropriate UX feels native and intuitive
+- Wrong patterns confuse users (e.g., iOS back button on Android)
+- Platform guidelines exist for good UX reasons
+- "Cross-platform" ≠ "identical UI" - adapt, don't copy
+
+**Common Anti-Patterns** (AUTO-FAIL):
+- ❌ iOS-style back button (←) on Android
+- ❌ Android FAB on iOS
+- ❌ Custom dialogs instead of platform share sheets
+- ❌ Identical navigation on both platforms
+
+**Violations**: HIGH - Wrong platform patterns applied
+
+**Integration**:
+- **Persona**: `parity-validator-agent`
+- **Skill**: `platform-parity`
+- **Command**: `/speckit.analyze --profile parity`
+- **MQS Impact**: Contributes 6/20 points to Platform Parity component
+
+**Reference**: See `templates/skills/platform-parity.md` for UX adaptation scoring algorithm
+
+---
+
+### QG-PARITY-003: Zero Platform-Specific Regressions
+
+**Level**: MUST (for cross-platform mobile apps)
+**Applies to**: All cross-platform projects (KMP, Flutter, React Native)
+**Phase**: Post-Implement (Wave 4) OR Pre-Release
+
+Cross-platform applications MUST have ZERO platform-specific crashes or regressions (bugs that only occur on one platform).
+
+**Threshold**: 0 platform-specific regressions
+
+**Validation**:
+```bash
+# Run parity validation
+specify analyze --profile parity
+
+# Check regression count
+regression_count=$(jq '.regression_count' reports/parity-score.json)
+if [ "$regression_count" -eq 0 ]; then
+    echo "QG-PARITY-003: PASS (0 regressions)"
+    exit 0
+else
+    echo "QG-PARITY-003: FAIL ($regression_count regressions detected)"
+    jq '.ios_only_crashes' reports/parity-score.json
+    jq '.android_only_crashes' reports/parity-score.json
+    jq '.performance_disparities' reports/parity-score.json
+    exit 1
+fi
+```
+
+**Detection Methods**:
+
+**1. Platform-Specific Crashes**:
+```bash
+# iOS crash logs
+grep -r "Exception Type:" ios/CrashLogs/ --include="*.crash"
+
+# Android crash logs
+grep -r "FATAL EXCEPTION" android/CrashLogs/
+```
+
+**2. Synchronization Issues**:
+- Compare offline-first implementation (iOS vs Android)
+- Verify data sync logic is identical
+- Check conflict resolution consistency
+
+**3. Performance Disparities** (>30% difference):
+```python
+def is_performance_regression(ios_metric, android_metric):
+    avg = (ios_metric + android_metric) / 2
+    disparity = abs(ios_metric - android_metric) / avg * 100
+    return disparity > 30  # Flag if >30% difference
+```
+
+**Why This Matters**:
+- Platform-specific bugs indicate incorrect bindings or platform code
+- Shared logic (ViewModels) should produce identical behavior
+- Performance disparities suggest platform-specific optimizations missing
+- Synchronization issues lead to data inconsistencies
+
+**Common Regression Sources**:
+- ❌ iOS wrapper doesn't null-check parameters
+- ❌ Android wrapper missing error handling
+- ❌ Platform-specific state management bugs
+- ❌ Different async/await patterns on iOS vs Android
+- ❌ Performance issues (cold start, FPS, memory)
+
+**Performance Thresholds** (flag if disparity >30%):
+- Cold start: iOS vs Android
+- Scroll FPS: iOS 60 FPS vs Android FPS
+- Memory usage: iOS peak vs Android peak
+
+**Violations**: CRITICAL - Platform-specific bugs detected
+
+**Integration**:
+- **Persona**: `parity-validator-agent`
+- **Skill**: `platform-parity`
+- **Command**: `/speckit.analyze --profile parity`
+- **MQS Impact**: Contributes 4/20 points to Platform Parity component
+
+**Reference**: See `templates/skills/platform-parity.md` for regression detection algorithms
+
+---
+
+## Performance Profiling Gates (QG-PERF-xxx)
+
+> **Performance Profiling Quality Gates** ensure mobile apps meet performance targets through automated profiling with native platform tools.
+> Uses runtime metrics (cold start, FPS, memory, battery) to validate app performance.
+> **Agent**: performance-profiler-agent (persona) with native-profiling (skill)
+
+### QG-PERF-001: Cold Start < 2000ms (iOS) / < 1500ms (Android)
+
+**Level**: MUST (for mobile apps)
+**Applies to**: iOS, Android, KMP, Flutter, React Native, Unity
+**Phase**: Post-Implement (Wave 6 - Performance Validation) OR Pre-Release
+
+Mobile applications MUST launch in under 2000ms (iOS) or 1500ms (Android) from cold start to first frame.
+
+**Threshold**: iOS < 2000ms, Android < 1500ms
+
+**Validation**:
+```bash
+# iOS profiling
+scripts/bash/mobile-profile.sh ios \
+  --device "iPhone 15 Pro" \
+  --bundle-id "com.example.app" \
+  --output reports/
+
+# Android profiling
+scripts/bash/mobile-profile.sh android \
+  --package "com.example.app" \
+  --output reports/
+
+# Check cold start time
+cold_start=$(jq '.cold_start.total_ms' reports/performance-metrics.json)
+threshold=$(jq -r '.cold_start.threshold_ms' reports/performance-metrics.json)
+
+if [ "$cold_start" -lt "$threshold" ]; then
+    echo "QG-PERF-001: PASS ($cold_start ms < $threshold ms)"
+    exit 0
+else
+    echo "QG-PERF-001: FAIL ($cold_start ms >= $threshold ms)"
+    exit 1
+fi
+```
+
+**iOS Profiling**:
+```bash
+# Launch app with Time Profiler
+xcrun xctrace record \
+  --template "App Launch" \
+  --device "${DEVICE_ID}" \
+  --launch "${BUNDLE_ID}" \
+  --output cold-start.trace \
+  --time-limit 10s
+
+# Parse launch time
+xcrun xctrace export \
+  --input cold-start.trace \
+  --xpath '/trace-toc/run[@number="1"]/data/table[@schema="time-profile"]' \
+  --output cold-start.xml
+```
+
+**Android Profiling**:
+```bash
+# Force stop and launch
+adb shell am force-stop "${PACKAGE_NAME}"
+adb shell am start -W -n "${PACKAGE_NAME}/.MainActivity" | \
+  grep "TotalTime:" | awk '{print $2}'
+```
+
+**Why This Matters**: Cold start time is the first impression. Apps taking >2s to launch lead to user drop-off.
+
+**Optimization Tips**:
+- Defer non-critical initialization (analytics, remote config)
+- Use lazy loading for heavy resources
+- Minimize dependencies loaded at startup
+- Profile startup with Xcode Instruments / Android Profiler
+
+**Reference**: See `templates/skills/native-profiling.md` for iOS/Android profiling patterns
+
+---
+
+### QG-PERF-002: 60 FPS (95th Percentile Frame Time ≤ 16.67ms)
+
+**Level**: MUST (for mobile apps)
+**Applies to**: iOS, Android, KMP, Flutter, React Native, Unity
+**Phase**: Post-Implement (Wave 6) OR Pre-Release
+
+Mobile applications MUST maintain 60 FPS (16.67ms per frame) at the 95th percentile during normal usage.
+
+**Threshold**: 95th percentile frame time ≤ 16.67ms (60 FPS)
+
+**Validation**:
+```bash
+# iOS profiling
+xcrun xctrace record \
+  --template "Game Performance" \
+  --device "${DEVICE_ID}" \
+  --attach "${BUNDLE_ID}" \
+  --output fps-profile.trace \
+  --time-limit 30s
+
+# Android profiling
+adb shell dumpsys gfxinfo "${PACKAGE_NAME}" reset
+sleep 30
+adb shell dumpsys gfxinfo "${PACKAGE_NAME}" > gfxinfo.txt
+
+# Check FPS
+fps_p95=$(jq '.frame_rate.p95_fps' reports/performance-metrics.json)
+
+if (( $(echo "$fps_p95 >= 60" | bc -l) )); then
+    echo "QG-PERF-002: PASS ($fps_p95 FPS)"
+    exit 0
+else
+    echo "QG-PERF-002: FAIL ($fps_p95 FPS < 60 FPS)"
+    exit 1
+fi
+```
+
+**Why This Matters**: Frame drops (jank) create a poor user experience. 60 FPS is the minimum for smooth animations and scrolling.
+
+**Common Causes of Jank**:
+- Heavy computations on main thread
+- Excessive draw calls (target: <500)
+- Large texture uploads
+- Inefficient list rendering (not virtualized)
+
+**Reference**: See `templates/skills/native-profiling.md` for FPS profiling patterns
+
+---
+
+### QG-PERF-003: Memory Peak < 150MB
+
+**Level**: MUST (for mobile apps)
+**Applies to**: iOS, Android, KMP, Flutter, React Native, Unity
+**Phase**: Post-Implement (Wave 6) OR Pre-Release
+
+Mobile applications MUST NOT exceed 150MB peak memory usage (excluding system overhead) during normal operation.
+
+**Threshold**: Peak memory < 150MB
+
+**Validation**:
+```bash
+# iOS profiling
+xcrun xctrace record \
+  --template "Allocations" \
+  --device "${DEVICE_ID}" \
+  --attach "${BUNDLE_ID}" \
+  --output memory-profile.trace \
+  --time-limit 300s
+
+# Android profiling (sample every 5 seconds for 5 minutes)
+for i in {1..60}; do
+  adb shell dumpsys meminfo "${PACKAGE_NAME}" | grep "TOTAL PSS" | awk '{print $2}'
+  sleep 5
+done
+
+# Check peak memory
+memory_peak=$(jq '.memory.peak_mb' reports/performance-metrics.json)
+
+if [ "$memory_peak" -lt 150 ]; then
+    echo "QG-PERF-003: PASS ($memory_peak MB < 150 MB)"
+    exit 0
+else
+    echo "QG-PERF-003: FAIL ($memory_peak MB >= 150 MB)"
+    exit 1
+fi
+```
+
+**Why This Matters**: High memory usage causes OS to terminate background apps (iOS) or trigger OOM killer (Android).
+
+**Optimization Tips**:
+- Implement image caching with memory limits (e.g., LRU cache with 50MB max)
+- Use pagination for large lists
+- Release resources when backgrounded
+- Avoid loading entire datasets into memory
+
+**Reference**: See `templates/skills/native-profiling.md` for memory profiling patterns
+
+---
+
+### QG-PERF-004: Zero Memory Leaks
+
+**Level**: MUST (for mobile apps)
+**Applies to**: iOS, Android, KMP, Flutter, React Native, Unity
+**Phase**: Post-Implement (Wave 6) OR Pre-Release
+
+Mobile applications MUST have ZERO memory leaks after 5-minute profiling session.
+
+**Threshold**: 0 leaked allocations
+
+**Validation**:
+```bash
+# iOS profiling (Leaks template)
+xcrun xctrace record \
+  --template "Leaks" \
+  --device "${DEVICE_ID}" \
+  --attach "${BUNDLE_ID}" \
+  --output memory-leaks.trace \
+  --time-limit 300s
+
+# Parse leaked allocations
+xcrun xctrace export \
+  --input memory-leaks.trace \
+  --xpath '//row[column[@name="leaked"]="true"]' \
+  --output leaks.xml
+
+# Check leak count
+leaked_allocs=$(jq '.memory.leaked_allocations' reports/performance-metrics.json)
+
+if [ "$leaked_allocs" -eq 0 ]; then
+    echo "QG-PERF-004: PASS (0 leaked allocations)"
+    exit 0
+else
+    echo "QG-PERF-004: FAIL ($leaked_allocs leaked allocations)"
+    jq '.memory.leaked_allocations_list' reports/performance-metrics.json
+    exit 1
+fi
+```
+
+**Why This Matters**: Memory leaks cause app crashes and degrade performance over time.
+
+**Common Leak Sources**:
+- Retain cycles (iOS Swift/Obj-C)
+- Missing unsubscribe (RxJava, Combine, Kotlin Flow)
+- Static references to Views/Activities
+- Timers not invalidated
+
+**Reference**: See `templates/skills/native-profiling.md` for leak detection patterns
+
+---
+
+### QG-PERF-005: Battery Drain < 5%/hour
+
+**Level**: SHOULD (for mobile apps)
+**Applies to**: iOS, Android, KMP, Flutter, React Native
+**Phase**: Pre-Release (optional, requires 60+ minute profiling)
+
+Mobile applications SHOULD consume less than 5% battery per hour during moderate usage.
+
+**Threshold**: < 5% battery drain per hour
+
+**Validation**:
+```bash
+# iOS profiling (requires physical device + idevice_battery tool)
+initial_battery=$(idevice_battery -u "${DEVICE_ID}" | grep "Capacity:" | awk '{print $2}')
+xcrun simctl launch "${DEVICE_ID}" "${BUNDLE_ID}"
+sleep 3600  # 1 hour
+final_battery=$(idevice_battery -u "${DEVICE_ID}" | grep "Capacity:" | awk '{print $2}')
+
+battery_drain=$((initial_battery - final_battery))
+
+if [ "$battery_drain" -lt 5 ]; then
+    echo "QG-PERF-005: PASS ($battery_drain% < 5%/hour)"
+    exit 0
+else
+    echo "QG-PERF-005: FAIL ($battery_drain% >= 5%/hour)"
+    exit 1
+fi
+```
+
+**Why This Matters**: Battery drain is a top complaint in app store reviews.
+
+**Common Battery Drains**:
+- Excessive network polling (use push notifications instead)
+- GPS location services running in background
+- CPU-intensive background tasks
+- Excessive animations
+
+**Note**: Battery profiling requires physical device and extended time (60+ minutes). Can be skipped for rapid iteration, but MUST be validated before release.
+
+**Reference**: See `templates/skills/native-profiling.md` for battery profiling patterns
+
+---
+
+### Performance Gate Summary (Mobile Apps)
+
+**Integration**:
+- **Agent**: performance-profiler-agent
+- **Skill**: `native-profiling`
+- **Command**: `/speckit.mobile` Phase 6 OR `/speckit.analyze --profile performance`
+- **MQS Impact**: Contributes 17-20/20 points to Performance component
+
+**Automated Profiling Scripts**:
+- `scripts/bash/mobile-profile.sh` — iOS/Android profiling wrapper
+- `scripts/bash/unity-profiler-export.sh` — Unity profiler exporter
+- `scripts/powershell/Mobile-Profile.ps1` — Windows Android profiling
+
+**Tool Tiers**:
+- **Tier 1 (Ideal)**: Full automation with native tools (Xcode Instruments, Android Profiler)
+- **Tier 2 (Fallback)**: CLI-based automation (xcrun xctrace, adb shell dumpsys)
+- **Tier 3 (Manual)**: Provide manual profiling instructions
+
+**Reference**: See `templates/skills/native-profiling.md` for comprehensive profiling patterns
+
+---
+
+## Game Economy Balance Gates (QG-ECONOMY-xxx)
+
+> **Game Economy Balance Gates** ensure F2P game economies are fair, balanced, and free from pay-to-win mechanics.
+> Uses Monte Carlo simulation to validate wealth distribution, inflation, F2P progression, and competitive balance.
+
+**Integration**:
+- **Agent**: game-economist-agent
+- **Skill**: economy-simulation
+- **Command**: `/speckit.analyze --profile game-economy`
+- **Applicable**: `is_game_project AND has_economy_design`
+- **Platforms**: Unity, Godot, native game engines
+
+### QG-ECONOMY-001: Gini Coefficient < 0.6
+
+**Level**: MUST (for F2P games with virtual economies)
+**Phase**: Post-economy-simulation
+**Severity**: HIGH
+**Description**: Wealth inequality across player population must be within acceptable bounds (Gini coefficient < 0.6)
+
+**Threshold**: Gini coefficient < 0.6 (moderate inequality acceptable in F2P games)
+
+**Check**:
+```bash
+# Via /speckit.analyze
+specify analyze --profile game-economy
+
+# Check Gini in report
+cat reports/economy-simulation-report.md | grep "Gini Coefficient"
+# Expected: "Gini Coefficient: 0.52 ✅ PASS"
+
+# Or check JSON metrics
+gini=$(jq '.gini_coefficient.value' reports/economy-metrics.json)
+if (( $(echo "$gini < 0.6" | bc -l) )); then
+    echo "QG-ECONOMY-001: PASS (Gini = $gini)"
+else
+    echo "QG-ECONOMY-001: FAIL (Gini = $gini, threshold < 0.6)"
+fi
+```
+
+**Rationale**:
+- Gini = 0 → perfect equality (unrealistic, kills monetization)
+- Gini < 0.6 → moderate inequality (whales have more, but F2P can progress)
+- Gini > 0.6 → high inequality (F2P feel powerless, churn increases)
+- Gini = 1 → perfect inequality (one player has everything, broken economy)
+
+**Example Pass**:
+```
+Gini Coefficient: 0.52 ✅
+
+Wealth Distribution (Day 90):
+- F2P median: 4,500 gems
+- Whale median: 450,000 gems
+- Whale/F2P ratio: 100x (acceptable within Gini < 0.6)
+
+Interpretation: Moderate wealth inequality. Whales have significantly more resources, but F2P players can still progress meaningfully.
+```
+
+**Example Fail**:
+```
+Gini Coefficient: 0.82 ❌ (threshold < 0.6)
+
+Issue: Extreme wealth inequality
+Root Cause: F2P earn rate too low (10 gems/day vs whale 10,000/day)
+
+Recommendation: Increase F2P gem earn rate from 10 to 50 gems/day
+Expected Impact: Reduce Gini from 0.82 to ~0.55
+```
+
+---
+
+### QG-ECONOMY-002: Inflation < 10% per Month
+
+**Level**: SHOULD (becomes MUST for games with >6 month retention targets)
+**Phase**: Post-economy-simulation
+**Severity**: MEDIUM
+**Description**: Currency value decay over time must be within acceptable bounds (< 10% per month)
+
+**Threshold**: Inflation rate < 10% per month
+
+**Check**:
+```bash
+# Via /speckit.analyze
+specify analyze --profile game-economy
+
+# Check inflation in report
+cat reports/economy-simulation-report.md | grep "Inflation Rate"
+# Expected: "Inflation Rate: 8.3%/month ✅ PASS"
+
+# Or check JSON metrics
+inflation=$(jq '.inflation_rate.value' reports/economy-metrics.json)
+if (( $(echo "$inflation < 10" | bc -l) )); then
+    echo "QG-ECONOMY-002: PASS (Inflation = $inflation%)"
+else
+    echo "QG-ECONOMY-002: FAIL (Inflation = $inflation%, threshold < 10%)"
+fi
+```
+
+**Rationale**:
+- Inflation < 5% → Very stable economy (risk: not enough pressure to spend)
+- Inflation 5-10% → Healthy economy (players feel progress, some urgency)
+- Inflation > 10% → High inflation (player frustration, "treadmill" feeling)
+- Inflation > 20% → Hyperinflation (game feels broken, mass churn)
+
+**Calculation**:
+```
+Inflation = (Week4_Cost - Week1_Cost) / Week1_Cost * 100%
+
+Where:
+- Week1_Cost = Average upgrade cost at day 7
+- Week4_Cost = Average upgrade cost at day 28
+```
+
+**Example Pass**:
+```
+Inflation Rate: 8.3%/month ✅
+
+Calculation:
+- Week 1 average upgrade cost: 10,000 gold
+- Week 4 average upgrade cost: 10,830 gold
+- Inflation: (10,830 - 10,000) / 10,000 = 8.3%
+
+Interpretation: Currency value is stable. Incremental power creep is within acceptable bounds.
+```
+
+**Example Fail**:
+```
+Inflation Rate: 15.2%/month ❌ (threshold < 10%)
+
+Issue: Excessive currency inflation
+Root Cause: Upgrade costs scale exponentially (cost = base * 2^level)
+
+Recommendation: Switch to linear scaling (cost = base * (1 + level * 0.1))
+Expected Impact: Reduce inflation from 15.2% to ~7.5%
+```
+
+---
+
+### QG-ECONOMY-003: F2P Milestones Reachable
+
+**Level**: MUST (for all F2P games)
+**Phase**: Post-economy-simulation
+**Severity**: CRITICAL
+**Description**: All major progression milestones must be reachable by F2P players within reasonable time budgets
+
+**Threshold**: 100% of milestones reachable by F2P within time budgets
+
+**Time Budget Guidelines**:
+- **Early game** (Level 1-10): < 14 days
+- **Mid game** (Level 11-30): < 60 days
+- **Late game** (Level 31+): < 180 days
+
+**Check**:
+```bash
+# Via /speckit.analyze
+specify analyze --profile game-economy
+
+# Check milestone reachability in report
+cat reports/economy-simulation-report.md | grep -A10 "F2P Milestone Reachability"
+
+# Expected output:
+# | Milestone | Time Budget | Median F2P Time | Status |
+# | Level 10  | 7 days      | 6.2 days       | ✅ PASS |
+# | Unlock Raid | 30 days  | 28.5 days      | ✅ PASS |
+
+# Or check JSON metrics
+jq '.f2p_milestones' reports/economy-metrics.json
+```
+
+**Rationale**:
+- F2P path to all content = fair, ethical monetization
+- No F2P path = hard paywall = unethical, regulatory risk
+- Unreasonable time budgets (e.g., 1 year for mid-game) = soft paywall = unethical
+
+**Example Pass**:
+```
+F2P Milestone Reachability: ✅ PASS
+
+| Milestone | Time Budget | Median F2P Time | Status |
+|-----------|-------------|-----------------|--------|
+| Level 10  | 7 days      | 6.2 days       | ✅ PASS |
+| Unlock Raid | 30 days  | 28.5 days      | ✅ PASS |
+| Level 30  | 45 days     | 42.1 days      | ✅ PASS |
+
+Interpretation: All milestones reachable by F2P within reasonable time. No hard paywalls detected.
+```
+
+**Example Fail**:
+```
+F2P Milestone Reachability: ❌ FAIL
+
+| Milestone | Time Budget | Median F2P Time | Status |
+|-----------|-------------|-----------------|--------|
+| Level 10  | 7 days      | 6.2 days       | ✅ PASS |
+| Unlock Raid | 30 days  | 58.3 days      | ❌ FAIL |
+
+Issue: "Unlock Raid" milestone unreachable within time budget
+Root Cause: Power requirement (2000) too high for F2P progression rate
+
+Recommendation: Reduce power requirement from 2000 to 1500, OR increase F2P gem earn rate
+Expected Impact: F2P median time reduced to ~28 days
+```
+
+---
+
+### QG-ECONOMY-004: No Pay-to-Win in PvP
+
+**Level**: MUST (for games with competitive PvP modes)
+**Phase**: Post-economy-simulation
+**Severity**: CRITICAL
+**Description**: Whale players must not have overwhelming power advantage in PvP modes. Skill should remain a significant factor.
+
+**Threshold**: Whale power gap < 2.0x compared to F2P at same time investment
+
+**Check**:
+```bash
+# Via /speckit.analyze
+specify analyze --profile game-economy
+
+# Check P2W analysis in report
+cat reports/economy-simulation-report.md | grep -A10 "Pay-to-Win Analysis"
+
+# Expected output:
+# PvP Power Gap (30-day comparison):
+# - F2P median power: 2,500
+# - Whale median power: 4,800
+# - Power gap ratio: 1.92x ✅ PASS
+
+# Or check JSON metrics
+power_gap=$(jq '.p2w_analysis.power_gap_30d' reports/economy-metrics.json)
+if (( $(echo "$power_gap < 2.0" | bc -l) )); then
+    echo "QG-ECONOMY-004: PASS (Power gap = ${power_gap}x)"
+else
+    echo "QG-ECONOMY-004: FAIL (Power gap = ${power_gap}x, threshold < 2.0x)"
+fi
+```
+
+**Rationale**:
+- Power gap < 1.5x → Very balanced (whales have minimal advantage)
+- Power gap 1.5-2.0x → Acceptable balance (skill matters, whales have edge)
+- Power gap > 2.0x → Pay-to-win (whales dominate, F2P can't compete)
+- Power gap > 5.0x → Extreme P2W (broken competitive balance)
+
+**Additional Checks**:
+1. **Exclusive PvP Content**: No PvP-critical features locked behind paywall
+2. **Skill Factor**: At least 30% of PvP outcome determined by player skill
+3. **Matchmaking**: Power-based brackets to prevent mismatches
+
+**Example Pass**:
+```
+Pay-to-Win Analysis: ✅ PASS
+
+PvP Power Gap (30-day comparison):
+- F2P median power: 2,500
+- Whale median power: 4,800
+- Power gap ratio: 1.92x ✅ (< 2.0x threshold)
+
+Skill Factor: 30% (player skill can overcome 30% power disadvantage)
+
+Exclusive Content Check:
+- ✅ All PvP modes accessible to F2P
+- ✅ No PvP-critical items locked behind paywall
+- ✅ Matchmaking uses power brackets (±20%)
+
+Interpretation: Whales have an advantage, but not overwhelming. Skilled F2P players can compete in same power bracket.
+```
+
+**Example Fail**:
+```
+Pay-to-Win Analysis: ❌ FAIL
+
+PvP Power Gap (30-day comparison):
+- F2P median power: 2,500
+- Whale median power: 12,000
+- Power gap ratio: 4.8x ❌ (threshold < 2.0x)
+
+Exclusive Content Issues:
+- ❌ Best character (SSR tier) only obtainable via $99.99 pack
+- ❌ PvP power scaling is exponential (favors whales excessively)
+
+Root Cause:
+1. Exclusive characters locked behind paywall
+2. Exponential power scaling amplifies spending advantage
+
+Recommendations:
+1. Make all characters earnable (F2P path with 60-90 day grind)
+2. Switch from exponential to linear power scaling
+3. Increase skill factor from 20% to 40%
+
+Expected Impact: Reduce power gap from 4.8x to ~1.8x
+```
+
+---
+
+### Quality Gate Summary (Game Economy)
+
+| Gate ID | Description | Level | Severity | Threshold |
+|---------|-------------|-------|----------|-----------|
+| QG-ECONOMY-001 | Gini Coefficient | MUST | HIGH | < 0.6 |
+| QG-ECONOMY-002 | Inflation Rate | SHOULD | MEDIUM | < 10%/month |
+| QG-ECONOMY-003 | F2P Milestones | MUST | CRITICAL | 100% reachable |
+| QG-ECONOMY-004 | No P2W in PvP | MUST | CRITICAL | Power gap < 2.0x |
+
+**Integration with /speckit.analyze**:
+```bash
+# Run economy validation
+specify analyze --profile game-economy
+
+# Output artifacts:
+# - reports/economy-simulation-report.md (human-readable)
+# - reports/economy-metrics.json (machine-readable)
+
+# Check all gates
+grep "QG-ECONOMY-" reports/economy-simulation-report.md
+
+# Expected output:
+# QG-ECONOMY-001: PASS (Gini = 0.52)
+# QG-ECONOMY-002: PASS (Inflation = 8.3%)
+# QG-ECONOMY-003: PASS (All milestones reachable)
+# QG-ECONOMY-004: PASS (Power gap = 1.92x)
+```
+
+**Economic Health Score**:
+```
+Score = (Gate Passes / Total Gates) * 100 + Bonuses
+
+Bonuses:
+- Gini < 0.5: +5 (very balanced)
+- Inflation < 5%: +5 (very stable)
+- F2P can reach endgame: +5 (excellent retention)
+- No P2W detected: +5 (ethical monetization)
+
+Max Score: 120/100 (with all bonuses)
+Target Score: ≥ 80/100
+```
+
+**Monte Carlo Simulation Parameters**:
+- **Simulations**: 10,000 per archetype (F2P, dolphin, whale)
+- **Duration**: 90 days (early to mid-game focus)
+- **Archetypes**: F2P ($0/month), dolphin ($25/month), whale ($500/month)
+- **Variance**: ±20% daily earnings to model real player behavior
+
+**Reference**: See `templates/skills/economy-simulation.md` for comprehensive simulation framework
 
 ---
 
