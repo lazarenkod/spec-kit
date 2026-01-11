@@ -260,6 +260,58 @@ graph LR
 - `--no-figma` — `false`
 - `--sequential` — Disable operation batching (execute context reads sequentially)
 
+**Aesthetic Presets** (v0.1.2):
+
+Brand-inspired visual styles that can be combined with any framework preset.
+
+| Preset | Brand | Best For | Accent | Font | Base Size |
+|--------|-------|----------|--------|------|-----------|
+| `linear` | Linear.app | Dev tools, productivity | Purple #5e6ad2 | Inter | 13px |
+| `stripe` | Stripe | Fintech, enterprise | Indigo #635bff | Söhne | 16px |
+| `vercel` | Vercel | Developer platforms | Black #000000 | Inter | 16px |
+| `notion` | Notion | Content, collaboration | Coral #eb5757 | Inter | 16px |
+| `apple` | Apple HIG | Consumer products | Blue #007aff | SF Pro | 17px |
+| `airbnb` | Airbnb | Marketplaces, travel | Rausch #ff385c | Cereal | 16px |
+| `github` | GitHub | Code platforms | Blue #0969da | System | 14px |
+| `slack` | Slack | Communication tools | Aubergine #611f69 | Lato | 15px |
+| `figma` | Figma | Design tools | Purple #a259ff | Inter | 14px |
+
+**Usage Examples:**
+```bash
+# Aesthetic only
+/speckit.design --aesthetic linear
+
+# Framework + Aesthetic (recommended)
+/speckit.design --library shadcn --aesthetic linear
+```
+
+**Preset Types:**
+
+| Type | Purpose | Sets |
+|------|---------|------|
+| **Framework** | Component structure | Component mappings, base tokens |
+| **Aesthetic** | Visual style | Colors, typography, spacing, shadows |
+
+**Token Priority:** Custom overrides → Aesthetic → Framework → Defaults
+
+**Interactive Selection** (NEW v0.1.3):
+
+When running `/speckit.design` without `--quick` flag, the command will ask two new questions:
+
+1. **Q11: Framework Preset** - "Which component framework/library will you use?"
+   - Options: shadcn/ui (Recommended), MUI, Tailwind, Vuetify, Bootstrap, Angular Material, Skeleton UI, None
+   - Each option includes context about the framework
+
+2. **Q12: Aesthetic Preset** - "Which brand aesthetic would you like to apply?"
+   - Options: None, Linear, Stripe, Vercel, Notion, Apple, Airbnb, GitHub, Slack, Figma
+   - Each option includes use case context (e.g., "Linear - Clean, minimal (Dev tools)")
+
+**Skip interactive selection:**
+- Use `--quick` or `--defaults` flag to use defaults (shadcn/ui framework, no aesthetic)
+- Use `--library <name>` flag to specify framework preset directly
+- Use `--aesthetic <name>` flag to specify aesthetic preset directly
+- Flags take precedence over questionnaire responses
+
 **Handoffs:**
 
 - → `/speckit.preview`
@@ -1107,6 +1159,6 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 ## Версия документа
 
-**Версия:** 0.1.0
+**Версия:** 0.1.3
 **Дата генерации:** 2026-01-10
 **Автор:** Auto-generated from command templates

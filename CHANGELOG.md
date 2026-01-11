@@ -7,6 +7,171 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-01-10
+
+### Added
+
+- **Interactive Design Preset Selection** - Added questionnaire for framework and aesthetic preset selection v0.1.3:
+  - **Problem solved**: Users had to manually specify `--library` and `--aesthetic` flags. No interactive way to discover and choose from available presets during `/speckit.design` execution.
+  - **Solution: Questionnaire Integration** - Added two new questions (Q11, Q12) to design questionnaire for interactive preset selection
+  - **New Questions**:
+    - **Q11: Framework Preset** (Batch 4):
+      - Header: "Framework"
+      - Options: shadcn/ui (Recommended), MUI, Tailwind, Vuetify, Bootstrap, Angular Material, Skeleton UI, None
+      - Description: Determines component library structure and integration
+      - Each option includes context (e.g., "shadcn/ui - Modern React components")
+    - **Q12: Aesthetic Preset** (Batch 4):
+      - Header: "Aesthetic"
+      - Options: None, Linear, Stripe, Vercel, Notion, Apple, Airbnb, GitHub, Slack, Figma
+      - Description: Applies brand-inspired visual style (colors, typography, spacing)
+      - Each option includes use case context (e.g., "Linear - Clean, minimal (Dev tools)")
+  - **File Updates: `templates/shared/design-questionnaire.md`**:
+    - Added "Design Presets (Questions 13-14)" section with detailed preset descriptions
+    - Framework preset explanation: Component structure vs Visual style
+    - Aesthetic preset explanation: Brand-inspired visual languages
+    - Token priority documentation: Custom > Aesthetic > Framework > Defaults
+    - Updated Interactive Collection Flow with Batch 4 (Design Presets)
+    - Added Token Generation Mappings for framework and aesthetic presets
+    - Framework mapping: Links to design-system-presets.md with component library paths
+    - Aesthetic mapping: Links to design-aesthetic-presets.md with accent colors and fonts
+    - Token Resolution Logic: Step-by-step priority chain explanation
+    - Updated defaults section: Added `framework_preset: "shadcn/ui"` and `aesthetic_preset: "None"`
+    - Flag override documentation: `--library` and `--aesthetic` flags take precedence
+  - **Integration**: Questions are asked in Batch 4 after Icons & Motion questions (Q9-Q10)
+  - **Backwards Compatibility**:
+    - `--quick` or `--defaults` flag: Uses defaults (shadcn/ui framework, no aesthetic)
+    - `--library <name>` flag: Overrides questionnaire response for framework
+    - `--aesthetic <name>` flag: Overrides questionnaire response for aesthetic
+    - Flags have highest priority over questionnaire responses
+  - **User Experience**:
+    - Interactive preset discovery without memorizing flag names
+    - Clear descriptions for each preset option
+    - Visual context about use cases and brand characteristics
+    - Recommended options marked (shadcn/ui for framework)
+    - Separation of concerns: Framework (structure) vs Aesthetic (style)
+  - **Technical Details**:
+    - Stored in `design_preferences.framework_preset` and `design_preferences.aesthetic_preset`
+    - Integrated with existing token resolution chain
+    - Aesthetic tokens override framework visual tokens but not component mappings
+    - Framework presets load from `design-system-presets.md`
+    - Aesthetic presets load from `design-aesthetic-presets.md`
+  - **Documentation**: Full integration with design questionnaire workflow, token generation mappings, and skip conditions
+
+## [0.1.2] - 2026-01-10
+
+### Added
+
+- **Aesthetic Design Presets - Phase 2 Complete** - Added remaining 6 brand-inspired aesthetic presets v0.1.2:
+  - **Phase 2 Presets** (NEW - now available):
+    - `notion` - Notion (warm, approachable, content-first) - Content tools, collaboration, knowledge bases
+      - Warm beige backgrounds (#f7f6f3), coral accent (#eb5757), relaxed line heights (1.6 normal)
+      - WCAG compliance: 12.6:1 (AAA), 4.7:1 (AA), 4.5:1 (AA)
+    - `apple` - Apple HIG (premium, refined, sophisticated) - Consumer products, iOS/macOS apps
+      - SF Pro Text font, pure black/white (#000000, #ffffff), 8px spacing unit, 44px minimum tap targets
+      - WCAG compliance: 21:1 (AAA), 11.4:1 (AAA), 4.5:1 (AA)
+    - `airbnb` - Airbnb (friendly, travel-inspired) - Marketplaces, travel, social platforms
+      - Cereal brand font, Rausch pink (#ff385c), generous spacing (80px header height)
+      - WCAG compliance: 16.1:1 (AAA), 5.3:1 (AA), 4.6:1 (AA)
+    - `github` - GitHub (developer-focused, monospace-friendly) - Code platforms, version control
+      - System fonts prioritized, 14px base, fast motion (80ms fast, 160ms normal)
+      - WCAG compliance: 13.7:1 (AAA), 7.0:1 (AAA), 5.9:1 (AA)
+    - `slack` - Slack (vibrant, playful, team-oriented) - Communication tools, team collaboration
+      - Lato font, Aubergine purple (#611f69), special sidebar background (#5b2c5f), 15px base size
+      - WCAG compliance: 16.8:1 (AAA), 6.5:1 (AA), 9.7:1 (AAA)
+    - `figma` - Figma (creative, colorful, design-tool) - Design tools, creative applications
+      - Inconsolata mono font, 14px UI standard, compact header (40px), combined shadows (border + blur)
+      - WCAG compliance: 21:1 (AAA), 7.2:1 (AAA), 5.1:1 (AA)
+  - **File Updates: `templates/shared/design-aesthetic-presets.md`** (expanded from ~750 to ~1500 lines):
+    - Added 6 complete preset specifications with full token sets
+    - Each preset: ~80-100 tokens (colors, typography, spacing, radii, shadows, motion, patterns)
+    - Dark mode variants for all color tokens
+    - Brand-specific characteristics documented (font families, spacing systems, motion curves)
+    - Updated comparison table to show all 9 presets available
+    - Version history updated (v0.2.0 - Phase 2 completion)
+  - **Documentation Updates**:
+    - `docs/COMMANDS_GUIDE.md`: Added complete aesthetic presets table to `/speckit.design` section
+      - All 9 presets documented with accent colors, fonts, base sizes
+      - Usage examples (aesthetic only, framework + aesthetic)
+      - Preset types comparison table
+      - Token priority chain explanation
+  - **Completion Status**: All 9 aesthetic presets now available (Phase 1: Linear, Stripe, Vercel + Phase 2: Notion, Apple, Airbnb, GitHub, Slack, Figma)
+  - **Usage**: All presets can be used immediately with `/speckit.design --aesthetic <preset-name>`
+
+## [0.1.1] - 2026-01-10
+
+### Added
+
+- **Aesthetic Design Presets** - Brand-inspired visual styles for design systems v0.1.1:
+  - **Problem solved**: Framework presets (shadcn/ui, MUI, Tailwind) only provided component structure. No brand aesthetic presets for visual style ("Понятный и удобный дизайн из коробки" was impossible).
+  - **Solution: Dual-Preset System** - Independent framework + aesthetic presets with clear separation of concerns
+  - **9 Aesthetic Presets** (Phase 1: 3 available, Phase 2: 6 coming in v0.1.2):
+    - **Phase 1 (v0.1.1)** - Available now:
+      - `linear` - Linear.app (clean, minimal, keyboard-first) - Dev tools, productivity
+      - `stripe` - Stripe (professional, trustworthy) - Fintech, enterprise
+      - `vercel` - Vercel (modern, bold, dark-friendly) - Developer platforms
+    - **Phase 2 (v0.1.2)** - Coming soon:
+      - `notion` - Notion (warm, approachable) - Content, collaboration
+      - `apple` - Apple HIG (premium, refined) - Consumer products
+      - `airbnb` - Airbnb (friendly, travel-inspired) - Marketplaces
+      - `github` - GitHub (developer-focused) - Code platforms
+      - `slack` - Slack (vibrant, playful) - Communication tools
+      - `figma` - Figma (creative, colorful) - Design tools
+  - **File: `templates/shared/design-aesthetic-presets.md`** (~750 lines Phase 1, ~1500 lines Phase 2):
+    - Phase 1: 3 complete presets (Linear, Stripe, Vercel)
+    - Each preset: ~80-100 tokens (colors, typography, spacing, radii, shadows, motion)
+    - Dark mode variants for all color tokens
+    - WCAG 2.2 AA accessibility compliance (4.5:1 text contrast minimum)
+    - Common UI patterns (sidebar, header, card, button)
+    - Usage instructions and preset comparison table
+  - **Configuration** (`memory/constitution.md` lines 259-341):
+    - NEW field: `design_system.aesthetic: "linear"` (visual brand style)
+    - Existing field: `design_system.framework: "shadcn/ui"` (component library structure)
+    - Can use both simultaneously or independently
+    - Preset type comparison table (Framework vs Aesthetic)
+    - Usage examples (framework only, aesthetic only, both, with custom overrides)
+    - **Backwards compatible**: Zero breaking changes, old configs continue working
+  - **Command Flags** (`/speckit.design` command):
+    - NEW: `--aesthetic linear` (apply aesthetic preset)
+    - Existing: `--library shadcn` (apply framework preset, backwards compatible)
+    - Combined: `--library shadcn --aesthetic linear` (RECOMMENDED)
+    - Flag reference documentation with examples
+  - **Token Priority Chain**: custom overrides → aesthetic → framework → defaults
+    - Custom overrides in constitution.md (highest priority)
+    - Aesthetic presets control VISUAL tokens only (colors, typography, spacing, radii, shadows, motion)
+    - Framework presets control STRUCTURAL tokens (component mappings, base tokens)
+    - Detailed token resolution logic with code example
+  - **Validation** (`templates/shared/design-system-enforcement.md`):
+    - Enhanced DSS-002: Shows active aesthetic in error messages with color distance calculation
+    - NEW DSS-004: Preset compatibility check (framework-stack match, aesthetic-domain recommendations)
+      - Framework-Stack Match validation (React→shadcn/MUI, Vue→Vuetify, Angular→Material)
+      - Aesthetic-Domain Recommendations (fintech→Stripe/Linear, dev tools→Linear/GitHub/Vercel, etc.)
+      - Auto-remediation suggestions with reasoning
+      - INFO severity (non-blocking, advisory only)
+  - **Key Architecture Decisions**:
+    - Two-Track System: Framework preset (component structure) + Aesthetic preset (visual style)
+    - Clear separation: Aesthetics never control component mappings, frameworks never override aesthetic colors
+    - Mix & match flexibility: shadcn components + Linear aesthetic, MUI + Stripe, etc.
+    - Token resolution: Aesthetic visual tokens override framework visual tokens, but not component mappings
+  - **Preset Characteristics** (Linear example):
+    - Accent: Purple #5e6ad2 (Linear's signature color)
+    - Font: Inter at 13px base size (Linear's signature small text)
+    - Spacing: 4px base unit (tight, efficient spacing)
+    - Border radius: 6px medium (Linear's signature radius)
+    - Shadows: Subtle (0 2px 8px rgba(0,0,0,0.06))
+    - Motion: 150ms normal transitions (snappy feel)
+    - WCAG AAA compliance: 15.8:1 text contrast
+  - **Documentation**:
+    - `docs/COMMANDS_GUIDE.md`: Will be updated in next commit with aesthetic presets table
+    - `memory/constitution.md`: Added preset type comparison and usage examples
+    - `templates/commands/design.md`: Updated description, flags, token resolution logic
+    - `templates/shared/design-system-enforcement.md`: Enhanced DSS-002, added DSS-004
+  - **Future Enhancements** (Phase 3, v0.1.3+):
+    - Interactive aesthetic selection with visual previews
+    - Custom aesthetic template generator
+    - Visual preview images for each preset
+    - Aesthetic mixing (base from Linear, colors from Stripe)
+    - Figma import for auto-extracting tokens
+
 ## [0.1.0] - 2026-01-10
 
 ### Added

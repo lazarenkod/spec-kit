@@ -434,10 +434,18 @@ Severity: MEDIUM (warn mode) | HIGH (strict mode)
 [DSS-002] Color Token Violation
 Location: src/styles/header.css:42
 Message: Hardcoded color '#FF5733' not in design system.
-Closest token: 'destructive' (#EF4444, 8% difference)
-Suggestion: Use 'var(--destructive)' or add token to constitution.md
+Active presets: framework=shadcn/ui, aesthetic=linear
+Closest token: 'accent' (#5e6ad2, 12% color difference)
+Suggestion: Use 'var(--color-accent)' or add token to constitution.md
+Auto-fix available: Run with --auto-fix flag
 Severity: HIGH (warn mode) | CRITICAL (strict mode)
 ```
+
+**Enhanced Error Message** (v0.0.123+):
+- Shows active framework and aesthetic presets
+- Calculates color distance to all tokens (framework + aesthetic)
+- Suggests closest token with percentage difference
+- Offers auto-fix command
 
 ### DSS-003 Violation
 
@@ -447,6 +455,71 @@ Location: src/components/Title.tsx:8
 Message: Hardcoded font-size '24px' should use typography token.
 Suggestion: Use 'var(--text-2xl)' or 'text-2xl' class (24px = 1.5rem)
 Severity: MEDIUM (warn mode) | HIGH (strict mode)
+```
+
+### DSS-004 Violation (NEW v0.0.123)
+
+```text
+[DSS-004] Preset Compatibility Warning
+Configuration: framework=mui, aesthetic=none
+Recommendation: Consider adding aesthetic preset for consistent brand identity
+Suggested aesthetics for this domain (fintech):
+  - stripe (professional, trustworthy, fintech-grade)
+  - linear (clean, minimal, productivity-focused)
+Severity: INFO (non-blocking, advisory only)
+```
+
+**DSS-004: Preset Compatibility** (NEW in v0.0.123)
+
+**Purpose**: Ensure presets match project stack and domain for optimal developer experience.
+
+**Validation Rules**:
+
+1. **Framework-Stack Match** (MEDIUM severity):
+   - React/Next.js → shadcn/ui or MUI recommended
+   - Vue.js → Vuetify recommended
+   - Angular → Angular Material recommended
+   - Svelte → Skeleton UI recommended
+   - Mismatch → Warning (not blocking, but may cause integration issues)
+
+2. **Aesthetic-Domain Recommendations** (INFO severity):
+   - Fintech/enterprise → Stripe or Linear aesthetic
+   - Developer tools → Linear, GitHub, or Vercel aesthetic
+   - Consumer products → Apple or Notion aesthetic
+   - Design tools → Figma or Notion aesthetic
+   - Communication → Slack aesthetic
+   - Marketplaces → Airbnb aesthetic
+   - Content/collaboration → Notion aesthetic
+
+**Auto-Remediation**:
+- Suggest compatible aesthetic presets based on constitution.md domain
+- Provide reasoning for recommendations (e.g., "Stripe aesthetic matches your fintech domain")
+- Show example configuration in error message
+
+**Exit Code**: 0 (informational, never blocks)
+
+**Example Output**:
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ DSS-004: Preset Compatibility Check                         │
+├─────────────────────────────────────────────────────────────┤
+│ Current Configuration:                                      │
+│   Framework: shadcn/ui ✓                                    │
+│   Aesthetic: none ⚠️                                        │
+│   Domain: fintech (from constitution.md)                    │
+│                                                             │
+│ Recommendations:                                            │
+│   ✓ Framework matches stack (React/Next.js)                │
+│   ⚠️ No aesthetic preset configured                          │
+│                                                             │
+│ Suggested Aesthetics:                                       │
+│   1. stripe - Professional, fintech-grade (BEST MATCH)      │
+│   2. linear - Clean, minimal, productivity-focused          │
+│                                                             │
+│ Apply with:                                                 │
+│   /speckit.design --aesthetic stripe                        │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---

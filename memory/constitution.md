@@ -259,33 +259,55 @@ Use format: PRJ-001, PRJ-002, etc.
 ## Design System Configuration
 
 <!--
-  Configure your UI framework, theme tokens, and enforcement level.
+  Configure your UI framework, aesthetic presets, theme tokens, and enforcement level.
   This section enables DSS (Design System) principle enforcement.
-  Presets available: shadcn/ui, mui, vuetify, tailwind, bootstrap, none
-  See templates/shared/design-system-presets.md for preset values.
+
+  Two-Preset System:
+  - Framework presets: Component library structure (shadcn/ui, MUI, Tailwind, etc.)
+  - Aesthetic presets: Brand visual styles (Linear, Stripe, Vercel, etc.)
+
+  See templates/shared/design-system-presets.md for framework presets.
+  See templates/shared/design-aesthetic-presets.md for aesthetic presets.
 -->
+
+### Preset Types
+
+Spec Kit uses a **dual-preset system** that separates concerns:
+
+| Type | Purpose | Examples | Controls |
+|------|---------|----------|----------|
+| **Framework** | Component library structure | shadcn/ui, MUI, Tailwind | Component mappings, base tokens |
+| **Aesthetic** | Brand visual language | Linear, Stripe, Vercel | Colors, typography, spacing, shadows |
+
+**Token Priority**: Custom overrides → Aesthetic → Framework → Defaults
 
 ### Framework Selection
 
 | Setting | Value | Options |
 |---------|-------|---------|
 | **framework** | `none` | `shadcn/ui`, `mui`, `vuetify`, `angular-material`, `skeleton-ui`, `tailwind`, `bootstrap`, `none` |
+| **aesthetic** | `none` | `linear`, `stripe`, `vercel`, `notion`, `apple`, `airbnb`, `github`, `slack`, `figma`, `none` |
 | **component_library_url** | - | URL to documentation (auto-filled by preset) |
 | **enforcement_level** | `warn` | `strict` (block deployment), `warn` (report violations), `off` (disabled) |
 
 ### Theme Tokens
 
-Configure your design system tokens below. Use a preset or define custom tokens:
+Configure your design system tokens below. Use presets or define custom tokens:
 
 ```yaml
 design_system:
-  # Preset: uncomment ONE to use predefined tokens, or define custom below
-  # preset: "shadcn/ui"   # See design-system-presets.md
-  # preset: "mui"
-  # preset: "tailwind"
+  # Framework preset: Component library structure
+  # Options: shadcn/ui, mui, tailwind, vuetify, bootstrap, none
+  framework: "shadcn/ui"    # DEFAULT
 
-  framework: "none"
+  # Aesthetic preset: Visual brand style (NEW in v0.0.123!)
+  # Options: linear, stripe, vercel, notion, apple, airbnb, github, slack, figma, none
+  aesthetic: "linear"        # OPTIONAL (if omitted, framework colors used)
 
+  # Enforcement
+  enforcement_level: "warn"  # strict | warn | off
+
+  # Custom overrides (highest priority - overrides aesthetic/framework)
   theme:
     colors:
       # Core palette
@@ -327,7 +349,41 @@ design_system:
       full: "9999px"
 
   component_library_url: ""
-  enforcement_level: "warn"   # strict | warn | off
+```
+
+### Usage Examples
+
+**Framework only** (current behavior):
+```yaml
+design_system:
+  framework: "shadcn/ui"
+  enforcement_level: "warn"
+```
+
+**Aesthetic only** (visual style without component library):
+```yaml
+design_system:
+  aesthetic: "linear"
+  enforcement_level: "warn"
+```
+
+**Both framework + aesthetic** (RECOMMENDED):
+```yaml
+design_system:
+  framework: "shadcn/ui"       # Component structure
+  aesthetic: "linear"           # Visual style
+  enforcement_level: "warn"
+```
+
+**With custom overrides** (highest priority):
+```yaml
+design_system:
+  framework: "shadcn/ui"
+  aesthetic: "linear"
+  theme:
+    colors:
+      primary: "#ff0000"        # Custom red (overrides aesthetic/framework)
+  enforcement_level: "warn"
 ```
 
 ### Enforcement Behavior

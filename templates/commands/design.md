@@ -1,5 +1,15 @@
 ---
-description: Create visual specifications and complete design systems from brand inputs. Orchestrates UX, Product, and Motion Designer agents. Supports design system generation, component library presets, Storybook auto-generation, and Figma token export. Use AFTER /speckit.specify for UI-heavy features OR standalone for design system bootstrapping.
+description: |
+  Create visual specifications and complete design systems with framework and aesthetic presets.
+
+  Framework presets: shadcn/ui (default), MUI, Tailwind, Vuetify, Bootstrap
+  Aesthetic presets: Linear, Stripe, Vercel, Notion, Apple, Airbnb, GitHub, Slack, Figma
+
+  Use both for maximum flexibility: component structure + brand style.
+
+  Orchestrates UX, Product, and Motion Designer agents. Supports design system generation,
+  component library presets, Storybook auto-generation, and Figma token export.
+  Use AFTER /speckit.specify for UI-heavy features OR standalone for design system bootstrapping.
 persona: ux-designer-agent
 modes:
   feature_design:
@@ -492,15 +502,21 @@ figma_import:
     - design_tokens
     - components
     - icons
-library_recommendation:
+preset_recommendation:
   enabled: true
-  default_library: "shadcn/ui"                 # Auto-applied for React/Next.js projects
-  library_flag: "--library"                    # Override: --library mui, --library vuetify
-  library_choices: ["shadcn", "mui", "vuetify", "bootstrap", "tailwind", "angular-material", "skeleton"]
+  # Framework presets (component library structure)
+  default_framework: "shadcn/ui"               # Auto-applied for React/Next.js projects
+  framework_flag: "--library"                  # Override: --library mui, --library vuetify
+  framework_choices: ["shadcn", "mui", "vuetify", "bootstrap", "tailwind", "angular-material", "skeleton"]
+  # Aesthetic presets (brand visual style) - NEW in v0.0.123!
+  aesthetic_flag: "--aesthetic"                # NEW: --aesthetic linear, --aesthetic stripe
+  aesthetic_choices: ["linear", "stripe", "vercel", "notion", "apple", "airbnb", "github", "slack", "figma"]
+  # Common settings
   skip_flag: "--no-recommendation"
   trigger_condition: "design_system.framework == 'none'"
   mapping_source: "templates/shared/library-recommendations.md"
-  presets_source: "templates/shared/design-system-presets.md"
+  framework_presets_source: "templates/shared/design-system-presets.md"
+  aesthetic_presets_source: "templates/shared/design-aesthetic-presets.md"  # NEW
   component_registry: "templates/shared/shadcn-registry.md"
 ---
 
@@ -2519,7 +2535,7 @@ When spec file exists (default mode), create visual specs for the feature.
    "Step 0.75: Component Library Setup - Skipped ({reason})"
    ```
 
-   **--library Flag Reference**
+   **--library Flag Reference** (Framework Presets)
 
    ```text
    Override the default library:
@@ -2535,6 +2551,99 @@ When spec file exists (default mode), create visual specs for the feature.
 
    Read `templates/shared/library-recommendations.md` for detailed framework→library mapping.
    Read `templates/shared/shadcn-registry.md` for shadcn/ui component reference (60+ components).
+
+   **--aesthetic Flag Reference** (Aesthetic Presets - NEW v0.0.123!)
+
+   ```text
+   Apply brand-inspired visual styles:
+
+   /speckit.design --aesthetic linear    # Linear.app (clean, minimal, keyboard-first)
+   /speckit.design --aesthetic stripe    # Stripe (professional, fintech-grade)
+   /speckit.design --aesthetic vercel    # Vercel (modern, bold, dark-friendly)
+
+   Coming in v0.0.124:
+   /speckit.design --aesthetic notion    # Notion (warm, approachable)
+   /speckit.design --aesthetic apple     # Apple HIG (premium, refined)
+   /speckit.design --aesthetic airbnb    # Airbnb (friendly, travel-inspired)
+   /speckit.design --aesthetic github    # GitHub (developer-focused)
+   /speckit.design --aesthetic slack     # Slack (vibrant, playful)
+   /speckit.design --aesthetic figma     # Figma (creative, colorful)
+
+   Combine with framework for best results:
+   /speckit.design --library shadcn --aesthetic linear
+   ```
+
+   Read `templates/shared/design-aesthetic-presets.md` for complete aesthetic preset specifications.
+
+   **Token Priority**: Custom overrides → Aesthetic → Framework → Defaults
+
+   **Token Resolution Logic** (Dual-Preset System)
+
+   ```python
+   def resolve_design_tokens(constitution_config):
+       """
+       Priority: custom overrides → aesthetic → framework → defaults
+
+       Aesthetic presets control VISUAL tokens only:
+       - colors, typography, spacing, radii, shadows, motion
+
+       Framework presets control STRUCTURAL tokens:
+       - component mappings, base tokens
+       """
+
+       resolved = {}
+
+       # Step 1: Framework preset (base layer)
+       if constitution_config.get('framework'):
+           framework = load_preset('design-system-presets.md', framework_name)
+           resolved = deep_merge(resolved, framework['theme'])
+
+       # Step 2: Aesthetic preset (overrides visual tokens)
+       if constitution_config.get('aesthetic'):
+           aesthetic = load_preset('design-aesthetic-presets.md', aesthetic_name)
+           # Only merge visual tokens (colors, typography, spacing, radii, shadows, motion)
+           # NOT component mappings (those come from framework only)
+           visual_tokens = {
+               'colors': aesthetic['theme']['colors'],
+               'typography': aesthetic['theme']['typography'],
+               'spacing': aesthetic['theme']['spacing'],
+               'radii': aesthetic['theme']['radii'],
+               'shadows': aesthetic['theme']['shadows'],
+               'motion': aesthetic['theme']['motion']
+           }
+           resolved = deep_merge(resolved, visual_tokens)
+
+       # Step 3: Custom overrides (highest priority)
+       if constitution_config.get('theme'):
+           resolved = deep_merge(resolved, constitution_config['theme'])
+
+       return resolved
+   ```
+
+   **Usage Examples:**
+
+   ```yaml
+   # Framework only (component structure, default colors)
+   design_system:
+     framework: "shadcn/ui"
+
+   # Aesthetic only (visual style, no components)
+   design_system:
+     aesthetic: "linear"
+
+   # Both (RECOMMENDED - component structure + brand style)
+   design_system:
+     framework: "shadcn/ui"
+     aesthetic: "linear"
+
+   # With custom overrides (highest priority)
+   design_system:
+     framework: "shadcn/ui"
+     aesthetic: "linear"
+     theme:
+       colors:
+         primary: "#ff0000"  # Custom red overrides Linear purple
+   ```
 
 1. **Initialize design document**:
    - Run script `{SCRIPT}` to verify spec.md exists
