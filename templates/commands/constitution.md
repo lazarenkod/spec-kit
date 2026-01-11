@@ -140,7 +140,8 @@ Ask: "What domain does your project belong to?"
 | E-commerce | Online store, marketplace | e-commerce.md | PCI-DSS, inventory, checkout, payments |
 | Fintech | Payments, banking, trading | fintech.md | SOC2, audit trail, transaction safety |
 | Healthcare | Patient data, HIPAA | healthcare.md | HIPAA, PHI protection, consent management |
-| Gaming | Real-time, multiplayer | gaming.md | Real-time, anti-cheat, leaderboards |
+| Gaming (PC/Console) | PC/console games, high-end | gaming.md | Frame rate, netcode, platform cert (TRC/TCR) |
+| Gaming (Mobile) | Mobile games, F2P, casual | gaming.md + mobile.md | Battery, offline, app size, retention, IAP |
 | General/Minimal | No specific domain | (none) | Base layer only |
 | Other | (user describes) | Derive from description |
 
@@ -153,6 +154,29 @@ Ask: "What language should be used for specifications and documentation?"
 | English | `en` | All artifacts in English (default) |
 | Russian | `ru` | All prose content in Russian |
 | Other | (user specifies) | Validate against supported languages list |
+
+### Question 2.5: Game Genre (if Gaming (Mobile) selected)
+
+**Condition**: Only ask if Question 2 answer is "Gaming (Mobile)"
+
+Ask: "What genre of mobile game are you building?"
+
+| Option | Description | Session Length | D1/D7/D30 Targets | Monetization Model |
+|--------|-------------|---------------|-------------------|-------------------|
+| Hyper-casual | One-thumb, instant play | 3-5 min | 40% / 20% / 8% | Ads (rewarded video) |
+| Casual | Puzzle, match-3, merge | 10-15 min | 45% / 25% / 12% | Hybrid (IAP + ads) |
+| Mid-core | Strategy, RPG, card battler | 20-30 min | 55% / 35% / 18% | F2P + IAP (gacha, battle pass) |
+| Core | MOBA, BR, FPS, MMORPG | 45-60 min | 65% / 45% / 25% | F2P + cosmetic IAP |
+| Other | (user describes) | TBD | TBD | TBD |
+
+**Auto-Tuning**: Genre selection auto-tunes:
+- Performance targets (hyper-casual: 120fps, core: 60fps)
+- Retention expectations (D1/D7/D30 benchmarks)
+- Monetization defaults (ads vs IAP mix)
+- Session design (short bursts vs long sessions)
+
+**Stack Template**: Recommend `mobile-game.yaml` stack template
+**Concept Sections**: Auto-include all 6 game-specific sections (economy, monetization, live ops, retention, genre, psychology)
 
 ### Question 4: Cross-Platform Framework (if Mobile selected)
 

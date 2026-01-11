@@ -1875,6 +1875,178 @@ FEATURE_NEW_UI=false
 
 ---
 
+## Mobile Game Quality Gates (QG-GAME-xxx)
+
+Эти гейты активны только когда `constitution.domain.md` содержит `gaming.md + mobile.md` (мобильные игры).
+
+### QG-GAME-001: Frame Rate Stability
+
+**Level**: MUST
+**Threshold**: 60 FPS ±5 on iPhone 11 (2019) / Galaxy S10 (2019)
+**Phase**: Post-Implementation (Wave 4)
+
+**Description**: Игра должна поддерживать стабильные 60 FPS на mid-tier устройствах (iPhone 11, Galaxy S10). Frame time budget: 16.67ms.
+
+**Validation**:
+- **Unity Profiler**: CPU time <14ms, GPU time <14ms per frame
+- **Xcode Instruments**: Game Performance template, 10-minute continuous gameplay
+- **Android GPU Inspector**: Frame time histogram, 95th percentile <18ms
+- **Automated**: CI runs profiler on device farm, fails if <55 FPS
+
+**Metrics**:
+- Avg FPS: ≥58
+- 1% low FPS: ≥50
+- Frame drops (>20ms): <1% of frames
+
+**Violations**: HIGH - Poor FPS = negative reviews, refunds
+
+**References**: GAM-001 (Frame Rate Stability)
+
+---
+
+### QG-GAME-002: Battery Efficiency
+
+**Level**: MUST
+**Threshold**: ≤5% battery drain per hour of active gameplay
+**Phase**: Pre-Deployment (Wave 5)
+
+**Description**: Игра не должна быстро разряжать батарею. Target: <5% в час активной игры.
+
+**Validation**:
+- **Xcode Energy Log**: Run 1-hour gameplay session, measure battery delta
+- **Android Battery Historian**: Upload bugreport, check power consumption
+- **Formula**: `Battery Drain % = (Start % - End %) / (Minutes Played / 60)`
+- **Device**: Test on real devices (not simulator/emulator)
+
+**Metrics**:
+- Battery drain: ≤5%/hour
+- CPU usage: <30% avg
+- GPU usage: <50% avg (60 FPS target allows 50% headroom for battery)
+
+**Common Issues**:
+- Polling instead of push (WebSocket vs HTTP polling)
+- Rendering off-screen objects
+- High GC pressure (memory allocations)
+
+**Violations**: MEDIUM - Negative reviews ("drains battery"), user uninstalls
+
+**References**: MOB-003 (Battery Efficiency)
+
+---
+
+### QG-GAME-003: App Size Compliance
+
+**Level**: MUST
+**Threshold**: IPA/AAB <150MB before App Thinning
+**Phase**: Pre-Deployment (Wave 5)
+
+**Description**: Initial download size должен быть <150MB (iOS cellular limit). Android Play Store рекомендация: <150MB для AAB.
+
+**Validation**:
+- **Build Report**: Unity Build Report, Xcode Archive Organizer
+- **Command**: `ls -lh build/Game.ipa` (iOS), `ls -lh build/Game.aab` (Android)
+- **Asset Profiler**: Identify largest assets (textures, audio)
+
+**Optimization Strategies**:
+- Texture compression (ASTC for mobile)
+- Audio compression (Vorbis, AAC)
+- On-Demand Resources (iOS) / Play Asset Delivery (Android)
+- Code stripping (remove unused code)
+
+**Metrics**:
+- iOS IPA: <150MB (before App Thinning, after typically <100MB)
+- Android AAB: <150MB (Play Store generates optimized APKs per device)
+
+**Violations**: MEDIUM - Won't download over cellular, limits installs
+
+**References**: MOB-002 (Platform Compliance), gaming.md line 243 (mobile app size <150MB)
+
+---
+
+### QG-GAME-004: Input Latency
+
+**Level**: MUST
+**Threshold**: <80ms touch-to-visual for mobile games
+**Phase**: Post-Implementation (Wave 4)
+
+**Description**: Input latency (touch → visual response) должен быть <80ms для mobile games. Action games: <50ms ideal, casual: <100ms acceptable.
+
+**Validation**:
+- **High-Speed Camera**: Record 240fps video, count frames from touch to visual change
+- **Formula**: `Latency (ms) = (Frame Count / 240) * 1000`
+- **Automated**: WALT Latency Timer (hardware tool)
+
+**Common Sources of Latency**:
+- Input polling at end of frame (should be start of frame)
+- Render pipeline latency (V-Sync, triple buffering)
+- Main thread blocking (UI, physics on main thread)
+
+**Genre Targets**:
+- Hyper-casual: <80ms (acceptable)
+- Casual: <100ms (acceptable)
+- Mid-core: <70ms (good)
+- Core (competitive): <50ms (must)
+
+**Violations**: HIGH - Poor game feel, "laggy" complaints, competitive disadvantage
+
+**References**: GAM-002 (Input Latency), gaming.md line 242 (mobile <80ms)
+
+---
+
+### QG-GAME-005: Monetization Ethics
+
+**Level**: MUST (if IAP or ads present)
+**Checklist**: All items must pass
+**Phase**: Pre-Deployment (Wave 5)
+
+**Description**: Monetization должна соответствовать этическим стандартам и региональным законам (loot box disclosure, no dark patterns).
+
+**Checklist**:
+- [ ] **Transparent Pricing**: Real currency prices shown alongside virtual currency (e.g., "500 Gems ($4.99)")
+- [ ] **Loot Box Disclosure**: Drop rates disclosed (required by Apple/Google) if gacha/loot boxes present
+- [ ] **No Pay-to-Win in PvP**: Competitive modes don't allow direct power purchase
+- [ ] **Spending Limits**: Daily/weekly spending caps or parental controls implemented
+- [ ] **Regional Compliance**:
+  - Belgium/Netherlands: No loot boxes (banned)
+  - Japan: Kompu gacha banned, drop rates disclosed
+  - EU: GDPR compliance, no data from <16 without parental consent
+  - US: COPPA compliance, no data from <13 without parental consent
+- [ ] **Ad Frequency Cap**: Max 1 interstitial per 5 minutes, rewarded video unlimited (user-initiated)
+- [ ] **No Dark Patterns**:
+  - No hidden costs (show real prices)
+  - No fake countdown timers (timers must be real)
+  - No confirm-shaming ("No thanks, I don't want free stuff")
+  - No forced continuity (trials clearly marked, easy cancellation)
+
+**Validation**:
+- **Policy Review**: Manual checklist against App Store + Play Store guidelines
+- **Regional Testing**: Test in Belgium (loot boxes disabled), Japan (drop rates shown)
+- **Ethics Review**: "Would you let your child play this monetization model?"
+
+**Violations**: CRITICAL - Store removal, legal action, player backlash, PR crisis
+
+**References**: GAM-004 (Fair Monetization), gaming.md lines 93-108
+
+---
+
+## Quality Gate Summary (Mobile Games)
+
+| Gate ID | Threshold | Severity | Phase | Validation Method |
+|---------|-----------|----------|-------|-------------------|
+| QG-GAME-001 | 60 FPS ±5 | HIGH | Post-Impl (Wave 4) | Unity Profiler, Instruments |
+| QG-GAME-002 | ≤5%/hour battery | MEDIUM | Pre-Deploy (Wave 5) | Energy Log, Battery Historian |
+| QG-GAME-003 | <150MB | MEDIUM | Pre-Deploy (Wave 5) | Build report, ls -lh |
+| QG-GAME-004 | <80ms latency | HIGH | Post-Impl (Wave 4) | High-speed camera (240fps) |
+| QG-GAME-005 | All checklist ✅ | CRITICAL | Pre-Deploy (Wave 5) | Manual policy review |
+
+**When Active**: Only when `domains: [gaming, mobile]` present in constitution
+
+**Enforcement**: `/speckit.implement` runs QG-GAME-001, 004 in Wave 4; QG-GAME-002, 003, 005 in Wave 5
+
+**Skip**: `--skip-gates` flag bypasses (not recommended for production)
+
+---
+
 ## Security Gates (QG-SEC-xxx)
 
 > **Security by Design** gates ensure security is embedded throughout the development lifecycle.
@@ -2038,6 +2210,11 @@ pytest -k "security or auth"
 | QG-010 | Pre-Deploy | MUST | 100% pass | `npm test` | CRITICAL |
 | QG-011 | Pre-Deploy | MUST | 0 found | grep patterns | HIGH |
 | QG-012 | Pre-Deploy | MUST | 100% | env coverage script | HIGH |
+| QG-GAME-001 | Post-Implement | MUST | 60 FPS ±5 | Unity Profiler / Instruments | HIGH |
+| QG-GAME-002 | Pre-Deploy | MUST | ≤5%/hour | Energy Log / Battery Historian | MEDIUM |
+| QG-GAME-003 | Pre-Deploy | MUST | <150MB | Build report / ls -lh | MEDIUM |
+| QG-GAME-004 | Post-Implement | MUST | <80ms | High-speed camera (240fps) | HIGH |
+| QG-GAME-005 | Pre-Deploy | MUST | All ✅ | Policy review checklist | CRITICAL |
 | QG-SEC-001 | Pre-Implement | MUST | threat-model.md | STRIDE coverage check | CRITICAL |
 | QG-SEC-002 | Pre-Implement | MUST | 100% checklist | OWASP checklist | CRITICAL |
 | QG-SEC-003 | Pre-Deploy | MUST | 0 critical/high | `npm audit` / `pip-audit` | CRITICAL |
@@ -2292,17 +2469,19 @@ PQS = (
 | Component Integration Gates | 4 |
 | Design Quality Gates | 3 |
 | Test-First Development Gates | 4 |
+| Mobile Testing Gates | 4 |
 | Pre-Implement Gates | 5 |
 | Post-Implement Gates | 7 |
 | Verification Gates | 6 |
 | Pre-Deploy Gates | 5 |
+| Mobile Game Quality Gates | 5 |
 | Security Gates | 5 |
 | Migration Gates | 3 |
 | Drift Detection Gates | 4 |
 | Property-Based Testing Gates | 7 |
-| **Total QG Principles** | **48** |
-| MUST level | 33 |
-| SHOULD level | 6 |
+| **Total QG Principles** | **57** |
+| MUST level | 41 |
+| SHOULD level | 7 |
 
 ---
 

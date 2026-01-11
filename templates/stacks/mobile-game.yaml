@@ -1,0 +1,221 @@
+# Mobile Game Template
+# iOS/Android game with offline core loop, monetization, and live ops
+
+name: "Mobile Game"
+description: "Mobile game for iOS/Android with performance, battery optimization, and F2P monetization"
+domains:
+  - gaming   # Activates GAM-001 to GAM-009
+  - mobile   # Activates MOB-001 to MOB-008
+
+framework:
+  primary: "Unity"
+  alternatives:
+    - "Unreal Engine (high-end 3D)"
+    - "Godot (indie-friendly)"
+    - "Flutter (casual 2D)"
+    - "Native (Swift + Kotlin)"
+
+categories:
+  engine:
+    required: true
+    prompt: "Choose mobile game engine"
+    options:
+      - name: "Unity"
+        description: "Most popular mobile engine, C#, huge asset store"
+        url: "https://unity.com"
+        constitution:
+          - GAM-001  # Frame rate stability (60 FPS)
+          - MOB-003  # Battery efficiency
+      - name: "Unreal Engine"
+        description: "AAA graphics, C++, Blueprint visual scripting"
+        url: "https://unrealengine.com"
+        constitution:
+          - GAM-001
+          - MOB-003
+      - name: "Godot"
+        description: "Open-source, GDScript, great for 2D and simple 3D"
+        url: "https://godotengine.org"
+        constitution:
+          - GAM-001
+      - name: "Flutter"
+        description: "Fast iteration for casual 2D games, Dart + Flame engine"
+        url: "https://flutter.dev"
+        constitution:
+          - MOB-003
+          - MOB-004  # Responsive touch (60fps animations)
+      - name: "Native (Swift + Kotlin)"
+        description: "Platform-specific, best performance, double dev effort"
+        constitution:
+          - MOB-002  # Platform compliance (HIG + Material Design)
+          - MOB-003
+
+  backend:
+    required: true
+    prompt: "Choose backend for mobile game"
+    options:
+      - name: "Firebase"
+        description: "Google's mobile backend (Realtime DB, Auth, Analytics, Remote Config)"
+        url: "https://firebase.google.com"
+        constitution:
+          - MOB-001  # Offline capability (Firestore offline persistence)
+          - REL-001  # Reliability
+          - GAM-007  # Network resilience
+      - name: "PlayFab"
+        description: "Microsoft's game backend (player data, leaderboards, matchmaking, LiveOps)"
+        url: "https://playfab.com"
+        constitution:
+          - REL-001
+          - GAM-006  # Multiplayer integrity (server-authoritative)
+      - name: "Supabase"
+        description: "Open-source Firebase alternative (Postgres, real-time, auth)"
+        url: "https://supabase.com"
+        constitution:
+          - REL-001
+          - MOB-001
+      - name: "Custom API"
+        description: "Build your own backend (Node.js, Go, Elixir)"
+        constitution:
+          - API-001  # API design principles
+          - REL-001
+      - name: "Local-only (offline single-player)"
+        description: "No backend needed, all data stored locally"
+        constitution:
+          - MOB-001  # Offline capability (100% offline)
+          - GAM-003  # State persistence
+
+  monetization:
+    required: true
+    prompt: "Choose monetization model for mobile game"
+    options:
+      - name: "Premium (pay once)"
+        description: "One-time purchase, no ads or IAP"
+        constitution:
+          - MOB-002  # Platform compliance (App Store guidelines)
+      - name: "Free-to-play + IAP"
+        description: "In-app purchases (currency, characters, speed-ups)"
+        constitution:
+          - GAM-004  # Fair monetization (no pay-to-win in PvP)
+          - FIN-001  # Payment security
+      - name: "Free-to-play + Ads"
+        description: "Ad-supported (rewarded video, interstitials)"
+        constitution:
+          - GAM-004  # Fair monetization (ethical ad frequency)
+      - name: "Hybrid (IAP + Ads)"
+        description: "Both IAP and ads (maximize monetization)"
+        constitution:
+          - GAM-004
+          - FIN-001
+      - name: "Battle Pass / Subscription"
+        description: "Recurring subscription with seasonal content"
+        constitution:
+          - GAM-004
+          - FIN-002  # Subscription billing
+
+  analytics:
+    required: true
+    prompt: "Choose analytics for KPI tracking (retention, monetization)"
+    options:
+      - name: "Firebase Analytics"
+        description: "Free, integrated with Firebase backend"
+        url: "https://firebase.google.com/products/analytics"
+        constitution:
+          - LOG-001  # Telemetry (MUST for games per gaming.md)
+      - name: "GameAnalytics"
+        description: "Free game-specific analytics (funnels, retention, revenue)"
+        url: "https://gameanalytics.com"
+        constitution:
+          - LOG-001
+      - name: "Unity Analytics"
+        description: "Built into Unity, real-time dashboards"
+        url: "https://unity.com/products/analytics"
+        constitution:
+          - LOG-001
+      - name: "Amplitude"
+        description: "Product analytics (works for games), behavioral cohorts"
+        url: "https://amplitude.com"
+        constitution:
+          - LOG-001
+
+  iap_service:
+    required: false
+    prompt: "Need in-app purchase service? (if IAP monetization selected)"
+    options:
+      - name: "RevenueCat"
+        description: "Cross-platform IAP/subscription management (iOS + Android unified)"
+        url: "https://revenuecat.com"
+        constitution:
+          - FIN-001  # Payment security
+          - FIN-002  # Subscription billing
+      - name: "Native (StoreKit + Billing Library)"
+        description: "Use platform SDKs directly (more control, more complexity)"
+        constitution:
+          - FIN-001
+      - name: "PlayFab Economy"
+        description: "PlayFab's virtual currency and IAP system"
+        constitution:
+          - FIN-001
+      - name: "Not using IAP"
+        description: "Premium or ad-only monetization"
+        constitution: []
+
+  ad_network:
+    required: false
+    prompt: "Need ad network? (if ad monetization selected)"
+    options:
+      - name: "AdMob (Google)"
+        description: "Most popular, high fill rates"
+        url: "https://admob.google.com"
+        constitution: []
+      - name: "Unity Ads"
+        description: "Integrated into Unity, high eCPM for rewarded video"
+        url: "https://unity.com/products/unity-ads"
+        constitution: []
+      - name: "AppLovin MAX"
+        description: "Mediation platform (optimize across multiple ad networks)"
+        url: "https://applovin.com"
+        constitution: []
+      - name: "Not using ads"
+        description: "Premium or IAP-only monetization"
+        constitution: []
+
+  live_ops:
+    required: false
+    prompt: "Need live operations? (events, A/B testing, remote config)"
+    options:
+      - name: "Firebase Remote Config + A/B Testing"
+        description: "Change game parameters without app update, run A/B tests"
+        url: "https://firebase.google.com/products/remote-config"
+        constitution: []
+      - name: "PlayFab LiveOps"
+        description: "Events, leaderboards, tournaments, remote config"
+        url: "https://playfab.com"
+        constitution: []
+      - name: "Not needed (single-player, static content)"
+        description: "No live ops infrastructure"
+        constitution: []
+
+checklist:
+  functional:
+    - "Define core game loop (what does player do repeatedly?)"
+    - "Define session length target (hyper-casual: 3-5 min, casual: 10-15 min, mid-core: 20-30 min)"
+    - "Define offline gameplay (what works without network?)"
+    - "Define progression system (XP, levels, unlocks, meta-progression)"
+    - "Define monetization touchpoints (when/where does player spend?)"
+    - "Define retention mechanics (daily rewards, streaks, events)"
+    - "Define game economy (currency sources, sinks, balance)"
+    - "Define social features (friends, leaderboards, clans, gifting)"
+
+  non_functional:
+    - "Performance: 60 FPS on iPhone 11 / Galaxy S10? (GAM-001, MOB-001)"
+    - "Battery: <5% drain per hour of active play? (MOB-003, MOB-002)"
+    - "App Size: <150MB initial download? (MOB-002, MOB-003)"
+    - "Input Latency: <80ms touch-to-visual? (GAM-002, MOB-004)"
+    - "Offline: Core loop works without network? (MOB-001, MOB-004)"
+    - "Save/Resume: Auto-save on backgrounding? (GAM-003, MOB-005)"
+    - "Monetization: Ethical IAP/ad design? Loot box disclosure? (GAM-004, MOB-006)"
+    - "Economy: Sinks ≈ sources? F2P path viable? (MOB-007)"
+    - "Retention: Daily rewards, events, social hooks? (MOB-008)"
+    - "KPIs: D1/D7/D30 targets for genre? ARPU/LTV? (MOB-009)"
+    - "Live Ops: Remote config, A/B testing, event system? (MOB-010 if live service)"
+    - "Compliance: App Store + Play Store guidelines? COPPA? Loot box laws? (MOB-002, GAM-005, MOB-011)"
+    - "Anti-Cheat: Server-authoritative if multiplayer? (GAM-006, MOB-012 if competitive)"

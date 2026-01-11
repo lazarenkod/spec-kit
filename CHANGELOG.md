@@ -7,6 +7,24 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-01-12
+
+### Added
+
+- Mobile game support: 6 game-specific concept sections (economy, monetization, live ops, retention, genre, psychology)
+- `mobile-game.yaml` stack template with Unity/Unreal/Firebase/PlayFab options
+- 5 mobile game quality gates (QG-GAME-001 to QG-GAME-005) for FPS, battery, app size, latency, ethics
+- Genre selection in constitution questionnaire (Hyper-casual, Casual, Mid-core, Core)
+- Mobile game design presets (Unity UI, UIKit, Jetpack Compose framework presets)
+- Mobile game aesthetic presets (Clash Royale, Genshin Impact, Candy Crush, PUBG Mobile)
+- Mobile game UI pattern documentation (HUD layouts, touch controls, monetization UI)
+
+### Changed
+
+- `constitution.md`: Split "Gaming" into "Gaming (PC/Console)" and "Gaming (Mobile)" options
+- `quality-gates.md`: Added mobile game gate definitions (+180 lines)
+- `design.md`: Added mobile game framework and aesthetic presets to description
+
 ## [0.5.0] - 2026-01-11
 
 ### Added

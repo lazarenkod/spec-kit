@@ -1,0 +1,670 @@
+# Mobile Game Framework & Aesthetic Presets
+# Version: 1.0.0
+# Purpose: Comprehensive presets for mobile game UI/UX design across Unity, iOS, and Android platforms
+
+framework_presets:
+  unity-ui:
+    name: "Unity UI Toolkit"
+    description: "Unity's built-in UI system with EventSystem and Canvas-based rendering"
+    platform: "Unity"
+    documentation_url: "https://docs.unity3d.com/Packages/com.unity.ugui@latest"
+    components:
+      - name: "Canvas"
+        description: "Root UI container with rendering modes (Screen Space, World Space)"
+        usage: "Parent container for all UI elements"
+      - name: "Button"
+        description: "Interactive button with onClick events and visual states"
+        usage: "Primary interaction element"
+      - name: "Text / TextMeshPro"
+        description: "Text rendering (legacy Text or modern TextMeshPro)"
+        usage: "Labels, descriptions, dynamic content"
+      - name: "Image"
+        description: "Sprite or texture rendering with fill modes"
+        usage: "Icons, backgrounds, progress bars"
+      - name: "Slider"
+        description: "Value selector with handle and fill"
+        usage: "Settings, progress, volume control"
+      - name: "ScrollView"
+        description: "Scrollable container with scrollbars"
+        usage: "Lists, inventories, chat logs"
+      - name: "InputField"
+        description: "Text input with validation and placeholder"
+        usage: "Chat, username entry, search"
+    layout_system:
+      name: "RectTransform + Anchor System"
+      description: "Anchor-based positioning relative to parent containers"
+      features:
+        - "Anchors for responsive positioning"
+        - "Pivot points for rotation/scale"
+        - "LayoutGroups (Horizontal/Vertical/Grid)"
+        - "ContentSizeFitter for dynamic sizing"
+    responsive:
+      approach: "Auto-layout with Canvas Scaler"
+      canvas_scaler_modes:
+        - "Constant Pixel Size"
+        - "Scale With Screen Size (recommended)"
+        - "Constant Physical Size"
+      reference_resolution: "1920x1080"
+    safe_area:
+      support: "Built-in"
+      implementation: "Screen.safeArea API with RectTransform adjustment"
+      platforms: ["iOS", "Android"]
+    touch_system:
+      event_system: "EventSystem + Input System (new)"
+      components:
+        - "EventSystem (scene singleton)"
+        - "Standalone Input Module / Input System UI Input Module"
+        - "GraphicRaycaster on Canvas"
+      input_modes:
+        - "Legacy Input (Input.GetTouch)"
+        - "New Input System (Touchscreen.current)"
+    gestures:
+      tap:
+        implementation: "IPointerClickHandler interface"
+        detection: "Single touch down + up within threshold"
+      swipe:
+        implementation: "IBeginDragHandler, IDragHandler, IEndDragHandler"
+        detection: "Delta position over time, velocity calculation"
+      pinch:
+        implementation: "Multi-touch Input.touches with distance calculation"
+        detection: "Two-finger distance delta"
+      drag:
+        implementation: "IDragHandler interface"
+        detection: "Continuous position updates"
+    haptics:
+      api: "Handheld.Vibrate()"
+      platforms: ["Android", "iOS"]
+      limitations: "No intensity control in legacy API, use plugins for advanced haptics"
+
+  uikit-ios:
+    name: "UIKit for iOS"
+    description: "Apple's native UI framework for iOS game interfaces"
+    platform: "iOS"
+    documentation_url: "https://developer.apple.com/documentation/uikit"
+    components:
+      - name: "UIView"
+        description: "Base view class for all UI elements"
+        usage: "Custom views, containers"
+      - name: "UIButton"
+        description: "Interactive button with target-action pattern"
+        usage: "Primary interactions"
+      - name: "UILabel"
+        description: "Text display with attributed strings"
+        usage: "Static and dynamic text"
+      - name: "UIImageView"
+        description: "Image rendering with content modes"
+        usage: "Icons, sprites, backgrounds"
+      - name: "UITableView"
+        description: "Scrollable list with reusable cells"
+        usage: "Leaderboards, inventories"
+      - name: "UICollectionView"
+        description: "Grid-based scrollable content"
+        usage: "Character selection, card grids"
+    layout_system:
+      name: "Auto Layout + Constraints"
+      description: "Constraint-based layout with NSLayoutConstraint"
+      features:
+        - "Visual Format Language"
+        - "Constraint priorities"
+        - "Intrinsic content size"
+        - "Stack views for simple layouts"
+    responsive:
+      approach: "Size Classes (Compact/Regular)"
+      size_classes:
+        - "Compact Width (iPhone portrait)"
+        - "Regular Width (iPad, iPhone landscape)"
+        - "Compact Height (iPhone landscape)"
+        - "Regular Height (iPhone portrait, iPad)"
+      trait_collections: "Dynamic type, display scale, user interface idiom"
+    safe_area:
+      support: "safeAreaLayoutGuide (iOS 11+)"
+      implementation: "Constrain to view.safeAreaLayoutGuide instead of view edges"
+      handles: ["Notch", "Home indicator", "Status bar"]
+    touch_system:
+      event_handling: "UIGestureRecognizer subclasses"
+      responder_chain: "UIResponder hierarchy for event propagation"
+      multi_touch: "Enable with view.isMultipleTouchEnabled = true"
+    gestures:
+      tap:
+        class: "UITapGestureRecognizer"
+        config: "numberOfTapsRequired, numberOfTouchesRequired"
+      swipe:
+        class: "UISwipeGestureRecognizer"
+        config: "direction (.up, .down, .left, .right)"
+      pinch:
+        class: "UIPinchGestureRecognizer"
+        properties: "scale, velocity"
+      drag:
+        class: "UIPanGestureRecognizer"
+        properties: "translation(in:), velocity(in:)"
+      long_press:
+        class: "UILongPressGestureRecognizer"
+        config: "minimumPressDuration"
+      rotation:
+        class: "UIRotationGestureRecognizer"
+        properties: "rotation, velocity"
+    haptics:
+      api: "UIImpactFeedbackGenerator"
+      styles:
+        - "light"
+        - "medium"
+        - "heavy"
+        - "soft"
+        - "rigid"
+      usage: "Prepare before event, trigger on interaction"
+
+  jetpack-compose:
+    name: "Jetpack Compose for Android"
+    description: "Modern declarative UI toolkit for Android games"
+    platform: "Android"
+    documentation_url: "https://developer.android.com/jetpack/compose"
+    components:
+      - name: "Button"
+        description: "Material Design button composable"
+        usage: "Primary actions"
+      - name: "Text"
+        description: "Text rendering with style and annotation"
+        usage: "Labels, descriptions"
+      - name: "Image"
+        description: "Image rendering from drawable or painter"
+        usage: "Icons, sprites, backgrounds"
+      - name: "LazyColumn"
+        description: "Vertically scrolling list with lazy composition"
+        usage: "Leaderboards, chat"
+      - name: "LazyRow"
+        description: "Horizontally scrolling list"
+        usage: "Character carousel, inventory"
+      - name: "Box / Column / Row"
+        description: "Layout containers for stacking, vertical, horizontal"
+        usage: "Composing complex layouts"
+    layout_system:
+      name: "Constraint Layout + Modifier"
+      description: "Modifier-based layout with constraints"
+      features:
+        - "Modifiers for size, padding, alignment"
+        - "ConstraintLayout for complex positioning"
+        - "Spacer for gaps"
+        - "Weight for proportional sizing"
+    responsive:
+      approach: "WindowSizeClass API"
+      size_classes:
+        - "Compact (<600dp width)"
+        - "Medium (600-840dp width)"
+        - "Expanded (>840dp width)"
+      implementation: "calculateWindowSizeClass() in activity"
+    safe_area:
+      support: "WindowInsets.safeDrawing"
+      implementation: "Modifier.windowInsetsPadding(WindowInsets.safeDrawing)"
+      handles: ["Navigation bar", "Status bar", "Display cutouts"]
+    touch_system:
+      event_handling: "Pointer Input + Gesture Detector"
+      composables:
+        - "Modifier.pointerInput for raw events"
+        - "detectTapGestures for common gestures"
+        - "detectDragGestures for drag/swipe"
+    gestures:
+      tap:
+        implementation: "detectTapGestures { onTap = { offset -> } }"
+        events: ["onTap", "onDoubleTap", "onLongPress"]
+      swipe:
+        implementation: "detectDragGestures with velocity threshold"
+        detection: "Calculate direction from drag end velocity"
+      pinch:
+        implementation: "detectTransformGestures { centroid, pan, zoom, rotation -> }"
+        properties: "zoom (scale), rotation (angle)"
+      drag:
+        implementation: "detectDragGestures { change, dragAmount -> }"
+        detection: "Continuous position updates"
+    haptics:
+      api: "HapticFeedback.performHapticFeedback()"
+      types:
+        - "HapticFeedbackConstants.CONTEXT_CLICK"
+        - "HapticFeedbackConstants.KEYBOARD_TAP"
+        - "HapticFeedbackConstants.LONG_PRESS"
+        - "HapticFeedbackConstants.VIRTUAL_KEY"
+      usage: "LocalHapticFeedback.current.performHapticFeedback()"
+
+aesthetic_presets:
+  clash-royale:
+    genre: "Mid-core card battler"
+    characteristics:
+      style: "Vibrant, cartoonish 3D characters with bold UI"
+      mood: "Competitive, exciting, fun"
+      visual_language: "Purple/gold fantasy theme, thick outlines, glossy surfaces"
+      ui_complexity: "Medium - clear hierarchy, prominent CTAs"
+    color_palette:
+      primary: "#7B68EE"  # Medium purple
+      secondary: "#FFD700"  # Gold
+      background: "#2E1A47"  # Dark purple
+      surface: "#3D2A54"  # Medium purple surface
+      success: "#00FF7F"  # Spring green
+      error: "#FF4444"  # Red
+      text_primary: "#FFFFFF"
+      text_secondary: "#B8A9D4"
+      rarity_common: "#B0B0B0"  # Gray
+      rarity_rare: "#FF9500"  # Orange
+      rarity_epic: "#A335EE"  # Purple
+      rarity_legendary: "#FFD700"  # Gold
+    typography:
+      primary_font: "Supercell Magic"
+      fallback_font: "Arial Rounded MT Bold"
+      heading_size: "36-48px"
+      body_size: "18-24px"
+      button_size: "24-30px"
+      style: "Bold, high contrast, thick stroke"
+    spacing:
+      base_unit: 8
+      touch_target: 64  # Larger for mid-core audience
+      card_padding: 12
+      modal_padding: 24
+    ui_style:
+      buttons: "3D pill-shaped with gradient and drop shadow"
+      cards: "Portrait cards with colored rarity borders, 3D depth"
+      modals: "Full-screen overlays with blurred background"
+      icons: "Glossy, high-saturation with white outline"
+      animations: "Bouncy, exaggerated scale transitions"
+
+  genshin-impact:
+    genre: "Core action RPG"
+    characteristics:
+      style: "Anime-inspired with elegant fantasy UI"
+      mood: "Epic, magical, immersive"
+      visual_language: "Gold/white ornate borders, particle effects, star motifs"
+      ui_complexity: "High - layered panels, detailed stats"
+    color_palette:
+      primary: "#FFE6A0"  # Pale gold
+      secondary: "#FFFFFF"  # White
+      background: "#2B2545"  # Dark purple
+      surface: "#3D3458"  # Medium purple
+      accent: "#4DD0E1"  # Cyan
+      success: "#81C784"  # Green
+      error: "#E57373"  # Red
+      text_primary: "#F5F5F5"
+      text_secondary: "#BDB9C7"
+      rarity_3_star: "#4A8FE7"  # Blue
+      rarity_4_star: "#A256E1"  # Purple
+      rarity_5_star: "#BD6932"  # Orange-gold
+    typography:
+      primary_font: "Genshin Impact Font"
+      fallback_font: "Noto Sans CJK JP"
+      heading_size: "32-44px"
+      body_size: "16-20px"
+      button_size: "20-26px"
+      style: "Medium weight, elegant serifs on headings"
+    spacing:
+      base_unit: 4
+      touch_target: 56  # Competitive but accessible
+      panel_padding: 16
+      modal_padding: 20
+    ui_style:
+      buttons: "Rounded rectangles with glowing gold borders"
+      cards: "Character portraits with full-bleed art, ornate frames"
+      modals: "Layered panels with semi-transparency and glow effects"
+      icons: "Flat design with subtle gradients, star accents"
+      animations: "Smooth, flowing transitions with particle trails"
+
+  candy-crush:
+    genre: "Casual match-3"
+    characteristics:
+      style: "Bright, cheerful colors with glossy candy visuals"
+      mood: "Fun, relaxing, rewarding"
+      visual_language: "Multicolor, playful, simple shapes"
+      ui_complexity: "Low - minimal text, large icons"
+    color_palette:
+      primary: "#FF69B4"  # Hot pink
+      secondary: "#00CED1"  # Teal
+      background: "#FFE4E1"  # Light pink
+      surface: "#FFF0F5"  # Lavender blush
+      success: "#98FF98"  # Mint green
+      error: "#FF6F61"  # Coral
+      text_primary: "#4A4A4A"
+      text_secondary: "#7A7A7A"
+      candy_red: "#FF3B30"
+      candy_orange: "#FF9500"
+      candy_yellow: "#FFCC00"
+      candy_green: "#4CD964"
+      candy_blue: "#007AFF"
+      candy_purple: "#AF52DE"
+    typography:
+      primary_font: "Luckiest Guy"
+      fallback_font: "Fredoka One"
+      heading_size: "48-64px"
+      body_size: "24-32px"
+      button_size: "32-40px"
+      style: "Rounded, chunky, high readability"
+    spacing:
+      base_unit: 12
+      touch_target: 80  # Very large for casual audience
+      grid_gap: 8
+      modal_padding: 32
+    ui_style:
+      buttons: "Rounded rectangles with 3D depth and candy texture"
+      cards: "Square tiles with glossy gradient and icon"
+      modals: "Centered popups with ribbon accents and stars"
+      icons: "Large, colorful, high-contrast with white outline"
+      animations: "Bouncy spring animations, particle explosions"
+
+  pubg-mobile:
+    genre: "Core battle royale"
+    characteristics:
+      style: "Realistic military aesthetic with minimal HUD"
+      mood: "Tactical, intense, competitive"
+      visual_language: "Orange/black/gray, angular shapes, high contrast"
+      ui_complexity: "High - many contextual elements, minimal interference"
+    color_palette:
+      primary: "#FF6B00"  # Orange
+      secondary: "#1C1C1E"  # Dark gray
+      background: "#0A0A0A"  # Almost black
+      surface: "#1C1C1E"  # Charcoal
+      success: "#34C759"  # iOS green
+      error: "#FF3B30"  # iOS red
+      warning: "#FFCC00"  # Yellow
+      text_primary: "#FFFFFF"
+      text_secondary: "#8E8E93"
+      hud_health: "#00FF41"  # Neon green
+      hud_armor: "#00A8FF"  # Blue
+    typography:
+      primary_font: "Rajdhani"
+      fallback_font: "Saira Condensed"
+      heading_size: "24-32px"
+      body_size: "14-18px"
+      hud_size: "16-20px"
+      style: "Condensed, uppercase, medium weight"
+    spacing:
+      base_unit: 4
+      touch_target: 48  # Compact for competitive play
+      hud_margin: 16
+      modal_padding: 20
+    ui_style:
+      buttons: "Angular with beveled edges, military stencil style"
+      hud_elements: "Corner-anchored with semi-transparent dark background"
+      modals: "Dark overlay with yellow accent lines"
+      icons: "Line-art style with minimal color"
+      animations: "Snappy, instant feedback, minimal decoration"
+
+ui_patterns:
+  game_hud:
+    description: "Heads-up display patterns for in-game UI"
+    layouts:
+      corner_hud:
+        name: "Corner-anchored HUD"
+        usage: ["FPS", "Battle Royale", "MOBA"]
+        zones:
+          top_left:
+            typical_content: ["Score", "Timer", "Resources"]
+            safe_area_inset: true
+          top_right:
+            typical_content: ["Settings", "Menu", "Notifications"]
+            safe_area_inset: true
+          bottom_left:
+            typical_content: ["Virtual joystick", "Movement controls"]
+            safe_area_inset: true
+          bottom_right:
+            typical_content: ["Action buttons", "Abilities"]
+            safe_area_inset: true
+        guidelines:
+          - "Keep critical info in top corners (visible during gameplay)"
+          - "Action buttons in bottom right (right-handed thumb zone)"
+          - "Virtual stick in bottom left (left-handed thumb zone)"
+      center_hud:
+        name: "Center-focused HUD"
+        usage: ["Match-3", "Merge games", "Tower defense"]
+        zones:
+          top_center:
+            typical_content: ["Level goals", "Moves remaining", "Score"]
+          bottom_center:
+            typical_content: ["Power-ups", "Shop button"]
+          corners:
+            typical_content: ["Settings", "Lives", "Currency"]
+        guidelines:
+          - "Minimize obstruction of central play area"
+          - "Use semi-transparent backgrounds"
+      bottom_bar_hud:
+        name: "Bottom Bar HUD"
+        usage: ["RPG", "Strategy", "City builders"]
+        zones:
+          bottom_bar:
+            typical_content: ["Persistent menu bar", "Quick actions", "Character switcher"]
+            height: "80-120px"
+          floating_top:
+            typical_content: ["Health/mana", "Quest tracker"]
+        guidelines:
+          - "Keep bottom bar minimal to preserve screen space"
+          - "Use collapsible menus for complex actions"
+    safe_area_handling:
+      approach: "Dynamic padding based on device safe area"
+      implementation:
+        unity: "Screen.safeArea with RectTransform offset adjustment"
+        ios: "Constrain to safeAreaLayoutGuide"
+        android: "WindowInsets.safeDrawing padding"
+      edge_cases:
+        - "iPhone notch (top center)"
+        - "Android punch-hole cameras (top corner)"
+        - "Home indicator (bottom)"
+
+  touch_controls:
+    description: "Touch input patterns for mobile games"
+    patterns:
+      virtual_joystick:
+        name: "Virtual Joystick"
+        usage: ["Action", "Shooter", "Adventure"]
+        properties:
+          position: "Bottom left or dynamic (follow first touch)"
+          size: "120-160px diameter"
+          dead_zone: "10-20% of radius"
+          visual_feedback: "Inner circle moves with input, outer ring static"
+        accessibility:
+          touch_target: "Minimum 88x88px (larger than standard for game controls)"
+          visual_contrast: "High contrast against background"
+          haptic_feedback: "Optional vibration on edge hit"
+      gesture_controls:
+        name: "Gesture-based Controls"
+        usage: ["Puzzle", "Casual", "Hypercasual"]
+        gestures:
+          - type: "Swipe"
+            action: "Move object, switch lanes"
+            feedback: "Trail effect, haptic"
+          - type: "Tap"
+            action: "Select, activate"
+            feedback: "Scale animation, sound"
+          - type: "Drag"
+            action: "Aim, move object"
+            feedback: "Object follows finger"
+          - type: "Pinch"
+            action: "Zoom camera"
+            feedback: "Smooth camera transition"
+        accessibility:
+          tutorial: "First-time gesture tutorial required"
+          visual_hints: "Show gesture prompts for new players"
+          alternative: "Provide button-based alternative for accessibility"
+      touch_zones:
+        name: "Touch Zones"
+        usage: ["Fighting", "Rhythm", "Quick-time events"]
+        zones:
+          - name: "Left half"
+            action: "Block, move left"
+            size: "50% screen width"
+            visual: "Semi-transparent overlay on tutorial"
+          - name: "Right half"
+            action: "Attack, move right"
+            size: "50% screen width"
+            visual: "Semi-transparent overlay on tutorial"
+        accessibility:
+          size: "Large zones for fast reactions"
+          visual_feedback: "Flash effect on touch"
+          audio_feedback: "Distinct sound per zone"
+
+  monetization_ui:
+    description: "UI patterns for in-app purchases and monetization"
+    patterns:
+      shop_modal:
+        name: "In-Game Shop"
+        layout:
+          header: "Currency display, close button"
+          tabs: "Featured, Bundles, Currency, Special Offers"
+          grid: "2-3 columns on mobile, 4+ on tablet"
+          footer: "Terms, restore purchases"
+        best_value_badge:
+          position: "Top right corner of bundle card"
+          color: "Gold or brand primary"
+          animation: "Subtle pulse"
+        pricing:
+          display: "Large price, small original price (strikethrough)"
+          discount_badge: "% off in contrasting color"
+        cta_button:
+          text: "Buy Now, Get Offer, Claim"
+          style: "Primary brand color, prominent placement"
+        ethics:
+          - "Clear pricing information"
+          - "No hidden costs"
+          - "Restore purchases option"
+          - "Parental gate for kids' games"
+      rewarded_video_placement:
+        name: "Rewarded Video Ad"
+        trigger_points:
+          - "After level failure"
+          - "Before level start (optional boost)"
+          - "From shop (extra currency)"
+        placement:
+          type: "Modal with clear reward preview"
+          messaging: "Watch video to earn [reward]"
+          buttons: ["Watch Now (primary)", "No Thanks (secondary)"]
+        reward_preview:
+          visual: "Icon + quantity"
+          animation: "Collect animation on completion"
+        frequency_cap:
+          limit: "3-5 per session recommended"
+          cooldown: "5-10 minutes between offers"
+        ethics:
+          - "Always optional"
+          - "Clear reward preview"
+          - "Skip button after 5 seconds (if network allows)"
+      battle_pass_ui:
+        name: "Battle Pass / Season Pass"
+        layout:
+          header: "Season info, time remaining, pass purchase CTA"
+          track: "Horizontal scroll of tiers (1-50+)"
+          reward_preview: "Free track (top) + Premium track (bottom)"
+        tiers:
+          spacing: "Fixed width cells, equal spacing"
+          states: ["Locked", "Available", "Claimed"]
+          visual: "Checkmark on claimed, glow on available"
+        progress_bar:
+          position: "Above track"
+          xp_display: "Current XP / Next tier XP"
+        preview_rewards:
+          interaction: "Tap tier to see full reward details"
+          modal: "Large icon, name, description, tier number"
+        ethics:
+          - "Clear free vs premium distinction"
+          - "No pressure tactics"
+          - "Realistic time-to-complete estimate"
+
+  onboarding_flow:
+    description: "First-time user experience patterns"
+    patterns:
+      interactive_tutorial:
+        name: "Interactive Tutorial"
+        duration:
+          hypercasual: "10-30 seconds"
+          casual: "1-2 minutes"
+          midcore: "3-5 minutes"
+          core: "5-10 minutes"
+        steps:
+          - phase: "Core mechanic"
+            approach: "Hands-on with highlighted UI"
+            feedback: "Visual + audio + haptic confirmation"
+          - phase: "Secondary mechanic"
+            approach: "Guided practice with hints"
+            feedback: "Reward small currency/XP"
+          - phase: "Meta loop introduction"
+            approach: "Show progression/upgrade path"
+            feedback: "Unlock first upgrade"
+        skip_option:
+          availability: "After completing core mechanic (30-60s)"
+          placement: "Top right corner, subtle"
+          confirmation: "Confirm dialog to prevent accidental skip"
+        kpi:
+          target_completion: "80%+ for casual, 60%+ for core"
+          drop_off_points: "Measure engagement at each step"
+      progressive_disclosure:
+        name: "Progressive Disclosure"
+        timing:
+          session_1: "Core gameplay only"
+          session_2: "Introduce first meta system (e.g., upgrades)"
+          session_3: "Introduce secondary meta (e.g., events)"
+          session_4_plus: "Unlock social, clans, advanced features"
+        sequence:
+          - feature: "Basic gameplay"
+            unlock: "Immediately"
+          - feature: "Upgrades"
+            unlock: "After 3-5 levels or 10 minutes"
+          - feature: "Daily rewards"
+            unlock: "After first session"
+          - feature: "Events"
+            unlock: "Player level 5+"
+          - feature: "Social features"
+            unlock: "Player level 10+"
+        tutorial_integration:
+          approach: "Contextual tooltip on feature unlock"
+          dismissal: "Swipe or tap outside"
+        kpi:
+          feature_engagement: "% of players who use feature within 24h of unlock"
+          retention_impact: "Compare D1/D7 retention with unlock timing"
+
+accessibility:
+  mobile_game_specific:
+    colorblind_modes:
+      implementation: "Shader-based or texture swap"
+      coverage:
+        - "Deuteranopia (red-green)"
+        - "Protanopia (red-green)"
+        - "Tritanopia (blue-yellow)"
+      toggle:
+        location: "Settings > Accessibility"
+        preview: "Show before/after comparison"
+    touch_target_size:
+      requirement: "Minimum 44pt (iOS) / 48dp (Android)"
+      game_specific: "60-80px for fast-paced games"
+      spacing: "Minimum 8px between targets"
+    haptic_feedback:
+      implementation: "Platform-specific APIs (see framework presets)"
+      usage:
+        - "Button presses"
+        - "Collisions / impacts"
+        - "Achievements unlocked"
+        - "Errors / invalid actions"
+      toggle:
+        location: "Settings > Sound & Haptics"
+        default: "On (but respect system settings)"
+    voiceover_talkback:
+      requirement: "Label all interactive elements"
+      challenge: "Real-time gameplay difficult to narrate"
+      workaround:
+        - "Menu-only VoiceOver support"
+        - "Simplified control scheme for vision-impaired"
+        - "Audio cues for critical events"
+
+performance:
+  mobile_game_ui:
+    ui_frame_rate:
+      target: "60 FPS (UI layer)"
+      measurement: "Profiler frame time for UI thread"
+      optimization:
+        - "Minimize layout recalculations"
+        - "Batch UI updates"
+        - "Cache complex calculations"
+    overdraw:
+      target: "< 2.5x per pixel"
+      validation: "GPU overdraw visualization (Unity Profiler / Xcode / Android GPU Inspector)"
+      optimization:
+        - "Disable hidden UI elements (not just alpha=0)"
+        - "Use UI masks sparingly"
+        - "Avoid overlapping transparent images"
+    asset_loading:
+      pattern: "Asynchronous loading with placeholder"
+      implementation:
+        unity: "Resources.LoadAsync or Addressables"
+        ios: "URLSession for remote, ImageIO for local"
+        android: "Coil library or Glide for async image loading"
+      user_feedback: "Loading spinner or skeleton screen"

@@ -3,7 +3,10 @@ description: |
   Create visual specifications and complete design systems with framework and aesthetic presets.
 
   Framework presets: shadcn/ui (default), MUI, Tailwind, Vuetify, Bootstrap
+  Mobile Game Framework presets: Unity UI, UIKit (iOS), Jetpack Compose (Android)
+
   Aesthetic presets: Linear, Stripe, Vercel, Notion, Apple, Airbnb, GitHub, Slack, Figma
+  Mobile Game Aesthetic presets: Clash Royale, Genshin Impact, Candy Crush, PUBG Mobile
 
   Use both for maximum flexibility: component structure + brand style.
 

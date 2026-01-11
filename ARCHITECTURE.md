@@ -1149,7 +1149,7 @@ Specification phase completed. FR-008, AS-012 defined.
 
 **Проблема**: Concept phase может быть огромным (50+ requirements). Как сделать reusable?
 
-**Решение**: 36 модульных секций в `templates/shared/concept-sections/`.
+**Решение**: 42 модульных секций в `templates/shared/concept-sections/`.
 
 **Категории**:
 
@@ -1160,6 +1160,7 @@ Specification phase completed. FR-008, AS-012 defined.
 | Metrics & Goals | 5 | metrics-smart, north-star-metric, okr-framework |
 | Risk & Decision | 6 | risk-matrix, decision-log, pre-mortem |
 | Technical | 4 | technical-hints, domain-entities, api-surface |
+| Gaming | 6 | game-economy-design, monetization-strategy, live-ops-planning, retention-strategy, genre-analysis, player-psychology |
 | Other | 6 | reasoning-trace, evidence-tracking, investment-thesis |
 
 **Composition Example**:
@@ -1969,6 +1970,16 @@ inline_gates:
 | **QG-DRIFT-002** | High Drift Limit | ≤ 5 high items | On-Demand | HIGH | Major discrepancies |
 | **QG-DRIFT-003** | FR → Code Coverage | ≥ 80% | On-Demand | HIGH | Requirements implemented |
 | **QG-DRIFT-004** | Code → Spec Coverage | ≥ 70% | On-Demand | HIGH | Code documented |
+
+**Mobile Game Gates** (v0.5.0):
+
+| ID | Name | Threshold | Phase | Severity | Validates |
+|----|------|-----------|-------|----------|-----------|
+| **QG-GAME-001** | Frame Rate Stability | 60 FPS | Post-Implement | CRITICAL | Consistent frame rate |
+| **QG-GAME-002** | Battery Efficiency | ≤ 5%/hour | Post-Implement | HIGH | Battery drain rate |
+| **QG-GAME-003** | App Size Compliance | < 150MB | Pre-Deploy | HIGH | Initial download size |
+| **QG-GAME-004** | Input Latency | < 80ms | Post-Implement | CRITICAL | Touch response time |
+| **QG-GAME-005** | Monetization Ethics | Checklist pass | Pre-Deploy | HIGH | Ethical monetization practices |
 
 #### 5.3.3. Quality Scoring: SQS & DQS
 
@@ -4359,6 +4370,20 @@ def register(email: str):
 | `templates/shared/plan-mode/framework.md` | ~350 | Plan Mode orchestration (depth levels, triggers, context injection) |
 | `templates/shared/drift/drift-detection.md` | ~280 | Drift detection framework (forward, reverse, behavioral drift) |
 | `templates/shared/complexity-scoring.md` | ~200 | Feature complexity (0-100 scale, TRIVIAL/SIMPLE/MODERATE/COMPLEX) |
+| `templates/shared/concept-sections/game-economy-design.md` | ~180 | Framework для игровой экономики (currencies, sinks, faucets) |
+| `templates/shared/concept-sections/monetization-strategy.md` | ~160 | Ethical monetization для mobile games (IAP, ads, subscriptions) |
+| `templates/shared/concept-sections/live-ops-planning.md` | ~140 | Event-driven live operations (events, seasons, content updates) |
+| `templates/shared/concept-sections/retention-strategy.md` | ~150 | D1/D7/D30 retention optimization (hooks, loops, progression) |
+| `templates/shared/concept-sections/genre-analysis.md` | ~130 | Genre classification и must-have features |
+| `templates/shared/concept-sections/player-psychology.md` | ~170 | Bartle types, SDT (Self-Determination Theory), flow theory |
+| `templates/shared/design/mobile-game-presets.yaml` | ~220 | Design presets для mobile games (UI patterns, components) |
+| `templates/shared/design/mobile-game-ui-patterns.md` | ~190 | Mobile game UI patterns (HUD, menus, feedback systems) |
+
+**Templates - Stack Configurations:**
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `templates/stacks/mobile-game.yaml` | ~120 | Mobile game tech stack (Unity/Godot, backend, analytics, monetization) |
 
 **Scripts - Bash:**
 
@@ -4383,8 +4408,8 @@ def register(email: str):
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `pyproject.toml` | 30 | Project metadata (version 0.4.0, dependencies, entry point) |
-| `memory/domains/quality-gates.md` | ~1900 | Quality Gate definitions (QG-001..012, QG-TEST-001..004, QG-DRIFT-001..004) |
+| `pyproject.toml` | 30 | Project metadata (version 0.5.0, dependencies, entry point) |
+| `memory/domains/quality-gates.md` | ~2100 | Quality Gate definitions (QG-001..012, QG-TEST-001..004, QG-DRIFT-001..004, QG-GAME-001..005) |
 | `memory/constitution.base.md` | ~320 | Layer 0 constitution (security, quality, performance principles) |
 | `.github/workflows/release.yml` | ~180 | CI/CD pipeline (create 20 release packages, generate notes) |
 | `CLAUDE.md` | ~450 | Project context для Claude Code |
@@ -4599,8 +4624,8 @@ def register(email: str):
 
 ---
 
-**Документ версия**: 0.4.0
-**Последнее обновление**: 2026-01-11
+**Документ версия**: 0.5.0
+**Последнее обновление**: 2026-01-12
 **Сгенерировано**: Автоматически из кодовой базы spec-kit
 
 ---
