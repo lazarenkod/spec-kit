@@ -303,14 +303,35 @@ validation_profiles:
         message: "Resolve all security vulnerabilities before deployment"
     timeout_seconds: 120
     output_mode: compact
+  drift:
+    description: "Spec-code drift detection (bidirectional traceability validation)"
+    passes: [AA]
+    gates:
+      fr_coverage:
+        pass: AA
+        threshold: 80
+        severity: HIGH
+        message: "FR → Code coverage below 80% - too many unimplemented requirements"
+      code_coverage:
+        pass: AA
+        threshold: 70
+        severity: HIGH
+        message: "Code → Spec coverage below 70% - too many undocumented APIs"
+      no_critical_drift:
+        pass: AA
+        threshold: 0
+        severity: CRITICAL
+        message: "Critical drift detected - resolve immediately"
+    timeout_seconds: 180
+    output_mode: detailed
   full:
     description: "Complete pre-implementation analysis"
-    passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q, Z]
+    passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q, Z, AA]
     timeout_seconds: 300
     output_mode: detailed
   qa:
     description: "Post-implementation QA verification"
-    passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z]
+    passes: [A, B, C, D, E, F, G, H, I, J, K, L, L2, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, AA]
     timeout_seconds: 600
     output_mode: detailed
 ---
@@ -2557,6 +2578,290 @@ Calculate design token utilization:
 | Low color token utilization (<50%) | LOW |
 | Low typography token utilization (<50%) | LOW |
 | Invalid color format in config | LOW |
+
+---
+
+#### AA. Spec-Code Drift Detection *(post-implementation)*
+
+**Purpose**: Detect divergence between specification artifacts and actual code implementation through bidirectional analysis.
+
+**Activation Check**:
+
+```text
+IF profile == "drift" OR profile == "qa" OR profile == "full":
+  DRIFT_DETECTION_ACTIVE = true
+ELSE:
+  DRIFT_DETECTION_ACTIVE = false
+
+IF NOT DRIFT_DETECTION_ACTIVE:
+  SKIP this validation pass
+
+# Require code to exist
+IF NOT exists(src/) AND NOT exists(app/) AND NOT exists(lib/):
+  OUTPUT: "No code directory found - skipping drift detection"
+  SKIP this validation pass
+```
+
+**Drift Detection Framework**:
+
+```text
+Read `templates/shared/drift/drift-detection.md` for comprehensive framework
+Read `templates/shared/drift/code-analyzers.md` for language-specific patterns
+Read `templates/shared/drift/annotation-parser.md` for annotation extraction
+
+# Detect primary language
+language = DETECT_PRIMARY_LANGUAGE()  # TypeScript, Python, Go, Java/Kotlin
+
+# Define scan scope
+scan_scope = {
+  patterns: INFER_CODE_PATTERNS(language),
+  exclude: ["node_modules/", "dist/", "build/", "__pycache__/", "venv/", ".git/"]
+}
+```
+
+**1. Forward Drift Detection (Spec → Code)**:
+
+```text
+# Extract requirements from spec.md
+spec_frs = EXTRACT_FRS(spec.md)
+spec_ass = EXTRACT_ASS(spec.md)
+
+# Scan codebase for @speckit annotations
+code_annotations = PARSE_ANNOTATIONS(scan_scope)
+
+FOR fr IN spec_frs:
+  IF fr.id NOT IN code_annotations.FR:
+    drift_items.append({
+      id: "DRIFT-{N}",
+      type: "unimplemented_requirement",
+      direction: "forward",
+      severity: "HIGH",
+      requirement: fr.id,
+      description: fr.description,
+      location: "spec.md",
+      message: "FR-{id} in spec but no @speckit:FR:{id} annotation in code",
+      recommendation: "Implement FR-{id} or move to 'Out of Scope'"
+    })
+
+FOR as IN spec_ass:
+  test_annotations = FILTER(code_annotations.TEST, as.id)
+  IF test_annotations.length == 0:
+    drift_items.append({
+      id: "DRIFT-{N}",
+      type: "missing_test",
+      direction: "forward",
+      severity: "MEDIUM",
+      requirement: as.id,
+      message: "AS-{id} in spec but no [TEST:AS-{id}] marker in tests",
+      recommendation: "Add test task or mark with [NO-TEST:reason]"
+    })
+```
+
+**2. Reverse Drift Detection (Code → Spec)**:
+
+```text
+# Use language-specific analyzer
+SWITCH language:
+  CASE "typescript":
+    code_apis = ANALYZE_TYPESCRIPT(scan_scope)
+  CASE "python":
+    code_apis = ANALYZE_PYTHON(scan_scope)
+  CASE "go":
+    code_apis = ANALYZE_GO(scan_scope)
+  CASE "java" | "kotlin":
+    code_apis = ANALYZE_JAVA_KOTLIN(scan_scope)
+
+FOR api IN code_apis:
+  IF api.visibility == "public" OR api.visibility == "export":
+    # Check if API has spec coverage
+    IF NOT api.annotations.FR AND NOT api.marked_internal:
+      drift_items.append({
+        id: "DRIFT-{N}",
+        type: "undocumented_api",
+        direction: "reverse",
+        severity: "HIGH",
+        location: "{api.file}:{api.line}",
+        signature: api.signature,
+        message: "Public API without FR mapping: {api.signature}",
+        recommendation: "Add @speckit:FR:FR-xxx annotation or mark @internal"
+      })
+```
+
+**3. Orphan Annotation Detection**:
+
+```text
+FOR annotation IN code_annotations.FR:
+  IF annotation.id NOT IN spec_frs:
+    drift_items.append({
+      id: "DRIFT-{N}",
+      type: "orphan_annotation",
+      direction: "reverse",
+      severity: "MEDIUM",
+      location: "{annotation.file}:{annotation.line}",
+      requirement: annotation.id,
+      message: "Code references {annotation.id} but requirement not in spec",
+      recommendation: "Remove annotation or restore {annotation.id} to spec.md"
+    })
+
+FOR annotation IN code_annotations.TEST:
+  IF annotation.id NOT IN spec_ass:
+    drift_items.append({
+      id: "DRIFT-{N}",
+      type: "orphan_test_annotation",
+      direction: "reverse",
+      severity: "LOW",
+      location: "{annotation.file}:{annotation.line}",
+      scenario: annotation.id,
+      message: "Test references {annotation.id} but scenario not in spec",
+      recommendation: "Update test marker to correct AS-xxx"
+    })
+```
+
+**4. Behavioral Drift Detection (LLM-Powered)**:
+
+```text
+# For high-value requirements, verify implementation matches spec intent
+high_value_frs = FILTER(spec_frs, category="security" OR category="critical")
+
+FOR fr IN high_value_frs:
+  IF fr.id IN code_annotations.FR:
+    annotation = code_annotations.FR[fr.id]
+    code_snippet = READ_FILE(annotation.file, annotation.line, context=20)
+
+    # LLM validation
+    llm_check = LLM_VERIFY_ALIGNMENT(
+      spec_requirement=fr.description,
+      code_snippet=code_snippet,
+      confidence_threshold=0.70
+    )
+
+    IF llm_check.confidence < 0.70:
+      drift_items.append({
+        id: "DRIFT-{N}",
+        type: "behavioral_drift",
+        direction: "bidirectional",
+        severity: "MEDIUM",
+        requirement: fr.id,
+        location: "{annotation.file}:{annotation.line}",
+        message: "Implementation may deviate from spec intent (confidence: {llm_check.confidence})",
+        details: llm_check.reasoning,
+        recommendation: "Review implementation against spec requirement"
+      })
+```
+
+**5. Coverage Metrics Calculation**:
+
+```text
+# FR → Code Coverage
+total_frs = spec_frs.length
+implemented_frs = total_frs - COUNT(drift_items, type="unimplemented_requirement")
+fr_to_code_coverage = (implemented_frs / total_frs) * 100
+
+# Code → Spec Coverage
+total_public_apis = COUNT(code_apis, visibility="public")
+documented_apis = total_public_apis - COUNT(drift_items, type="undocumented_api")
+code_to_spec_coverage = (documented_apis / total_public_apis) * 100
+
+# Annotation Coverage
+total_implementations = COUNT_IMPLEMENTATIONS_IN_CODE(scan_scope)
+annotated = code_annotations.FR.length
+annotation_coverage = (annotated / total_implementations) * 100
+
+coverage_stats = {
+  fr_to_code_percentage: fr_to_code_coverage,
+  code_to_spec_percentage: code_to_spec_coverage,
+  annotation_coverage: annotation_coverage
+}
+```
+
+**6. Generate Drift Report**:
+
+```text
+# Create drift-report.md
+drift_report = RENDER_TEMPLATE(
+  template="templates/shared/drift/drift-report.md",
+  data={
+    drift_items: drift_items,
+    coverage_stats: coverage_stats,
+    scan_scope: scan_scope,
+    timestamp: NOW()
+  }
+)
+
+WRITE(FEATURE_DIR/drift-report.md, drift_report)
+
+# Update artifact registry
+Read `templates/shared/traceability/artifact-registry.md`
+registry = READ_YAML(FEATURE_DIR/.artifact-registry.yaml)
+UPDATE_DRIFT_METRICS(registry, drift_items, scan_scope)
+```
+
+**7. Report Drift Summary**:
+
+```text
+OUTPUT: "## Drift Detection Summary"
+OUTPUT: ""
+OUTPUT: "**Scan Scope**: {scan_scope.patterns}"
+OUTPUT: "**Language**: {language}"
+OUTPUT: "**Discovered**: {code_apis.length} public APIs, {code_annotations.FR.length} annotations"
+OUTPUT: ""
+OUTPUT: "| Direction | Violations | Severity Breakdown |"
+OUTPUT: "|-----------|------------|-------------------|"
+OUTPUT: "| Forward (Spec → Code) | {forward_count} | C:{critical} H:{high} M:{medium} |"
+OUTPUT: "| Reverse (Code → Spec) | {reverse_count} | C:{critical} H:{high} M:{medium} |"
+OUTPUT: ""
+OUTPUT: "**Coverage Metrics**:"
+OUTPUT: "- FR → Code: {coverage_stats.fr_to_code_percentage}%"
+OUTPUT: "- Code → Spec: {coverage_stats.code_to_spec_percentage}%"
+OUTPUT: "- Annotation Coverage: {coverage_stats.annotation_coverage}%"
+OUTPUT: ""
+OUTPUT: "Full report: `drift-report.md`"
+```
+
+**Severity Mapping for Pass AA:**
+
+| Drift Type | Severity | Reasoning |
+|------------|----------|-----------|
+| Unimplemented requirement (FR in spec, not in code) | HIGH | Spec promises feature not delivered |
+| Undocumented API (public code, no FR) | HIGH | Code without spec creates tech debt |
+| Orphan annotation (code references deleted FR) | MEDIUM | Stale traceability, needs cleanup |
+| Missing test (AS in spec, no [TEST:]) | MEDIUM | Test coverage gap |
+| Behavioral drift (implementation deviates from intent) | MEDIUM | Semantic mismatch requires review |
+| Orphan test annotation (test references deleted AS) | LOW | Test marker needs update |
+| Low annotation coverage (<60%) | LOW | Weak traceability but not blocking |
+
+**Severity Summary for Pass AA:**
+
+| Condition | Severity |
+|-----------|----------|
+| Unimplemented FR (spec → code gap) | HIGH |
+| Undocumented public API (code → spec gap) | HIGH |
+| Orphan FR annotation (code references deleted requirement) | MEDIUM |
+| Missing test for AS | MEDIUM |
+| Behavioral drift (LLM-detected mismatch) | MEDIUM |
+| Orphan test annotation | LOW |
+| Annotation coverage < 60% | LOW |
+| FR → Code coverage < 80% | (Info: reported in summary, not as finding) |
+| Code → Spec coverage < 70% | (Info: reported in summary, not as finding) |
+
+**Auto-Fix Suggestions**:
+
+```text
+FOR drift_item IN drift_items:
+  IF drift_item.type == "orphan_annotation":
+    # Safe auto-fix: remove annotation
+    drift_item.auto_fix = {
+      available: true,
+      action: "Remove @speckit:{requirement} annotation",
+      preview: GENERATE_DIFF(drift_item.file, drift_item.line, action="remove_annotation")
+    }
+  ELIF drift_item.type == "undocumented_api" AND drift_item.confidence > 0.80:
+    # Suggest FR to add
+    drift_item.auto_fix = {
+      available: false,
+      manual_action: "Add new FR-xxx to spec.md describing this API"
+    }
+```
 
 ---
 

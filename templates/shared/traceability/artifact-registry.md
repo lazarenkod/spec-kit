@@ -79,6 +79,30 @@ staleness:
   plan_stale: false
   tasks_stale: false
   reasons: []
+
+drift_metrics:
+  last_checked: "{ISO_DATE}" | null
+  scan_scope:
+    patterns: ["src/**/*.ts", "tests/**/*.test.ts"]
+    exclude: ["node_modules/", "dist/"]
+  forward_drift:
+    unimplemented_frs: 3
+    missing_tests: 5
+    total_violations: 8
+  reverse_drift:
+    undocumented_apis: 7
+    orphan_annotations: 2
+    total_violations: 9
+  by_severity:
+    critical: 0
+    high: 10
+    medium: 8
+    low: 4
+  coverage_stats:
+    fr_to_code_percentage: 85
+    code_to_spec_percentage: 72
+    annotation_coverage: 60
+  drift_report_path: "drift-report.md"
 ```
 
 ## Checksum Calculation
@@ -242,6 +266,67 @@ CHECK_STALENESS(registry):
   RETURN staleness
 ```
 
+### Update Drift Metrics
+
+```text
+UPDATE_DRIFT_METRICS(registry, drift_results, scan_scope):
+
+  drift_metrics = {
+    last_checked: NOW(),
+    scan_scope: scan_scope,
+    forward_drift: {
+      unimplemented_frs: COUNT(drift_results, type="unimplemented_requirement"),
+      missing_tests: COUNT(drift_results, type="missing_test"),
+      total_violations: COUNT(drift_results, direction="forward")
+    },
+    reverse_drift: {
+      undocumented_apis: COUNT(drift_results, type="undocumented_api"),
+      orphan_annotations: COUNT(drift_results, type="orphan_annotation"),
+      total_violations: COUNT(drift_results, direction="reverse")
+    },
+    by_severity: {
+      critical: COUNT(drift_results, severity="CRITICAL"),
+      high: COUNT(drift_results, severity="HIGH"),
+      medium: COUNT(drift_results, severity="MEDIUM"),
+      low: COUNT(drift_results, severity="LOW")
+    },
+    coverage_stats: {
+      fr_to_code_percentage: CALCULATE_FR_COVERAGE(drift_results),
+      code_to_spec_percentage: CALCULATE_CODE_COVERAGE(drift_results),
+      annotation_coverage: CALCULATE_ANNOTATION_COVERAGE(drift_results)
+    },
+    drift_report_path: "drift-report.md"
+  }
+
+  registry.drift_metrics = drift_metrics
+  registry.last_updated = NOW()
+  WRITE_YAML(FEATURE_DIR/.artifact-registry.yaml, registry)
+
+  RETURN drift_metrics
+```
+
+### Calculate Coverage Metrics
+
+```text
+CALCULATE_FR_COVERAGE(drift_results):
+  # Percentage of FRs that have implementation
+  total_frs = COUNT_FRS_IN_SPEC()
+  implemented_frs = total_frs - COUNT(drift_results, type="unimplemented_requirement")
+  RETURN (implemented_frs / total_frs) * 100
+
+CALCULATE_CODE_COVERAGE(drift_results):
+  # Percentage of code that has spec coverage
+  total_apis = COUNT_PUBLIC_APIS_IN_CODE()
+  documented_apis = total_apis - COUNT(drift_results, type="undocumented_api")
+  RETURN (documented_apis / total_apis) * 100
+
+CALCULATE_ANNOTATION_COVERAGE(drift_results):
+  # Percentage of code with @speckit annotations
+  total_implementations = COUNT_IMPLEMENTATIONS_IN_CODE()
+  annotated = COUNT_ANNOTATIONS_IN_CODE()
+  RETURN (annotated / total_implementations) * 100
+```
+
 ## Integration with Commands
 
 ### In specify.md
@@ -291,6 +376,28 @@ IF staleness.reasons.length > 0:
   FOR reason IN staleness.reasons:
     OUTPUT: "- **{reason.artifact}**: {reason.reason}"
     OUTPUT: "  Action: {reason.action}"
+
+# Update drift metrics (Pass AA only)
+IF profile == "drift" OR profile == "qa" OR profile == "full":
+  Read `templates/shared/drift/drift-detection.md` and apply:
+
+  drift_results = RUN_DRIFT_DETECTION(spec, codebase, scan_scope)
+  UPDATE_DRIFT_METRICS(registry, drift_results, scan_scope)
+
+  OUTPUT: "## Drift Detection Summary"
+  OUTPUT: ""
+  OUTPUT: "**Last Checked**: {registry.drift_metrics.last_checked}"
+  OUTPUT: "**FR → Code Coverage**: {registry.drift_metrics.coverage_stats.fr_to_code_percentage}%"
+  OUTPUT: "**Code → Spec Coverage**: {registry.drift_metrics.coverage_stats.code_to_spec_percentage}%"
+  OUTPUT: ""
+  OUTPUT: "| Severity | Count |"
+  OUTPUT: "|----------|-------|"
+  OUTPUT: "| CRITICAL | {registry.drift_metrics.by_severity.critical} |"
+  OUTPUT: "| HIGH | {registry.drift_metrics.by_severity.high} |"
+  OUTPUT: "| MEDIUM | {registry.drift_metrics.by_severity.medium} |"
+  OUTPUT: "| LOW | {registry.drift_metrics.by_severity.low} |"
+  OUTPUT: ""
+  OUTPUT: "Full report: `{registry.drift_metrics.drift_report_path}`"
 ```
 
 ## Staleness Report Format
@@ -378,6 +485,31 @@ IF NOT exists(FEATURE_DIR/.artifact-registry.yaml):
         updated_by: "migration"
       }
 
+  # Initialize drift_metrics as null (will be populated on first drift detection)
+  registry.drift_metrics = {
+    last_checked: null,
+    scan_scope: {patterns: [], exclude: []},
+    forward_drift: {unimplemented_frs: 0, missing_tests: 0, total_violations: 0},
+    reverse_drift: {undocumented_apis: 0, orphan_annotations: 0, total_violations: 0},
+    by_severity: {critical: 0, high: 0, medium: 0, low: 0},
+    coverage_stats: {fr_to_code_percentage: 0, code_to_spec_percentage: 0, annotation_coverage: 0},
+    drift_report_path: null
+  }
+
   WRITE_YAML(REGISTRY_FILE, registry)
   OUTPUT: "Initialized artifact registry from existing files"
+
+# For existing registries without drift_metrics section
+IF NOT exists(registry.drift_metrics):
+  registry.drift_metrics = {
+    last_checked: null,
+    scan_scope: {patterns: [], exclude: []},
+    forward_drift: {unimplemented_frs: 0, missing_tests: 0, total_violations: 0},
+    reverse_drift: {undocumented_apis: 0, orphan_annotations: 0, total_violations: 0},
+    by_severity: {critical: 0, high: 0, medium: 0, low: 0},
+    coverage_stats: {fr_to_code_percentage: 0, code_to_spec_percentage: 0, annotation_coverage: 0},
+    drift_report_path: null
+  }
+  WRITE_YAML(REGISTRY_FILE, registry)
+  OUTPUT: "Added drift_metrics to existing registry"
 ```
