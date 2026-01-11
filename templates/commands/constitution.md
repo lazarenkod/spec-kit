@@ -49,10 +49,12 @@ claude_code:
       model_override: haiku
       prompt: |
         Check if $ARGUMENTS is empty or whitespace-only.
-        If empty, ask user 3 questions using AskUserQuestion tool:
+        If empty, ask user questions using AskUserQuestion tool:
         1. Application type (Web/Mobile/API/CLI/Desktop/Other)
         2. Domain (SaaS/E-commerce/Fintech/Healthcare/Gaming/General/Other)
         3. Language (English/Russian/Other)
+        4. Cross-Platform Framework (if Mobile selected in Q1)
+        5. Analytics Support (Web+Product/Web Only/Product Only/No Analytics)
         Return structured answers for constitution generation.
         If $ARGUMENTS is NOT empty, skip and pass through to analysis.
 
@@ -114,8 +116,9 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Phase 0: Interactive Questionnaire (if no arguments)
 
-**IMPORTANT**: If `$ARGUMENTS` is empty or whitespace-only, you MUST ask the user 3 questions
+**IMPORTANT**: If `$ARGUMENTS` is empty or whitespace-only, you MUST ask the user questions
 to determine the project context before proceeding. Use the `AskUserQuestion` tool.
+The questionnaire includes up to 5 questions (Questions 2.5 and 4 are conditional).
 
 ### Question 1: Application Type
 
@@ -197,13 +200,32 @@ Use `templates/shared/platform-detection.md` algorithm to auto-detect from:
 - pubspec.yaml (Flutter)
 - package.json with react-native (React Native)
 
+### Question 5: Analytics Support
+
+Ask: "Do you want to include analytics support for tracking user behavior and product usage?"
+
+| Option | Description | Configuration |
+|--------|-------------|---------------|
+| Web + Product | Full stack: web analytics (Umami) + product analytics (PostHog/Mixpanel/Amplitude) | `analytics_enabled: true`<br>`analytics_types: ["web", "product"]` |
+| Web Only | Page views, sessions, traffic sources only (Umami) | `analytics_enabled: true`<br>`analytics_types: ["web"]` |
+| Product Only | User behavior events, funnels, cohorts only | `analytics_enabled: true`<br>`analytics_types: ["product"]` |
+| No Analytics | No tracking (privacy-first default) | `analytics_enabled: false` |
+
+**Note**: If you select analytics support, analytics requirements (NFR-ANA-xxx) will be automatically included in all feature specifications, and Phase 2f: Analytics Foundation tasks will be added to every implementation plan.
+
+**Privacy**: When analytics is enabled, GDPR/CCPA compliance controls (cookie consent, IP anonymization, PII masking, opt-out) are included by default.
+
 ### After Collecting Answers
 
 1. **Map App Type → Principles**: Apply relevant principle sets based on application type
 2. **Map Domain → Domain Layer**: Copy appropriate domain file to `constitution.domain.md`
 3. **Map Platform → Platform Layer**: If mobile + cross-platform, copy platform file to `constitution.platform.md`
 4. **Set Language**: Update Project Settings table with language preference
-5. **Generate Constitution**: Merge all layers and generate complete constitution
+5. **Set Analytics**: Store analytics settings in Project Settings table:
+   - `analytics_enabled`: `true` or `false`
+   - `analytics_types`: `["web"]`, `["product"]`, `["web", "product"]`, or `[]`
+   - `analytics_provider`: (empty until `/speckit.integrate` runs)
+6. **Generate Constitution**: Merge all layers and generate complete constitution
 
 **Example Flow (Web)**:
 ```text
@@ -238,6 +260,26 @@ AI then:
 3. Sets language = "en" in Project Settings
 4. Generates complete constitution with SYNC REPORT
 5. Integration tasks will be auto-injected by /speckit.tasks
+```
+
+**Example Flow (Web + Analytics)**:
+```text
+User runs: /speckit.constitution
+(No arguments provided)
+
+AI asks Question 1 → User selects "Web Application"
+AI asks Question 2 → User selects "SaaS"
+AI asks Question 3 → User selects "English"
+(Question 4 skipped - not mobile)
+AI asks Question 5 → User selects "Web + Product"
+
+AI then:
+1. Copies memory/domains/saas.md → memory/constitution.domain.md
+2. Adds WEB-001-004 principles to project layer
+3. Sets language = "en" in Project Settings
+4. Sets analytics_enabled = true, analytics_types = ["web", "product"]
+5. Generates complete constitution with SYNC REPORT
+6. Reports: "Analytics enabled. NFR-ANA-xxx requirements and Phase 2f tasks will be included in all features."
 ```
 
 ---
@@ -392,6 +434,9 @@ If configuring project settings:
    | language | `en`, `ru`, `de`, `fr`, `es`, `zh`, `ja`, `ko`, `pt`, `it`, `pl`, `uk`, `ar`, `hi` | `en` |
    | date_format | `ISO`, `US`, `EU` | `ISO` |
    | measurements | `metric`, `imperial` | `metric` |
+   | analytics_enabled | `true`, `false` | `false` |
+   | analytics_types | `["web"]`, `["product"]`, `["web", "product"]`, `[]` | `[]` |
+   | analytics_provider | `posthog`, `mixpanel`, `amplitude`, (empty) | (empty) |
 
 3. Report: "Project setting updated: language = ru"
 
@@ -409,6 +454,9 @@ Before finalizing:
 - [ ] No MUST → SHOULD weakening (violation = ERROR)
 - [ ] Version updated if changes made
 - [ ] Dates in ISO format
+- [ ] Analytics settings are consistent:
+  - If `analytics_enabled == true`, then `analytics_types` MUST NOT be empty (ERROR)
+  - If `"product"` in `analytics_types` AND `analytics_provider` is empty, WARN: "Product analytics requires provider selection via /speckit.integrate"
 
 **Version Semantics**:
 - MAJOR: Principle removal or incompatible redefinition

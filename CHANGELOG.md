@@ -7,6 +7,59 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-01-11
+
+### Added
+
+- **Analytics Integration**: Full support for web and product analytics
+  - Question 5 in `/speckit.constitution`: Opt-in analytics configuration
+  - Analytics settings in Project Settings: `analytics_enabled`, `analytics_types`, `analytics_provider`
+  - NFR-ANA-xxx section in spec-template.md for analytics requirements
+  - § Analytics Monitoring Plan in plan-template.md with funnels and dashboards
+  - Phase 2f: Analytics Foundation in tasks-template.md (7 tasks)
+  - Auto-derivation of analytics events from AS-xxx acceptance scenarios
+  - Funnel derivation algorithm with industry benchmarks
+
+- **Analytics Providers Support**:
+  - PostHog (self-hosted or cloud) - privacy-first, session recording
+  - Mixpanel (cloud) - 20M events/month free tier, strong funnel analysis
+  - Amplitude (cloud) - 10M events/month free tier, retention analysis
+  - Umami (web analytics) - always included when analytics enabled
+
+- **Privacy & Compliance**:
+  - GDPR/CCPA compliance patterns (cookie consent, IP anonymization, PII masking, opt-out)
+  - Privacy-first by default (opt-in, not opt-out)
+  - Data retention policies (90 days default)
+  - Right to access and erasure API endpoints
+
+- **Templates**:
+  - `templates/shared/analytics/event-tracking-patterns.md` - Code snippets for TypeScript, Python, Go
+  - `templates/shared/analytics/privacy-compliance.md` - GDPR/CCPA compliance guide
+  - `templates/shared/analytics/funnel-derivation.md` - Algorithm for deriving funnels from AS-xxx
+
+- **Command Enhancements**:
+  - `/speckit.specify` Wave 4: Analytics Schema Derivation (conditional)
+  - `/speckit.plan` Wave 6: Analytics Planning (conditional)
+  - `/speckit.tasks` Wave 5: Analytics Tasks Generation (conditional)
+  - `/speckit.integrate` analytics provider selection prompt
+  - `/speckit.staging` conditional PostHog service provisioning
+
+- **Docker Compose**:
+  - PostHog stack (postgres, redis, worker) in observability-stack.md
+  - Conditional service inclusion based on constitution settings
+
+### Changed
+
+- Version bump from 0.5.0 to 0.6.0 (MINOR: new feature)
+- Constitution questionnaire now includes up to 5 questions (Question 2.5 and 4 are conditional)
+- Project Settings table expanded with 3 analytics settings
+
+### Documentation
+
+- Updated COMMANDS_GUIDE.md with analytics documentation
+- Added analytics provider comparison table
+- Documented analytics workflow: constitution → specify → plan → tasks → staging → implement
+
 ## [0.5.0] - 2026-01-12
 
 ### Added

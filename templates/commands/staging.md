@@ -75,6 +75,32 @@ claude_code:
         - .speckit/staging/docker-compose.yaml
         - .speckit/staging/test-config.env
         - Health check results
+
+    # Wave 3: Analytics Services Configuration (conditional)
+    - role: analytics-services-configurator
+      role_group: INFRA
+      parallel: false
+      depends_on: [docker-provisioner]
+      priority: 35
+      model_override: haiku
+      prompt: |
+        CONDITIONAL: Only execute if analytics enabled in constitution.
+
+        1. Read /memory/constitution.md § Project Settings
+        2. Check analytics_enabled, analytics_types, analytics_provider
+        3. IF analytics_enabled == true:
+           a. IF "web" in analytics_types:
+              - Include Umami service (always from observability-stack.md)
+           b. IF "product" in analytics_types AND analytics_provider == "posthog":
+              - Include PostHog services (posthog, posthog-worker, posthog-postgres, posthog-redis)
+              - Add to docker-compose.yml from observability-stack.md
+           c. IF "product" in analytics_types AND analytics_provider in ["mixpanel", "amplitude"]:
+              - Skip Docker services (cloud-only providers use SDK)
+           d. Verify health checks pass for included services
+        4. IF analytics_enabled == false:
+           Skip all analytics services
+
+        Output: docker-compose.yml with conditional analytics services
 ---
 
 ## User Input
@@ -404,7 +430,79 @@ Parse arguments for:
    fi
    ```
 
-### Phase 3: Quality Gate Validation
+### Phase 3: Analytics Services Configuration (Conditional)
+
+**Condition**: Only execute if `analytics_enabled == true` in constitution
+
+**Purpose**: Conditionally include analytics services in Docker Compose stack based on project configuration.
+
+#### Decision Tree
+
+```text
+IF analytics_enabled == false:
+  → Skip all analytics services
+
+IF analytics_enabled == true:
+  IF "web" in analytics_types:
+    → Include Umami service (port 3002)
+
+  IF "product" in analytics_types:
+    IF analytics_provider == "posthog":
+      → Include PostHog stack:
+        - posthog-postgres (port 5433)
+        - posthog-redis (port 6380)
+        - posthog (port 8001)
+        - posthog-worker
+    ELSE IF analytics_provider in ["mixpanel", "amplitude"]:
+      → Skip Docker services (cloud-only)
+      → Note: Use SDK with API key
+```
+
+#### PostHog Stack (Self-Hosted)
+
+When `analytics_provider == "posthog"`, include these services from `templates/shared/observability-stack.md`:
+
+| Service | Port | Purpose | Health Check |
+|---------|------|---------|--------------|
+| posthog-postgres | 5433 | Database for events | PostgreSQL ready |
+| posthog-redis | 6380 | Cache for queries | Redis ping |
+| posthog | 8001 | Web UI + API | `/_health` endpoint |
+| posthog-worker | N/A | Background jobs | N/A |
+
+**Environment Variables**:
+```bash
+POSTHOG_SECRET_KEY=random-secret-key-change-in-production
+```
+
+#### Health Check Validation
+
+After provisioning, verify:
+```bash
+# Umami (if web analytics enabled)
+curl -f http://localhost:3002/_health
+
+# PostHog (if product analytics + self-hosted)
+curl -f http://localhost:8001/_health
+```
+
+#### Cloud Providers (Mixpanel / Amplitude)
+
+For cloud providers, no Docker services are needed. Instead:
+
+1. **Set environment variables**:
+   ```bash
+   # Mixpanel
+   MIXPANEL_TOKEN=your_project_token
+
+   # Amplitude
+   AMPLITUDE_API_KEY=your_api_key
+   ```
+
+2. **Initialize SDK in code** (see `templates/shared/analytics/event-tracking-patterns.md`)
+
+3. **No local infrastructure** - all events sent to cloud endpoints
+
+### Phase 4: Quality Gate Validation
 
 1. **Validate QG-STAGING-001:**
    ```text
@@ -491,6 +589,11 @@ After successful provisioning:
 | Android Emulator | speckit-android-emulator | 5555 (ADB), 6080 (VNC) | Healthy (if --mobile) |
 | Appium | speckit-appium | 4723 | Ready (if --appium) |
 | iOS Simulator | - | - | Booted (macOS only) |
+| Umami | speckit-umami | 3002 | Healthy (if web analytics) |
+| PostHog | speckit-posthog | 8001 | Healthy (if product analytics + self-hosted) |
+| PostHog PostgreSQL | speckit-posthog-postgres | 5433 | Healthy (if PostHog) |
+| PostHog Redis | speckit-posthog-redis | 6380 | Healthy (if PostHog) |
+| PostHog Worker | speckit-posthog-worker | - | Ready (if PostHog) |
 
 ### Configuration Files
 

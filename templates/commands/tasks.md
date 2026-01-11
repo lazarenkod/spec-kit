@@ -243,6 +243,27 @@ claude_code:
 
         EC List: {SPEC_DATA.ec_list}
         FR-to-Task mapping from fr-mapper: {FR_MAPPER_OUTPUT}
+
+    # Wave 5: Analytics Tasks Generation (conditional - if § Analytics Monitoring Plan exists)
+    - role: analytics-tasks-generator
+      role_group: TASKS
+      parallel: false
+      depends_on: [phase2-generator, integration-task-injector]
+      priority: 55
+      model_override: sonnet
+      prompt: |
+        CONDITIONAL: Only execute if § Analytics Monitoring Plan exists in plan.md.
+
+        1. Read plan.md and check for § Analytics Monitoring Plan
+        2. If FOUND:
+           a. Include Phase 2f: Analytics Foundation in tasks.md (from templates/tasks-template.md)
+           b. Extract Event Schema table from plan.md
+           c. Generate T2f-04 sub-tasks (one per event) from Event Schema
+           d. Add NFR-ANA-xxx traceability markers to all tasks
+        3. If NOT FOUND:
+           Skip Phase 2f
+
+        Output: Updated tasks.md with Phase 2f (if analytics plan exists)
 ---
 
 ## User Input
@@ -579,6 +600,199 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
    ```
 
    **Output**: Component-Screen Integration Matrix (CSIM) section added to tasks.md after RTM.
+
+4.6. **Generate Analytics Tasks** *(conditional - if Analytics Monitoring Plan exists)*:
+
+   ```text
+   IF plan.md contains "## Analytics Monitoring Plan" section:
+
+     # Step 1: Confirm Analytics Plan Exists
+     ANALYTICS_PLAN_EXISTS = CHECK_SECTION(plan.md, "## Analytics Monitoring Plan")
+
+     IF NOT ANALYTICS_PLAN_EXISTS:
+       SKIP: "No Analytics Monitoring Plan found - skipping Phase 2f"
+       GOTO Step 5
+
+     # Step 2: Extract Event Schema
+     EVENT_SCHEMA = []
+     FOR EACH row in "Event Schema" table:
+       event = {
+         name: row["Event Name"],           # e.g., page_viewed
+         trigger: row["Trigger"],           # e.g., On route change
+         as_ref: row["AS Reference"],       # e.g., AS-1A
+         properties: parse_json(row["Properties"]),  # e.g., {url: string, title: string}
+         location: row["Code Location"]     # e.g., src/router.ts:45
+       }
+       EVENT_SCHEMA.append(event)
+
+     # Step 3: Generate Phase 2f Infrastructure Tasks
+     PHASE_2F_TASKS = []
+
+     # T2f-01: Configure web analytics (Umami)
+     GENERATE task:
+       ID: T2f-01
+       Markers: [P] [NFR:NFR-ANA-001]
+       Description: "Configure Umami web analytics tracker in public/index.html"
+       Subtasks:
+         - Add Umami script tag with project ID
+         - Configure domains in Umami dashboard
+         - Verify page view tracking works
+
+     # T2f-02: Configure product analytics provider
+     GENERATE task:
+       ID: T2f-02
+       Markers: [P] [NFR:NFR-ANA-002]
+       Description: "Configure product analytics SDK (from plan.md Provider)"
+       Subtasks:
+         - Install analytics SDK (Mixpanel/Amplitude/PostHog)
+         - Initialize with API key (environment variable)
+         - Configure user identification
+
+     # T2f-03: Implement event tracking helper
+     GENERATE task:
+       ID: T2f-03
+       Markers: [DEP:T2f-02] [NFR:NFR-ANA-003]
+       Description: "Create trackEvent() helper in src/utils/analytics.ts"
+       Subtasks:
+         - Accept eventName and properties parameters
+         - Send to product analytics provider
+         - Handle errors gracefully (don't block UI)
+
+     # T2f-04: Implement AS-derived events (parent task)
+     GENERATE task:
+       ID: T2f-04
+       Markers: [DEP:T2f-03] [NFR:NFR-ANA-004]
+       Description: "Implement AS-derived event tracking"
+       Subtasks: [] # Will be populated with sub-tasks below
+
+     # Step 4: Generate T2f-04 Sub-tasks (one per event)
+     FOR EACH event IN EVENT_SCHEMA:
+       sub_task_id = "T2f-04" + chr(97 + index)  # T2f-04a, T2f-04b, T2f-04c...
+
+       GENERATE sub-task:
+         ID: sub_task_id
+         Markers: [AS:{event.as_ref}] [NFR:NFR-ANA-004]
+         Description: "Implement `{event.name}` event tracking"
+         Subtasks:
+           - "Add trackEvent('{event.name}', {properties}) in {event.location}"
+           - "Trigger: {event.trigger}"
+           - "Properties: {json_format(event.properties)}"
+           - "**Test**: [{TEST:event.as_ref}] Event appears in analytics dashboard"
+
+       APPEND sub_task to T2f-04.subtasks
+
+     # T2f-05: Implement cookie consent banner
+     GENERATE task:
+       ID: T2f-05
+       Markers: [P] [NFR:NFR-ANA-005]
+       Description: "Implement cookie consent banner in src/components/CookieConsent.tsx"
+       Subtasks:
+         - Show banner on first visit
+         - Store consent choice in localStorage
+         - Block analytics until consent given (GDPR)
+
+     # T2f-06: Implement analytics opt-out
+     GENERATE task:
+       ID: T2f-06
+       Markers: [DEP:T2f-02] [NFR:NFR-ANA-005]
+       Description: "Implement analytics opt-out in settings page"
+       Subtasks:
+         - Add toggle in user settings
+         - Persist opt-out preference
+         - Call analytics provider disable() method
+
+     # T2f-07: Set up analytics dashboards
+     GENERATE task:
+       ID: T2f-07
+       Markers: [DEP:T2f-04] [NFR:NFR-ANA-006]
+       Description: "Create analytics dashboards for event monitoring"
+       Subtasks:
+         - Create funnel analysis dashboard
+         - Create event frequency dashboard
+         - Set up alerts for anomalies
+
+     # Step 5: Insert Phase 2f into tasks.md
+     INSERT_PHASE_AFTER("Phase 2e-BINDING", "Phase 2f: Analytics Foundation", PHASE_2F_TASKS)
+
+     OUTPUT: "Phase 2f: Analytics Foundation injected with {len(EVENT_SCHEMA)} event tracking tasks"
+
+   ELSE:
+     SKIP: "No Analytics Monitoring Plan found - skipping Phase 2f"
+   ```
+
+   **Example Phase 2f Output** (with 3 events):
+
+   ```markdown
+   ## Phase 2f: Analytics Foundation [NFR:NFR-ANA-001..006]
+
+   **Purpose**: Establish analytics infrastructure for event tracking and monitoring
+
+   **Condition**: Only included when § Analytics Monitoring Plan exists in plan.md
+
+   ### Analytics Infrastructure
+
+   - [ ] T2f-01 [P] [NFR:NFR-ANA-001] Configure Umami web analytics tracker in public/index.html
+     - Add Umami script tag with project ID
+     - Configure domains in Umami dashboard
+     - Verify page view tracking works
+
+   - [ ] T2f-02 [P] [NFR:NFR-ANA-002] Configure product analytics SDK in src/config/analytics.ts
+     - Install Mixpanel SDK
+     - Initialize with API key from REACT_APP_MIXPANEL_TOKEN
+     - Configure user identification
+
+   - [ ] T2f-03 [DEP:T2f-02] [NFR:NFR-ANA-003] Create trackEvent() helper in src/utils/analytics.ts
+     - Accept eventName and properties parameters
+     - Send to Mixpanel via mixpanel.track()
+     - Handle errors gracefully (console.warn, don't block UI)
+
+   ### Event Tracking Implementation
+
+   - [ ] T2f-04 [DEP:T2f-03] [NFR:NFR-ANA-004] Implement AS-derived events
+     - [ ] T2f-04a [AS:AS-1A] Implement `page_viewed` event tracking
+       - Add trackEvent('page_viewed', { url, title }) in src/router.ts:45
+       - Trigger: On route change
+       - Properties: { url: string, title: string }
+       - **Test**: [TEST:AS-1A] Event appears in Mixpanel dashboard
+
+     - [ ] T2f-04b [AS:AS-1C] Implement `user_signed_up` event tracking
+       - Add trackEvent('user_signed_up', { method }) in src/auth/signup.ts:67
+       - Trigger: On successful registration
+       - Properties: { method: "email" | "oauth" }
+       - **Test**: [TEST:AS-1C] Event appears in Mixpanel dashboard
+
+     - [ ] T2f-04c [AS:AS-2B] Implement `feature_viewed` event tracking
+       - Add trackEvent('feature_viewed', { feature_id }) in src/components/FeatureCard.tsx:32
+       - Trigger: On feature card click
+       - Properties: { feature_id: string }
+       - **Test**: [TEST:AS-2B] Event appears in Mixpanel dashboard
+
+   ### Privacy & Compliance
+
+   - [ ] T2f-05 [P] [NFR:NFR-ANA-005] Implement cookie consent banner in src/components/CookieConsent.tsx
+     - Show banner on first visit
+     - Store consent choice in localStorage
+     - Block analytics until consent given (GDPR compliant)
+
+   - [ ] T2f-06 [DEP:T2f-02] [NFR:NFR-ANA-005] Implement analytics opt-out in settings page
+     - Add "Disable Analytics" toggle in src/pages/Settings.tsx
+     - Persist opt-out preference in user profile
+     - Call mixpanel.opt_out_tracking() on disable
+
+   ### Monitoring & Dashboards
+
+   - [ ] T2f-07 [DEP:T2f-04] [NFR:NFR-ANA-006] Set up analytics dashboards
+     - Create funnel analysis dashboard (signup → activation)
+     - Create event frequency dashboard (daily active events)
+     - Set up Slack alerts for anomalies (event drop > 50%)
+
+   **Checkpoint**: Analytics foundation ready - events tracked, privacy compliant
+   ```
+
+   **Traceability**:
+   - All tasks reference NFR-ANA-xxx from plan.md
+   - Event tasks reference AS-xxx from spec.md
+   - Event Schema table drives T2f-04 sub-task generation
 
 5. **Generate Dependency Graph**:
 
@@ -1160,6 +1374,8 @@ See `templates/shared/validation/inline-gates.md` for gate definitions.
   - **Step 2.5: Platform Integration Tasks** (auto-injected if platform detected)
   - **Phase 2b: Design Foundation** (auto-injected when design.md exists)
   - **Phase 2d-UX: UX Validation Foundation** (auto-injected when UI State Matrix exists in spec.md)
+  - **Phase 2e-BINDING: Platform Binding Verification** (auto-injected for KMP projects)
+  - **Phase 2f: Analytics Foundation** (auto-injected when § Analytics Monitoring Plan exists in plan.md)
 - **Phase 3+**: User Stories in priority order (P1a, P1b, P2a, P2b, P3...)
   - Within each story: Tests (if requested) → Models → Services → Endpoints → Integration
   - Each phase should be a complete, independently testable increment

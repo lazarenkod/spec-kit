@@ -1825,6 +1825,29 @@ claude_code:
         - Updated checklist with validation status
         - Traceability summary (FRs, ASs, ECs counts)
         - Readiness for /speckit.plan handoff
+
+    # Wave 4.5: Analytics Schema Derivation (conditional - if analytics enabled)
+    - role: analytics-schema-deriver
+      role_group: SCHEMA
+      parallel: false
+      depends_on: [spec-writer]
+      priority: 45
+      model_override: sonnet
+      prompt: |
+        CONDITIONAL: Only execute if analytics is enabled in constitution.
+
+        1. Read /memory/constitution.md § Project Settings
+        2. Check if analytics_enabled == true
+        3. If TRUE:
+           a. Parse AS-xxx acceptance scenarios from spec.md
+           b. Derive analytics events from AS scenarios (see templates/shared/analytics/funnel-derivation.md)
+           c. Include NFR-ANA-xxx section in spec.md (from templates/spec-template.md)
+           d. Populate Event Schema table with derived events
+           e. Map each event to AS-xxx reference
+        4. If FALSE:
+           Skip analytics schema derivation
+
+        Output: Updated spec.md with NFR-ANA-xxx section (if enabled)
 ---
 
 ## User Input
@@ -2453,7 +2476,69 @@ Given that feature description, do this:
            - Add default metrics: error rate, response time
            - Suggest custom metrics based on feature type
 
-    13. Return: SUCCESS (spec ready for planning)
+    13. **Analytics Schema Derivation (Conditional)**: Only execute if analytics is enabled:
+
+        a) Check constitution settings:
+           ```bash
+           Read /memory/constitution.md § Project Settings
+           Check if analytics_enabled == true
+           ```
+
+        b) **IF analytics_enabled = true**:
+
+           Read `templates/shared/analytics/funnel-derivation.md` for event derivation rules.
+
+           Parse all AS-xxx acceptance scenarios from spec.md and derive analytics events:
+
+           **Event Derivation Rules**:
+
+           | AS Pattern | Event Name | Properties |
+           |------------|-----------|------------|
+           | "User can view [page]" | `page_viewed` | `{ path: "/[page]" }` |
+           | "User can click [button]" | `button_clicked` | `{ button_id: "[button]" }` |
+           | "User can submit [form]" | `form_submitted` | `{ form_id: "[form]" }` |
+           | "User can [action]" | `[action]_completed` | `{}` |
+
+           **Generate NFR-ANA-xxx section** in spec.md (from templates/spec-template.md):
+
+           ```markdown
+           ### Analytics & Observability
+
+           **NFR-ANA-001**: Event tracking for user funnel analysis
+           - **Requirement**: Track key user interactions and conversion events
+           - **Events**: Derived from acceptance scenarios
+           - **Implementation**: Client-side event collection with server-side processing
+           - **Privacy**: Follow GDPR/CCPA requirements (see constitution)
+
+           #### Event Schema
+
+           | Event Name | Trigger | AS Reference | Properties |
+           |------------|---------|--------------|------------|
+           | `user_signed_up` | User completes signup | AS-1C | `{ method: "email" }` |
+           | `page_viewed` | User navigates to page | AS-2A | `{ path: "/" }` |
+           | `feature_enabled` | User activates feature | AS-3B | `{ feature_id: "analytics" }` |
+
+           **Traceability**: Each event maps to at least one AS-xxx scenario.
+           ```
+
+           **Example Mappings**:
+
+           - Given AS-1A: "User can view landing page" → Event: `page_viewed` with properties `{ path: "/" }`
+           - Given AS-1C: "User can submit signup form" → Event: `user_signed_up` with properties `{ method: "email" }`
+           - Given AS-2B: "User can click 'Enable Feature' button" → Event: `feature_enabled` with properties `{ feature_id: "..." }`
+
+           c) **IF analytics_enabled = false**:
+              - Skip NFR-ANA-xxx section entirely
+              - Do not include analytics event schema
+
+           d) **Analytics Types from Constitution**:
+              - If `analytics_types` contains "behavioral": Track user actions and patterns
+              - If `analytics_types` contains "performance": Track page load and response times
+              - If `analytics_types` contains "conversion": Track funnel completion events
+
+        Output: Updated spec.md with NFR-ANA-xxx section (if analytics enabled)
+
+    14. Return: SUCCESS (spec ready for planning)
 
 5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
 

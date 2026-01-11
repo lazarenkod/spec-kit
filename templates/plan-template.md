@@ -526,6 +526,56 @@ IF [specific metric] < [threshold] BY [date]:
 | [runbooks/slo-budget.md] | ALERT-003 | [Team] | [Date] |
 | [runbooks/database.md] | ALERT-004 | [Team] | [Date] |
 
+### § Analytics Monitoring Plan
+
+This section defines how user behavior and product usage will be tracked and monitored.
+
+**Web Analytics Setup** (if "web" in analytics_types):
+
+| Metric | Tool | Dashboard | Alert Threshold |
+|--------|------|-----------|-----------------|
+| Page views per day | Umami | Traffic Overview | < 100/day (low traffic) |
+| Session duration | Umami | User Engagement | < 30s (bounce rate) |
+| Top referrers | Umami | Traffic Sources | N/A |
+| Browser/device breakdown | Umami | Audience | N/A |
+
+**Product Analytics Setup** (if "product" in analytics_types):
+
+| Event | AS Reference | Properties | Funnel |
+|-------|--------------|------------|--------|
+| *(Auto-populated from spec.md Event Schema table)* | | | |
+
+**Key Funnels**:
+
+*(Auto-derived from AS-xxx scenarios grouped by user journey)*
+
+**Analytics Provider Configuration**:
+
+```yaml
+# PostHog example
+posthog:
+  api_key: ${POSTHOG_API_KEY}
+  host: https://app.posthog.com  # or self-hosted
+  options:
+    enable_session_recording: true
+    capture_pageview: true
+    autocapture: false  # Manual events only for privacy
+```
+
+**Privacy Controls**:
+- Cookie consent banner: Enabled
+- IP anonymization: Enabled
+- PII masking: Enabled (auto-mask emails, phone numbers)
+- Opt-out mechanism: `/analytics/opt-out` endpoint
+
+**Dashboards**:
+- **Web Analytics**: Umami dashboard at `http://localhost:3002` (staging)
+- **Product Analytics**: *(Provider dashboard URL)*
+
+**Alerts**:
+- Drop in daily active users (DAU) > 20% → Slack #alerts
+- Signup conversion rate < 15% → Email team
+
 ## Scalability Strategy
 
 <!--

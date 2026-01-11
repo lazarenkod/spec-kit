@@ -17,9 +17,10 @@ This template provides a complete Docker Compose stack for production-grade obse
 | Grafana | Dashboards | 3001 | <http://localhost:3001> |
 | Loki | Log aggregation | 3100 | - |
 | GlitchTip | Error tracking | 8000 | <http://localhost:8000> |
-| Umami | Privacy-first analytics | 3002 | <http://localhost:3002> |
-| PostgreSQL | Database for GlitchTip/Umami | 5432 | - |
-| Redis | Cache for GlitchTip | 6379 | - |
+| Umami | Privacy-first web analytics | 3002 | <http://localhost:3002> |
+| PostHog | Product analytics (self-hosted) | 8001 | <http://localhost:8001> |
+| PostgreSQL | Database for GlitchTip/Umami/PostHog | 5432 | - |
+| Redis | Cache for GlitchTip/PostHog | 6379 | - |
 
 ---
 
@@ -38,7 +39,29 @@ open http://localhost:3001  # Grafana (admin/admin)
 open http://localhost:16686 # Jaeger
 open http://localhost:8000  # GlitchTip
 open http://localhost:3002  # Umami
+open http://localhost:8001  # PostHog (if enabled)
 ```
+
+---
+
+## Analytics Services
+
+### Web Analytics (Umami)
+- **Purpose**: Privacy-first web analytics for page views, sessions, traffic sources
+- **Port**: 3002 (http://localhost:3002)
+- **Default Credentials**: admin / umami
+- **Included**: Always (if analytics_enabled == true)
+
+### Product Analytics (PostHog)
+- **Purpose**: User behavior tracking, event funnels, session recording
+- **Port**: 8001 (http://localhost:8001)
+- **Included**: Only if analytics_provider == "posthog" (self-hosted)
+- **Cloud Alternative**: Use PostHog Cloud (app.posthog.com) - no Docker service needed
+
+### Product Analytics (Mixpanel / Amplitude)
+- **Purpose**: User behavior tracking, funnels, cohorts
+- **Included**: No Docker service - cloud-only providers
+- **Setup**: Add API key to environment variables, use SDK
 
 ---
 
@@ -234,6 +257,74 @@ services:
       - observability
     restart: unless-stopped
 
+  # ============================================
+  # PostHog - Product Analytics (Self-Hosted)
+  # CONDITION: Include this service only if:
+  #   - analytics_enabled == true (from constitution)
+  #   - "product" in analytics_types
+  #   - analytics_provider == "posthog"
+  # ============================================
+  posthog-postgres:
+    image: postgres:15-alpine
+    container_name: posthog-postgres
+    environment:
+      POSTGRES_DB: posthog
+      POSTGRES_USER: posthog
+      POSTGRES_PASSWORD: posthog_secret
+    volumes:
+      - posthog_postgres_data:/var/lib/postgresql/data
+    networks:
+      - observability
+    restart: unless-stopped
+
+  posthog-redis:
+    image: redis:7-alpine
+    container_name: posthog-redis
+    networks:
+      - observability
+    restart: unless-stopped
+
+  posthog:
+    image: posthog/posthog:latest
+    container_name: posthog
+    environment:
+      - DATABASE_URL=postgres://posthog:posthog_secret@posthog-postgres:5432/posthog
+      - REDIS_URL=redis://posthog-redis:6379/
+      - SECRET_KEY=${POSTHOG_SECRET_KEY:-random-secret-key-change-in-production}
+      - IS_BEHIND_PROXY=true
+      - DISABLE_SECURE_SSL_REDIRECT=true
+    ports:
+      - "8001:8000"
+    depends_on:
+      - posthog-postgres
+      - posthog-redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/_health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - observability
+    restart: unless-stopped
+    volumes:
+      - posthog-data:/var/lib/posthog
+
+  posthog-worker:
+    image: posthog/posthog:latest
+    container_name: posthog-worker
+    command: ["./bin/docker-worker"]
+    environment:
+      - DATABASE_URL=postgres://posthog:posthog_secret@posthog-postgres:5432/posthog
+      - REDIS_URL=redis://posthog-redis:6379/
+      - SECRET_KEY=${POSTHOG_SECRET_KEY:-random-secret-key-change-in-production}
+    depends_on:
+      - posthog-postgres
+      - posthog-redis
+    networks:
+      - observability
+    restart: unless-stopped
+
 networks:
   observability:
     driver: bridge
@@ -244,6 +335,8 @@ volumes:
   grafana_data:
   glitchtip_postgres_data:
   umami_postgres_data:
+  posthog_postgres_data:
+  posthog-data:
 ```
 
 ---
@@ -477,6 +570,9 @@ DEFAULT_FROM_EMAIL=errors@yourdomain.com
 # Umami
 UMAMI_APP_SECRET=your-umami-secret-here
 
+# PostHog (self-hosted only)
+POSTHOG_SECRET_KEY=your-posthog-secret-key-change-in-production
+
 # OpenTelemetry
 OTEL_RESOURCE_ATTRIBUTES_ENVIRONMENT=production
 ```
@@ -543,6 +639,9 @@ curl -s http://localhost:8000/health/
 
 # Umami
 curl -s http://localhost:3002/api/heartbeat
+
+# PostHog
+curl -s http://localhost:8001/_health
 ```
 
 ---
@@ -560,7 +659,8 @@ curl -s http://localhost:3002/api/heartbeat
 | Grafana | 0.25 | 256MB | 100MB |
 | GlitchTip | 0.5 | 1GB | 5GB/month |
 | Umami | 0.25 | 256MB | 1GB/month |
-| **Total** | **2.5 vCPU** | **~5.5GB** | **~40GB/month** |
+| PostHog | 0.5 | 1GB | 10GB/month |
+| **Total** | **3.5 vCPU** | **~6.5GB** | **~50GB/month** |
 
 ### Recommended VPS
 
@@ -572,8 +672,8 @@ curl -s http://localhost:3002/api/heartbeat
 - [ ] Change all default passwords
 - [ ] Enable HTTPS (use nginx/traefik as reverse proxy)
 - [ ] Restrict network access to observability ports
-- [ ] Set up authentication for Grafana, GlitchTip, Umami
-- [ ] Configure backup for PostgreSQL volumes
+- [ ] Set up authentication for Grafana, GlitchTip, Umami, PostHog
+- [ ] Configure backup for PostgreSQL volumes (includes PostHog data)
 - [ ] Set resource limits in Docker Compose
 
 ---

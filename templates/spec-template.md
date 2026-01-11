@@ -550,6 +550,56 @@ Scenario: AS-3A - [Brief scenario description] [ALT_PATH] [Confidence: 0.85]
   - Maintainability: code coverage, documentation requirements
 -->
 
+#### NFR-ANA-xxx: Analytics & User Behavior Tracking
+
+**Applicability**: This section is included because analytics is enabled in project constitution.
+
+Requirements for tracking user behavior, product usage, and business metrics.
+
+**Web Analytics Requirements** (if "web" in analytics_types):
+- **NFR-ANA-001**: Page view tracking
+  - MUST track all page views with URL, referrer, user agent
+  - MUST support privacy-first tracking (no PII without consent)
+  - SHOULD use cookie-less tracking where possible (Umami default)
+
+**Product Analytics Requirements** (if "product" in analytics_types):
+- **NFR-ANA-002**: User action event tracking
+  - MUST track key user actions derived from acceptance scenarios (see Event Schema below)
+  - MUST include user context (user_id, session_id, timestamp)
+  - MUST NOT track PII without explicit consent (GDPR/CCPA compliance)
+
+- **NFR-ANA-003**: Funnel and conversion tracking
+  - SHOULD track user journey funnels for critical flows (signup, checkout, onboarding)
+  - MUST correlate events across sessions for cohort analysis
+
+- **NFR-ANA-004**: Performance analytics
+  - SHOULD track frontend performance metrics (LCP, FID, CLS - Core Web Vitals)
+  - MAY integrate with system observability (OpenTelemetry spans)
+
+**Privacy & Compliance**:
+- **NFR-ANA-005**: GDPR/CCPA compliance
+  - MUST provide cookie consent banner for web analytics
+  - MUST support opt-out mechanism
+  - MUST anonymize IP addresses
+  - MUST provide data export/deletion on request
+
+- **NFR-ANA-006**: Data retention
+  - SHOULD retain analytics data for 90 days (configurable)
+  - MUST purge PII after retention period
+
+**Event Schema** (auto-derived from Acceptance Scenarios):
+
+| Event Name | Trigger | AS Reference | Properties |
+|------------|---------|--------------|------------|
+| *(Auto-generated from AS-xxx scenarios during /speckit.specify)* | | | |
+
+**Analytics Provider**: *(Configured via `/speckit.integrate`)*
+
+**Configuration**:
+- Web Analytics: Umami (self-hosted, privacy-first) + optional Google Analytics 4
+- Product Analytics: *(Provider selected during `/speckit.integrate`)*
+- Tracking Mode: `development` (verbose) / `production` (sampled)
+
 ### NFR Acceptance Scenarios
 
 <!--

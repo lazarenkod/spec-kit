@@ -87,12 +87,33 @@ claude_code:
         Design retry logic for transient failures.
         Output: API design specification.
 
-    # Wave 2: Code Generation (after analysis)
+    # Wave 2: Analytics Provider Selection (conditional)
+    - role: analytics-provider-selector
+      role_group: INTEGRATION
+      parallel: false
+      depends_on: [service-analyzer]
+      priority: 25
+      model_override: haiku
+      prompt: |
+        CONDITIONAL: Only execute if analytics enabled AND product analytics selected AND provider not set.
+
+        1. Read /memory/constitution.md § Project Settings
+        2. Check: analytics_enabled == true AND "product" in analytics_types AND analytics_provider is empty
+        3. If TRUE:
+           a. Ask user to select product analytics provider using AskUserQuestion tool
+           b. Options: PostHog (self-hosted or cloud), Mixpanel (cloud), Amplitude (cloud), None (skip)
+           c. Update constitution with selected provider
+           d. Add SDK dependencies to package.json/requirements.txt/go.mod
+           e. If PostHog self-hosted selected, update docker-compose.yml
+        4. If FALSE:
+           Skip provider selection
+
+    # Wave 3: Code Generation (after analysis and provider selection)
     - role: contract-generator
       role_group: BACKEND
       parallel: true
-      depends_on: [service-analyzer, api-designer]
-      priority: 20
+      depends_on: [service-analyzer, api-designer, analytics-provider-selector]
+      priority: 30
       model_override: sonnet
       prompt: |
         Generate integration code based on analysis and design.
@@ -317,6 +338,49 @@ Generates:
 - `src/lib/integrations/anthropic.ts` - Anthropic client
 - Streaming helpers
 - Token counting utilities
+
+## Analytics Provider Selection
+
+**Condition**: Only prompt if `analytics_enabled == true` AND `"product"` in `analytics_types` AND `analytics_provider` is empty in constitution.
+
+**Purpose**: Let user select product analytics provider and configure dependencies.
+
+### Provider Options
+
+| Provider | Hosting | Free Tier | Best For |
+|----------|---------|-----------|----------|
+| **PostHog** | Self-hosted or Cloud | Unlimited events (self-hosted) | Privacy-first, full control, session recording |
+| **Mixpanel** | Cloud | 20M events/month | Strong funnel analysis, cohorts |
+| **Amplitude** | Cloud | 10M events/month | Retention analysis, behavioral cohorts |
+
+### Prompt
+
+```
+🔍 **Analytics Configuration**
+
+This project has product analytics enabled. Please select a provider:
+
+**Product Analytics** (tracks user behavior events, funnels):
+- [ ] PostHog (self-hosted or cloud)
+- [ ] Mixpanel (cloud, free tier: 20M events/month)
+- [ ] Amplitude (cloud, free tier: 10M events/month)
+- [ ] None (skip for now)
+
+**Note**: Selection will update constitution and add SDK dependencies.
+```
+
+### After Selection
+
+1. **Update Constitution**: Write `analytics_provider` to `/memory/constitution.md` § Project Settings
+2. **Add SDK Dependencies**:
+   - **PostHog**: `npm install posthog-js` or `pip install posthog` or `go get github.com/posthog/posthog-go`
+   - **Mixpanel**: `npm install mixpanel-browser` or `pip install mixpanel`
+   - **Amplitude**: `npm install @amplitude/analytics-browser` or `pip install amplitude-analytics`
+3. **Update Docker Compose** (if PostHog self-hosted):
+   - Add PostHog service from `templates/shared/observability-stack.md`
+4. **Report to User**:
+   - "Product analytics provider set to [provider]"
+   - "Run `/speckit.staging` to provision analytics infrastructure"
 
 ## Output Structure
 

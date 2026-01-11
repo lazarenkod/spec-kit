@@ -343,6 +343,28 @@ claude_code:
       priority: 7
       trigger: "when planning UI features requiring design system decisions"
       prompt: "Research design system approaches for {UI_FEATURE}"
+    # Wave 6: Analytics Planning (conditional - if NFR-ANA-xxx exists)
+    - role: analytics-planner
+      role_group: PLANNING
+      parallel: false
+      depends_on: [architecture-planner, monitoring-planner]
+      priority: 65
+      model_override: sonnet
+      prompt: |
+        CONDITIONAL: Only execute if NFR-ANA-xxx section exists in spec.md.
+
+        1. Read spec.md and check for NFR-ANA-xxx section
+        2. If FOUND:
+           a. Extract Event Schema table from spec.md NFR-ANA-xxx
+           b. Derive funnels from AS-xxx scenarios (see templates/shared/analytics/funnel-derivation.md)
+           c. Include § Analytics Monitoring Plan in plan.md (from templates/plan-template.md)
+           d. Populate Product Analytics Setup table with events from spec
+           e. Generate Key Funnels section with auto-derived funnels
+           f. Add analytics provider configuration (PostHog example)
+        3. If NOT FOUND:
+           Skip analytics planning
+
+        Output: Updated plan.md with § Analytics Monitoring Plan (if NFR-ANA-xxx exists)
 scripts:
   sh: scripts/bash/setup-plan.sh --json
   ps: scripts/powershell/setup-plan.ps1 -Json
@@ -1602,6 +1624,172 @@ This phase prevents AI agents from hallucinating non-existent APIs.
 - NFR Coverage percentage calculated
 - Gaps identified for resolution
 - Impact analysis generated
+
+---
+
+### Wave 6: Analytics Planning (CONDITIONAL)
+
+**Condition**: Only execute if NFR-ANA-xxx section exists in `spec.md`
+
+**Purpose**: Generate analytics monitoring plan with dashboards, funnels, and alerts based on acceptance scenarios.
+
+**Steps**:
+
+1. **Check for Analytics Requirements**:
+   ```text
+   Read spec.md and search for NFR-ANA-xxx section
+
+   IF NFR-ANA-xxx NOT FOUND:
+     LOG: "No analytics requirements found, skipping § Analytics Monitoring Plan"
+     SKIP to next phase
+   ```
+
+2. **Extract Event Schema**:
+   ```text
+   IF NFR-ANA-xxx section exists:
+     EXTRACT Event Schema table from spec.md NFR-ANA-xxx
+     VALIDATE each event has:
+       - Event name
+       - Event properties
+       - Triggering action (from AS-xxx)
+
+     LOG: "Found {N} analytics events"
+   ```
+
+3. **Derive Funnels from Acceptance Scenarios**:
+   ```text
+   Read templates/shared/analytics/funnel-derivation.md for algorithm
+
+   GROUP AS-xxx by user journey:
+     - Identify sequential AS steps (e.g., AS-1A → AS-1B → AS-1C)
+     - Detect journey patterns:
+       * Signup Journey
+       * Checkout Journey
+       * Onboarding Journey
+       * Feature Adoption Journey
+
+   FOR EACH journey:
+     MAP AS steps to funnel steps:
+       - Step name (from AS description)
+       - AS reference (AS-xxx)
+       - Triggering event (from Event Schema)
+       - Target conversion rate (from industry benchmarks)
+
+   EXAMPLE Funnel:
+     Funnel: Signup Journey
+       Step 1: Landing Page View (AS-1A)
+         Event: page_viewed (path=/landing)
+         Target: 100% (baseline)
+
+       Step 2: Signup Form Viewed (AS-1B)
+         Event: page_viewed (path=/signup)
+         Target: 50% (industry avg: 40-60%)
+
+       Step 3: Signup Completed (AS-1C)
+         Event: user_signed_up
+         Target: 25% (industry avg: 20-30%)
+
+   LOG: "Derived {N} funnels from AS-xxx scenarios"
+   ```
+
+4. **Include § Analytics Monitoring Plan in plan.md**:
+   ```text
+   Read templates/plan-template.md § Analytics Monitoring Plan section
+
+   POPULATE section with:
+     a. Product Analytics Setup table:
+        | Event | Properties | Triggering Action | AS Reference |
+        |-------|-----------|-------------------|--------------|
+        | {event_name} | {properties} | {action} | AS-xxx |
+
+     b. Key Funnels section:
+        ### Funnel: {Journey Name}
+
+        **Steps**:
+        1. {Step Name} (AS-xxx)
+           - Event: {event_name}
+           - Target Conversion: {percentage}%
+
+        **Benchmark**: {industry_benchmark} (source: {reference})
+
+     c. Analytics Provider Configuration:
+        - Provider: PostHog (example)
+        - Installation: npm install posthog-js
+        - Configuration: API key, host, capture settings
+        - Privacy: Cookie consent, IP anonymization, opt-out
+
+     d. Dashboards:
+        - Overview Dashboard (DAU, MAU, retention)
+        - Funnel Dashboard (conversion rates, drop-off points)
+        - Feature Adoption Dashboard (usage by feature)
+
+     e. Alerts:
+        - Funnel conversion drop >20% (WARNING)
+        - Event schema mismatch (CRITICAL)
+        - Daily active users drop >30% (CRITICAL)
+
+   LOG: "Generated § Analytics Monitoring Plan"
+   ```
+
+5. **Privacy Controls**:
+   ```text
+   ADD privacy section to Analytics Monitoring Plan:
+     - Cookie consent integration (GDPR compliance)
+     - IP anonymization (enabled by default)
+     - User opt-out mechanism
+     - Data retention policy (90 days default)
+     - PII exclusion (never capture passwords, credit cards)
+
+   LOG: "Added privacy controls to analytics plan"
+   ```
+
+**Funnel Derivation Example**:
+
+```yaml
+funnel:
+  name: Signup Journey
+  description: User journey from landing to account creation
+  steps:
+    - name: Landing Page View
+      as_reference: AS-1A
+      event: page_viewed
+      properties:
+        path: /landing
+      target_conversion: 100% # baseline
+
+    - name: Signup Page View
+      as_reference: AS-1B
+      event: page_viewed
+      properties:
+        path: /signup
+      target_conversion: 50% # 50% of landing visitors
+
+    - name: Signup Complete
+      as_reference: AS-1C
+      event: user_signed_up
+      properties:
+        user_id: string
+        signup_method: email|google|github
+      target_conversion: 25% # 25% of landing visitors
+
+  benchmark:
+    source: "SaaS Funnel Benchmarks 2024"
+    industry_avg: "20-30% signup conversion"
+    percentile_75: "30-40% signup conversion"
+```
+
+**Output**:
+- plan.md § Analytics Monitoring Plan section (if NFR-ANA-xxx exists)
+- Product Analytics Setup table with events from spec
+- Key Funnels section with auto-derived funnels
+- Analytics provider configuration
+- Privacy controls defined
+
+**Skip Condition**:
+If NFR-ANA-xxx section does NOT exist in spec.md:
+- LOG: "No analytics requirements, skipping § Analytics Monitoring Plan"
+- Do NOT include § Analytics Monitoring Plan in plan.md
+- Continue to next phase
 
 ---
 

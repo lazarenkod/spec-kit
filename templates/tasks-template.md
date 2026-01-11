@@ -346,6 +346,68 @@ Examples of foundational tasks (adjust based on your project):
 
 ---
 
+## Phase 2f: Analytics Foundation [NFR:NFR-ANA-001..006]
+
+**Purpose**: Set up analytics infrastructure and event tracking for web and product analytics.
+
+**Dependencies**: [DEP:Phase-1]
+
+**Tasks**:
+
+- [ ] **T2f-01**: Configure web analytics (Umami) [NFR:NFR-ANA-001]
+  - Set up Umami in Docker Compose stack
+  - Add Umami tracking script to frontend
+  - Configure privacy settings (IP anonymization)
+  - Verify page view tracking in Umami dashboard
+  - **Test**: [TEST:NFR-ANA-001] Page views appear in dashboard
+
+- [ ] **T2f-02**: Configure product analytics provider [NFR:NFR-ANA-002]
+  - Add PostHog/Mixpanel/Amplitude SDK to dependencies
+  - Initialize analytics client with API key from environment
+  - Configure privacy settings (PII masking, opt-out)
+  - Verify connection to analytics provider
+  - **Test**: [TEST:NFR-ANA-002] Analytics client initializes
+
+- [ ] **T2f-03**: Implement event tracking helper [NFR:NFR-ANA-002]
+  - Create `src/lib/analytics.ts` with `trackEvent()` function
+  - Add type-safe event schema from spec.md
+  - Add automatic context injection (user_id, session_id, timestamp)
+  - Add PII masking logic
+  - **Test**: [TEST:NFR-ANA-002] `trackEvent()` sends events
+
+- [ ] **T2f-04**: Implement AS-derived events [NFR:NFR-ANA-002]
+  *(Auto-generated sub-tasks from Event Schema table)*
+  - For each event: Add `trackEvent()` call at trigger point
+  - **Test**: [TEST:NFR-ANA-002] All events tracked
+
+- [ ] **T2f-05**: Implement cookie consent banner [NFR:NFR-ANA-005]
+  - Add cookie consent library
+  - Show banner on first visit
+  - Store consent preference
+  - Disable analytics if consent not granted
+  - **Test**: [TEST:NFR-ANA-005] Analytics only tracks after consent
+
+- [ ] **T2f-06**: Implement analytics opt-out [NFR:NFR-ANA-005]
+  - Create `/analytics/opt-out` page
+  - Add opt-out preference to localStorage
+  - Respect Do Not Track (DNT) browser setting
+  - **Test**: [TEST:NFR-ANA-005] Analytics stops after opt-out
+
+- [ ] **T2f-07**: Set up analytics dashboards [NFR:NFR-ANA-003]
+  - Create funnel definitions in analytics provider
+  - Create custom dashboard with key metrics
+  - Set up alerts for metric thresholds
+  - **Test**: [TEST:NFR-ANA-003] Dashboards display data
+
+**Phase Completion Criteria**:
+- ✅ Web analytics tracking page views
+- ✅ Product analytics tracking all AS-derived events
+- ✅ Cookie consent banner implemented
+- ✅ Opt-out mechanism working
+- ✅ Dashboards and funnels configured
+
+---
+
 ## Phase 3: User Story 1 - [Title] (Priority: P1a) 🎯 MVP
 
 **Goal**: [Brief description of what this story delivers]
@@ -608,7 +670,11 @@ mock_email_service.send_confirmation.assert_called_once_with(email)
   - UI state tests, responsive tests, interaction tests MUST be scaffolded before implementation
   - Quality gates QG-STATE-001, QG-RWD-001, QG-INT-001, QG-CSTM-001 must pass
   - Accessibility audit baseline must be established
-- **User Stories (Phase 3+)**: All depend on Foundational phase completion (and Design Foundation for UI features, Migration Foundation for brownfield, UX Validation for UI features)
+- **Analytics Foundation (Phase 2f)**: *For features with analytics* - Depends on Phase 1
+  - Web analytics and product analytics providers must be configured
+  - Event tracking infrastructure must be in place
+  - Cookie consent and opt-out mechanisms must be working
+- **User Stories (Phase 3+)**: All depend on Foundational phase completion (and Design Foundation for UI features, Migration Foundation for brownfield, UX Validation for UI features, Analytics Foundation for analytics features)
   - User stories can then proceed in parallel (if staffed)
   - Or sequentially in priority order (P1 → P2 → P3)
 - **Polish (Final Phase)**: Depends on all desired user stories being complete

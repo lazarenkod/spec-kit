@@ -67,6 +67,25 @@ graph LR
 
 **Модель:** `opus` (thinking_budget: 16000)
 
+#### Вопрос 5: Поддержка аналитики
+
+**Когда задается**: Всегда (после вопросов о платформе)
+
+**Опции**:
+- **Web + Product** — Полный стек: веб-аналитика (Umami) + продуктовая аналитика (PostHog/Mixpanel/Amplitude)
+- **Web Only** — Только просмотры страниц, сессии, источники трафика (Umami)
+- **Product Only** — Только события поведения пользователей, воронки, когорты
+- **No Analytics** — Без отслеживания (privacy-first по умолчанию)
+
+**Настройки в конституции**:
+- `analytics_enabled`: `true` / `false`
+- `analytics_types`: `["web"]`, `["product"]`, `["web", "product"]`, `[]`
+- `analytics_provider`: `posthog` / `mixpanel` / `amplitude` / (пусто)
+
+**Примечание**: При включении аналитики требования NFR-ANA-xxx автоматически включаются во все спецификации функций, а задачи Phase 2f: Analytics Foundation добавляются в каждый план реализации.
+
+**Приватность**: При включении аналитики по умолчанию включены средства контроля GDPR/CCPA (согласие на cookies, анонимизация IP, маскирование PII, opt-out).
+
 **Handoffs:**
 
 - → `/speckit.specify`
@@ -1292,14 +1311,33 @@ await page.screenshot({
 
 ### 24. `/speckit.integrate` {#speckitintegrate}
 
-**Назначение:** Quick integration with common third-party services
+**Назначение:** Выбор провайдера продуктовой аналитики и настройка зависимостей SDK. Quick integration with common third-party services.
 
-**Модель:** `sonnet` (thinking_budget: 16000)
+**Модель:** `haiku` (thinking_budget: 8000)
 
 **Persona:** `developer-agent`
 
+**Условие запуска**: Выполняется автоматически только если:
+- `analytics_enabled == true` в конституции
+- `"product"` в `analytics_types`
+- `analytics_provider` пустой (не выбран)
+
+**Провайдеры**:
+
+| Провайдер | Хостинг | Бесплатный тариф | Лучше всего для |
+|-----------|---------|------------------|-----------------|
+| PostHog | Self-hosted / Cloud | Неограниченно (self-hosted) | Privacy-first, полный контроль, запись сессий |
+| Mixpanel | Cloud | 20M событий/месяц | Сильный анализ воронок, когорты |
+| Amplitude | Cloud | 10M событий/месяц | Анализ удержания, поведенческие когорты |
+
+**Действия после выбора**:
+1. Обновление конституции с выбранным провайдером
+2. Добавление зависимостей SDK (npm/pip/go)
+3. Обновление docker-compose.yml (если PostHog self-hosted)
+
 **Handoffs:**
 
+- → `/speckit.staging` — Провизионирование аналитической инфраструктуры
 - → `/speckit.implement`
 
 ---
@@ -1565,6 +1603,7 @@ await page.screenshot({
 
 | Команда | Флаг | Описание |
 |---------|------|----------|
+| `/speckit.constitution` | `analytics_enabled`, `analytics_types`, `analytics_provider` | Настройки аналитики в проекте |
 | `/speckit.specify` | `--model` | Override model selection |
 | `/speckit.design` | `--quick` | or \`--defaults\` flag passed |
 | `/speckit.design` | `--alternative` | — Generate design for specific alternative (1-5) |
@@ -1661,6 +1700,6 @@ await page.screenshot({
 
 ## Версия документа
 
-**Версия:** 0.5.0
+**Версия:** 0.5.1
 **Дата генерации:** 2026-01-11
 **Автор:** Auto-generated from command templates
