@@ -80,7 +80,7 @@ All 9 aesthetic presets are now available:
 
 ## `linear` — Linear.app
 
-**Brand URL**: https://linear.app
+**Brand URL**: <https://linear.app>
 **Description**: Clean, minimal, keyboard-first design language
 **Best For**: Dev tools, productivity apps, project management
 **Design Philosophy**: Linear's aesthetic prioritizes speed, clarity, and keyboard-first workflows. Small base font size (13px), subtle shadows, and a distinctive purple accent create a professional yet approachable look.
@@ -298,7 +298,7 @@ design_system:
 
 ## `stripe` — Stripe
 
-**Brand URL**: https://stripe.com
+**Brand URL**: <https://stripe.com>
 **Description**: Professional, trustworthy, fintech-grade design language
 **Best For**: Fintech, enterprise dashboards, payment systems
 **Design Philosophy**: Stripe's aesthetic emphasizes trust, professionalism, and clarity. Larger base font (16px), strong indigo accent, and refined typography create a premium enterprise feel.
@@ -516,7 +516,7 @@ design_system:
 
 ## `vercel` — Vercel
 
-**Brand URL**: https://vercel.com
+**Brand URL**: <https://vercel.com>
 **Description**: Modern, bold, dark-friendly design language
 **Best For**: Developer platforms, documentation sites, modern web apps
 **Design Philosophy**: Vercel's aesthetic is minimalist and bold, with high contrast, sharp edges, and a monochrome color palette. Perfect for dark mode and developer-focused products.
@@ -735,7 +735,7 @@ design_system:
 
 ## `notion` — Notion
 
-**Brand URL**: https://notion.so
+**Brand URL**: <https://notion.so>
 **Description**: Warm, approachable, content-first design language
 **Best For**: Content tools, collaboration apps, knowledge bases
 **Design Philosophy**: Notion's aesthetic prioritizes readability, warmth, and approachability. Generous spacing, soft colors, and a coral accent create a friendly, inviting environment for content creation.
@@ -953,7 +953,7 @@ design_system:
 
 ## `apple` — Apple HIG
 
-**Brand URL**: https://developer.apple.com/design/human-interface-guidelines/
+**Brand URL**: <https://developer.apple.com/design/human-interface-guidelines/>
 **Description**: Premium, refined, sophisticated design language
 **Best For**: Consumer products, iOS/macOS apps, premium experiences
 **Design Philosophy**: Apple's aesthetic emphasizes clarity, depth, and deference. System fonts, generous spacing, and a vibrant blue accent create a premium, refined feel that's instantly recognizable.
@@ -1172,7 +1172,7 @@ design_system:
 
 ## `airbnb` — Airbnb
 
-**Brand URL**: https://airbnb.com
+**Brand URL**: <https://airbnb.com>
 **Description**: Friendly, travel-inspired, welcoming design language
 **Best For**: Marketplaces, travel apps, social platforms
 **Design Philosophy**: Airbnb's aesthetic emphasizes warmth, trust, and wanderlust. The distinctive "Rausch" pink accent, friendly typography, and generous imagery create an inviting, social experience.
@@ -1385,7 +1385,7 @@ design_system:
 
 ## `github` — GitHub
 
-**Brand URL**: https://github.com
+**Brand URL**: <https://github.com>
 **Description**: Developer-focused, monospace-friendly design language
 **Best For**: Code platforms, version control, developer tools
 **Design Philosophy**: GitHub's aesthetic prioritizes code readability, clarity, and function. Monospace-friendly typography, subtle blue accents, and high contrast create a professional developer environment.
@@ -1592,7 +1592,7 @@ design_system:
 
 ## `slack` — Slack
 
-**Brand URL**: https://slack.com
+**Brand URL**: <https://slack.com>
 **Description**: Vibrant, playful, team-oriented design language
 **Best For**: Communication tools, team collaboration, chat apps
 **Design Philosophy**: Slack's aesthetic emphasizes vibrancy, personality, and team connection. The distinctive "aubergine" purple, colorful accents, and friendly typography create an energetic, social workspace.
@@ -1804,7 +1804,7 @@ design_system:
 
 ## `figma` — Figma
 
-**Brand URL**: https://figma.com
+**Brand URL**: <https://figma.com>
 **Description**: Creative, colorful, design-tool design language
 **Best For**: Design tools, creativity apps, visual editors
 **Design Philosophy**: Figma's aesthetic emphasizes creativity, color, and modern design. A vibrant purple accent, clean typography, and generous use of color create an inspiring, professional design environment.
@@ -2104,7 +2104,7 @@ All aesthetic presets are validated against **WCAG 2.2 Level AA** standards:
 
 - Chrome DevTools: Inspect → Accessibility pane
 - axe DevTools extension
-- WebAIM Contrast Checker: https://webaim.org/resources/contrastchecker/
+- WebAIM Contrast Checker: <https://webaim.org/resources/contrastchecker/>
 
 ---
 

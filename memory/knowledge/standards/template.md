@@ -1,7 +1,7 @@
 # {{STANDARD_NAME}} ({{RFC/ISO/Compliance Standard}})
 
 > **Purpose**: Summary and implementation checklist for {{STANDARD_NAME}}. Referenced during specification and planning to ensure compliance.
-
+>
 > **Evidence Tier**: AUTHORITATIVE (official standard/regulation)
 
 ---

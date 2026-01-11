@@ -1,7 +1,7 @@
 # {{DOMAIN/TECHNOLOGY}} Best Practices
 
 > **Purpose**: Curated collection of proven patterns and practices for {{DOMAIN/TECHNOLOGY}}. Referenced during architecture planning to inform ADR decisions.
-
+>
 > **Evidence Standard**: Each practice requires [AUTHORITATIVE] or [STRONG] evidence tier (research papers, vendor docs, RFC specs).
 
 ---

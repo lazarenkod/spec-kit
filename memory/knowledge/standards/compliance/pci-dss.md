@@ -1,7 +1,7 @@
 # PCI-DSS (Payment Card Industry Data Security Standard)
 
 > **Purpose**: Implementation checklist for PCI-DSS v4.0 compliance. Referenced during specification and planning for payment features.
-
+>
 > **Evidence Tier**: AUTHORITATIVE (official PCI Security Standards Council standard)
 
 ---
@@ -12,7 +12,7 @@
 **Version**: 4.0
 **Published**: 2022-03-31 (v4.0), effective 2025-03-31
 **Authority**: PCI Security Standards Council (PCI SSC)
-**Official Document**: https://www.pcisecuritystandards.org/document_library/
+**Official Document**: <https://www.pcisecuritystandards.org/document_library/>
 **Applicability**: Any organization that stores, processes, or transmits cardholder data
 
 ---
@@ -373,4 +373,4 @@ Auto-generate compliance NFRs when specification contains:
 **Standard Version**: PCI-DSS v4.0 (effective 2025-03-31)
 **Review Frequency**: Annual (PCI-DSS updates published annually)
 **Evidence Tier**: AUTHORITATIVE
-**Source**: https://www.pcisecuritystandards.org/document_library/
+**Source**: <https://www.pcisecuritystandards.org/document_library/>

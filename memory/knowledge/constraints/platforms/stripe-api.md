@@ -1,7 +1,7 @@
 # Stripe API Technical Constraints
 
 > **Purpose**: Documented technical limitations, quotas, and rate limits for Stripe API. Used during planning to validate NFRs and generate constraint-driven requirements.
-
+>
 > **Evidence Standard**: [AUTHORITATIVE] tier (official Stripe documentation updated 2025-01-01).
 
 ---
@@ -10,7 +10,7 @@
 
 **Vendor**: Stripe, Inc.
 **Technology**: Stripe API v2023-10-16 (latest stable)
-**Documentation**: https://stripe.com/docs
+**Documentation**: <https://stripe.com/docs>
 **Last Updated**: 2025-01-01
 **Evidence Tier**: AUTHORITATIVE
 
@@ -208,7 +208,7 @@ NFR-SCALE-STRIPE-001: Request rate limit increase for high volume [LOW]
 - Implement event deduplication by `event.id`
 
 **Status**: By Design
-**Evidence**: https://stripe.com/docs/webhooks/best-practices#event-ordering
+**Evidence**: <https://stripe.com/docs/webhooks/best-practices#event-ordering>
 
 ```python
 # Handle out-of-order webhooks
@@ -234,7 +234,7 @@ def process_webhook(event):
 - Reuse same key for retries within 24 hours
 
 **Status**: By Design (safety feature)
-**Evidence**: https://stripe.com/docs/api/idempotent_requests
+**Evidence**: <https://stripe.com/docs/api/idempotent_requests>
 
 ```python
 # Generate and persist idempotency key
@@ -258,7 +258,7 @@ def create_payment_intent(order_id, amount):
 - Compress data if necessary (Base64 encode)
 
 **Status**: Hard Limit
-**Evidence**: https://stripe.com/docs/api/metadata
+**Evidence**: <https://stripe.com/docs/api/metadata>
 
 ### Issue: 3DS Authentication Timeout (5 minutes)
 
@@ -270,7 +270,7 @@ def create_payment_intent(order_id, amount):
 - Use `setup_future_usage` to save card for future (non-SCA) use
 
 **Status**: By Design (security requirement)
-**Evidence**: https://stripe.com/docs/strong-customer-authentication
+**Evidence**: <https://stripe.com/docs/strong-customer-authentication>
 
 ---
 
@@ -298,6 +298,6 @@ When using Stripe API in architecture:
 **Last Updated**: 2025-01-10
 **Reviewed By**: community-intelligence-ai, constraints-analyzer-ai
 **Evidence Tier**: AUTHORITATIVE
-**Source URL**: https://stripe.com/docs
+**Source URL**: <https://stripe.com/docs>
 **Freshness**: 10 days (threshold: 90 days)
 **Next Review**: 2025-03-01

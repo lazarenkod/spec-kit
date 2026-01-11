@@ -1,7 +1,7 @@
 # {{PLATFORM/TECHNOLOGY}} Technical Constraints
 
 > **Purpose**: Documented technical limitations, quotas, and rate limits for {{PLATFORM/TECHNOLOGY}}. Used during planning to validate NFRs and generate constraint-driven requirements.
-
+>
 > **Evidence Standard**: [AUTHORITATIVE] tier required (official vendor documentation <90 days old).
 
 ---

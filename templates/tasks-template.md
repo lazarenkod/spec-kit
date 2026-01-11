@@ -492,14 +492,14 @@ Examples of foundational tasks (adjust based on your project):
 
 #### Test: Integration Test - User Registration with Valid Email
 
-- [ ] T018 [P] [US2] [TEST:AS-2A] Integration Test: Test user registration with valid email (test@example.com, SecurePass123!) expects 201 status, userId in response, and confirmation email sent
+- [ ] T018 [P] [US2] [TEST:AS-2A] Integration Test: Test user registration with valid email (<test@example.com>, SecurePass123!) expects 201 status, userId in response, and confirmation email sent
 
 **Scenario**: AS-2A - User can register with valid email and strong password
 
 **Test Structure**:
 ```python
 # ARRANGE (Given: valid email and strong password)
-email = "test@example.com"
+email = "<test@example.com>"
 password = "SecurePass123!"
 mock_email_service = Mock()
 
@@ -514,7 +514,7 @@ mock_email_service.send_confirmation.assert_called_once_with(email)
 ```
 
 **Test Data Suggestions**:
-- Valid emails: `["test@example.com", "user+tag@domain.co.uk", "name.surname@company.io"]`
+- Valid emails: `["<test@example.com>", "user+tag@domain.co.uk", "name.surname@company.io"]`
 - Strong passwords: `["SecurePass123!", "C0mpl3x#Pass", "MyP@ssw0rd2024"]`
 
 **Estimated Effort**: [hours]

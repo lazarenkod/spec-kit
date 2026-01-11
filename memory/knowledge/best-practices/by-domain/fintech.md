@@ -1,7 +1,7 @@
 # Fintech Best Practices
 
 > **Purpose**: Curated collection of proven patterns for fintech applications. Referenced during architecture planning to inform ADR decisions.
-
+>
 > **Evidence Standard**: Each practice requires [AUTHORITATIVE] or [STRONG] evidence tier (vendor docs, research papers, regulatory guidance).
 
 ---
@@ -11,7 +11,7 @@
 **Category**: Reliability
 **Applicability**: All payment API integrations (Stripe, PayPal, Adyen, etc.)
 **Evidence Tier**: AUTHORITATIVE
-**Source**: Stripe API Documentation (https://stripe.com/docs/api/idempotent_requests)
+**Source**: Stripe API Documentation (<https://stripe.com/docs/api/idempotent_requests>)
 
 ### Description
 
@@ -363,7 +363,7 @@ def rotate_encryption_key():
 **Category**: Security
 **Applicability**: All systems receiving webhooks from payment processors
 **Evidence Tier**: AUTHORITATIVE
-**Source**: Stripe Webhook Security (https://stripe.com/docs/webhooks/signatures), Adyen Webhooks
+**Source**: Stripe Webhook Security (<https://stripe.com/docs/webhooks/signatures>), Adyen Webhooks
 
 ### Description
 
@@ -468,7 +468,7 @@ def paypal_ipn():
 **Reviewed By**: academic-researcher-ai, standards-researcher-ai
 **Evidence Quality**: AUTHORITATIVE (Stripe docs), STRONG (IEEE papers, NACHA guidelines)
 **Source URLs**:
-- https://stripe.com/docs/api/idempotent_requests
-- https://stripe.com/docs/webhooks/signatures
+- <https://stripe.com/docs/api/idempotent_requests>
+- <https://stripe.com/docs/webhooks/signatures>
 - IEEE Xplore: "Financial Systems Architecture" (2023)
 - NIST SP 800-57: Key Management Recommendations

@@ -771,12 +771,12 @@ GENERATE TASK:
 ```text
 FROM spec.md AS-001:
 **AS-001: User can register with valid email**
-GIVEN: valid email "test@example.com" and strong password "SecurePass123!"
+GIVEN: valid email "<test@example.com>" and strong password "SecurePass123!"
 WHEN: POST /api/v1/auth/register
-THEN: returns 201 status, userId in response, confirmation email sent to test@example.com
+THEN: returns 201 status, userId in response, confirmation email sent to <test@example.com>
 
 GENERATE TASK:
-✅ [TEST:AS-001] Test user registration with valid email (test@example.com, SecurePass123!) expects 201 status, userId in response, and confirmation email sent
+✅ [TEST:AS-001] Test user registration with valid email (<test@example.com>, SecurePass123!) expects 201 status, userId in response, and confirmation email sent
 
 ❌ NOT: Test [scenario description] with [test type]
 ```
@@ -788,7 +788,7 @@ GENERATE TASK:
 
 **Fallback**: If test values missing → use realistic defaults with ⚠️:
 ```
-⚠️ [TEST:AS-001] Test user registration with valid email (test@example.com, default password) expects 201 status (concrete values not in spec, using defaults)
+⚠️ [TEST:AS-001] Test user registration with valid email (<test@example.com>, default password) expects 201 status (concrete values not in spec, using defaults)
 ```
 
 ---
@@ -841,7 +841,7 @@ Apply when most details are present but minor elements are missing.
 
 ⚠️ Implement UserService in src/services/user_service.py with CRUD operations (method signatures not specified, deriving from FR-001, FR-002)
 
-⚠️ [TEST:AS-001] Test registration with valid email (test@example.com) expects 201 status (test password not specified, using: SecurePass123!)
+⚠️ [TEST:AS-001] Test registration with valid email (<test@example.com>) expects 201 status (test password not specified, using: SecurePass123!)
 ```
 
 **When to Use**:
@@ -932,7 +932,7 @@ Before generating tasks.md, validate ALL tasks against these criteria:
 - [ ] **Concrete file paths**: All paths like `src/models/user.py`, not `src/models/[entity].py`
 - [ ] **Specific method names**: All methods like `register()`, `authenticate()`, not `[method_name]()`
 - [ ] **Complete HTTP details**: All API tasks have method + path + handler (e.g., "POST /api/v1/users endpoint with createUser() handler")
-- [ ] **Specific test scenarios**: All test tasks reference AS-xxx and have concrete test values (e.g., "test@example.com, SecurePass123!")
+- [ ] **Specific test scenarios**: All test tasks reference AS-xxx and have concrete test values (e.g., "<test@example.com>, SecurePass123!")
 
 #### ⚠️ Warning Indicators
 
@@ -1438,7 +1438,7 @@ For each entity detected in the scenario, suggest test data patterns based on en
 
 **Python**:
 ```
-email → "Use faker.email() for random valid emails. Avoid hardcoded test@example.com."
+email → "Use faker.email() for random valid emails. Avoid hardcoded <test@example.com>."
 password → "Use factory helper: generate_secure_password(). Never hardcode passwords."
 numeric (ID) → "Use factory_boy for realistic IDs. For boundary tests: -1, 0, sys.maxsize"
 date → "Use datetime.now() + timedelta for relative dates. Avoid hardcoded dates."
@@ -1446,7 +1446,7 @@ date → "Use datetime.now() + timedelta for relative dates. Avoid hardcoded dat
 
 **TypeScript**:
 ```
-email → "Use faker.internet.email() for random emails. Avoid hardcoded test@example.com."
+email → "Use faker.internet.email() for random emails. Avoid hardcoded <test@example.com>."
 password → "Use helper: generateSecurePassword(). Never commit hardcoded passwords."
 numeric (ID) → "Use factories (factory-bot). For boundary: Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER"
 date → "Use new Date() for relative dates. Avoid hardcoded ISO strings."
@@ -1454,7 +1454,7 @@ date → "Use new Date() for relative dates. Avoid hardcoded ISO strings."
 
 **Go**:
 ```
-email → "Use faker.Email() for random emails. Avoid hardcoded test@example.com."
+email → "Use faker.Email() for random emails. Avoid hardcoded <test@example.com>."
 password → "Use helper: generateSecurePassword(). Never hardcode passwords."
 numeric (ID) → "Use factories or fixture builders. For boundary: math.MinInt64, math.MaxInt64"
 date → "Use time.Now() for relative dates. Avoid hardcoded RFC3339 strings."
