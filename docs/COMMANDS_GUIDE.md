@@ -401,6 +401,43 @@ When running `/speckit.design` without `--quick` flag, the command will ask two 
 - Use `--aesthetic <name>` flag to specify aesthetic preset directly
 - Flags take precedence over questionnaire responses
 
+**UX & Brand Quality Questions (Q15-Q24)** (NEW v0.7.1):
+
+After visual style questions (Q1-Q14), `/speckit.design` asks 10 additional questions to capture UX quality targets and brand personality:
+
+**UX Quality (Q15-Q19):**
+
+| # | Question | Options | Storage |
+|---|----------|---------|---------|
+| Q15 | Usability Target Level | Best-in-class / Competitive / Acceptable / Low priority | `ux_quality.usability_target` |
+| Q16 | User Flow Complexity | Simple / Moderate / Complex / Very Complex | `ux_quality.flow_complexity` |
+| Q17 | Design Accessibility Level | Inclusive / Proactive / Compliance+ / Compliance Only | `ux_quality.design_a11y_level` |
+| Q18 | Error Prevention Strategy | Proactive / Reactive / Minimal | `ux_quality.error_prevention` |
+| Q19 | Responsive Design Strategy | Mobile-First / Desktop-First / Platform-Optimized / Fluid | `ux_quality.responsive_strategy` |
+
+**Brand & Audience (Q20-Q24):**
+
+| # | Question | Options | Storage |
+|---|----------|---------|---------|
+| Q20 | Brand Personality Archetype | Innovator / Trusted Advisor / Friend / Performer / Minimalist | `brand_audience.brand_archetype` |
+| Q21 | Tone of Voice | Formal / Professional / Conversational / Playful / Technical | `brand_audience.tone_of_voice` |
+| Q22 | Target Audience Sophistication | Expert / Intermediate / Beginner / Non-technical | `brand_audience.audience_sophistication` |
+| Q23 | Emotional Design Goal | Confidence / Delight / Empowerment / Calm / Excitement | `brand_audience.emotional_goal` |
+| Q24 | Audience Demographics Priority | Age Diversity / Global Audience / Neurodiversity / Low Bandwidth (multi-select) | `brand_audience.demographics_priority` |
+
+**Conditional Logic:**
+- Q16-Q17: Asked only if app_type ∈ [Web, Mobile, Desktop]
+- Q18: Asked only if usability_target ∈ [Best-in-class, Competitive]
+- Q19: Asked only if app_type = Web
+- Q24: Asked only if usability_target ≠ Low priority
+
+**Storage:** All answers stored in `memory/constitution.md` → `design_system` section
+
+**Cross-Command Integration:**
+- `/speckit.specify`: Auto-generates UX/brand NFRs (NFR-UX-xxx, NFR-A11Y-xxx, NFR-I18N-xxx, NFR-BRAND-xxx, NFR-RESP-xxx)
+- `/speckit.plan`: Incorporates design system settings into architecture decisions and NFR definition
+- `/speckit.tasks`: Generates Phase 2g (Design Quality Tasks) for usability testing, accessibility testing, i18n setup, responsive testing, brand review
+
 **Quality Improvements** (NEW v0.2.0):
 
 **Chain-of-Thought Reasoning:**
@@ -432,6 +469,36 @@ Comprehensive negative prompting with 47 anti-patterns across 7 categories:
 - **Performance (5)**: Unoptimized images, blocking fonts, layout shifts
 
 **Expected Impact:** 59-64% reduction in design issues
+
+**Design Quality Score (DQS) v2.0** (NEW v0.7.1):
+
+DQS expanded from 5 to 12 dimensions (100 points total, threshold ≥ 70):
+
+| Dimension | Points | Weight | Evaluation Criteria |
+|-----------|--------|--------|---------------------|
+| **1. Token Completeness** | 10 | 10% | Colors, typography, spacing, motion tokens complete |
+| **2. Component Documentation** | 8 | 8% | Storybook stories, props, examples, a11y notes |
+| **3. Accessibility Compliance** | 12 | 12% | WCAG contrast, ARIA patterns, keyboard nav, screen reader |
+| **4. Consistency** | 10 | 10% | All colors/typography/spacing use design tokens |
+| **5. Figma Export Quality** | 5 | 5% | Token export, layer naming, variant structure |
+| **6. Usability Testing Plan** ⭐ | 15 | 15% | Based on Q15 usability_target (A/B tests, user testing) |
+| **7. User Flow Documentation** ⭐ | 15 | 15% | Based on Q16 flow_complexity (diagrams, nav system, IA) |
+| **8. Accessibility Empowerment** ⭐ | 10 | 10% | Based on Q17 design_a11y_level (inclusive patterns, user testing) |
+| **9. Error Handling UX** ⭐ | 5 | 5% | Based on Q18 error_prevention (validation, messages, recovery) |
+| **10. Responsive Completeness** ⭐ | 5 | 5% | Based on Q19 responsive_strategy (breakpoints, patterns) |
+| **11. Brand Consistency** ⭐ | 3 | 3% | Based on Q20-Q23 (archetype, tone, emotional goal alignment) |
+| **12. Inclusive Design** ⭐ | 2 | 2% | Based on Q24 demographics_priority (age, global, neurodiversity, bandwidth) |
+
+**Scoring Thresholds:**
+- **90-100**: Excellent (production-ready, exemplary quality)
+- **80-89**: Good (production-ready with minor improvements)
+- **70-79**: Acceptable (meets QG-DQS-001, address gaps)
+- **60-69**: Needs Work (significant gaps, remediation required)
+- **0-59**: Poor (major issues, full rework recommended)
+
+**Quality Gate:** QG-DQS-001 requires DQS ≥ 70
+
+**New Dimensions** (⭐): Dimensions 6-12 are new in v2.0 and directly leverage UX/brand settings from Q15-Q24 to quantify design quality beyond visual tokens.
 
 **Handoffs:**
 
@@ -1856,6 +1923,6 @@ await page.screenshot({
 
 ## Версия документа
 
-**Версия:** 0.6.0
+**Версия:** 0.7.1
 **Дата генерации:** 2026-01-11
 **Автор:** Auto-generated from command templates

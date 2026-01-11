@@ -567,6 +567,66 @@ If configuring project settings:
    | accessibility_level | `wcag22-aaa`, `wcag22-aa`, `wcag21-aa`, `wcag21-a`, `none` | `none` |
    | a11y_groups | array: `["visual", "motor", "cognitive", "hearing"]` | `[]` |
 
+**Design System Configuration** (used by `/speckit.design`, added in v0.6.2):
+
+The `design_system` section in constitution.md stores design preferences collected via `/speckit.design` questionnaire:
+
+```yaml
+design_system:
+  # Visual Style Configuration (Q1-Q12 from design questionnaire)
+  framework: shadcn/ui                     # Component library preset
+  aesthetic: none                          # Brand aesthetic preset (linear/stripe/vercel/notion/apple/etc.)
+  custom_overrides:                        # Manual token overrides
+    colors: {}
+    typography: {}
+    spacing: {}
+    motion: {}
+  reference_images: []                     # Brand assets for visual analysis
+
+  # UX Quality Settings (Q15-Q19 from design questionnaire, NEW v0.6.2)
+  ux_quality:
+    usability_target: competitive          # best / competitive / acceptable / low
+    flow_complexity: moderate              # simple / moderate / complex / very-complex (conditional)
+    design_a11y_level: compliance-plus     # inclusive / proactive / compliance-plus / compliance-only (conditional)
+    error_prevention: reactive             # proactive / reactive / minimal (conditional)
+    responsive_strategy: mobile-first      # mobile-first / desktop-first / platform-optimized / fluid (conditional)
+
+  # Brand & Audience Settings (Q20-Q24 from design questionnaire, NEW v0.6.2)
+  brand_audience:
+    brand_archetype: trusted-advisor       # innovator / trusted-advisor / friend / performer / minimalist
+    tone_of_voice: professional            # formal / professional / conversational / playful / technical
+    audience_sophistication: intermediate  # expert / intermediate / beginner / non-technical
+    emotional_goal: confidence             # confidence / delight / empowerment / calm / excitement
+    demographics_priority: []              # array: age-diversity, global-audience, neurodiversity, low-bandwidth
+```
+
+**Field Descriptions**:
+
+| Field | Valid Values | Default | Impact |
+|-------|--------------|---------|--------|
+| `ux_quality.usability_target` | `best`, `competitive`, `acceptable`, `low` | `competitive` | Determines usability testing requirements in design specs |
+| `ux_quality.flow_complexity` | `simple`, `moderate`, `complex`, `very-complex` | `moderate` | Affects navigation system design and information architecture |
+| `ux_quality.design_a11y_level` | `inclusive`, `proactive`, `compliance-plus`, `compliance-only` | `compliance-plus` | Sets design-specific accessibility patterns beyond WCAG |
+| `ux_quality.error_prevention` | `proactive`, `reactive`, `minimal` | `reactive` | Defines validation patterns and error handling UX |
+| `ux_quality.responsive_strategy` | `mobile-first`, `desktop-first`, `platform-optimized`, `fluid` | `mobile-first` | Defines breakpoint system and responsive behavior (Web apps only) |
+| `brand_audience.brand_archetype` | `innovator`, `trusted-advisor`, `friend`, `performer`, `minimalist` | `trusted-advisor` | Guides visual and interaction design personality |
+| `brand_audience.tone_of_voice` | `formal`, `professional`, `conversational`, `playful`, `technical` | `professional` | Guides microcopy, error messages, onboarding text |
+| `brand_audience.audience_sophistication` | `expert`, `intermediate`, `beginner`, `non-technical` | `intermediate` | Sets UI complexity and onboarding depth |
+| `brand_audience.emotional_goal` | `confidence`, `delight`, `empowerment`, `calm`, `excitement` | `confidence` | Sets emotional tone for interactions and visuals |
+| `brand_audience.demographics_priority` | Array of: `age-diversity`, `global-audience`, `neurodiversity`, `low-bandwidth` | `[]` | Identifies demographic-specific design patterns |
+
+**Conditional Fields**: Some UX Quality fields are conditional based on `app_type` from Q1:
+- `flow_complexity`, `design_a11y_level`: Only for `web-application`, `mobile-application`, `desktop-application`
+- `error_prevention`: Only if `usability_target` ∈ [`best`, `competitive`]
+- `responsive_strategy`: Only for `web-application`
+- `demographics_priority`: Only if `usability_target` != `low`
+
+**Cross-Command Integration**:
+- `/speckit.specify` reads `design_system` to generate UI-related NFRs
+- `/speckit.plan` reads `design_system` for technical design planning
+- `/speckit.tasks` reads `design_system` for design task generation
+- Design Quality Score (DQS v2.0) uses UX/brand settings for validation
+
 3. Report: "Project setting updated: language = ru"
 
 **Language affects all artifact generation commands** (`/speckit.specify`, `/speckit.plan`, `/speckit.tasks`, `/speckit.design`, `/speckit.concept`).

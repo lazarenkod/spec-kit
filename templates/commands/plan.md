@@ -440,6 +440,38 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
 
 3. **Load context**: Read IN PARALLEL: FEATURE_SPEC, `/memory/constitution.md`, and IMPL_PLAN template. Confirm ARTIFACT_LANGUAGE from constitution Project Settings.
 
+3.5. **Extract Design System Context** (if design_system exists in constitution):
+
+   ```text
+   Read constitution.md design_system section:
+
+   IF design_system configuration exists:
+     EXTRACT ux_quality settings:
+       - usability_target (best-in-class/competitive/acceptable/low)
+       - flow_complexity (simple/moderate/complex/very-complex)
+       - design_a11y_level (inclusive/proactive/compliance-plus/compliance-only)
+       - error_prevention (proactive/reactive/minimal)
+       - responsive_strategy (mobile-first/desktop-first/platform-optimized/fluid)
+
+     EXTRACT brand_audience settings:
+       - brand_archetype (innovator/trusted-advisor/friend/performer/minimalist)
+       - tone_of_voice (formal/professional/conversational/playful/technical)
+       - audience_sophistication (expert/intermediate/beginner/non-technical)
+       - emotional_goal (confidence/delight/empowerment/calm/excitement)
+       - demographics_priority (array: age-diversity, global-audience, neurodiversity, low-bandwidth)
+
+     STORE for use in architecture decisions and NFR definition:
+       - UX_QUALITY_SETTINGS = {...}
+       - BRAND_AUDIENCE_SETTINGS = {...}
+
+     LOG: "Design system context loaded: usability_target={value}, brand_archetype={value}"
+
+   ELSE:
+     UX_QUALITY_SETTINGS = null
+     BRAND_AUDIENCE_SETTINGS = null
+     LOG: "No design_system configuration in constitution, skipping design context"
+   ```
+
 4. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
    - Fill Technical Context (mark unknowns as "NEEDS CLARIFICATION")
    - Fill Constitution Check section from constitution
@@ -1344,6 +1376,67 @@ This phase prevents AI agents from hallucinating non-existent APIs.
      - Alert coverage: All NFR-PERF metrics monitored
 
    LOG: "Defined {N} observability NFRs"
+   ```
+
+3.5. **Design System NFR Generation** (if UX_QUALITY_SETTINGS or BRAND_AUDIENCE_SETTINGS exist):
+   ```text
+   IF UX_QUALITY_SETTINGS exists:
+
+     IF UX_QUALITY_SETTINGS.usability_target ∈ [best-in-class, competitive]:
+       DEFINE NFR-UX-001: Usability Testing
+         Target: {best-in-class: "Top 10% task completion rate (95%+), A/B testing", competitive: "Industry avg (90%+ task completion)"}
+         Method: User testing with {best-in-class: "8-12", competitive: "5-8"} participants
+         Measurement: Task completion rate, time on task, error rate
+         Link to spec NFR-UX-001 if exists
+
+     IF UX_QUALITY_SETTINGS.flow_complexity ∈ [complex, very-complex]:
+       DEFINE NFR-UX-002: Navigation Performance
+         Target: Page transition < 200ms, breadcrumb rendering < 50ms
+         Complexity: {complex: "4-8 screens, standard nav", very-complex: "20+ screens, multi-level nav"}
+         Testing: Navigation path testing required
+         Link to architecture decisions for navigation system
+
+     IF UX_QUALITY_SETTINGS.design_a11y_level ∈ [inclusive, proactive]:
+       DEFINE NFR-A11Y-001: Accessibility Testing
+         Level: {inclusive: "User testing with assistive tech users", proactive: "Exceeds WCAG AA, inclusive patterns"}
+         Coverage: All interactive features
+         Tools: axe-core, Lighthouse, manual testing
+         Link to spec NFR-A11Y-002 if exists
+
+     IF UX_QUALITY_SETTINGS.error_prevention == proactive:
+       DEFINE NFR-UX-003: Inline Validation Performance
+         Target: Validation feedback < 100ms
+         Features: Auto-correct, smart defaults, confirmation dialogs
+         Testing: Validation UX testing required
+
+     IF UX_QUALITY_SETTINGS.responsive_strategy is set AND app_type == web-application:
+       DEFINE NFR-RESP-001: Responsive Breakpoints
+         Strategy: {UX_QUALITY_SETTINGS.responsive_strategy}
+         Breakpoints: {mobile-first: "320px, 768px, 1024px, 1440px", desktop-first: "1440px, 1024px, 768px, 320px"}
+         Testing: Multi-device testing required (Chrome DevTools + real devices)
+
+   IF BRAND_AUDIENCE_SETTINGS exists:
+
+     IF BRAND_AUDIENCE_SETTINGS.audience_sophistication == expert:
+       DEFINE NFR-UX-004: Power User Features
+         Target: Keyboard shortcut coverage >= 80% of actions
+         Features: Command palette, bulk operations, advanced filters
+         Documentation: Keyboard shortcut reference required
+
+     IF "global-audience" IN BRAND_AUDIENCE_SETTINGS.demographics_priority:
+       DEFINE NFR-I18N-001: Internationalization
+         Target: RTL support, locale formatting, pluralization rules
+         Testing: i18n library integration (i18next, react-intl)
+         Coverage: All user-facing strings externalized
+         Link to spec NFR-I18N-001 if exists
+
+     IF "low-bandwidth" IN BRAND_AUDIENCE_SETTINGS.demographics_priority:
+       DEFINE NFR-PERF-002: Low-Bandwidth Optimization
+         Target: Time to Interactive (TTI) < 3s on 3G
+         Features: Progressive loading, image optimization, offline support
+         Testing: Lighthouse performance score >= 90
+
+   LOG: "Defined {N} design system NFRs from ux_quality and brand_audience settings"
    ```
 
 4. **Security NFR Generation**:

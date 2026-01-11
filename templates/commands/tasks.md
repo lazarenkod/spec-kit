@@ -359,6 +359,49 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
    - **Optional**: data-model.md (entities), contracts/ (API endpoints), research.md (decisions), quickstart.md (test scenarios)
    - Note: Not all projects have all documents. Generate tasks based on what's available.
 
+2.5. **Extract Design System Context** (if design_system exists in constitution):
+
+   ```text
+   Read memory/constitution.md design_system section:
+
+   IF design_system configuration exists:
+     EXTRACT ux_quality settings:
+       - usability_target (best-in-class/competitive/acceptable/low)
+       - flow_complexity (simple/moderate/complex/very-complex)
+       - design_a11y_level (inclusive/proactive/compliance-plus/compliance-only)
+       - error_prevention (proactive/reactive/minimal)
+       - responsive_strategy (mobile-first/desktop-first/platform-optimized/fluid)
+
+     EXTRACT brand_audience settings:
+       - brand_archetype (innovator/trusted-advisor/friend/performer/minimalist)
+       - tone_of_voice (formal/professional/conversational/playful/technical)
+       - audience_sophistication (expert/intermediate/beginner/non-technical)
+       - emotional_goal (confidence/delight/empowerment/calm/excitement)
+       - demographics_priority (array: age-diversity, global-audience, neurodiversity, low-bandwidth)
+
+     STORE for use in design task generation:
+       - DESIGN_SYSTEM_TASKS_REQUIRED = true
+       - UX_QUALITY_SETTINGS = {...}
+       - BRAND_AUDIENCE_SETTINGS = {...}
+
+     LOG: "Design system context loaded for task generation"
+
+     # Determine which design tasks to generate:
+     DESIGN_TASK_FLAGS = {
+       usability_testing: (usability_target ∈ [best-in-class, competitive])
+       a11y_testing: (design_a11y_level ∈ [inclusive, proactive])
+       i18n_setup: ("global-audience" IN demographics_priority)
+       responsive_testing: (responsive_strategy is set AND app_type == web)
+       brand_review: (brand_archetype is set OR tone_of_voice is set)
+       power_user_features: (audience_sophistication == expert)
+       low_bandwidth_optimization: ("low-bandwidth" IN demographics_priority)
+     }
+
+   ELSE:
+     DESIGN_SYSTEM_TASKS_REQUIRED = false
+     LOG: "No design_system configuration in constitution, skipping design tasks"
+   ```
+
 3. **Parse Traceability IDs from spec.md**:
 
    ```text
@@ -793,6 +836,43 @@ See orchestration settings: `max_parallel: 3`, `wave_overlap.threshold: 0.80`.
    - All tasks reference NFR-ANA-xxx from plan.md
    - Event tasks reference AS-xxx from spec.md
    - Event Schema table drives T2f-04 sub-task generation
+
+---
+
+### Wave 7: Design Quality Tasks (Conditional)
+
+**Condition**: Only execute if DESIGN_SYSTEM_TASKS_REQUIRED == true (from step 2.5)
+
+**Purpose**: Generate design quality tasks based on design_system configuration
+
+```text
+IF DESIGN_SYSTEM_TASKS_REQUIRED:
+  PHASE_2G_TASKS = []
+
+  IF DESIGN_TASK_FLAGS.usability_testing:
+    ADD T2g-01: Plan usability testing [NFR:NFR-UX-001]
+    ADD T2g-02: Execute usability testing [DEP:T2g-01]
+
+  IF DESIGN_TASK_FLAGS.a11y_testing:
+    ADD T2g-03: Conduct accessibility testing [NFR:NFR-A11Y-001]
+
+  IF DESIGN_TASK_FLAGS.i18n_setup:
+    ADD T2g-05: Set up internationalization [NFR:NFR-I18N-001]
+
+  IF DESIGN_TASK_FLAGS.responsive_testing:
+    ADD T2g-06: Test responsive design [NFR:NFR-RESP-001]
+
+  IF DESIGN_TASK_FLAGS.brand_review:
+    ADD T2g-07: Brand consistency review [NFR:NFR-BRAND-001]
+
+  INSERT_PHASE_AFTER("Phase 2f", "Phase 2g: Design Quality Tasks", PHASE_2G_TASKS)
+ELSE:
+  SKIP Phase 2g
+```
+
+**Traceability**: Tasks reference NFR-UX-xxx, NFR-A11Y-xxx, NFR-I18N-xxx from plan.md
+
+---
 
 5. **Generate Dependency Graph**:
 
@@ -1654,45 +1734,80 @@ IF design.md contains User Journey sections
   - Error paths: Validation failure, save failure, concurrent edit
 ```
 
-### Phase 2e-BINDING: Platform Binding Verification (for KMP) 🔗
+### Phase 2e-BINDING: Platform Binding Verification (for Cross-Platform Projects) 🔗
 
-**Trigger**: Execute when platform is KMP (detected via platform-detection.md)
+**Trigger**: Execute when cross-platform framework is detected (KMP, Flutter, React Native)
 
-**Purpose**: Verify that platform UI (SwiftUI/Compose) correctly binds to shared Kotlin ViewModels. Prevents bugs where shared Kotlin code works but platform UI has TODO/stub implementations.
+**Purpose**: Verify that platform UI (SwiftUI/Compose/React Native) correctly binds to shared ViewModels/Controllers. Prevents bugs where shared code works but platform UI has TODO/stub implementations. Automatically generates binding tests with 100% method coverage.
+
+**Agent**: test-generator-agent (persona) with binding-test-generator (skill)
 
 **Detection**:
 ```text
-1. Check for shared/ directory with Kotlin ViewModels (*ViewModel.kt)
-2. Check for iosApp/ with SwiftUI files (*.swift)
-3. Check for androidApp/ with Compose files (*Screen.kt, *Activity.kt)
-4. If KMP detected → inject Phase 2e-BINDING tasks
+1. KMP: Check for shared/ directory with Kotlin ViewModels (*ViewModel.kt)
+2. Flutter: Check for lib/ with Dart controllers and platform/ with native platform channels
+3. React Native: Check for native modules in ios/android with JS bridge bindings
+4. If cross-platform detected → inject Phase 2e-BINDING tasks
+5. Auto-generate binding tests using templates:
+   - templates/test-templates/ios-binding-test.swift.template
+   - templates/test-templates/android-binding-test.kt.template
 ```
 
-**Task Generation**:
+**Task Generation** (Automated):
 
 ```text
-FOR EACH ViewModel in shared/src/commonMain/**/*ViewModel.kt:
-  PARSE public methods and StateFlow properties
+# Step 1: Detect ViewModels/Controllers
+FOR EACH ViewModel/Controller/Store in shared code:
+  PARSE public methods and observable properties (StateFlow, Flow, LiveData, etc.)
 
-  FOR EACH public method:
-    GENERATE task:
-      - [ ] T### [BINDING-TEST:{ViewModel}:{method}] Verify platform UI calls {ViewModel}.{method}()
-        - iOS: Test SwiftUI wrapper calls Kotlin method
-        - Android: Test Compose calls Kotlin method
-        - Mock ViewModel, verify correct parameters passed
+# Step 2: Generate iOS binding tests (for KMP/Flutter)
+IF platform includes iOS:
+  GENERATE binding test tasks using ios-binding-test.swift.template:
+    FOR EACH public method:
+      CLASSIFY method type (void, value-returning, Flow, suspend)
+      SELECT appropriate test pattern from binding-test-generator skill
+      GENERATE task:
+        - [ ] T### [BINDING-TEST:{ViewModel}:{method}] Generate iOS binding test for {method}()
+          - Template: ios-binding-test.swift.template
+          - Pattern: {method_type} (void/value/Flow/suspend)
+          - Output: ios/Tests/{ViewModel}BindingTests.swift
+          - Verify: Mock ViewModel, assert wrapper calls shared method
 
-  FOR EACH StateFlow property:
-    GENERATE task:
-      - [ ] T### [BINDING-TEST:{ViewModel}:{property}] Verify platform UI observes {ViewModel}.{property}
-        - iOS: Test .sink/.assign receives state updates
-        - Android: Test .collectAsState() receives state updates
-        - Verify UI re-renders on state change
+# Step 3: Generate Android binding tests (for KMP/React Native)
+IF platform includes Android:
+  GENERATE binding test tasks using android-binding-test.kt.template:
+    FOR EACH public method:
+      CLASSIFY method type (void, value-returning, Flow, suspend)
+      SELECT appropriate test pattern from binding-test-generator skill
+      GENERATE task:
+        - [ ] T### [BINDING-TEST:{ViewModel}:{method}] Generate Android binding test for {method}()
+          - Template: android-binding-test.kt.template
+          - Pattern: {method_type} (void/value/Flow/suspend)
+          - Output: android/app/src/test/{package}/{ViewModel}BindingTest.kt
+          - Verify: Mock ViewModel with Mockito, verify wrapper calls
+
+# Step 4: Observable properties
+FOR EACH StateFlow/Flow/LiveData property:
+  GENERATE task:
+    - [ ] T### [BINDING-TEST:{ViewModel}:{property}] Verify platform UI observes {property}
+      - iOS: Test .sink/.assign/.publisher receives state updates
+      - Android: Test .collectAsState()/.observe() receives state updates
+      - Verify UI re-renders on state change
+
+# Step 5: Quality gate validation
+GENERATE task:
+  - [ ] T### [QG-BIND-004] Verify all generated binding tests are complete (no stubs/TODOs)
+    - Run: grep -r "// TODO: Implement" {test_directories}
+    - Run: grep -r "fatalError(" ios/Tests/
+    - Run: grep -r "throw NotImplementedError" android/app/src/test/
+    - Threshold: 0 stub methods found
 ```
 
 **Quality Gates (Binding)**:
 - QG-BIND-001: All ViewModel public methods have platform binding tests (100% coverage)
 - QG-BIND-002: All StateFlow properties are observed in platform UI (100% coverage)
 - QG-BIND-003: Zero TODO/FIXME/stub comments in platform binding code
+- QG-BIND-004: No stub methods in generated binding tests (all tests fully implemented)
 
 **Example Output (Phase 2e-BINDING)**:
 
@@ -1701,7 +1816,9 @@ FOR EACH ViewModel in shared/src/commonMain/**/*ViewModel.kt:
 
 **Purpose**: Verify SwiftUI/Compose correctly binds to shared Kotlin ViewModels
 
-**Quality Gates**: QG-BIND-001, QG-BIND-002, QG-BIND-003
+**Agent**: test-generator-agent with binding-test-generator skill
+
+**Quality Gates**: QG-BIND-001, QG-BIND-002, QG-BIND-003, QG-BIND-004
 
 ### ReaderViewModel Binding Tests
 

@@ -2538,7 +2538,114 @@ Given that feature description, do this:
 
         Output: Updated spec.md with NFR-ANA-xxx section (if analytics enabled)
 
-    14. Return: SUCCESS (spec ready for planning)
+    14. **Design System Context (Conditional)**: Only execute if design_system exists in constitution:
+
+        a) Check constitution for design_system configuration:
+           ```bash
+           Read /memory/constitution.md § Project Settings
+           Check if design_system section exists with ux_quality and brand_audience
+           ```
+
+        b) **IF design_system configuration exists**:
+
+           **UX Quality NFRs**:
+
+           IF ux_quality.usability_target ∈ [best-in-class, competitive]:
+             ADD NFR: "NFR-UX-001: Usability Testing Required"
+             - Requirement: User testing with {N} participants before launch
+             - Success Metric: Task completion rate >= 90%
+             - Testing Method: {best-in-class: "A/B testing + user testing", competitive: "User testing"}
+             - Traceability: → All FR-xxx with UI components
+
+           IF ux_quality.design_a11y_level == inclusive:
+             ADD NFR: "NFR-A11Y-002: Inclusive Design Testing"
+             - Requirement: User testing with assistive technology users
+             - Coverage: All interactive features tested with screen readers, keyboard navigation, voice control
+             - Participants: Minimum 3 users with diverse disabilities
+             - Traceability: → All FR-xxx with user interactions
+
+           IF "global-audience" IN ux_quality.demographics_priority:
+             ADD NFR: "NFR-I18N-001: Internationalization Ready"
+             - Requirement: All user-facing text externalized for translation
+             - RTL Support: Required for Arabic, Hebrew languages
+             - Cultural Sensitivity: Review required for icons, colors, imagery
+             - Traceability: → All FR-xxx with user-facing content
+
+           IF "neurodiversity" IN ux_quality.demographics_priority:
+             ADD NFR: "NFR-A11Y-003: Cognitive Accessibility"
+             - Requirement: Support for users with ADHD, autism, dyslexia
+             - Implementation: Simple language, clear navigation, focus modes, reduced motion options
+             - Traceability: → All FR-xxx with complex workflows
+
+           IF ux_quality.flow_complexity ∈ [complex, very-complex]:
+             ADD NFR: "NFR-UX-002: Navigation System Complexity"
+             - Requirement: Multi-level navigation system with breadcrumbs
+             - Implementation: {complex: "4-8 screens, standard navigation", very-complex: "20+ screens, multi-role navigation"}
+             - Testing: Navigation usability testing required
+             - Traceability: → All FR-xxx with multi-screen flows
+
+           **Brand Consistency NFRs**:
+
+           IF brand_audience.brand_archetype is set:
+             ADD NFR: "NFR-BRAND-001: Brand Personality Consistency"
+             - Requirement: All UI components align with {brand_archetype} archetype
+             - Implementation: Visual style and interaction patterns match archetype personality
+             - Review: Design review required before implementation
+             - Traceability: → All FR-xxx with UI components
+
+           IF brand_audience.tone_of_voice is set:
+             ADD NFR: "NFR-BRAND-002: Tone of Voice Consistency"
+             - Requirement: All microcopy follows {tone_of_voice} tone
+             - Examples: Error messages, onboarding, help text, notifications
+             - Review: Content review required before launch
+             - Traceability: → All FR-xxx with user-facing text
+
+           **Responsive Design NFRs** (if Web application):
+
+           IF constitution.app_type == web-application AND ux_quality.responsive_strategy is set:
+             ADD NFR: "NFR-RESP-001: Responsive Design Strategy"
+             - Requirement: Implement {responsive_strategy} approach
+             - Breakpoints: {mobile-first: "320px → 768px → 1024px → 1440px", desktop-first: "1440px → 1024px → 768px → 320px", platform-optimized: "Separate designs for mobile/tablet/desktop"}
+             - Testing: Multi-device testing required
+             - Traceability: → All FR-xxx with UI
+
+           **Output Format** (append to Non-Functional Requirements section):
+
+           ```markdown
+           ### UX Quality & Brand Consistency
+
+           **NFR-UX-001**: Usability Testing Required
+           - **Requirement**: User testing with 5-8 participants before launch
+           - **Success Metric**: Task completion rate >= 90%
+           - **Testing Method**: User testing with think-aloud protocol
+           - **Traceability**: → FR-001, FR-002, FR-003
+
+           **NFR-A11Y-002**: Inclusive Design Testing
+           - **Requirement**: User testing with assistive technology users
+           - **Coverage**: All interactive features tested with screen readers, keyboard navigation
+           - **Participants**: Minimum 3 users with diverse disabilities
+           - **Traceability**: → FR-001, FR-002
+
+           **NFR-I18N-001**: Internationalization Ready
+           - **Requirement**: All user-facing text externalized for translation
+           - **RTL Support**: Required for Arabic, Hebrew languages
+           - **Cultural Sensitivity**: Review required for icons, colors, imagery
+           - **Traceability**: → All FR-xxx with user-facing content
+
+           **NFR-BRAND-001**: Brand Personality Consistency
+           - **Requirement**: All UI components align with {brand_archetype} archetype
+           - **Implementation**: Visual style and interaction patterns match archetype
+           - **Review**: Design review required before implementation
+           - **Traceability**: → All FR-xxx with UI components
+           ```
+
+        c) **IF design_system configuration does NOT exist**:
+           - Skip design system NFRs
+           - Log: "No design_system configuration found in constitution, skipping UX/brand NFRs"
+
+        Output: Updated spec.md with design system NFRs (if design_system configured)
+
+    15. Return: SUCCESS (spec ready for planning)
 
 5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
 

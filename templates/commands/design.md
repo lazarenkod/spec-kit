@@ -259,17 +259,35 @@ gates:
         Spec: {{FEATURE_DIR}}/spec.md
         Constitution: memory/constitution.md
 
+        **UX Quality Settings** (from constitution.md design_system.ux_quality):
+        - usability_target: {{UX_QUALITY.usability_target}}
+        - flow_complexity: {{UX_QUALITY.flow_complexity}}
+        - design_a11y_level: {{UX_QUALITY.design_a11y_level}}
+        - error_prevention: {{UX_QUALITY.error_prevention}}
+        - responsive_strategy: {{UX_QUALITY.responsive_strategy}}
+
+        **Brand & Audience Settings** (from constitution.md design_system.brand_audience):
+        - brand_archetype: {{BRAND_AUDIENCE.brand_archetype}}
+        - tone_of_voice: {{BRAND_AUDIENCE.tone_of_voice}}
+        - audience_sophistication: {{BRAND_AUDIENCE.audience_sophistication}}
+        - emotional_goal: {{BRAND_AUDIENCE.emotional_goal}}
+        - demographics_priority: {{BRAND_AUDIENCE.demographics_priority}}
+
         ## Task
         Research design context and gather inputs:
         1. Analyze spec.md for UI-related functional requirements
         2. Extract brand guidelines from constitution if available
-        3. Identify target user personas and their preferences
-        4. Research competitor UX patterns for similar features
+        3. Read UX quality settings (usability_target, flow_complexity, design_a11y_level)
+        4. Read brand/audience settings (brand_archetype, tone_of_voice, emotional_goal)
+        5. Identify target user personas aligned with audience_sophistication level
+        6. Research competitor UX patterns for similar features
+        7. Gather demographic-specific patterns based on demographics_priority
 
         ## Output
-        - Design brief with user needs and constraints
-        - Brand alignment notes
-        - Competitor pattern analysis
+        - Design brief with user needs, UX quality targets, and brand personality
+        - Brand alignment notes including tone of voice and emotional goals
+        - Competitor pattern analysis filtered by usability_target level
+        - Demographic considerations (if demographics_priority specified)
     - role: pattern-analyst
       role_group: RESEARCH
       parallel: true
@@ -356,17 +374,39 @@ gates:
         Design Brief: (from design-researcher)
         Spec: {{FEATURE_DIR}}/spec.md
 
-        ## Task
-        Create UX specifications:
-        1. Design user flows for each user story
-        2. Create wireframes (ASCII or descriptive)
-        3. Define interaction patterns and states
-        4. Specify accessibility requirements
+        **UX Quality Settings** (from constitution.md design_system.ux_quality):
+        - usability_target: {{UX_QUALITY.usability_target}}
+        - flow_complexity: {{UX_QUALITY.flow_complexity}}
+        - design_a11y_level: {{UX_QUALITY.design_a11y_level}}
+        - error_prevention: {{UX_QUALITY.error_prevention}}
+        - responsive_strategy: {{UX_QUALITY.responsive_strategy}}
 
-        ## Output
-        - User flow diagrams
-        - Wireframe specifications
-        - Interaction design document
+        **Brand & Audience Settings** (from constitution.md design_system.brand_audience):
+        - brand_archetype: {{BRAND_AUDIENCE.brand_archetype}}
+        - tone_of_voice: {{BRAND_AUDIENCE.tone_of_voice}}
+        - audience_sophistication: {{BRAND_AUDIENCE.audience_sophistication}}
+        - emotional_goal: {{BRAND_AUDIENCE.emotional_goal}}
+        - demographics_priority: {{BRAND_AUDIENCE.demographics_priority}}
+
+        ## Task
+        Create UX specifications aligned with quality and brand settings:
+        1. Design user flows following {{flow_complexity}} complexity level (simple/moderate/complex/very-complex)
+        2. Create wireframes optimized for {{audience_sophistication}} users (expert/intermediate/beginner/non-technical)
+        3. Define interaction patterns aligned with {{brand_archetype}} personality (innovator/trusted-advisor/friend/performer/minimalist)
+        4. Specify {{design_a11y_level}} accessibility requirements (inclusive/proactive/compliance+/compliance-only)
+        5. Apply {{error_prevention}} error handling strategy (proactive/reactive/minimal)
+        6. Design responsive behavior following {{responsive_strategy}} approach (if Web app)
+        7. Include emotional design patterns supporting {{emotional_goal}} (confidence/delight/empowerment/calm/excitement)
+        8. Apply demographic-specific patterns from {{demographics_priority}} (if specified)
+
+        ## Output Requirements
+        - User flow diagrams with {{flow_complexity}} navigation complexity
+        - Wireframes for {{audience_sophistication}} user sophistication level
+        - Interaction patterns aligned with {{emotional_goal}} emotional goal
+        - Accessibility annotations for {{design_a11y_level}} level
+        - Error handling UX for {{error_prevention}} strategy
+        - Responsive behavior patterns for {{responsive_strategy}} (if applicable)
+        - Microcopy examples following {{tone_of_voice}} tone
     - role: product-designer
       role_group: DESIGN
       parallel: true
@@ -403,6 +443,11 @@ gates:
         Feature: {{FEATURE_DIR}}
         Brand Guidelines: (from design-researcher)
         Existing Patterns: (from pattern-analyst)
+
+        **Brand & Audience Settings** (from constitution.md design_system.brand_audience):
+        - brand_archetype: {{BRAND_AUDIENCE.brand_archetype}}
+        - tone_of_voice: {{BRAND_AUDIENCE.tone_of_voice}}
+        - emotional_goal: {{BRAND_AUDIENCE.emotional_goal}}
 
         ## Multi-Modal Reference Loading (NEW v0.3.0)
         IF constitution.design_system.reference_images exists:
@@ -467,16 +512,18 @@ gates:
           LOG "No reference images provided. Using text specifications only."
 
         ## Task
-        Create visual design language:
-        1. Define color palette extensions if needed
-        2. Create typography specifications
-        3. Design component visual styles
-        4. Establish spacing and layout rules
+        Create visual design language aligned with brand personality:
+        1. Define color palette following {{brand_archetype}} personality (innovator: bold, trusted-advisor: conservative, friend: warm, performer: vibrant, minimalist: monochrome)
+        2. Create typography specifications matching {{brand_archetype}} (innovator: experimental fonts, minimalist: simple sans-serif)
+        3. Design component visual styles supporting {{emotional_goal}} (confidence: consistent, delight: playful, empowerment: powerful, calm: soft, excitement: dynamic)
+        4. Establish spacing and layout rules reflecting brand personality
+        5. Apply {{tone_of_voice}} to microcopy and messaging patterns
 
-        ## Output
-        - Visual design specifications
-        - Color and typography tokens
-        - Component style definitions
+        ## Output Requirements
+        - Visual design specifications aligned with {{brand_archetype}} personality
+        - Color and typography tokens supporting {{emotional_goal}}
+        - Component style definitions with {{tone_of_voice}}-appropriate messaging
+        - Brand personality rationale for design decisions
     - role: motion-designer
       role_group: DESIGN
       parallel: true
@@ -513,17 +560,23 @@ gates:
         Feature: {{FEATURE_DIR}}
         Existing Animations: (from pattern-analyst)
 
-        ## Task
-        Design animation system:
-        1. Define transition patterns (enter, exit, transform)
-        2. Specify timing curves and durations
-        3. Create micro-interaction specifications
-        4. Document loading state animations
+        **Brand & Audience Settings** (from constitution.md design_system.brand_audience):
+        - emotional_goal: {{BRAND_AUDIENCE.emotional_goal}}
+        - brand_archetype: {{BRAND_AUDIENCE.brand_archetype}}
 
-        ## Output
-        - Motion design specifications
-        - CSS/Framer Motion code snippets
-        - Animation timing tokens
+        ## Task
+        Design animation system aligned with emotional design goal:
+        1. Define transition patterns following {{emotional_goal}} (confidence: predictable, delight: playful, empowerment: powerful, calm: gentle, excitement: dynamic)
+        2. Specify timing curves and durations matching {{brand_archetype}} (innovator: bold/experimental, minimalist: subtle/restrained)
+        3. Create micro-interactions supporting {{emotional_goal}} emotional tone
+        4. Document loading state animations appropriate for brand personality
+        5. Balance expressiveness with accessibility (prefers-reduced-motion support)
+
+        ## Output Requirements
+        - Motion design specifications aligned with {{emotional_goal}}
+        - CSS/Framer Motion code snippets with {{brand_archetype}} personality
+        - Animation timing tokens supporting emotional design goals
+        - Reduced-motion fallbacks for accessibility
 
     # Wave 3: System Creation (after design)
     - role: design-system-generator
@@ -756,18 +809,53 @@ gates:
         Feature: {{FEATURE_DIR}}
         All Design Artifacts: (from previous agents)
         Spec: {{FEATURE_DIR}}/spec.md
+        Constitution: memory/constitution.md
+
+        **UX Quality Settings** (from constitution.md design_system.ux_quality):
+        - usability_target: {{UX_QUALITY.usability_target}}
+        - flow_complexity: {{UX_QUALITY.flow_complexity}}
+        - design_a11y_level: {{UX_QUALITY.design_a11y_level}}
+        - error_prevention: {{UX_QUALITY.error_prevention}}
+        - responsive_strategy: {{UX_QUALITY.responsive_strategy}}
+
+        **Brand & Audience Settings** (from constitution.md design_system.brand_audience):
+        - brand_archetype: {{BRAND_AUDIENCE.brand_archetype}}
+        - tone_of_voice: {{BRAND_AUDIENCE.tone_of_voice}}
+        - audience_sophistication: {{BRAND_AUDIENCE.audience_sophistication}}
+        - emotional_goal: {{BRAND_AUDIENCE.emotional_goal}}
+        - demographics_priority: {{BRAND_AUDIENCE.demographics_priority}}
 
         ## Task
-        Validate design quality:
-        1. Check all FR-xxx have corresponding UI specs
-        2. Verify accessibility compliance (WCAG 2.1 AA)
-        3. Validate design token completeness
-        4. Check brand consistency
+        Validate Design Quality Score (DQS v2.0) across 12 dimensions:
 
-        ## Output
-        - Design QA report
-        - Issue list with severity
-        - Recommendations for fixes
+        **Baseline Dimensions** (45 points total):
+        1. Token Completeness (10pts): Colors, typography, spacing, motion tokens complete
+        2. Component Documentation (8pts): Storybook stories, props, usage examples, a11y notes
+        3. Accessibility Compliance (12pts): WCAG contrast, ARIA patterns, keyboard nav, screen readers
+        4. Consistency (10pts): Design token usage, no hardcoded values
+        5. Figma Export Quality (5pts): Token compatibility, layer naming, component structure
+
+        **UX Quality Dimensions** (35 points total, NEW v0.6.2):
+        6. Usability Testing Plan (15pts): Based on {{usability_target}} (best: full plan, competitive: basic, acceptable: minimal, low: none)
+        7. User Flow Documentation (15pts): Flow diagrams, navigation system, IA for {{flow_complexity}} level
+        8. Accessibility Empowerment (10pts): Based on {{design_a11y_level}} (inclusive: user testing, proactive: exceeds WCAG, compliance+: best practices, compliance-only: minimum)
+        9. Error Handling UX (5pts): Based on {{error_prevention}} (proactive: inline validation, reactive: clear messages, minimal: basic)
+        10. Responsive Design Completeness (5pts): Breakpoints, responsive patterns for {{responsive_strategy}} (if Web app)
+
+        **Brand Dimensions** (5 points total, NEW v0.6.2):
+        11. Brand Consistency (3pts): Visual style aligned with {{brand_archetype}}, microcopy follows {{tone_of_voice}}, emotional patterns match {{emotional_goal}}
+        12. Inclusive Design (2pts): Demographic-specific patterns for {{demographics_priority}} (0.5pt each)
+
+        **DQS Formula**: Sum all dimensions × 100 = 0-100 score
+        **Quality Gate**: DQS >= 70 (QG-DQS-001)
+
+        ## Output Requirements
+        - Design Quality Score (DQS): {score}/100
+        - Dimension breakdown (12 dimensions with scores)
+        - Failed dimensions with remediation steps
+        - Issue list with severity (CRITICAL if DQS < 70)
+        - UX/brand alignment validation
+        - Recommendations for improvement
 skills:
   - name: interaction-design
     trigger: "When defining component states and behaviors"
