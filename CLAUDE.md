@@ -339,3 +339,233 @@ constitution → concept → validate-concept → specify → clarify → design
 
 - Only `.COMPRESSED.md` files changed
 - Changes are only to non-command templates (shared/, etc.)
+
+## ARCHITECTURE.md Maintenance
+
+After any changes to core architectural components, update `ARCHITECTURE.md`:
+
+### When to Update
+
+Automatically update ARCHITECTURE.md when changes occur in:
+
+**CLI Layer (Section 3):**
+- `src/specify_cli/__init__.py` — CLI entry point, AGENT_CONFIG, commands
+- `src/specify_cli/wave_scheduler.py` — DAG execution
+- `src/specify_cli/agent_pool.py` — Concurrent API
+- `src/specify_cli/batch_aggregator.py` — Cross-wave optimization
+- `src/specify_cli/*.py` — Any other CLI modules
+
+**Template System (Section 4):**
+- `templates/commands/*.md` — New commands added or modified
+- `templates/shared/concept-sections/*.md` — New modular sections
+- `templates/shared/quality/*.md` — Quality gate definitions
+- `templates/shared/traceability/*.md` — Traceability system changes
+
+**Scripts & Automation (Section 6):**
+- `scripts/bash/*.sh` — Bash script changes
+- `scripts/powershell/*.ps1` — PowerShell script changes
+- `memory/constitution.base.md` — Base constitution updated
+- `memory/domains/*.md` — Domain-specific knowledge
+
+**CI/CD & Release (Section 7):**
+- `.github/workflows/*.yml` — GitHub Actions workflow changes
+- `.github/workflows/scripts/*.sh` — Release scripts modified
+
+**Configuration:**
+- `pyproject.toml` — Version bumped, dependencies changed
+- `AGENT_CONFIG` changes in `__init__.py` — New agents added/removed
+
+### Update Process
+
+#### 1. Detect Affected Sections
+
+Map changed files to document sections using the Section Mapping Table below.
+
+#### 2. Update Section Content
+
+For each affected section:
+
+**Section 3.3 (AGENT_CONFIG):**
+- Scan `__init__.py` for AGENT_CONFIG dictionary (~line 185)
+- Extract: agent name, folder, requires_cli
+- Regenerate agent table:
+  ```markdown
+  | Agent | Folder | Requires CLI | Install URL |
+  |-------|--------|--------------|-------------|
+  | claude | .claude/ | Yes | https://... |
+  ```
+- Update agent count in text (currently 17 agents)
+
+**Section 4.1 (Slash Commands):**
+- Count files in `templates/commands/`
+- Update command count (currently "50+ commands")
+- Regenerate command list if new commands added
+
+**Section 4.2 (Modular Sections):**
+- Count files in `templates/shared/concept-sections/`
+- Update section count (currently "36 секций")
+- Update categorization if new categories added
+
+**Section 5.2 (Quality Gates):**
+- Parse `memory/domains/quality-gates.md`
+- Extract QG-001 through QG-012, QG-TEST-001..004, QG-DRIFT-001..004, PM-001..006
+- Update QG tables with: ID, Name, Threshold, Phase
+
+**Section 6.2 (Key Scripts):**
+- List all `.sh` files in `scripts/bash/`
+- For each script, extract:
+  - Purpose (from header comment)
+  - Key functions (grep for function definitions)
+  - Usage examples (from comments)
+- Update script descriptions
+
+**Section 7.1 (CI/CD Pipeline):**
+- List all `.yml` files in `.github/workflows/`
+- For each workflow:
+  - Parse `name:` field
+  - Parse `on:` triggers
+  - Parse `jobs:` (job names)
+- Update workflow descriptions
+
+**Section 8.2 (Wave Scheduler Algorithm):**
+- Parse `wave_scheduler.py` for:
+  - DAG building algorithm
+  - Topological sort implementation
+  - File conflict detection logic
+- Update algorithm description if implementation changed
+
+**Section 11.1 (Glossary):**
+- Add new terms when new concepts introduced
+- Update existing term definitions if behavior changed
+
+**Section 11.2 (File Path Reference):**
+- Add new critical files to tables
+- Update line counts if files significantly changed (±20%)
+- Add new categories if new components added
+
+**Section 11.3 (Changelog Highlights):**
+- Parse `CHANGELOG.md` for latest 5 versions
+- Extract highlights from `## [X.Y.Z]` sections
+- Update version timeline table
+
+#### 3. Update Meta Information
+
+**Header Comment:**
+```markdown
+<!-- AUTO-GENERATED SECTIONS - DO NOT EDIT MANUALLY -->
+<!-- Generated at: YYYY-MM-DD HH:MM:SS -->
+<!-- Version: 0.4.0 (from pyproject.toml) -->
+<!-- Sources: src/specify_cli/*.py, templates/**/*.md, scripts/**/* -->
+```
+
+**Footer:**
+```markdown
+**Документ версия**: 0.4.0
+**Последнее обновление**: 2026-01-11
+**Сгенерировано**: Автоматически из кодовой базы spec-kit
+```
+
+#### 4. Verification
+
+After updating, verify:
+- [ ] All section counts accurate (agents, commands, sections, scripts)
+- [ ] Version numbers synchronized with `pyproject.toml`
+- [ ] Timestamp updated to current date/time
+- [ ] Code snippets valid (check syntax)
+- [ ] Cross-references not broken (links between sections work)
+- [ ] File paths absolute and correct
+- [ ] Tables properly formatted
+
+### Section Mapping Table
+
+| File Pattern | Document Section | What to Update |
+|--------------|------------------|----------------|
+| `src/specify_cli/__init__.py` (AGENT_CONFIG) | 3.3 | Agent table, agent count |
+| `src/specify_cli/__init__.py` (commands) | 3.5 | CLI commands list |
+| `src/specify_cli/wave_scheduler.py` | 8.2 | DAG algorithm description |
+| `src/specify_cli/agent_pool.py` | 8.3 | Concurrent API details |
+| `src/specify_cli/batch_aggregator.py` | 8.4 | Cross-wave optimization |
+| `templates/commands/*.md` (new file) | 4.1, 11.2 | Command count, file reference |
+| `templates/commands/*.md` (YAML change) | 4.1 | Update frontmatter schema examples |
+| `templates/shared/concept-sections/*.md` | 4.2 | Section count, categorization |
+| `templates/shared/quality/*.md` | 5.1-5.5 | Quality rubrics, scoring |
+| `templates/shared/traceability/*.md` | 5.4 | Traceability system description |
+| `scripts/bash/*.sh` (new script) | 6.2, 11.2 | Add script description, file reference |
+| `scripts/powershell/*.ps1` (new script) | 6.2, 11.2 | Add script description, file reference |
+| `memory/domains/quality-gates.md` | 5.2, 5.3 | Update QG registry tables |
+| `memory/constitution.base.md` | 6.3 | Layer 0 principles |
+| `.github/workflows/*.yml` | 7.1 | CI/CD pipeline descriptions |
+| `pyproject.toml` (version) | Footer, 11.3 | Version number, changelog |
+| `CHANGELOG.md` | 11.3 | Changelog highlights table |
+
+### Skip Updates When
+
+**Do NOT update ARCHITECTURE.md if changes only in:**
+- `*.COMPRESSED.md` files
+- `templates/stacks/*.yaml` (tech stack configs)
+- `templates/personas/*.md` (persona definitions)
+- `templates/skills/*.md` (skill definitions)
+- `docs/` directory (except if adding new architectural patterns)
+- `.vscode/`, `.idea/` (IDE configs)
+- Test files (`*_test.py`, `*_test.go`, `tests/`)
+- README.md, CONTRIBUTING.md (non-architectural docs)
+
+**Only update if:**
+- Changes affect architecture (new modules, new patterns)
+- New AI agents added/removed in AGENT_CONFIG
+- Core algorithms changed (wave scheduling, batching, DAG)
+- New Quality Gates added (QG-xxx, IG-xxx)
+- New workflow commands added (handoffs, phases)
+- Major version bump (0.x.0 → 0.y.0 or x.0.0 → y.0.0)
+
+### Update Frequency
+
+- **After minor changes**: Update affected sections only
+- **After major features**: Full review of Sections 1-9
+- **Before releases**: Full review + verification checklist
+- **Version bumps**: Always update footer + Section 11.3
+
+### Examples
+
+**Example 1: New AI Agent Added**
+```
+Files changed: src/specify_cli/__init__.py (AGENT_CONFIG)
+Affected sections: 3.3, 10.4, 11.1 (glossary if needed)
+Action:
+1. Update agent table in Section 3.3
+2. Update agent count (16 → 17)
+3. Update "ПОЧЕМУ 16 агентов?" → "ПОЧЕМУ 17 агентов?" in Section 10.4
+4. Update AGENT_CONFIG code snippet if structure changed
+```
+
+**Example 2: New Slash Command**
+```
+Files changed: templates/commands/new-command.md
+Affected sections: 4.1, 11.2
+Action:
+1. Update command count in Section 4.1 (50+ → 51+)
+2. Add file to File Path Reference table in Section 11.2
+3. If major command, add example to Section 4.1.3
+```
+
+**Example 3: Quality Gate Changes**
+```
+Files changed: memory/domains/quality-gates.md
+Affected sections: 5.2, 5.3, 11.1
+Action:
+1. Re-parse quality-gates.md for new QG definitions
+2. Update QG registry tables in Section 5.2
+3. Update inline gates table in Section 5.2 if IG-* added
+4. Add new gate IDs to glossary if they introduce new concepts
+```
+
+**Example 4: Version Bump to 0.5.0**
+```
+Files changed: pyproject.toml, CHANGELOG.md
+Affected sections: Footer, 11.3
+Action:
+1. Update footer version (0.4.0 → 0.5.0)
+2. Update footer timestamp
+3. Add 0.5.0 to changelog highlights in Section 11.3
+4. Update version timeline table
+```
