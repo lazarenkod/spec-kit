@@ -458,14 +458,19 @@ Examples of foundational tasks (adjust based on your project):
 **Why PBT**: [reasoning - e.g., "Tests thousands of email formats automatically"]
 **Alternative**: Implement explicit test cases above if PBT overhead too high
 
-### Implementation for User Story 1
+### Implementation for User Story 1: User Registration and Authentication
 
-- [ ] T012 [P] [US1] [FR:FR-001] Create [Entity1] model in src/models/[entity1].py
-- [ ] T013 [P] [US1] [FR:FR-001] Create [Entity2] model in src/models/[entity2].py
-- [ ] T014 [US1] [DEP:T012,T013] [FR:FR-001,FR-002] Implement [Service] in src/services/[service].py
-- [ ] T015 [US1] [DEP:T014] [FR:FR-002] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T016 [US1] [DEP:T015] [FR:FR-002] Add validation and error handling
-- [ ] T017 [US1] [DEP:T015] Add logging for user story 1 operations
+#### Database & Models
+- [ ] T012 [P] [US1] [FR:FR-001] Create User model in src/models/user.py with fields: id (UUID), email (unique, indexed), password_hash, created_at, updated_at
+- [ ] T013 [P] [US1] [FR:FR-001] Create Session model in src/models/session.py with fields: id, user_id (FK to User), token, expires_at
+
+#### Business Logic
+- [ ] T014 [US1] [DEP:T012,T013] [FR:FR-001,FR-002] Implement UserService in src/services/user_service.py with methods: register(email, password) returns userId, authenticate(email, password) returns token, resetPassword(email) sends reset link
+
+#### API Endpoints
+- [ ] T015 [US1] [DEP:T014] [FR:FR-002] Implement POST /api/v1/auth/register endpoint in src/api/auth.py with register_user() handler (expects: email, password; returns: userId, token; status: 201)
+- [ ] T016 [US1] [DEP:T015] [FR:FR-002] Add validation for email format (RFC 5322) and password strength (min 8 chars, 1 uppercase, 1 number, 1 special) in src/api/validators.py
+- [ ] T017 [US1] [DEP:T015] Add structured logging for authentication events (register, login, password_reset) using logger in src/utils/logger.py
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -485,27 +490,32 @@ Examples of foundational tasks (adjust based on your project):
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation (TDD)**
 
-#### Test: Integration Test - [Scenario Summary]
+#### Test: Integration Test - User Registration with Valid Email
 
-- [ ] T018 [P] [US2] [TEST:AS-2A] Integration Test: [scenario description]
+- [ ] T018 [P] [US2] [TEST:AS-2A] Integration Test: Test user registration with valid email (test@example.com, SecurePass123!) expects 201 status, userId in response, and confirmation email sent
 
-**Scenario**: AS-2A - [Given/When/Then description]
+**Scenario**: AS-2A - User can register with valid email and strong password
 
 **Test Structure**:
-```[language]
-# ARRANGE (Given: [preconditions])
-[setup_code_suggestions]
+```python
+# ARRANGE (Given: valid email and strong password)
+email = "test@example.com"
+password = "SecurePass123!"
+mock_email_service = Mock()
 
-# ACT (When: [action])
-[action_code_suggestion]
+# ACT (When: POST /api/v1/auth/register)
+response = client.post("/api/v1/auth/register", json={"email": email, "password": password})
 
-# ASSERT (Then: [expected_outcome])
-[assertion_code_suggestions]
+# ASSERT (Then: returns 201, userId, confirmation email sent)
+assert response.status_code == 201
+assert "userId" in response.json
+assert response.json["userId"] is not None
+mock_email_service.send_confirmation.assert_called_once_with(email)
 ```
 
 **Test Data Suggestions**:
-- [entity_1]: [language-specific suggestion]
-- [entity_2]: [language-specific suggestion]
+- Valid emails: `["test@example.com", "user+tag@domain.co.uk", "name.surname@company.io"]`
+- Strong passwords: `["SecurePass123!", "C0mpl3x#Pass", "MyP@ssw0rd2024"]`
 
 **Estimated Effort**: [hours]
 

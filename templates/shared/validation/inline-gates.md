@@ -316,6 +316,86 @@ inline_gates:
       threshold: 0
       severity: HIGH
       message: "Acceptance scenarios missing test tasks"
+    - id: IG-TASK-005
+      name: "Task Clarity (No Placeholders)"
+      phase: Post-generation
+      tier: 1
+      threshold: 0
+      severity: HIGH
+      message: "Tasks contain placeholders or generic terms - cannot execute by weak LLM"
+      validation_rules:
+        - rule: "No Placeholder Brackets"
+          pattern: '\[(Entity\d*|Service|Component|scenario|test|method|function|field|endpoint)\]'
+          action: FAIL
+          example_violation: "[Entity1]"
+          example_fix: "User"
+        - rule: "No Generic Terms (3+ = FAIL)"
+          pattern: '\b(relevant|appropriate|necessary)\b'
+          action: WARN
+          threshold: 3
+          example_violation: "with relevant fields"
+          example_fix: "with fields: id, email, password_hash"
+        - rule: "Concrete File Paths"
+          pattern: 'src/[a-z]+/\[.*?\]\.(py|ts|tsx|js|jsx|java|go|rs)'
+          action: FAIL
+          example_violation: "src/models/[entity].py"
+          example_fix: "src/models/user.py"
+        - rule: "Specific Method Names"
+          pattern: '\[method.*?\]|\[function.*?\]'
+          action: FAIL
+          example_violation: "[method_name]()"
+          example_fix: "register(email, password)"
+        - rule: "HTTP Details Complete"
+          pattern: '\[(GET|POST|PUT|DELETE|PATCH)\]|\[endpoint\]|\[handler\]'
+          action: FAIL
+          example_violation: "[HTTP method] [endpoint]"
+          example_fix: "POST /api/v1/auth/register with register_user() handler"
+        - rule: "Test Scenarios Specific"
+          pattern: '\[scenario.*?\]|\[test.*?type\]|\[test.*?case\]'
+          action: FAIL
+          example_violation: "[scenario description]"
+          example_fix: "test user registration with valid email (test@example.com)"
+        - rule: "Model Fields Specified"
+          pattern: 'model.*\[field\d*\]|with fields:?\s*\[.*?\]'
+          action: FAIL
+          example_violation: "with fields: [field1], [field2]"
+          example_fix: "with fields: id (UUID), email (unique), password_hash"
+        - rule: "Service Methods Specified"
+          pattern: '(Service|service).*without.*methods:|Service\s+in\s+src/.*\.py$'
+          action: FAIL
+          example_violation: "Implement UserService in src/services/user_service.py"
+          example_fix: "Implement UserService with methods: register(), authenticate()"
+        - rule: "Component Props Specified"
+          pattern: '(Component|component).*without.*(props|properties):|Component\s+in\s+src/.*\.(tsx|jsx|vue)$'
+          action: FAIL
+          example_violation: "Create LoginForm in src/components/LoginForm.tsx"
+          example_fix: "Create LoginForm with props: onSubmit, initialEmail"
+        - rule: "Specificity Ratio ≥60%"
+          description: "Calculate (concrete nouns) / (total nouns) in task descriptions"
+          threshold: 0.6
+          fail_threshold: 0.4
+          action: WARN
+          example_violation: "Implement [Service] with [methods]"
+          example_fix: "Implement UserService with register(), authenticate() methods"
+      remediation:
+        tier_1:
+          trigger: "1-2 missing details"
+          action: "Auto-fix with reasonable defaults + ⚠️ warning"
+          continue: true
+        tier_2:
+          trigger: "3+ missing details"
+          action: "BLOCK and request /speckit.clarify"
+          continue: false
+      error_template: |
+        [IG-TASK-005] FAIL: Task clarity validation failed
+        Location: tasks.md:{line} ({task_id})
+        Issue: {violation_type}
+        Task: "{task_text}"
+
+        Fix: {fix_suggestion}
+
+        Run: /speckit.clarify to identify missing details
+        Skip: --skip-gates (not recommended for weak-LLM execution)
 ```
 
 ### /speckit.implement

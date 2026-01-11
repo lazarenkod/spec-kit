@@ -651,6 +651,331 @@ Every task MUST strictly follow this format:
 - ❌ WRONG: `- [ ] [US1] Create User model` (missing Task ID)
 - ❌ WRONG: `- [ ] T001 [US1] Create model` (missing file path)
 
+---
+
+## Task Clarity Requirements
+
+**Purpose**: Ensure tasks are **immediately executable** by weak LLMs (Claude Haiku, GPT-3.5) without requiring additional context or interpretation.
+
+**Core Principle**: Tasks must contain **concrete details**, not placeholders or generic terms. Every task should specify exact file paths, method names, parameters, and test scenarios extracted from spec.md and plan.md.
+
+### Forbidden Patterns
+
+The following patterns are **strictly prohibited** in task descriptions:
+
+| Pattern | Example | Why Forbidden | Extract From |
+|---------|---------|---------------|--------------|
+| **Placeholder brackets** | `[Entity1]`, `[Entity2]`, `[Service]` | Requires context to resolve | spec.md Domain Model |
+| **Generic entity refs** | `[Component]`, `[Model]`, `[Controller]` | Ambiguous, not specific | spec.md UI Components / plan.md Architecture |
+| **Vague scenarios** | `[scenario description]`, `[test case]` | No actionable detail | spec.md AS-xxx scenarios |
+| **Missing HTTP details** | `[HTTP method]`, `[endpoint]` | Incomplete API specification | spec.md API Requirements |
+| **Generic method names** | `[method_name]()`, `[function]()` | No implementation guidance | plan.md Architecture |
+| **Placeholder paths** | `src/models/[entity].py` | Cannot create file | Derive from entity name |
+| **Generic terms** | "relevant", "appropriate", "necessary" | Subjective, requires judgment | Specify exact requirement |
+
+### Five Extraction Algorithms
+
+Use these algorithms to extract concrete details from spec.md and plan.md:
+
+#### Algorithm 1: Model/Entity Extraction
+
+**Input**: spec.md Domain Model section
+**Output**: Entity name + fields with types
+
+**Example**:
+
+```text
+FROM spec.md Domain Model:
+**User** entity with fields:
+- id: UUID (primary key)
+- email: string (unique, indexed)
+- password_hash: string
+- created_at: timestamp
+- updated_at: timestamp
+
+GENERATE TASK:
+✅ Create User model in src/models/user.py with fields: id (UUID), email (unique, indexed), password_hash, created_at, updated_at
+
+❌ NOT: Create [Entity1] model in src/models/[entity1].py
+```
+
+**Fallback**: If fields not specified → use ⚠️ warning:
+```
+⚠️ Create User model in src/models/user.py (fields not specified in spec, using common defaults: id, created_at, updated_at)
+```
+
+---
+
+#### Algorithm 2: Service/Business Logic Extraction
+
+**Input**: plan.md Architecture or spec.md Functional Requirements
+**Output**: Service name + specific methods with signatures
+
+**Example**:
+
+```text
+FROM plan.md Architecture:
+**UserService** (src/services/user_service.py):
+- register(email: string, password: string) → userId: UUID
+- authenticate(email: string, password: string) → token: string
+- resetPassword(email: string) → void
+
+GENERATE TASK:
+✅ Implement UserService in src/services/user_service.py with methods: register(email, password) returns userId, authenticate(email, password) returns token, resetPassword(email) sends reset link
+
+❌ NOT: Implement [Service] in src/services/[service].py
+```
+
+**Fallback**: If methods not specified → extract from FR:
+```
+✅ Implement UserService in src/services/user_service.py with CRUD operations for User entity (FR-001, FR-002)
+```
+
+---
+
+#### Algorithm 3: API Endpoint Extraction
+
+**Input**: spec.md API Requirements / Contracts
+**Output**: HTTP method + path + handler + expected I/O
+
+**Example**:
+
+```text
+FROM spec.md API Requirements:
+**POST /api/v1/auth/register**
+- Handler: register_user()
+- Request: { email: string, password: string }
+- Response: { userId: UUID, token: string }
+- Status: 201 Created
+
+GENERATE TASK:
+✅ Implement POST /api/v1/auth/register endpoint in src/api/auth.py with register_user() handler (expects: email, password; returns: userId, token; status: 201)
+
+❌ NOT: Implement [HTTP method] [endpoint] in src/api/[module].py
+```
+
+**Fallback**: If handler name missing → derive from endpoint:
+```
+✅ Implement POST /api/v1/auth/register endpoint in src/api/auth.py with handler (expects: email, password; returns: userId, token)
+```
+
+---
+
+#### Algorithm 4: Test Scenario Extraction
+
+**Input**: spec.md Acceptance Scenarios (AS-xxx)
+**Output**: GIVEN/WHEN/THEN → specific test with concrete values
+
+**Example**:
+
+```text
+FROM spec.md AS-001:
+**AS-001: User can register with valid email**
+GIVEN: valid email "test@example.com" and strong password "SecurePass123!"
+WHEN: POST /api/v1/auth/register
+THEN: returns 201 status, userId in response, confirmation email sent to test@example.com
+
+GENERATE TASK:
+✅ [TEST:AS-001] Test user registration with valid email (test@example.com, SecurePass123!) expects 201 status, userId in response, and confirmation email sent
+
+❌ NOT: Test [scenario description] with [test type]
+```
+
+**Test Types**: Map from AS context:
+- Unit test: Service/model logic scenarios
+- Integration test: API endpoint scenarios
+- E2E test: User journey scenarios
+
+**Fallback**: If test values missing → use realistic defaults with ⚠️:
+```
+⚠️ [TEST:AS-001] Test user registration with valid email (test@example.com, default password) expects 201 status (concrete values not in spec, using defaults)
+```
+
+---
+
+#### Algorithm 5: UI Component Extraction
+
+**Input**: spec.md UI Components / design.md
+**Output**: Component name + props + states
+
+**Example**:
+
+```text
+FROM spec.md UI Components:
+**LoginForm** component (src/components/LoginForm.tsx):
+- Props: onSubmit (function), initialEmail (string, optional)
+- States: isLoading (boolean), errorMessage (string|null), isPasswordVisible (boolean)
+- Events: handleSubmit, togglePasswordVisibility
+
+GENERATE TASK:
+✅ Create LoginForm component in src/components/LoginForm.tsx with props (onSubmit, initialEmail) and states (isLoading, errorMessage, isPasswordVisible)
+
+❌ NOT: Create [Component] component in src/components/[component].tsx
+```
+
+**Fallback**: If props/states not specified → extract from FR/AS:
+```
+✅ Create LoginForm component in src/components/LoginForm.tsx with authentication functionality (FR-001) - props and states derived from login flow requirements
+```
+
+---
+
+### Tiered Fallback Strategy
+
+When extraction algorithms cannot find complete details:
+
+#### Tier 1: 1-2 Missing Details → Reasonable Defaults with ⚠️
+
+Apply when most details are present but minor elements are missing.
+
+**Actions**:
+- Use reasonable defaults based on domain knowledge
+- Add ⚠️ warning prefix to task
+- Document assumption in parentheses
+- Continue with task generation
+
+**Examples**:
+
+```markdown
+⚠️ Create User model in src/models/user.py (fields not specified, using: id, email, created_at, updated_at)
+
+⚠️ Implement UserService in src/services/user_service.py with CRUD operations (method signatures not specified, deriving from FR-001, FR-002)
+
+⚠️ [TEST:AS-001] Test registration with valid email (test@example.com) expects 201 status (test password not specified, using: SecurePass123!)
+```
+
+**When to Use**:
+- Missing: field types, method return types, test input values
+- Present: entity names, file paths, core functionality
+- Context: Enough spec detail to infer reasonable defaults
+
+---
+
+#### Tier 2: 3+ Missing Details → BLOCK and Request Clarification
+
+Apply when critical details are missing, making task ambiguous.
+
+**Actions**:
+- **BLOCK** task generation
+- Generate error message listing missing details
+- Suggest running `/speckit.clarify` or updating spec.md
+- Do NOT generate placeholder task
+
+**Error Message Template**:
+
+```text
+❌ BLOCKED: Cannot generate task - insufficient details
+
+Task Intent: [Brief description of what was attempted]
+Missing Details:
+  - [Detail 1]: [What's missing and where it should be]
+  - [Detail 2]: [What's missing and where it should be]
+  - [Detail 3+]: [What's missing and where it should be]
+
+Resolution:
+1. Run /speckit.clarify to identify and fill gaps
+2. Update spec.md [Section Name] with [Specific Details Needed]
+3. Re-run /speckit.tasks to regenerate
+
+Example: If generating service task, need:
+  - Service name (spec.md Domain Model or plan.md Architecture)
+  - Method names and signatures (plan.md Architecture)
+  - File path structure (plan.md Directory Structure)
+```
+
+**Examples**:
+
+```text
+❌ BLOCKED: Cannot generate service task - insufficient details
+
+Task Intent: Implement business logic service
+Missing Details:
+  - Service name (not found in plan.md Architecture)
+  - Method names and signatures (not found in FR-001, FR-002)
+  - File path (directory structure not specified)
+
+Resolution:
+1. Run /speckit.clarify to specify service architecture
+2. Update plan.md Architecture section with service design
+3. Re-run /speckit.tasks
+
+❌ BLOCKED: Cannot generate API endpoint task - insufficient details
+
+Task Intent: Create REST endpoint
+Missing Details:
+  - HTTP method (GET/POST/PUT/DELETE not specified)
+  - Endpoint path (URL structure not defined)
+  - Request/response schema (not in spec.md Contracts)
+  - Handler location (plan.md Architecture missing)
+
+Resolution:
+1. Update spec.md API Requirements with endpoint specification
+2. Define request/response schemas in Contracts
+3. Re-run /speckit.tasks
+```
+
+**When to Use**:
+- Missing: entity names, service names, endpoint paths, file locations
+- Critical ambiguity: Cannot determine what needs to be built
+- Multiple interpretations possible: Task would be guesswork
+
+---
+
+### Self-Validation Checklist
+
+Before generating tasks.md, validate ALL tasks against these criteria:
+
+#### ✅ Validation Checks
+
+- [ ] **No placeholder brackets**: Zero matches for `\[(Entity|Service|Component|scenario|test|method)\d*\]`
+- [ ] **No generic terms**: No "relevant", "appropriate", "necessary" without specifics
+- [ ] **Concrete file paths**: All paths like `src/models/user.py`, not `src/models/[entity].py`
+- [ ] **Specific method names**: All methods like `register()`, `authenticate()`, not `[method_name]()`
+- [ ] **Complete HTTP details**: All API tasks have method + path + handler (e.g., "POST /api/v1/users endpoint with createUser() handler")
+- [ ] **Specific test scenarios**: All test tasks reference AS-xxx and have concrete test values (e.g., "test@example.com, SecurePass123!")
+
+#### ⚠️ Warning Indicators
+
+Count of tasks with ⚠️ warnings should be **< 20%** of total tasks. If ≥ 20%:
+- STOP generation
+- Recommend running `/speckit.clarify` to fill specification gaps
+- List all areas needing clarification
+
+#### 🔍 Specificity Ratio
+
+Calculate: `(Concrete nouns) / (Total nouns)` in task descriptions
+
+**Target**: ≥ 60% concrete nouns (entity names, file paths, method names)
+**Fail**: < 40% concrete nouns → Tasks too abstract, re-extract from spec/plan
+
+**Example Analysis**:
+
+```markdown
+❌ BAD (33% concrete):
+"Implement [Service] with [methods] in src/services/[service].py"
+Concrete: 1 (src/services/)
+Total: 3 (Service, methods, service)
+Ratio: 33%
+
+✅ GOOD (75% concrete):
+"Implement UserService with register(), authenticate() methods in src/services/user_service.py"
+Concrete: 6 (UserService, register, authenticate, methods, src/services/user_service.py)
+Total: 8
+Ratio: 75%
+```
+
+---
+
+### Integration with Quality Gates
+
+This section works with:
+- **IG-TASK-005**: Inline gate that enforces no placeholders (HIGH severity)
+- **SR-TASK-11 to SR-TASK-15**: Self-review criteria for task quality
+
+See `templates/shared/validation/inline-gates.md` for gate definitions.
+
+---
+
 ### Task Organization
 
 1. **From User Stories (spec.md)** - PRIMARY ORGANIZATION:
