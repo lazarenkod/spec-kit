@@ -48,6 +48,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - PostHog stack (postgres, redis, worker) in observability-stack.md
   - Conditional service inclusion based on constitution settings
 
+- **Automatic Documentation Generation for All User Roles**:
+  - **Progressive Documentation System**: Documentation generated incrementally across workflow stages
+  - **8 New Documentation Templates**:
+    - `templates/docs/user-guide-section.md` - User-facing feature tutorials (397 lines)
+    - `templates/docs/admin-guide-section.md` - System administrator guides (529 lines)
+    - `templates/docs/installation-guide.md` - Comprehensive installation instructions (604 lines)
+    - `templates/docs/troubleshooting-section.md` - Problem diagnosis and solutions (535 lines)
+    - `templates/docs/contributing-template.md` - Contributing guidelines from constitution (451 lines)
+    - `templates/docs/faq-template.md` - FAQ from edge cases (411 lines)
+    - `templates/docs/migration-guide-template.md` - Version migration guides (635 lines)
+    - `templates/docs/api-reference-template.md` - API documentation from OpenAPI specs (745 lines)
+  - **Enhanced `/speckit.specify`**:
+    - Generates `docs/user-guide/outline.md` skeleton from User Stories
+    - Generates `docs/faq/seeds.md` from edge case Acceptance Scenarios
+    - Generates `docs/glossary/index.md` from domain terms in spec
+  - **Enhanced `/speckit.plan`**:
+    - Generates `docs/architecture/overview.md` from Architecture Overview
+    - Generates `docs/api-reference/index.md` from OpenAPI specs (if exists)
+    - Generates `docs/admin-guide/deployment.md` from Infrastructure Dependencies
+  - **Enhanced `/speckit.implement`**:
+    - `documentation-generator` role expanded from 4 to 10 tasks
+    - Generates full user guides with step-by-step instructions and code examples
+    - Expands FAQ seeds into complete FAQ with detailed solutions
+    - Generates installation guide covering Docker, development, and production setups
+    - Generates troubleshooting guide from error handling code and AS-xxx error scenarios
+    - Generates contributing guidelines from constitution principles
+    - Creates `docs/README.md` as documentation hub for all roles
+  - **Enhanced `/speckit.merge`**:
+    - Generates comprehensive migration guides when breaking changes detected
+    - Extracts breaking changes from system spec history
+    - Extracts API changes from contracts/api.yaml
+    - Extracts configuration changes from .env.example
+    - Includes rollback procedures and migration complexity assessment
+  - **Documentation Coverage**:
+    - **End Users**: User guides, FAQ, glossary
+    - **Administrators**: Installation, deployment, troubleshooting
+    - **Developers**: Architecture, API reference, contributing guidelines
+  - **Template Features**:
+    - Auto-update markers (`<!-- speckit:auto:* -->`) preserve manual edits
+    - Cross-reference linking between documentation sections
+    - Consistent formatting across all generated docs
+
 ### Changed
 
 - Version bump from 0.5.0 to 0.6.0 (MINOR: new feature)

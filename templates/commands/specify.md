@@ -3364,3 +3364,160 @@ IF registry was updated:
   IF staleness.any_downstream_affected:
     OUTPUT: "Note: Downstream artifacts may need refresh."
 ```
+
+### Generate Documentation Outlines
+
+After spec generation, create skeleton documentation structure for progressive enrichment:
+
+```text
+1. CREATE_DIRECTORY("docs/user-guide/")
+2. CREATE_DIRECTORY("docs/faq/")
+3. CREATE_DIRECTORY("docs/glossary/")
+
+4. GENERATE_USER_GUIDE_OUTLINE():
+   Read FEATURE_DIR/spec.md
+   Extract all User Stories (US-xxx sections)
+
+   FOR EACH user_story IN spec.user_stories:
+     outline_entry = {
+       "id": user_story.id,
+       "title": user_story.title,
+       "role": user_story.as_a,
+       "goal": user_story.i_want,
+       "benefit": user_story.so_that,
+       "acceptance_scenarios": [as.id for as in user_story.scenarios],
+       "status": "PLANNED"
+     }
+
+   Read templates/docs/user-guide-section.md for structure
+
+   Generate docs/user-guide/outline.md:
+   ```markdown
+   # User Guide Outline
+
+   > **Status**: Auto-generated skeleton from spec.md
+   > **Next Step**: `/speckit.implement` will expand with step-by-step instructions
+
+   ## Features
+
+   {FOR EACH user_story}:
+   ### {user_story.id}: {user_story.title}
+
+   **User Need**: As a {role}, I want to {goal} so that {benefit}
+
+   **Covered By**:
+   - Acceptance Scenarios: {as_id_list}
+   - Functional Requirements: {fr_id_list}
+
+   **Documentation Status**: ⏳ Awaiting implementation
+
+   **Placeholder Content**:
+   - [ ] Prerequisites
+   - [ ] Step-by-step guide
+   - [ ] Common use cases
+   - [ ] Tips and best practices
+   - [ ] Troubleshooting
+
+   {END FOR EACH}
+   ```
+
+5. GENERATE_FAQ_SEEDS():
+   Read FEATURE_DIR/spec.md
+   Extract all Acceptance Scenarios (AS-xxx)
+   Filter for edge cases and error scenarios
+
+   faq_seeds = []
+   FOR EACH scenario IN spec.acceptance_scenarios:
+     IF scenario.classification IN ["ERROR_PATH", "BOUNDARY", "SECURITY"]:
+       question = INFER_USER_QUESTION(scenario.when, scenario.then)
+       answer_seed = {
+         "question": question,
+         "scenario_id": scenario.id,
+         "answer_template": scenario.then,
+         "category": CATEGORIZE(scenario.classification)
+       }
+       faq_seeds.append(answer_seed)
+
+   Read templates/docs/faq-template.md for structure
+
+   Generate docs/faq/seeds.md:
+   ```markdown
+   # FAQ Seeds
+
+   > **Status**: Auto-generated from edge cases in spec.md
+   > **Next Step**: `/speckit.implement` will expand with detailed answers
+
+   ## Potential Questions (from Edge Cases)
+
+   {FOR EACH faq_seed}:
+   ### Q: {question}
+
+   **Source**: {scenario_id}
+   **Category**: {category}
+
+   **Answer Seed**:
+   {answer_template}
+
+   **Needs Expansion**:
+   - [ ] Step-by-step solution
+   - [ ] Code examples
+   - [ ] Related documentation links
+
+   {END FOR EACH}
+   ```
+
+6. GENERATE_GLOSSARY():
+   Read FEATURE_DIR/spec.md
+   Read memory/constitution.md (for domain context)
+   Read memory/knowledge/glossaries/{domain}.md (if exists)
+
+   Extract domain terms from:
+   - Spec Objective section
+   - User Stories (domain-specific nouns)
+   - Functional Requirements (capitalized terms, acronyms)
+   - Technical Context section
+
+   glossary_terms = []
+   FOR EACH term IN detected_domain_terms:
+     definition = EXTRACT_DEFINITION_FROM_SPEC(term) OR "TODO: Define"
+     glossary_terms.append({
+       "term": term,
+       "definition": definition,
+       "source": "spec.md",
+       "first_use": LINE_NUMBER_IN_SPEC
+     })
+
+   Generate docs/glossary/index.md:
+   ```markdown
+   # Glossary
+
+   > **Status**: Auto-generated from spec.md domain terms
+   > **Next Step**: Review and expand definitions
+
+   {FOR EACH term IN ALPHABETICAL_ORDER}:
+   ### {term}
+
+   **Definition**: {definition}
+
+   **First Used**: {source} (line {first_use})
+
+   **Related Terms**: {related_terms}
+
+   {END FOR EACH}
+   ```
+
+7. OUTPUT_SUMMARY:
+   Log documentation generation results:
+   ```text
+   📚 Documentation Outlines Generated:
+
+   ✅ docs/user-guide/outline.md ({user_story_count} features)
+   ✅ docs/faq/seeds.md ({faq_seed_count} questions)
+   ✅ docs/glossary/index.md ({term_count} terms)
+
+   💡 Next Steps:
+   - `/speckit.plan` will add architecture documentation
+   - `/speckit.implement` will expand user guides with examples
+   - `/speckit.merge` will generate migration guides
+   ```
+```

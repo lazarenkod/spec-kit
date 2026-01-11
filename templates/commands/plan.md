@@ -2108,3 +2108,404 @@ IF registry was updated:
   IF staleness.tasks_stale:
     OUTPUT: "Note: tasks.md may need refresh after plan changes."
 ```
+
+### Generate Architecture Documentation
+
+After plan generation, create architecture documentation from technical planning artifacts:
+
+```text
+1. CREATE_DIRECTORY("docs/architecture/")
+2. CREATE_DIRECTORY("docs/api-reference/")
+3. CREATE_DIRECTORY("docs/admin-guide/")
+
+4. GENERATE_ARCHITECTURE_OVERVIEW():
+   Read FEATURE_DIR/plan.md
+   Extract sections:
+   - Architecture Overview
+   - System Components
+   - Data Models
+   - Integration Points
+   - Technology Stack
+
+   Read templates/docs/admin-guide-section.md for structure
+
+   Generate docs/architecture/overview.md:
+   ```markdown
+   # Architecture Overview
+
+   > **Status**: Auto-generated from plan.md
+   > **Version**: {version}
+   > **Last Updated**: {timestamp}
+
+   ## System Architecture
+
+   {Extract from plan.md "Architecture Overview" section}
+
+   ## Components
+
+   {FOR EACH component IN plan.components}:
+   ### {component.name}
+
+   **Purpose**: {component.purpose}
+   **Technology**: {component.technology}
+   **Dependencies**: {component.dependencies}
+
+   {END FOR EACH}
+
+   ## Data Models
+
+   {Extract from plan.md "Data Model" or "Database Schema" section}
+
+   ### Entity Relationship
+
+   ```mermaid
+   {Extract ERD from plan.md if exists}
+   ```
+
+   ### Key Entities
+
+   {FOR EACH entity IN plan.data_model}:
+   - **{entity.name}**: {entity.description}
+   {END FOR EACH}
+
+   ## Technology Stack
+
+   {Extract from plan.md "Tech Stack" section}
+
+   | Layer | Technology | Purpose |
+   |-------|------------|---------|
+   {FOR EACH tech IN plan.tech_stack}:
+   | {tech.layer} | {tech.name} | {tech.purpose} |
+   {END FOR EACH}
+
+   ## Integration Points
+
+   {Extract from plan.md "API Design" or "Integration" section}
+
+   ### External APIs
+
+   {FOR EACH external_api IN plan.external_apis}:
+   - **{api.name}**: {api.purpose}
+     - Endpoint: {api.endpoint}
+     - Auth: {api.auth_method}
+     - Rate Limit: {api.rate_limit}
+   {END FOR EACH}
+
+   ### Internal Services
+
+   {FOR EACH internal_service IN plan.internal_services}:
+   - **{service.name}**: {service.purpose}
+   {END FOR EACH}
+
+   ## Architecture Decision Records (ADRs)
+
+   {IF plan contains ADRs}:
+   {FOR EACH adr IN plan.adrs}:
+   ### ADR-{adr.number}: {adr.title}
+
+   **Status**: {adr.status}
+   **Context**: {adr.context}
+   **Decision**: {adr.decision}
+   **Consequences**: {adr.consequences}
+
+   {END FOR EACH}
+   {END IF}
+
+   ## Next Steps
+
+   - `/speckit.tasks` will break down implementation into tasks
+   - `/speckit.implement` will execute the plan
+   ```
+
+5. GENERATE_API_REFERENCE():
+   IF EXISTS("contracts/api.yaml"):
+     Read contracts/api.yaml (OpenAPI 3.0.3 spec)
+     Extract API metadata
+
+     Read templates/docs/api-reference-template.md for structure
+
+     Generate docs/api-reference/index.md:
+     ```markdown
+     # API Reference
+
+     > **Status**: Auto-generated from contracts/api.yaml
+     > **API Version**: {api.version}
+     > **OpenAPI Spec**: {spec_version}
+
+     ## Overview
+
+     {Extract from api.yaml "info.description"}
+
+     **Base URL**: {api.servers[0].url}
+
+     ## Authentication
+
+     {Extract from api.yaml "components.securitySchemes"}
+
+     {FOR EACH auth_scheme IN api.security}:
+     ### {auth_scheme.name}
+
+     **Type**: {auth_scheme.type}
+     **Description**: {auth_scheme.description}
+
+     {END FOR EACH}
+
+     ## Rate Limiting
+
+     {Extract rate limit info from api.yaml "x-rateLimit" extension}
+
+     ## Endpoints
+
+     {FOR EACH path IN api.paths}:
+     ### {method.toUpperCase()} {path}
+
+     {Extract from api.yaml "paths[path][method].summary"}
+
+     **Description**: {operation.description}
+
+     **Parameters**:
+     {FOR EACH param IN operation.parameters}:
+     - `{param.name}` ({param.in}) - {param.description} [{param.required ? "required" : "optional"}]
+     {END FOR EACH}
+
+     **Request Body** (if applicable):
+     ```json
+     {Extract schema from operation.requestBody}
+     ```
+
+     **Responses**:
+     {FOR EACH response IN operation.responses}:
+     - **{status_code}**: {response.description}
+     {END FOR EACH}
+
+     **Example Request**:
+     ```bash
+     curl -X {method.toUpperCase()} {base_url}{path} \
+       -H "Authorization: Bearer {token}" \
+       -H "Content-Type: application/json" \
+       -d '{example_request_body}'
+     ```
+
+     **Example Response**:
+     ```json
+     {example_response_body}
+     ```
+
+     {END FOR EACH}
+
+     ## Schemas
+
+     {FOR EACH schema IN api.components.schemas}:
+     ### {schema.name}
+
+     {schema.description}
+
+     **Properties**:
+     {FOR EACH property IN schema.properties}:
+     - `{property.name}` ({property.type}) - {property.description}
+     {END FOR EACH}
+
+     {END FOR EACH}
+
+     ## Error Codes
+
+     | Code | Message | Description |
+     |------|---------|-------------|
+     {FOR EACH error IN api.components.responses}:
+     | {error.code} | {error.message} | {error.description} |
+     {END FOR EACH}
+
+     ## SDKs and Client Libraries
+
+     See [OpenAPI spec](../../contracts/api.yaml) for code generation.
+
+     ```bash
+     # Generate client SDK
+     openapi-generator generate -i contracts/api.yaml -g {language} -o sdk/{language}
+     ```
+     ```
+
+6. GENERATE_DEPLOYMENT_GUIDE():
+   Read FEATURE_DIR/plan.md
+   Extract "Infrastructure Dependencies" section
+
+   Read templates/docs/admin-guide-section.md for structure
+
+   Generate docs/admin-guide/deployment.md:
+   ```markdown
+   # Deployment Guide
+
+   > **Status**: Auto-generated from plan.md Infrastructure Dependencies
+   > **Target**: Production deployment
+
+   ## Prerequisites
+
+   {Extract from plan.md system requirements}
+
+   ### System Requirements
+
+   | Resource | Minimum | Recommended |
+   |----------|---------|-------------|
+   | CPU | {min_cpu} | {rec_cpu} |
+   | Memory | {min_memory} | {rec_memory} |
+   | Storage | {min_storage} | {rec_storage} |
+
+   ### Dependencies
+
+   {FOR EACH dependency IN plan.infrastructure_dependencies}:
+   #### {dependency.name}
+
+   **Type**: {dependency.type}
+   **Version**: {dependency.version}
+   **Purpose**: {dependency.purpose}
+
+   **Installation**:
+   ```bash
+   {dependency.install_command}
+   ```
+
+   **Configuration**:
+   ```yaml
+   {dependency.config_example}
+   ```
+
+   {END FOR EACH}
+
+   ## Deployment Options
+
+   ### Option 1: Docker Compose (Recommended)
+
+   ```bash
+   # Pull images
+   docker-compose pull
+
+   # Start services
+   docker-compose up -d
+
+   # Verify health
+   docker-compose ps
+   ```
+
+   **docker-compose.yml**:
+   ```yaml
+   {Generate docker-compose config from plan.md infrastructure}
+   ```
+
+   ### Option 2: Native Installation
+
+   {Extract native installation steps from plan.md}
+
+   1. Install dependencies
+   2. Configure environment
+   3. Initialize database
+   4. Start application
+
+   ## Environment Configuration
+
+   Required environment variables:
+
+   {FOR EACH env_var IN plan.environment_variables}:
+   - `{env_var.name}` - {env_var.description} [{env_var.required ? "required" : "optional"}]
+     - Default: `{env_var.default}`
+   {END FOR EACH}
+
+   **Example .env**:
+   ```bash
+   {Generate .env template from plan.md}
+   ```
+
+   ## Database Setup
+
+   {IF plan includes database}:
+   ### Initial Migration
+
+   ```bash
+   {Extract db migration commands from plan.md}
+   ```
+
+   ### Backup & Restore
+
+   ```bash
+   # Backup
+   {backup_command}
+
+   # Restore
+   {restore_command}
+   ```
+   {END IF}
+
+   ## Health Checks
+
+   {Extract health check endpoints from plan.md or api.yaml}
+
+   ```bash
+   # Application health
+   curl {health_endpoint}
+
+   # Database health
+   {db_health_command}
+   ```
+
+   ## Monitoring
+
+   {Extract monitoring configuration from plan.md}
+
+   Recommended metrics to monitor:
+   - Application uptime
+   - Response time
+   - Error rate
+   - Resource usage
+
+   ## Scaling
+
+   {Extract scaling considerations from plan.md}
+
+   ### Horizontal Scaling
+
+   {horizontal_scaling_notes}
+
+   ### Vertical Scaling
+
+   {vertical_scaling_notes}
+
+   ## Troubleshooting
+
+   Common deployment issues:
+
+   1. **Port already in use**
+      ```bash
+      {port_check_command}
+      ```
+
+   2. **Database connection failed**
+      ```bash
+      {db_connection_test}
+      ```
+
+   3. **Missing environment variables**
+      - Check .env file
+      - Verify required variables set
+
+   ## Next Steps
+
+   - See [Installation Guide](../installation/detailed-setup.md) for development setup
+   - See [Monitoring Guide](./monitoring.md) for observability setup (via `/speckit.monitor`)
+   ```
+
+7. OUTPUT_SUMMARY:
+   Log architecture documentation generation results:
+   ```text
+   🏗️ Architecture Documentation Generated:
+
+   ✅ docs/architecture/overview.md (system architecture)
+   {IF api.yaml exists}:
+   ✅ docs/api-reference/index.md ({endpoint_count} endpoints)
+   {END IF}
+   ✅ docs/admin-guide/deployment.md ({dependency_count} dependencies)
+
+   💡 Next Steps:
+   - `/speckit.tasks` will generate task breakdown
+   - `/speckit.implement` will expand documentation with examples
+   - `/speckit.monitor` will add monitoring documentation
+   ```
+```

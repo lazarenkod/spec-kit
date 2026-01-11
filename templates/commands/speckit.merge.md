@@ -304,6 +304,327 @@ None
 - Update dependent features if breaking changes were introduced
 ```
 
+## Generate Migration Guide
+
+After successful merge with breaking changes, generate migration documentation:
+
+```text
+IF breaking_changes_detected:
+  1. EXTRACT_VERSION_INFO():
+     - Read all updated system specs
+     - Extract old_version and new_version from Spec History
+     - Determine major/minor/patch based on breaking changes
+     - old_version = min(all old versions)
+     - new_version = max(all new versions)
+
+  2. COLLECT_BREAKING_CHANGES():
+     breaking_changes = []
+     FOR EACH updated_spec IN system_specs_updated:
+       Read updated_spec
+       Extract "Spec History" section
+       Find latest entry with breaking_changes = true
+
+       FOR EACH breaking_change IN entry.breaking_changes:
+         breaking_changes.append({
+           "component": updated_spec.component_name,
+           "change": breaking_change.description,
+           "old_behavior": breaking_change.before,
+           "new_behavior": breaking_change.after,
+           "reason": breaking_change.reason,
+           "migration_path": breaking_change.migration,
+           "version": new_version,
+           "source_spec": updated_spec.path
+         })
+
+  3. EXTRACT_API_CHANGES():
+     IF EXISTS("contracts/api.yaml"):
+       Read contracts/api.yaml
+       Extract version info from "info.version"
+       api_changes = []
+
+       FOR EACH endpoint IN api.paths:
+         IF endpoint.deprecated OR endpoint.removed:
+           api_changes.append({
+             "endpoint": endpoint.path,
+             "method": endpoint.method,
+             "change_type": "removed" OR "deprecated",
+             "replacement": endpoint.x-replacement,
+             "migration": endpoint.x-migration-guide
+           })
+
+  4. EXTRACT_CONFIGURATION_CHANGES():
+     config_changes = {
+       "removed": [],
+       "added": [],
+       "modified": []
+     }
+
+     IF EXISTS(".env.example"):
+       # Compare with previous version if available
+       # Extract added/removed/modified environment variables
+
+     FOR EACH breaking_change IN breaking_changes:
+       IF breaking_change relates to configuration:
+         config_changes[change_type].append({
+           "variable": var_name,
+           "old_value": old_format,
+           "new_value": new_format,
+           "migration": migration_steps
+         })
+
+  5. GENERATE_MIGRATION_GUIDE():
+     Read templates/docs/migration-guide-template.md for structure
+
+     Generate docs/changelog/migration-v{old_version}-to-v{new_version}.md:
+     ```markdown
+     # Migration Guide: v{old_version} to v{new_version}
+
+     > **Migration Complexity**: {LOW/MEDIUM/HIGH based on breaking_changes count}
+     > **Estimated Time**: {estimate based on complexity}
+     > **Downtime Required**: {Yes/No based on infrastructure changes}
+
+     ## Overview
+
+     This guide helps you migrate from **{Project Name} v{old_version}** to **v{new_version}**.
+
+     **What's New:**
+     {Extract from CHANGELOG.md for this version}
+
+     **Breaking Changes:** {breaking_changes.length}
+     **Deprecations:** {deprecations.length}
+     **Database Changes:** {Yes/No}
+
+     ---
+
+     ## Should You Upgrade?
+
+     ### Reasons to Upgrade
+
+     ✅ **You should upgrade if:**
+     - {Extract benefits from feature specs that were merged}
+     - {Extract fixed issues from CHANGELOG}
+
+     ### Reasons to Wait
+
+     ⚠️ **Consider waiting if:**
+     - You're using deprecated features without migration plan
+     - {Extract compatibility concerns from breaking changes}
+
+     ---
+
+     ## Pre-Migration Checklist
+
+     **Before starting, ensure:**
+     - [ ] Full backup created
+     - [ ] Migration tested in staging environment
+     - [ ] Team notified of planned upgrade
+     - [ ] Rollback plan documented
+
+     ---
+
+     ## Breaking Changes
+
+     {FOR EACH breaking_change IN breaking_changes}:
+     ### Breaking Change {index}: {change.component} - {change.change}
+
+     **Impact:** {HIGH/MEDIUM/LOW based on affected users}
+     **Affects:** {change.component}
+
+     **Old Behavior** (v{old_version}):
+     ```
+     {change.old_behavior}
+     ```
+
+     **New Behavior** (v{new_version}):
+     ```
+     {change.new_behavior}
+     ```
+
+     **Why Changed:** {change.reason}
+
+     **Migration Steps:**
+
+     {change.migration_path}
+
+     **Source:** {change.source_spec}
+
+     ---
+     {END FOR EACH}
+
+     ## API Changes
+
+     {IF api_changes exists}:
+     **Removed Endpoints:**
+
+     | Old Endpoint | Replacement | Migration Notes |
+     |--------------|-------------|-----------------|
+     {FOR EACH removed_endpoint IN api_changes.removed}:
+     | `{method} {path}` | `{replacement}` | {migration} |
+     {END FOR EACH}
+
+     **Deprecated Endpoints:**
+
+     | Endpoint | Deprecation Date | Removal Planned | Replacement |
+     |----------|------------------|-----------------|-------------|
+     {FOR EACH deprecated_endpoint IN api_changes.deprecated}:
+     | `{method} {path}` | v{deprecation_version} | v{removal_version} | {replacement} |
+     {END FOR EACH}
+     {END IF}
+
+     ---
+
+     ## Configuration Changes
+
+     {IF config_changes exists}:
+     ### Environment Variables
+
+     **Removed:**
+     | Variable | Replacement | Migration |
+     |----------|-------------|-----------|
+     {FOR EACH removed_var IN config_changes.removed}:
+     | `{var.name}` | `{var.replacement}` | {var.migration} |
+     {END FOR EACH}
+
+     **Added:**
+     | Variable | Description | Required | Default |
+     |----------|-------------|----------|---------|
+     {FOR EACH added_var IN config_changes.added}:
+     | `{var.name}` | {var.description} | {var.required} | {var.default} |
+     {END FOR EACH}
+
+     **Modified:**
+     | Variable | Old Format | New Format | Migration |
+     |----------|-----------|------------|-----------|
+     {FOR EACH modified_var IN config_changes.modified}:
+     | `{var.name}` | {var.old_format} | {var.new_format} | {var.migration} |
+     {END FOR EACH}
+     {END IF}
+
+     ---
+
+     ## Migration Steps
+
+     ### Step 1: Backup
+
+     ⚠️ **Critical: Always backup before upgrading**
+
+     ```bash
+     # Backup database
+     {database backup command from admin-guide}
+
+     # Backup configuration
+     cp .env .env.backup
+
+     # Backup application files
+     {backup command}
+     ```
+
+     ### Step 2: Update Dependencies
+
+     {Extract dependency updates from plan.md}
+
+     ### Step 3: Database Migration
+
+     {IF database changes}:
+     ```bash
+     # Run migrations
+     {migration command}
+
+     # Verify migration
+     {verification command}
+     ```
+     {END IF}
+
+     ### Step 4: Update Application Code
+
+     {FOR EACH breaking_change IN breaking_changes}:
+     {Extract code update steps from migration_path}
+     {END FOR EACH}
+
+     ### Step 5: Update Configuration
+
+     {Extract .env updates from config_changes}
+
+     ### Step 6: Verify Migration
+
+     **Post-migration checklist:**
+     - [ ] Application starts successfully
+     - [ ] Health checks passing
+     - [ ] Database migrations applied
+     - [ ] API endpoints responding
+     - [ ] Key features functional
+
+     ---
+
+     ## Rollback Procedure
+
+     If migration fails:
+
+     ```bash
+     # Stop application
+     {stop command}
+
+     # Restore database backup
+     {restore command}
+
+     # Restore configuration
+     cp .env.backup .env
+
+     # Deploy previous version
+     {rollback deployment command}
+     ```
+
+     ---
+
+     ## Getting Help
+
+     **Having issues?**
+     - 📖 Read this guide thoroughly
+     - 🔍 Search [known issues]({issues_url}?q=label%3Amigration)
+     - 💬 Ask in [discussions]({discussions_url})
+
+     ---
+
+     *Last updated: {generation timestamp}*
+     *Generated from: System spec history, CHANGELOG.md, API contracts*
+     ```
+
+  6. UPDATE_MIGRATION_INDEX():
+     IF NOT EXISTS("docs/changelog/index.md"):
+       Create docs/changelog/index.md
+
+     Update docs/changelog/index.md:
+     - Add link to new migration guide
+     - Update version history table
+     - Maintain reverse chronological order
+
+  7. OUTPUT_SUMMARY():
+     Log migration guide generation:
+     ```text
+     📝 Migration Guide Generated:
+
+     ✅ docs/changelog/migration-v{old_version}-to-v{new_version}.md
+
+     Breaking Changes: {breaking_changes.length}
+     - {breaking_change_1}
+     - {breaking_change_2}
+
+     Configuration Changes: {config_changes.total}
+     - {config_summary}
+
+     💡 Migration Complexity: {complexity}
+     💡 Estimated Migration Time: {time_estimate}
+
+     Next Steps:
+     - Review migration guide in docs/changelog/
+     - Test migration in staging environment
+     - Update CHANGELOG.md with migration notes
+     ```
+
+ELSE:
+  OUTPUT: "No breaking changes detected, migration guide not needed"
+```
+
 ## Maintenance Mode
 
 If called with `--maintain` flag or on an existing system spec (not feature):

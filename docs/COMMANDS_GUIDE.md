@@ -228,6 +228,30 @@ graph LR
 **Review (L2+):** Constitution alignment + completeness/edge case/testability (L3)
 **Выход:** `research.md` → context injection в Wave 2 (Analysis) agents
 
+**Documentation Generation (v0.6.0):**
+
+После генерации спецификации автоматически создается скелет документации для последующего обогащения:
+
+- **User Guide Outline** (`docs/user-guide/outline.md`):
+  - Извлечение всех User Stories (US-xxx) из spec.md
+  - Структура: роль пользователя, цель, польза
+  - Статус: "PLANNED" с placeholder'ами для шагов реализации
+  - Связь с Acceptance Scenarios (AS-xxx) и Functional Requirements (FR-xxx)
+
+- **FAQ Seeds** (`docs/faq/seeds.md`):
+  - Извлечение edge case сценариев из Acceptance Scenarios
+  - Фильтрация по классификации: ERROR_PATH, BOUNDARY, SECURITY
+  - Автоматический вывод вопросов пользователей из сценариев
+  - Категоризация по типу проблемы
+
+- **Glossary** (`docs/glossary/index.md`):
+  - Извлечение domain terms из Spec Objective
+  - Извлечение специфичных терминов из User Stories и FR
+  - Интеграция с memory/knowledge/glossaries/{domain}.md
+  - Определения терминов и акронимов
+
+**Следующий шаг:** `/speckit.plan` добавит architecture docs, `/speckit.implement` расширит outlines до полных guides.
+
 **Флаги:**
 
 - `--depth-level <0-3>` — Явное указание уровня глубины
@@ -493,6 +517,36 @@ Comprehensive negative prompting with 47 anti-patterns across 7 categories:
 - Testability audit (L3): Критерии приемки + observability
 
 **Выход:** `research.md` с exploration findings (L1+)
+
+**Documentation Generation (v0.6.0):**
+
+После генерации плана автоматически создается архитектурная документация:
+
+- **Architecture Overview** (`docs/architecture/overview.md`):
+  - Извлечение Architecture Overview из plan.md
+  - System Components с технологиями и зависимостями
+  - Technology Stack (таблица по слоям)
+  - Architecture Decision Records (ADRs) если присутствуют в плане
+  - Data Models и Integration Points
+
+- **API Reference** (`docs/api-reference/index.md`) — если существует `contracts/api.yaml`:
+  - Извлечение из OpenAPI 3.0.3 спецификации
+  - Overview, Base URL, Authentication
+  - Rate Limiting
+  - Endpoints с примерами запросов/ответов
+  - Schemas и Error Codes
+  - SDK generation instructions
+
+- **Deployment Guide** (`docs/admin-guide/deployment.md`):
+  - Извлечение Infrastructure Dependencies из plan.md
+  - System Requirements и Prerequisites
+  - Deployment Options (Docker Compose, Native Installation)
+  - Environment Configuration
+  - Database Setup, Health Checks
+  - Monitoring и Scaling
+  - Troubleshooting
+
+**Следующий шаг:** `/speckit.implement` расширит documentation до полных user guides и troubleshooting guides.
 
 **Флаги:**
 
@@ -1014,6 +1068,67 @@ Apply this change? [Y/n/e/skip/quit]
 
 **Требует:** handoffs/tasks-to-implement.md
 
+**Documentation Generation (v0.6.0):**
+
+Роль `documentation-generator` расширена с 4 до 10 задач для комплексной генерации документации:
+
+**Базовая документация (сохранена):**
+- RUNNING.md — инструкции для разработчиков (setup, commands)
+- README.md — обзор проекта (features, tech stack, quick start)
+- .env.example — переменные окружения с описаниями
+- API Documentation — OpenAPI specs (если применимо)
+
+**Новая документация для пользователей:**
+- **User Guide Expansion** (`docs/user-guide/{feature-slug}.md`):
+  - Расширение outline.md из `/speckit.specify` до полных guides
+  - Пошаговые инструкции с примерами кода из implementation
+  - Примеры из Acceptance Scenarios (AS-xxx)
+  - Placeholders для скриншотов ([TODO: Screenshot])
+  - Common use cases, tips, best practices
+  - Cross-references между связанными фичами
+
+- **FAQ Expansion** (`docs/faq/index.md`):
+  - Расширение seeds.md из `/speckit.specify`
+  - Детальные решения с code examples из implementation
+  - Ссылки на troubleshooting docs
+  - Полный FAQ для всех ролей
+
+**Новая документация для администраторов:**
+- **Installation Guide** (`docs/installation/detailed-setup.md`):
+  - Извлечение из RUNNING.md и memory/constitution.md
+  - System prerequisites и requirements
+  - Три метода установки: Quick Start (Docker), Development Setup, Production Deployment
+  - Verification steps
+  - Troubleshooting common setup issues
+
+- **Troubleshooting Guide** (`docs/troubleshooting/common-issues.md`):
+  - Анализ error handling code для common patterns
+  - Извлечение error scenarios из spec.md (ERROR_PATH, BOUNDARY)
+  - Quick diagnostic checks
+  - Error reference table с решениями
+  - Diagnostic tools и commands
+
+**Новая документация для разработчиков:**
+- **Contributing Guidelines** (`docs/contributing/guidelines.md`):
+  - Извлечение principles из memory/constitution.md
+  - Code style из code analysis (naming conventions, patterns)
+  - Testing requirements из plan.md и test setup
+  - Git workflow из repository patterns
+  - Code of conduct, development workflow, coding standards, PR process
+
+**Documentation Hub:**
+- **Documentation Index** (`docs/README.md`):
+  - Центральный hub для всех ролей пользователей
+  - Секции: End Users (User Guide, FAQ, Glossary), Administrators (Installation, Deployment, Troubleshooting), Developers (Architecture, API Reference, Contributing)
+  - Quick Start и Help resources
+
+**Template Features:**
+- Auto-update markers (`<!-- speckit:auto:* -->`) для сохранения manual edits
+- Cross-reference linking между документацией
+- Consistent formatting через templates
+
+**Следующий шаг:** `/speckit.merge` сгенерирует migration guides при breaking changes.
+
 **Флаги:**
 
 - `--skip-gates` — Bypass all inline quality gates
@@ -1241,6 +1356,47 @@ await page.screenshot({
 **Назначение:** Finalize feature and update system specs after PR merge. Converts feature requirements into living system documentation.
 
 **Модель:** `sonnet` (thinking_budget: 16000)
+
+**Documentation Generation (v0.6.0):**
+
+После успешного merge с breaking changes автоматически генерируется Migration Guide:
+
+- **Migration Guide** (`docs/changelog/migration-v{old}-to-v{new}.md`):
+  - **Extraction from System Specs History**:
+    - Version information (old_version, new_version)
+    - Breaking changes с описанием old/new behavior
+    - Reason для каждого breaking change
+    - Migration path для каждого изменения
+
+  - **Extraction from API Contracts** (если существует `contracts/api.yaml`):
+    - Removed endpoints с replacements
+    - Deprecated endpoints
+    - Changed endpoints с migration notes
+    - API version changes
+
+  - **Extraction from Configuration**:
+    - Removed environment variables
+    - Added environment variables (required/optional, defaults)
+    - Modified variables (old format → new format)
+
+  - **Migration Guide Content**:
+    - Overview: Migration complexity (LOW/MEDIUM/HIGH), estimated time, downtime requirements
+    - Should You Upgrade: Reasons to upgrade vs reasons to wait
+    - Pre-Migration Checklist: Backup, testing, team notification
+    - Breaking Changes: Detailed descriptions с old/new behavior, migration steps
+    - API Changes: Endpoint changes table с examples
+    - Configuration Changes: Environment variables table
+    - Migration Steps: Step-by-step instructions (backup, dependencies, database, code, config, verification)
+    - Rollback Procedure: Если migration fails
+    - Getting Help: Support resources
+
+  - **Migration Index** (`docs/changelog/index.md`):
+    - Обновляется с links на все migration guides
+    - Version history table в reverse chronological order
+
+**Trigger:** Breaking changes detected в system spec history
+
+**Следующий шаг:** Test migration в staging environment, update CHANGELOG.md с migration notes.
 
 **Handoffs:**
 
@@ -1700,6 +1856,6 @@ await page.screenshot({
 
 ## Версия документа
 
-**Версия:** 0.5.1
+**Версия:** 0.6.0
 **Дата генерации:** 2026-01-11
 **Автор:** Auto-generated from command templates
