@@ -87,7 +87,214 @@ claude_code:
     wave_overlap:
       enabled: true
       overlap_threshold: 0.65
+  streaming:
+    enabled: true
+    mode: "incremental"
+    validation:
+      interval: 500
+      error_detection: 100
+      post_processing: 250
+    autofix:
+      enabled: true
+      max_iterations: 3
+      fixable_issues:
+        - hardcoded_colors
+        - missing_aria
+        - small_touch_targets
+        - low_contrast
+        - missing_alt_text
+        - insufficient_spacing
   subagents:
+    # Wave 0: Real-Time Validation & AutoFix (streaming)
+    - role: streaming-autofix
+      role_group: VALIDATION
+      parallel: false
+      depends_on: []
+      priority: 1
+      model_override: haiku
+      streaming: true
+      prompt: |
+        ## Streaming AutoFix Agent (v0.4.0)
+
+        ### Your Role
+        Monitor component generation in real-time and automatically fix common issues
+        before code is finalized. Inspired by v0.dev's AutoFix pipeline.
+
+        ### Performance Targets
+        - Error detection: <100ms (v0.dev benchmark)
+        - Post-processing: <250ms (v0.dev benchmark)
+        - Validation interval: 500ms buffer
+        - Max iterations: 3 automatic fix attempts
+
+        ### Process
+
+        #### 1. Stream Monitoring
+        AS component code streams from component-previewer or wireframe-converter:
+        - Buffer 500ms of output before validation
+        - Parse partial AST (TypeScript/JSX) incrementally
+        - Track token usage in real-time
+        - Queue issues for batch fixing
+
+        #### 2. Real-Time Detection
+        Check for fixable issues (<100ms per check):
+
+        **AP-VIS-001: Hardcoded Colors**
+        ```typescript
+        // BAD
+        <div style={{ backgroundColor: '#3b82f6' }} />
+        <div className="bg-[#f3f4f6]" />
+
+        // GOOD
+        <div className="bg-primary" />
+        <div style={{ backgroundColor: 'var(--primary)' }} />
+        ```
+
+        **AP-A11Y-001: Missing ARIA Labels**
+        ```typescript
+        // BAD
+        <button onClick={handleClick}>
+          <Icon />
+        </button>
+
+        // GOOD
+        <button onClick={handleClick} aria-label="Close dialog">
+          <Icon />
+        </button>
+        ```
+
+        **AP-A11Y-002: Small Touch Targets**
+        ```typescript
+        // BAD (< 44×44px)
+        <button className="h-8 w-8 p-1">X</button>
+
+        // GOOD (≥ 44×44px)
+        <button className="h-11 w-11 p-2">X</button>
+        ```
+
+        **AP-A11Y-003: Low Contrast Text**
+        ```typescript
+        // BAD (contrast < 4.5:1)
+        <p className="text-gray-400 bg-white">Text</p>
+
+        // GOOD (contrast ≥ 4.5:1)
+        <p className="text-gray-700 bg-white">Text</p>
+        ```
+
+        **AP-A11Y-004: Missing Alt Text**
+        ```typescript
+        // BAD
+        <img src="photo.jpg" />
+
+        // GOOD
+        <img src="photo.jpg" alt="Team photo from 2024 retreat" />
+        ```
+
+        **AP-COMP-001: Insufficient Spacing**
+        ```typescript
+        // BAD (hardcoded pixels)
+        <div style={{ padding: '12px' }}>
+
+        // GOOD (design tokens)
+        <div className="p-3">  {/* var(--space-3) */}
+        ```
+
+        #### 3. Automatic Fixing (<250ms post-processing)
+        Apply fixes in order of severity:
+
+        1. **Color Token Replacement** (AP-VIS-001)
+           - Extract hex/rgb/hsl color values
+           - Map to closest design token using perceptual distance
+           - Replace with CSS variable or Tailwind class
+           - Preserve color intent (primary, muted, destructive)
+
+        2. **ARIA Injection** (AP-A11Y-001)
+           - Detect interactive elements without labels
+           - Infer label from context (icon name, surrounding text)
+           - Add aria-label or aria-labelledby
+           - Add role if semantic HTML not used
+
+        3. **Touch Target Expansion** (AP-A11Y-002)
+           - Parse Tailwind classes for width/height
+           - If < 44px, increase to 44px (h-11 w-11 minimum)
+           - Adjust padding to maintain visual appearance
+           - Flag if expansion breaks layout
+
+        4. **Contrast Enhancement** (AP-A11Y-003)
+           - Calculate contrast ratio (WCAG formula)
+           - If < 4.5:1, darken/lighten to meet AA standard
+           - Preserve hue when adjusting lightness
+           - Prefer token adjustment over hardcoding
+
+        5. **Alt Text Generation** (AP-A11Y-004)
+           - Extract image filename and context
+           - Generate descriptive alt text
+           - Flag decorative images (alt="")
+           - Require user confirmation for complex images
+
+        6. **Spacing Token Replacement** (AP-COMP-001)
+           - Convert hardcoded px to spacing scale
+           - Map to nearest scale value (0, 1, 2, 3, 4, 5, 6, 8, 10, 12)
+           - Use Tailwind class (p-3) or CSS variable (var(--space-3))
+
+        #### 4. Issue Queue Management
+        Maintain priority queue of detected issues:
+        - CRITICAL: Missing accessibility (blocks users)
+        - HIGH: Hardcoded colors (design system violation)
+        - MEDIUM: Spacing inconsistency
+        - LOW: Code style preferences
+
+        Process CRITICAL/HIGH immediately, batch MEDIUM/LOW.
+
+        #### 5. Fix Validation
+        After applying fixes:
+        - Re-run TypeScript compiler (tsc --noEmit)
+        - Verify WCAG AA compliance (contrast, touch targets)
+        - Check design token usage (no hardcoded values)
+        - If fix introduces error, revert and flag for manual review
+
+        #### 6. Iteration Limit
+        Max 3 automatic fix iterations per component:
+        - Iteration 1: Fix all detected issues
+        - Iteration 2: Fix issues introduced by Iteration 1
+        - Iteration 3: Final cleanup
+        - After 3 iterations: Stop and report remaining issues to user
+
+        #### 7. Reporting
+        Output to .preview/reports/autofix-log.md:
+        ```markdown
+        # AutoFix Log
+
+        ## Component: Button
+        Timestamp: 2026-01-10T14:23:45Z
+
+        ### Issues Detected (8)
+        - AP-VIS-001: Hardcoded color #3b82f6 → Fixed (var(--primary))
+        - AP-A11Y-001: Missing aria-label → Fixed ("Close dialog")
+        - AP-A11Y-002: Touch target 32×32px → Fixed (44×44px)
+        ...
+
+        ### Fixes Applied (6)
+        ✓ Replaced 3 hardcoded colors with tokens
+        ✓ Added 2 ARIA labels
+        ✓ Expanded 1 touch target
+
+        ### Manual Review Required (2)
+        ⚠ Line 45: Complex image needs descriptive alt text
+        ⚠ Line 67: Contrast ratio 4.3:1 (close to 4.5:1 threshold)
+        ```
+
+        ### Configuration
+        Read streaming config from frontmatter:
+        - claude_code.streaming.enabled
+        - claude_code.streaming.autofix.enabled
+        - claude_code.streaming.autofix.max_iterations
+        - claude_code.streaming.autofix.fixable_issues
+
+        ### Integration Points
+        - Monitors output from: wireframe-converter, component-previewer
+        - Feeds fixed code to: screenshot-capturer, quality-validator
+        - Reports to: benchmark-reporter (autofix metrics)
+
     # Wave 1: Preview Generation (parallel)
     - role: wireframe-converter
       role_group: FRONTEND
@@ -553,11 +760,220 @@ claude_code:
       priority: 20
       model_override: haiku
       prompt: |
-        Capture Playwright screenshots for all previews.
-        Use viewports: mobile (375x812), tablet (768x1024), desktop (1440x900).
-        Capture both light and dark themes if configured.
-        For components, capture each state (hover, focus, disabled, etc.).
-        Output to .preview/screenshots/.
+        Capture Playwright screenshots with Retina/HiDPI quality (2x device scale).
+
+        ## Configuration
+        ```javascript
+        await page.screenshot({
+          path: outputPath,
+          deviceScaleFactor: 2,  // Retina/HiDPI - NEW v0.2.0
+          type: 'png',
+          fullPage: false
+        });
+        ```
+
+        ## Viewports & Output Dimensions
+        Use viewports with 2x scaling for high-DPI displays:
+        - **Mobile (375×812)** → Output: 750×1624px
+        - **Tablet (768×1024)** → Output: 1536×2048px
+        - **Desktop (1440×900)** → Output: 2880×1800px
+
+        ## Capture Requirements
+        - Capture both light and dark themes if configured
+        - For components, capture each state (hover, focus, disabled, etc.)
+        - Ensure 2x scaling for crisp rendering on Retina displays
+        - Output to `.preview/screenshots/`
+
+        ## Quality Check
+        Verify screenshot dimensions are exactly 2x viewport dimensions.
+        Flag any screenshots that are 1x (not Retina) as quality issues.
+
+    - role: perceptual-diff-validator
+      role_group: TESTING
+      parallel: true
+      depends_on: [screenshot-capturer]
+      priority: 19
+      model_override: sonnet
+      prompt: |
+        ## Perceptual Diff Validator (NEW v0.3.0)
+
+        ### Your Role
+        Compare screenshots using perceptual similarity algorithms to detect meaningful visual changes.
+        Unlike pixel-perfect comparison, perceptual diff detects structural changes while ignoring
+        minor rendering differences (anti-aliasing, font rendering, browser variations).
+
+        ### Skip Condition
+        Skip if --skip-perceptual-diff flag is set or no baseline screenshots exist.
+
+        ### Algorithms
+
+        **1. SSIM (Structural Similarity Index)**
+        - Measures structural similarity based on luminance, contrast, and structure
+        - Range: 0.0 (completely different) to 1.0 (identical)
+        - Better than pixel comparison for detecting meaningful changes
+
+        **2. pHash (Perceptual Hash)**
+        - Generates compact hash representing visual content
+        - Hamming distance between hashes indicates similarity
+        - Range: 0 bits (identical) to 64 bits (completely different)
+
+        **3. pixelmatch (Pixel Comparison Baseline)**
+        - Fallback for pixel-level diff visualization
+        - Used only for generating diff images, not for threshold decisions
+
+        ### Process
+
+        1. **Check for Baseline**
+           ```bash
+           if [ ! -d ".preview/baseline" ]; then
+             echo "No baseline found. Use visual-regression-validator to create baseline first."
+             exit 0
+           fi
+           ```
+
+        2. **Compare Using SSIM**
+           ```javascript
+           import { ssim } from 'ssim.js';
+
+           async function compareSSIM(currentPath, baselinePath) {
+             const current = await loadImage(currentPath);
+             const baseline = await loadImage(baselinePath);
+
+             // Calculate SSIM
+             const ssimValue = ssim(current, baseline);
+
+             return {
+               algorithm: 'SSIM',
+               score: ssimValue,
+               similarity: (ssimValue * 100).toFixed(2) + '%'
+             };
+           }
+           ```
+
+        3. **Compare Using pHash**
+           ```javascript
+           import { pHash, hammingDistance } from 'phash';
+
+           async function comparePHash(currentPath, baselinePath) {
+             const currentHash = await pHash(currentPath);
+             const baselineHash = await pHash(baselinePath);
+
+             const distance = hammingDistance(currentHash, baselineHash);
+
+             return {
+               algorithm: 'pHash',
+               distance: distance,
+               similarity: ((64 - distance) / 64 * 100).toFixed(2) + '%'
+             };
+           }
+           ```
+
+        4. **Classify Changes Using Thresholds**
+
+           **SSIM Thresholds:**
+           | SSIM Score | Classification | Action |
+           |------------|----------------|--------|
+           | >= 0.95 | IDENTICAL | Auto-pass |
+           | 0.85-0.95 | MINOR_CHANGE | Warning, review recommended |
+           | < 0.85 | SIGNIFICANT_CHANGE | Error, requires approval |
+
+           **pHash Thresholds:**
+           | Hamming Distance | Classification | Action |
+           |------------------|----------------|--------|
+           | 0-5 bits | IDENTICAL | Auto-pass |
+           | 6-10 bits | MINOR_CHANGE | Warning, review recommended |
+           | 11-20 bits | SIGNIFICANT_CHANGE | Error, requires approval |
+           | > 20 bits | MAJOR_CHANGE | Error, likely different content |
+
+        5. **Determine Overall Status**
+           ```javascript
+           function classifyChange(ssimResult, pHashResult) {
+             // Both algorithms must agree for auto-pass
+             if (ssimResult.score >= 0.95 && pHashResult.distance <= 5) {
+               return {
+                 status: 'PASS',
+                 severity: 'IDENTICAL',
+                 message: 'No perceptual difference detected'
+               };
+             }
+
+             // Warning if either algorithm detects minor change
+             if (ssimResult.score >= 0.85 && pHashResult.distance <= 10) {
+               return {
+                 status: 'WARNING',
+                 severity: 'MINOR_CHANGE',
+                 message: 'Minor perceptual differences detected',
+                 details: {
+                   ssim: ssimResult.similarity,
+                   phash: pHashResult.similarity
+                 }
+               };
+             }
+
+             // Error for significant changes
+             return {
+               status: 'ERROR',
+               severity: 'SIGNIFICANT_CHANGE',
+               message: 'Significant perceptual differences detected',
+               details: {
+                 ssim: ssimResult.similarity,
+                 phash: pHashResult.similarity
+               }
+             };
+           }
+           ```
+
+        6. **Generate Perceptual Diff Report**
+           Create detailed comparison report with both algorithm results:
+
+           ```markdown
+           # Perceptual Diff Report
+
+           ## Summary
+           - Total Screenshots: {total}
+           - Identical: {identical_count}
+           - Minor Changes: {minor_count}
+           - Significant Changes: {significant_count}
+
+           ## Screenshot Comparisons
+
+           ### {screen_name}
+           - **SSIM Score**: {ssim_score} ({similarity}%)
+           - **pHash Distance**: {phash_distance} bits ({similarity}%)
+           - **Classification**: {severity}
+           - **Status**: {status}
+
+           #### Analysis
+           {detailed_analysis_of_what_changed}
+           ```
+
+        ### Output Structure
+
+        ```text
+        .preview/reports/
+        ├── perceptual-diff.md       # Markdown report
+        ├── perceptual-diff.json     # Machine-readable results
+        └── perceptual-diff.html     # Interactive visual comparison
+        ```
+
+        ### Exit Codes
+        - **0**: All comparisons passed (SSIM >= 0.95, pHash <= 5 bits)
+        - **1**: Warnings detected (minor changes)
+        - **2**: Errors detected (significant changes requiring approval)
+
+        ### Integration with CI/CD
+        Use exit codes to gate deployments:
+        ```yaml
+        - name: Perceptual Diff Check
+          run: ./scripts/perceptual-diff.sh
+          continue-on-error: false  # Block on significant changes
+        ```
+
+        ### Why This Approach is Better
+        - **Perceptual algorithms** ignore minor rendering differences (anti-aliasing, font hinting)
+        - **Dual validation** (SSIM + pHash) reduces false positives
+        - **Structural focus** detects layout changes, not just pixel differences
+        - **Fast execution** (~100-200ms per comparison vs. 500ms+ for pixelmatch)
 
     - role: design-quality-validator
       role_group: REVIEW
@@ -2327,6 +2743,417 @@ claude_code:
         ```
 
         Save before/after screenshots for comparison.
+
+    # Wave Final: Reporting & Benchmarking
+    - role: benchmark-reporter
+      role_group: REPORTING
+      parallel: false
+      depends_on: [mockup-improver, quality-validator, perceptual-diff-validator]
+      priority: 1
+      model_override: haiku
+      prompt: |
+        ## Benchmark Reporter (v0.4.0)
+
+        ### Your Role
+        Aggregate all quality metrics into comprehensive benchmark dashboard.
+        Provide trend analysis, competitive comparison, and actionable recommendations.
+
+        ### Data Sources
+
+        Collect metrics from all validation reports:
+        1. **DQS Report**: `.preview/reports/dqs-total.md`
+        2. **MQS Report**: `.preview/reports/mqs-score.json`
+        3. **Token Compliance**: `.preview/reports/token-violations.json`
+        4. **Touch Targets**: `.preview/accessibility/touch-targets.json`
+        5. **Visual Regression**: `.preview/reports/visual-regression.md`
+        6. **Lighthouse A11y**: `.preview/accessibility/lighthouse.json`
+        7. **AutoFix Log**: `.preview/reports/autofix-log.md`
+
+        ### Metric Aggregation
+
+        ```javascript
+        async function aggregateMetrics() {
+          const dqs = await readDQSReport('.preview/reports/dqs-total.md');
+          const mqs = await readJSON('.preview/reports/mqs-score.json');
+          const tokens = await readJSON('.preview/reports/token-violations.json');
+          const touchTargets = await readJSON('.preview/accessibility/touch-targets.json');
+          const visualReg = await readMarkdown('.preview/reports/visual-regression.md');
+          const lighthouse = await readJSON('.preview/accessibility/lighthouse.json');
+          const autofix = await readMarkdown('.preview/reports/autofix-log.md');
+
+          return {
+            dqs: {
+              total: dqs.total,
+              visual_design: dqs.dimensions.visual_design,
+              accessibility: dqs.dimensions.accessibility,
+              components: dqs.dimensions.components,
+              responsiveness: dqs.dimensions.responsiveness,
+              token_compliance: dqs.dimensions.token_compliance,
+              code_quality: dqs.dimensions.code_quality
+            },
+            mqs: {
+              total: mqs.score,
+              fidelity: mqs.fidelity,
+              tokens: mqs.tokens,
+              accessibility: mqs.accessibility,
+              consistency: mqs.consistency,
+              polish: mqs.polish
+            },
+            token_compliance: {
+              violations: tokens.length,
+              auto_fixed: tokens.filter(t => t.autoFixed).length,
+              percentage: ((1 - tokens.length / totalElements) * 100).toFixed(1)
+            },
+            touch_targets: {
+              total: touchTargets.length,
+              passing: touchTargets.filter(t => t.width >= 44 && t.height >= 44).length,
+              percentage: (touchTargets.filter(t => t.width >= 44 && t.height >= 44).length / touchTargets.length * 100).toFixed(1)
+            },
+            visual_regression: {
+              ssim: parseFloat(visualReg.match(/SSIM: ([\d.]+)/)?.[1] || 0),
+              phash: parseInt(visualReg.match(/pHash: (\d+) bits/)?.[1] || 0),
+              status: visualReg.includes('IDENTICAL') ? 'pass' : 'warning'
+            },
+            lighthouse_a11y: {
+              score: lighthouse.categories.accessibility.score * 100
+            },
+            autofix: {
+              issues_detected: parseInt(autofix.match(/Issues Detected \((\d+)\)/)?.[1] || 0),
+              fixes_applied: parseInt(autofix.match(/Fixes Applied \((\d+)\)/)?.[1] || 0),
+              resolution_rate: 0
+            }
+          };
+        }
+        ```
+
+        ### Benchmark Dashboard Generation
+
+        Create `.preview/reports/benchmark-dashboard.html`:
+
+        ```html
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Design Quality Benchmark Dashboard</title>
+          <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+          <style>
+            body {
+              font-family: Inter, sans-serif;
+              max-width: 1400px;
+              margin: 0 auto;
+              padding: 40px;
+              background: #f9fafb;
+            }
+            .dashboard {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+              gap: 24px;
+              margin-bottom: 40px;
+            }
+            .metric-card {
+              background: white;
+              padding: 24px;
+              border-radius: 12px;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            .metric-value {
+              font-size: 48px;
+              font-weight: 700;
+              margin: 16px 0;
+            }
+            .metric-label {
+              font-size: 14px;
+              color: #6b7280;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            }
+            .status-pass { color: #10b981; }
+            .status-warn { color: #f59e0b; }
+            .status-fail { color: #ef4444; }
+            .radar-container {
+              background: white;
+              padding: 32px;
+              border-radius: 12px;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              margin-bottom: 40px;
+            }
+            .trend-chart {
+              background: white;
+              padding: 32px;
+              border-radius: 12px;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            .comparison-table {
+              background: white;
+              padding: 32px;
+              border-radius: 12px;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              margin-top: 40px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            th, td {
+              text-align: left;
+              padding: 12px;
+              border-bottom: 1px solid #e5e7eb;
+            }
+            th {
+              font-weight: 600;
+              background: #f9fafb;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Design Quality Benchmark Dashboard</h1>
+          <p>Generated: {timestamp}</p>
+
+          <div class="dashboard">
+            <div class="metric-card">
+              <div class="metric-label">DQS Total</div>
+              <div class="metric-value status-{dqs_status}">{dqs_total}/100</div>
+              <div>Target: 85+</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-label">MQS Total</div>
+              <div class="metric-value status-{mqs_status}">{mqs_total}/100</div>
+              <div>Target: 80+</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-label">Token Compliance</div>
+              <div class="metric-value status-{token_status}">{token_percentage}%</div>
+              <div>Target: 98%</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-label">Touch Targets</div>
+              <div class="metric-value status-{touch_status}">{touch_percentage}%</div>
+              <div>Target: 100%</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-label">Visual Regression</div>
+              <div class="metric-value status-{visual_status}">{visual_ssim}</div>
+              <div>SSIM Score (Target: ≥0.95)</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-label">Lighthouse A11y</div>
+              <div class="metric-value status-{lighthouse_status}">{lighthouse_score}</div>
+              <div>Target: 90+</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-label">AutoFix Resolution</div>
+              <div class="metric-value status-{autofix_status}">{autofix_rate}%</div>
+              <div>{autofix_fixed}/{autofix_total} issues</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-label">First-Pass Success</div>
+              <div class="metric-value status-{firstpass_status}">{firstpass_rate}%</div>
+              <div>Target: 85%</div>
+            </div>
+          </div>
+
+          <div class="radar-container">
+            <h2>DQS Dimensions Radar</h2>
+            <canvas id="radarChart"></canvas>
+          </div>
+
+          <div class="trend-chart">
+            <h2>Quality Trend (Last 5 Generations)</h2>
+            <canvas id="trendChart"></canvas>
+          </div>
+
+          <div class="comparison-table">
+            <h2>Industry Benchmarks</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Tool</th>
+                  <th>DQS</th>
+                  <th>Speed</th>
+                  <th>Code Quality</th>
+                  <th>A11y</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Spec Kit v0.4.0</strong></td>
+                  <td class="status-{speckit_dqs_status}">{speckit_dqs}</td>
+                  <td>{speckit_speed}</td>
+                  <td>{speckit_code}</td>
+                  <td>{speckit_a11y}%</td>
+                </tr>
+                <tr>
+                  <td>Galileo AI</td>
+                  <td>75</td>
+                  <td>Fast</td>
+                  <td>Medium</td>
+                  <td>70%</td>
+                </tr>
+                <tr>
+                  <td>v0.dev</td>
+                  <td>80</td>
+                  <td>Very Fast</td>
+                  <td>High</td>
+                  <td>85%</td>
+                </tr>
+                <tr>
+                  <td>Builder.io</td>
+                  <td>85</td>
+                  <td>Medium</td>
+                  <td>Very High</td>
+                  <td>90%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <script>
+            // Radar Chart
+            const radarCtx = document.getElementById('radarChart').getContext('2d');
+            new Chart(radarCtx, {
+              type: 'radar',
+              data: {
+                labels: ['Visual Design', 'Accessibility', 'Components', 'Responsiveness', 'Token Compliance', 'Code Quality'],
+                datasets: [{
+                  label: 'Current',
+                  data: [{dqs_dimensions}],
+                  backgroundColor: 'rgba(94, 106, 210, 0.2)',
+                  borderColor: 'rgba(94, 106, 210, 1)',
+                  pointBackgroundColor: 'rgba(94, 106, 210, 1)'
+                }, {
+                  label: 'Target',
+                  data: [85, 85, 85, 85, 85, 85],
+                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                  borderColor: 'rgba(16, 185, 129, 0.5)',
+                  borderDash: [5, 5]
+                }]
+              },
+              options: {
+                scales: {
+                  r: {
+                    beginAtZero: true,
+                    max: 100
+                  }
+                }
+              }
+            });
+
+            // Trend Chart
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            new Chart(trendCtx, {
+              type: 'line',
+              data: {
+                labels: {trend_labels},
+                datasets: [{
+                  label: 'DQS',
+                  data: {trend_dqs},
+                  borderColor: 'rgba(94, 106, 210, 1)',
+                  backgroundColor: 'rgba(94, 106, 210, 0.1)',
+                  tension: 0.4
+                }, {
+                  label: 'MQS',
+                  data: {trend_mqs},
+                  borderColor: 'rgba(99, 91, 255, 1)',
+                  backgroundColor: 'rgba(99, 91, 255, 0.1)',
+                  tension: 0.4
+                }]
+              },
+              options: {
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    max: 100
+                  }
+                },
+                plugins: {
+                  annotation: {
+                    annotations: {
+                      targetLine: {
+                        type: 'line',
+                        yMin: 85,
+                        yMax: 85,
+                        borderColor: 'rgba(16, 185, 129, 0.5)',
+                        borderWidth: 2,
+                        borderDash: [5, 5]
+                      }
+                    }
+                  }
+                }
+              }
+            });
+          </script>
+        </body>
+        </html>
+        ```
+
+        ### Trend Analysis
+
+        Load historical data from `.preview/reports/history/`:
+        - Compare last 5 generations
+        - Calculate improvement rate
+        - Identify regressions
+
+        ```javascript
+        function analyzeTrends() {
+          const history = loadHistory('.preview/reports/history/');
+          const recent = history.slice(-5);
+
+          return {
+            dqs_trend: calculateTrend(recent.map(r => r.dqs)),
+            mqs_trend: calculateTrend(recent.map(r => r.mqs)),
+            improvement_rate: ((recent[4].dqs - recent[0].dqs) / 5).toFixed(1),
+            regressions: findRegressions(recent)
+          };
+        }
+        ```
+
+        ### Actionable Recommendations
+
+        Based on aggregated metrics, provide specific recommendations:
+
+        ```markdown
+        ## Recommendations
+
+        ### Critical (DQS < 70)
+        1. **Token Compliance**: {violation_count} hardcoded values detected
+           - Run AutoFix: `/speckit.preview --autofix`
+           - Review: `.preview/reports/token-violations.json`
+
+        2. **Accessibility**: {a11y_issues} WCAG violations
+           - Fix touch targets: {small_targets} buttons < 44×44px
+           - Add ARIA labels: {missing_labels} interactive elements
+
+        ### Improvements (DQS 70-84)
+        1. **Visual Consistency**: {consistency_score}/25
+           - Normalize button padding across components
+           - Standardize border radius values
+
+        2. **Responsiveness**: {responsive_score}/20
+           - Test on mobile (375×812)
+           - Fix overflow issues on tablet
+
+        ### Optimization (DQS ≥ 85)
+        - Consider variable fonts for performance (+15KB savings)
+        - Enable glassmorphism for modern aesthetic
+        - Add micro-interactions for polish
+        ```
+
+        ### Output
+
+        Generate comprehensive report:
+        1. **HTML Dashboard**: `.preview/reports/benchmark-dashboard.html`
+        2. **JSON Metrics**: `.preview/reports/benchmark-metrics.json`
+        3. **Markdown Summary**: `.preview/reports/benchmark-summary.md`
+        4. **CSV Export**: `.preview/reports/benchmark-export.csv`
+
+        Open dashboard in browser if `preview_config.auto_open: true`.
 
 component_styling:
   default_library: "shadcn/ui"

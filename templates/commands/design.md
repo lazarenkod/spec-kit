@@ -191,6 +191,32 @@ claude_code:
         - "design-system/tokens.json"
         - "design-system/components.md"
         - ".speckit/design-presets.yaml"
+pre_gates:
+  - gate: IG-DESIGN-001
+    name: Spec Quality Check
+    check: "SQS >= 70 from spec.md"
+    severity: HIGH
+    auto_remediation: false
+    description: "Verify that spec.md exists and has minimum quality score before design work"
+gates:
+  - gate: QG-DQS-001
+    name: Minimum Design Quality Score
+    check: "DQS >= 70"
+    severity: CRITICAL
+    phase: POST
+    description: "Ensure design meets minimum quality threshold across all dimensions"
+  - gate: QG-DQS-002
+    name: Accessibility Compliance
+    check: "Accessibility dimension >= 60%"
+    severity: CRITICAL
+    phase: POST
+    description: "Verify WCAG 2.1 AA compliance for all interactive elements"
+  - gate: QG-DQS-003
+    name: Token Compliance
+    check: "WCAG 2.1 AA color contrast"
+    severity: CRITICAL
+    phase: POST
+    description: "Ensure all colors meet contrast requirements and use design tokens"
   subagents:
     # Wave 1: Research & Analysis (parallel)
     - role: design-researcher
@@ -200,6 +226,31 @@ claude_code:
       priority: 10
       model_override: sonnet
       prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze Requirements
+        - What are the core user goals from spec.md?
+        - What constraints exist (device, accessibility, performance)?
+        - What brand identity elements must we preserve?
+        - What is the competitive landscape?
+
+        Step 2: Consider Trade-offs
+        - How do we balance innovation vs. familiar patterns?
+        - What are the risks of ignoring competitor patterns?
+        - How do we prioritize user needs vs. business goals?
+        - What accessibility requirements are non-negotiable?
+
+        Step 3: Apply Research Principles
+        - What user research methods apply to this context?
+        - How do we validate assumptions about user preferences?
+        - What patterns have proven success in similar features?
+        - How do we ensure brand consistency?
+
+        ## Anti-Patterns to Avoid
+        READ templates/shared/design-anti-patterns.md
+        Apply as DO NOT constraints in all outputs.
+        When researching patterns, explicitly flag any anti-patterns found in competitors.
+
         ## Context
         Feature: {{FEATURE_DIR}}
         Spec: {{FEATURE_DIR}}/spec.md
@@ -223,6 +274,31 @@ claude_code:
       priority: 10
       model_override: sonnet
       prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze Requirements
+        - What existing patterns are already in the codebase?
+        - What design tokens are currently being used?
+        - What components can be reused vs. created new?
+        - What inconsistencies exist in current patterns?
+
+        Step 2: Consider Trade-offs
+        - Should we refactor existing components or create new ones?
+        - How do we balance consistency vs. feature-specific needs?
+        - What is the cost of introducing new patterns?
+        - How do we deprecate outdated patterns gracefully?
+
+        Step 3: Apply Pattern Analysis Principles
+        - What makes a pattern reusable and maintainable?
+        - How do we ensure patterns scale across the application?
+        - What documentation is needed for pattern adoption?
+        - How do we measure pattern effectiveness?
+
+        ## Anti-Patterns to Avoid
+        READ templates/shared/design-anti-patterns.md
+        Apply as DO NOT constraints in all outputs.
+        When analyzing existing patterns, flag violations of AP-VIS, AP-COMP, AP-LAY categories.
+
         ## Context
         Feature: {{FEATURE_DIR}}
         Existing Design System: specs/app-design/design_system.md (if exists)
@@ -247,6 +323,31 @@ claude_code:
       priority: 20
       model_override: opus
       prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze Requirements
+        - What are the primary user tasks and goals?
+        - What are the critical user flows that must work flawlessly?
+        - What devices and contexts will users be in?
+        - What accessibility requirements must be built in from the start?
+
+        Step 2: Consider Trade-offs
+        - How do we balance simplicity vs. power user features?
+        - Should we use progressive disclosure or show everything upfront?
+        - How do we balance mobile vs. desktop experience needs?
+        - What accessibility trade-offs are acceptable (if any)?
+
+        Step 3: Apply UX Design Principles
+        - How does Fitts's Law apply to CTA and interactive element placement?
+        - Where should we apply the principle of least surprise?
+        - How do we maintain visual hierarchy across different screen sizes?
+        - What feedback mechanisms are needed for user confidence?
+
+        ## Anti-Patterns to Avoid
+        READ templates/shared/design-anti-patterns.md
+        Apply as DO NOT constraints in all outputs.
+        Focus on AP-A11Y (accessibility) and AP-COMP (component) violations in wireframes.
+
         ## Context
         Feature: {{FEATURE_DIR}}
         Design Brief: (from design-researcher)
@@ -270,10 +371,97 @@ claude_code:
       priority: 20
       model_override: opus
       prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze Requirements
+        - What brand identity elements must be preserved?
+        - What visual hierarchy best serves the user goals?
+        - What color contrast requirements exist (WCAG 2.1 AA minimum)?
+        - What existing patterns constrain our design choices?
+
+        Step 2: Consider Trade-offs
+        - Should we extend the existing palette or introduce new colors?
+        - How do we balance visual interest vs. consistency?
+        - What typography scale supports both readability and hierarchy?
+        - Should we optimize for light mode, dark mode, or both equally?
+
+        Step 3: Apply Visual Design Principles
+        - How do we establish clear visual hierarchy through size, weight, and color?
+        - What spacing scale creates visual rhythm and scanability?
+        - How do we use color purposefully (not decoratively)?
+        - What makes components instantly recognizable and predictable?
+
+        ## Anti-Patterns to Avoid
+        READ templates/shared/design-anti-patterns.md
+        Apply as DO NOT constraints in all outputs.
+        Focus on AP-VIS (visual), AP-TYPE (typography), AP-A11Y-001 (color contrast) violations.
+
         ## Context
         Feature: {{FEATURE_DIR}}
         Brand Guidelines: (from design-researcher)
         Existing Patterns: (from pattern-analyst)
+
+        ## Multi-Modal Reference Loading (NEW v0.3.0)
+        IF constitution.design_system.reference_images exists:
+          LOAD reference images:
+          - Logo files (constitution.design_system.reference_images.logo)
+          - Style guide screenshots (constitution.design_system.reference_images.style_guide)
+          - Existing screens (constitution.design_system.reference_images.screens)
+          - Brand assets (constitution.design_system.reference_images.assets)
+
+          ANALYZE images for:
+          1. **Dominant Colors** (Color Thief algorithm):
+             - Extract 5-10 dominant colors from logo/brand assets
+             - Calculate color frequency and prominence
+             - Generate hex codes and HSL values
+             - Identify primary, secondary, accent candidates
+
+          2. **Typography Styles**:
+             - OCR text from style guide screenshots
+             - Identify font families (serif, sans-serif, monospace)
+             - Measure font sizes, weights, line heights
+             - Extract heading hierarchy patterns
+
+          3. **Component Patterns**:
+             - Detect UI components in existing screens
+             - Identify button styles (rounded, square, pill)
+             - Analyze card layouts and borders
+             - Extract input field patterns
+             - Measure spacing between elements
+
+          4. **Visual Rhythm**:
+             - Measure margins and padding patterns
+             - Identify grid systems (8pt, 4pt, etc.)
+             - Detect border radius patterns
+             - Extract shadow/elevation styles
+
+          SYNTHESIZE with text specifications:
+          - Merge extracted colors with constitution.design_system.colors
+          - Prefer reference image colors for brand consistency
+          - Use text specs for functional requirements
+          - Flag conflicts between image analysis and text specs
+
+          OUTPUT: Reference analysis summary in design.md:
+          ```markdown
+          ## Reference Image Analysis
+
+          ### Extracted Brand Colors
+          - Primary: #HEX (from logo, 45% prominence)
+          - Secondary: #HEX (from style guide, 25% prominence)
+          - Accent: #HEX (from CTA buttons, 15% prominence)
+
+          ### Typography Patterns
+          - Headings: [Font Family], weights [700, 600], sizes [32px, 24px, 18px]
+          - Body: [Font Family], weight 400, size 16px, line-height 1.5
+
+          ### Component Styles
+          - Buttons: 8px border-radius, 12px vertical padding
+          - Cards: 12px border-radius, subtle shadow
+          - Inputs: 4px border-radius, 1px border
+          ```
+
+        ELSE:
+          LOG "No reference images provided. Using text specifications only."
 
         ## Task
         Create visual design language:
@@ -293,6 +481,31 @@ claude_code:
       priority: 20
       model_override: sonnet
       prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze Requirements
+        - What user actions need immediate visual feedback?
+        - What transitions guide users through the experience?
+        - What loading states require animation to reduce perceived wait time?
+        - What existing animations should we maintain for consistency?
+
+        Step 2: Consider Trade-offs
+        - How do we balance delight vs. performance?
+        - Should animations be subtle or expressive?
+        - How do we respect user preferences (prefers-reduced-motion)?
+        - What is the right balance between animation and static content?
+
+        Step 3: Apply Motion Design Principles
+        - How do we use easing curves to create natural, physics-based motion?
+        - What timing creates snappy vs. smooth experiences?
+        - How do we use animation to direct attention and communicate state changes?
+        - What makes micro-interactions feel responsive and polished?
+
+        ## Anti-Patterns to Avoid
+        READ templates/shared/design-anti-patterns.md
+        Apply as DO NOT constraints in all outputs.
+        Focus on AP-ANIM (animation) and AP-A11Y-007 (motion preferences) violations.
+
         ## Context
         Feature: {{FEATURE_DIR}}
         Existing Animations: (from pattern-analyst)
@@ -317,6 +530,31 @@ claude_code:
       priority: 30
       model_override: opus
       prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze Requirements
+        - What tokens are needed across all components?
+        - What naming conventions best serve scalability?
+        - What format serves both developers and designers?
+        - What token structure supports theming (light/dark, brand variants)?
+
+        Step 2: Consider Trade-offs
+        - Should we use semantic tokens (primary, secondary) or descriptive (blue-500)?
+        - How granular should our token scale be (8pt vs. 4pt grid)?
+        - What balance between flexibility and constraints?
+        - Should we optimize for hand-coding or design tool import?
+
+        Step 3: Apply Design System Principles
+        - How do we create a token hierarchy that scales?
+        - What makes tokens discoverable and self-documenting?
+        - How do we ensure tokens are used correctly (not hardcoded values)?
+        - What governance prevents token proliferation?
+
+        ## Anti-Patterns to Avoid
+        READ templates/shared/design-anti-patterns.md
+        Apply as DO NOT constraints in all outputs.
+        Focus on AP-VIS-001 (hardcoded colors), AP-VIS-002 (inconsistent spacing), AP-PERF violations.
+
         ## Context
         Feature: {{FEATURE_DIR}}
         UX Specs: (from ux-designer)
@@ -340,6 +578,31 @@ claude_code:
       priority: 30
       model_override: sonnet
       prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze Requirements
+        - What components from the library map to our wireframes?
+        - What customization does each component need?
+        - What variants (sizes, colors, states) are required?
+        - What library-specific patterns should we follow?
+
+        Step 2: Consider Trade-offs
+        - Should we use library defaults or heavily customize?
+        - How do we balance library conventions vs. our brand?
+        - What customization is worth the maintenance cost?
+        - Should we fork components or use theming?
+
+        Step 3: Apply Component Design Principles
+        - How do we ensure components are composable and flexible?
+        - What makes a component preset reusable across features?
+        - How do we document usage to prevent misuse?
+        - What validation ensures components meet accessibility standards?
+
+        ## Anti-Patterns to Avoid
+        READ templates/shared/design-anti-patterns.md
+        Apply as DO NOT constraints in all outputs.
+        Focus on AP-COMP (component), AP-A11Y (accessibility), AP-PERF-004 (bundle size) violations.
+
         ## Context
         Feature: {{FEATURE_DIR}}
         UX Specs: (from ux-designer)
@@ -365,6 +628,31 @@ claude_code:
       priority: 40
       model_override: sonnet
       prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze Requirements
+        - What component states need to be documented?
+        - What usage patterns should be demonstrated?
+        - What accessibility requirements should be tested?
+        - What design tokens need visual reference?
+
+        Step 2: Consider Trade-offs
+        - Should we document all variants or just common ones?
+        - How do we balance completeness vs. maintainability?
+        - What level of interactivity serves developers best?
+        - Should we include anti-patterns or only correct usage?
+
+        Step 3: Apply Documentation Principles
+        - How do we make stories instantly understandable?
+        - What organization structure helps developers find what they need?
+        - How do we ensure stories stay in sync with code?
+        - What makes documentation actionable, not just informative?
+
+        ## Anti-Patterns to Avoid
+        READ templates/shared/design-anti-patterns.md
+        Apply as DO NOT constraints in all outputs.
+        Include anti-pattern examples in stories to show what NOT to do (AP-COMP violations).
+
         ## Context
         Feature: {{FEATURE_DIR}}
         Component Presets: (from component-preset-generator)
@@ -388,6 +676,31 @@ claude_code:
       priority: 40
       model_override: haiku
       prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze Requirements
+        - What token format does Figma Tokens Studio expect?
+        - What tokens are meaningful in Figma vs. code-only?
+        - What naming conventions align with Figma usage patterns?
+        - What structure enables designers to understand token purpose?
+
+        Step 2: Consider Trade-offs
+        - Should we flatten token hierarchy or preserve nesting?
+        - How do we handle code-specific tokens (animations, shadows)?
+        - What balance between completeness and simplicity?
+        - Should we include development-specific metadata?
+
+        Step 3: Apply Export Principles
+        - How do we ensure token sync between code and design?
+        - What format minimizes manual translation work?
+        - How do we make tokens self-documenting for designers?
+        - What validation prevents import errors?
+
+        ## Anti-Patterns to Avoid
+        READ templates/shared/design-anti-patterns.md
+        Apply as DO NOT constraints in all outputs.
+        Ensure exported tokens prevent AP-VIS-001 (hardcoded colors) in Figma.
+
         ## Context
         Design System: (from design-system-generator)
         Token Files: design-tokens/
@@ -411,6 +724,31 @@ claude_code:
       priority: 50
       model_override: sonnet
       prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze Requirements
+        - What functional requirements need UI representation?
+        - What accessibility standards apply to this feature?
+        - What design token coverage is complete vs. missing?
+        - What brand consistency checks are critical?
+
+        Step 2: Consider Trade-offs
+        - What issues are blockers vs. nice-to-have improvements?
+        - Should we prioritize accessibility or visual polish?
+        - What technical debt is acceptable for MVP?
+        - How do we balance perfection vs. shipping?
+
+        Step 3: Apply Quality Validation Principles
+        - How do we ensure every issue has clear remediation steps?
+        - What metrics define design quality objectively?
+        - How do we prioritize issues by user impact?
+        - What validation ensures design is implementable?
+
+        ## Anti-Patterns to Avoid
+        READ templates/shared/design-anti-patterns.md
+        Apply as DO NOT constraints in all outputs.
+        Cross-check ALL design artifacts against full anti-pattern list (47 patterns across 7 categories).
+
         ## Context
         Feature: {{FEATURE_DIR}}
         All Design Artifacts: (from previous agents)

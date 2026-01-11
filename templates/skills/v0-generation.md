@@ -43,10 +43,328 @@ FUNCTION load_design_context():
   }
 ```
 
-### 2. Build v0.dev Prompt
+### 2. Load Few-Shot Examples (NEW v0.2.0)
+
+```text
+FUNCTION load_few_shot_examples(component_type):
+  """
+  Load high-quality implementation examples for the component type.
+
+  Research shows 3-5 examples provide optimal few-shot performance.
+  Examples include full TypeScript code, accessibility patterns,
+  and anti-pattern prevention guidance.
+  """
+
+  # Normalize component type to match file names
+  normalized_type = component_type.lower().replace(" ", "-")
+
+  # Map common component types to example files
+  type_map = {
+    "button": "button-examples",
+    "input": "input-examples",
+    "form": "form-examples",
+    "card": "card-examples",
+    "navigation": "navigation-examples",
+    "nav": "navigation-examples",
+    "modal": "modal-examples",
+    "dialog": "modal-examples",
+    "table": "table-examples",
+    "list": "list-examples",
+    "avatar": "avatar-examples",
+    "badge": "badge-examples"
+  }
+
+  # Get mapped file name or use normalized type
+  file_name = type_map.get(normalized_type, f"{normalized_type}-examples")
+  examples_path = f"templates/shared/few-shot-examples/{file_name}.md"
+
+  IF exists(examples_path):
+    LOG f"Loading few-shot examples for {component_type} from {examples_path}"
+    examples = read(examples_path)
+    RETURN examples
+
+  LOG f"No few-shot examples found for {component_type}"
+  RETURN null
+```
+
+### 3. Code Optimization (NEW v0.4.0)
+
+```text
+FUNCTION optimize_component_code(code, component_name):
+  """
+  Apply performance and quality optimizations to generated component code.
+  Ensures production-ready output that meets Core Web Vitals targets.
+  """
+
+  optimizations = {
+    bundle_size: {},
+    performance: {},
+    validation: {}
+  }
+
+  # 1. Bundle Size Optimization
+  # Target: Max 5KB gzipped per component
+  original_size = calculate_gzipped_size(code)
+
+  # 1.1 Tree Shaking
+  # Remove unused imports and dead code
+  code = remove_unused_imports(code)
+  code = remove_dead_code(code)
+
+  # 1.2 Code Splitting
+  # Extract large dependencies to separate chunks
+  IF component_has_icons AND icon_count > 5:
+    code = extract_icon_imports(code)
+    # Dynamic import: const Icons = await import('./icons');
+
+  IF component_has_charts:
+    code = lazy_load_chart_library(code)
+    # const Chart = lazy(() => import('recharts'));
+
+  # 1.3 Minification-Friendly Patterns
+  # Use shorter variable names in production
+  code = use_consistent_naming(code)
+
+  optimized_size = calculate_gzipped_size(code)
+  optimizations.bundle_size = {
+    original: original_size,
+    optimized: optimized_size,
+    savings: f"{((original_size - optimized_size) / original_size * 100):.1f}%"
+  }
+
+  IF optimized_size > 5120:  # 5KB in bytes
+    WARN f"Component {component_name} exceeds 5KB target ({optimized_size} bytes)"
+
+  # 2. Performance Optimization
+
+  # 2.1 Automatic Memoization
+  # Wrap expensive components in React.memo
+  IF component_has_complex_render:
+    code = wrap_with_memo(code, component_name)
+    # export const Button = memo(function Button(props) { ... });
+
+  # 2.2 Callback Optimization
+  # Wrap event handlers in useCallback
+  handlers = extract_event_handlers(code)
+  FOR handler IN handlers:
+    IF handler.is_inline:
+      code = wrap_handler_with_useCallback(code, handler)
+
+  # 2.3 Expensive Calculations
+  # Wrap computations in useMemo
+  calculations = detect_expensive_calculations(code)
+  FOR calc IN calculations:
+    IF calc.runs_on_every_render:
+      code = wrap_with_useMemo(code, calc)
+
+  # 2.4 Lazy Loading
+  # Dynamic imports for non-critical components
+  IF component_has_modal OR component_has_drawer:
+    code = add_lazy_loading(code)
+    # const Modal = lazy(() => import('./Modal'));
+
+  optimizations.performance = {
+    memoization: "auto",
+    lazy_loading: component_has_modal OR component_has_drawer,
+    callbacks_optimized: len(handlers),
+    memos_added: len(calculations)
+  }
+
+  # 3. Validation
+
+  # 3.1 Lighthouse Accessibility Score
+  # Target: >= 90
+  a11y_issues = run_axe_core(code)
+  IF a11y_issues:
+    FOR issue IN a11y_issues:
+      IF issue.severity == "critical":
+        code = fix_accessibility_issue(code, issue)
+
+  # 3.2 TypeScript Strict Mode
+  ts_errors = run_typescript_check(code, strict_mode=true)
+  IF ts_errors:
+    FOR error IN ts_errors:
+      code = fix_typescript_error(code, error)
+
+  # 3.3 ESLint Rules
+  eslint_warnings = run_eslint(code, rules={
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "jsx-a11y/alt-text": "error",
+    "jsx-a11y/anchor-is-valid": "error"
+  })
+
+  optimizations.validation = {
+    lighthouse_a11y_score: calculate_a11y_score(code),
+    typescript_strict: len(ts_errors) == 0,
+    eslint_clean: len([w for w in eslint_warnings if w.severity == "error"]) == 0
+  }
+
+  # 4. Generate Optimization Report
+  report = f"""
+  ## Code Optimization Report: {component_name}
+
+  ### Bundle Size
+  - Original: {original_size} bytes
+  - Optimized: {optimized_size} bytes
+  - Savings: {optimizations.bundle_size.savings}
+  - Status: {"✓ PASS" if optimized_size <= 5120 else "⚠ WARN"}
+
+  ### Performance
+  - Memoization: {optimizations.performance.memoization}
+  - Lazy loading: {"✓ Enabled" if optimizations.performance.lazy_loading else "○ Not needed"}
+  - Callbacks optimized: {optimizations.performance.callbacks_optimized}
+  - Memos added: {optimizations.performance.memos_added}
+
+  ### Validation
+  - Lighthouse A11y: {optimizations.validation.lighthouse_a11y_score}/100
+  - TypeScript strict: {"✓ PASS" if optimizations.validation.typescript_strict else "✗ FAIL"}
+  - ESLint: {"✓ CLEAN" if optimizations.validation.eslint_clean else "⚠ WARNINGS"}
+  """
+
+  write(f".speckit/reports/optimization-{component_name}.md", report)
+
+  RETURN {
+    code: code,
+    optimizations: optimizations,
+    report: report
+  }
+
+
+# Helper Functions
+
+FUNCTION calculate_gzipped_size(code):
+  import gzip
+  compressed = gzip.compress(code.encode('utf-8'))
+  RETURN len(compressed)
+
+FUNCTION remove_unused_imports(code):
+  # Parse AST to find unused imports
+  imports = parse_imports(code)
+  used_identifiers = extract_used_identifiers(code)
+
+  FOR import_statement IN imports:
+    imported_names = import_statement.names
+    FOR name IN imported_names:
+      IF name NOT IN used_identifiers:
+        code = code.replace(import_statement.line, "")
+
+  RETURN code
+
+FUNCTION wrap_with_memo(code, component_name):
+  # Add React.memo wrapper
+  pattern = f"export (const|function) {component_name}"
+  replacement = f"export const {component_name} = memo(function {component_name}"
+
+  code = regex_replace(code, pattern, replacement)
+
+  # Add memo import if not present
+  IF "memo" NOT IN code:
+    code = add_import(code, "react", ["memo"])
+
+  RETURN code
+
+FUNCTION wrap_handler_with_useCallback(code, handler):
+  # Detect inline handlers
+  pattern = f"{handler.prop}={{\\(.*?\\) => (.*?)}}"
+
+  # Extract to useCallback
+  callback_code = f"""
+  const {handler.name} = useCallback(({handler.params}) => {{
+    {handler.body}
+  }}, [{handler.dependencies}]);
+  """
+
+  # Insert before return statement
+  code = insert_before_return(code, callback_code)
+
+  # Replace inline handler with callback reference
+  code = regex_replace(code, pattern, f"{handler.prop}={{{handler.name}}}")
+
+  RETURN code
+
+FUNCTION wrap_with_useMemo(code, calculation):
+  # Wrap expensive calculation in useMemo
+  memo_code = f"""
+  const {calculation.variable} = useMemo(() => {{
+    {calculation.code}
+  }}, [{calculation.dependencies}]);
+  """
+
+  # Replace inline calculation with memoized version
+  code = code.replace(calculation.code, calculation.variable)
+  code = insert_before_return(code, memo_code)
+
+  RETURN code
+
+FUNCTION add_lazy_loading(code):
+  # Find component imports that should be lazy
+  lazy_candidates = ["Modal", "Drawer", "Dialog", "Sheet"]
+
+  FOR component IN lazy_candidates:
+    IF component IN code:
+      # Convert to lazy import
+      import_line = find_import_line(code, component)
+      IF import_line:
+        lazy_import = f"const {component} = lazy(() => import('{component}'));"
+        code = code.replace(import_line, lazy_import)
+
+        # Add lazy import from React
+        IF "lazy" NOT IN code:
+          code = add_import(code, "react", ["lazy"])
+
+        # Wrap usage in Suspense
+        code = wrap_in_suspense(code, component)
+
+  RETURN code
+
+FUNCTION run_axe_core(code):
+  # Simulate axe-core accessibility check
+  issues = []
+
+  # Check for missing alt text
+  IF regex_match(r'<img(?![^>]*alt=)', code):
+    issues.append({
+      type: "missing-alt-text",
+      severity: "critical",
+      element: "img"
+    })
+
+  # Check for missing ARIA labels on buttons
+  IF regex_match(r'<button[^>]*>\\s*<[^>]*/>\\s*</button>', code):
+    # Icon-only button without aria-label
+    IF NOT regex_match(r'aria-label=', code):
+      issues.append({
+        type: "missing-aria-label",
+        severity: "critical",
+        element: "button"
+      })
+
+  RETURN issues
+
+FUNCTION fix_accessibility_issue(code, issue):
+  IF issue.type == "missing-alt-text":
+    # Add placeholder alt text
+    code = regex_replace(code, r'<img ', '<img alt="TODO: Add description" ')
+
+  IF issue.type == "missing-aria-label":
+    # Infer label from context
+    code = regex_replace(
+      code,
+      r'<button([^>]*)>',
+      r'<button\1 aria-label="Action button">'
+    )
+
+  RETURN code
+```
+
+### 4. Build v0.dev Prompt
 
 ```text
 FUNCTION build_v0_prompt(component, tokens):
+
+  # Load few-shot examples if available (NEW v0.2.0)
+  few_shot_examples = load_few_shot_examples(component.type)
 
   system_prompt = """
 You are generating a React component using:
@@ -90,6 +408,30 @@ Requirements:
 - Make fully accessible (ARIA, keyboard nav)
 - Support dark mode via class strategy
 - Export both component and types
+"""
+
+  # Append few-shot examples if available (NEW v0.2.0)
+  IF few_shot_examples:
+    system_prompt += f"""
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📚 High-Quality Implementation Examples (Few-Shot Learning)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Study these examples carefully. They demonstrate:
+- Proper token usage (prevents AP-VIS-001)
+- Accessibility patterns (WCAG 2.1 AA)
+- Touch targets (44×44px minimum)
+- Focus indicators
+- Error handling
+- Loading states
+- Anti-pattern prevention
+
+{few_shot_examples}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  Apply the patterns above to your implementation
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 
   user_prompt = build_component_prompt(component)
@@ -149,7 +491,7 @@ Please generate a production-ready component that:
   RETURN prompt
 ```
 
-### 3. Check Cache
+### 4. Check Cache
 
 ```text
 FUNCTION check_cache(component, tokens):
@@ -170,7 +512,7 @@ FUNCTION check_cache(component, tokens):
   RETURN null
 ```
 
-### 4. Generate via v0.dev
+### 5. Generate via v0.dev
 
 ```text
 FUNCTION generate_via_v0(prompt, mode):
@@ -225,7 +567,7 @@ FUNCTION generate_via_v0(prompt, mode):
     RETURN code
 ```
 
-### 5. Validate Generated Code
+### 6. Validate Generated Code
 
 ```text
 FUNCTION validate_generated_code(code, spec):
@@ -325,7 +667,7 @@ FUNCTION has_aria_labels(code):
   RETURN false
 ```
 
-### 6. Auto-Correct Issues
+### 7. Auto-Correct Issues
 
 ```text
 FUNCTION auto_correct(code, issues):
@@ -365,7 +707,7 @@ FUNCTION map_color_to_token(hex_color):
   RETURN null
 ```
 
-### 7. Cache Result
+### 8. Cache Result
 
 ```text
 FUNCTION cache_result(component, code, tokens):
@@ -392,7 +734,7 @@ FUNCTION cache_result(component, code, tokens):
   LOG f"Cached {component.name} at {cache_path}"
 ```
 
-### 8. Output Files
+### 9. Output Files
 
 ```text
 FUNCTION output_component(component, code, output_dir):
