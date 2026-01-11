@@ -4,32 +4,39 @@
 
 ## CQS-E Calculation
 
-**Formula**:
+**Formula** (Updated v0.6.1 — 10 Components):
 ```
 CQS-E = (
-  Market × 0.20 +
-  Persona × 0.15 +
-  Metrics × 0.15 +
-  Features × 0.15 +
-  Risk × 0.10 +
-  Technical × 0.10 +
-  Strategic × 0.05 +      # Framework completeness
-  Validation × 0.05 +     # Hypothesis test status
-  Transparency × 0.05     # NEW: Decision transparency
+  Market × 0.18 +           # Market validation (↓ from 0.20)
+  Persona × 0.14 +          # Persona depth (↓ from 0.15)
+  Metrics × 0.14 +          # Metrics quality (↓ from 0.15)
+  Features × 0.14 +         # Feature completeness (↓ from 0.15)
+  Risk × 0.10 +             # Risk assessment
+  Technical × 0.10 +        # Technical hints
+  Strategic_Clarity × 0.05 + # Strategic positioning (renamed from Strategic)
+  Validation × 0.05 +       # Hypothesis test status
+  Transparency × 0.05 +     # Decision transparency
+  Quality_Intent × 0.05     # NEW: Quality targets from constitution
 ) × 100 × Evidence_Multiplier
 ```
 
+**Change Log (v0.6.1)**:
+- Rebalanced weights: Market (20%→18%), Persona/Metrics/Features (15%→14%)
+- Renamed: Strategic → Strategic Clarity (positioning, differentiation, GTM)
+- Added: Quality Intent (5% weight) - quality targets from constitution
+
 | Component | Score | Weight | Weighted | Evidence Quality | Notes |
 |-----------|:-----:|:------:|:--------:|:----------------:|-------|
-| Market Validation | /100 | 0.20 | | HIGH/MED/LOW | [Gaps to address] |
-| Persona Depth | /100 | 0.15 | | HIGH/MED/LOW | [Gaps to address] |
-| Metrics Quality | /100 | 0.15 | | HIGH/MED/LOW | [Gaps to address] |
-| Feature Completeness | /100 | 0.15 | | HIGH/MED/LOW | [Gaps to address] |
+| Market Validation | /100 | 0.18 | | HIGH/MED/LOW | [Gaps to address] |
+| Persona Depth | /100 | 0.14 | | HIGH/MED/LOW | [Gaps to address] |
+| Metrics Quality | /100 | 0.14 | | HIGH/MED/LOW | [Gaps to address] |
+| Feature Completeness | /100 | 0.14 | | HIGH/MED/LOW | [Gaps to address] |
 | Risk Assessment | /100 | 0.10 | | HIGH/MED/LOW | [Gaps to address] |
 | Technical Hints | /100 | 0.10 | | HIGH/MED/LOW | [Gaps to address] |
-| **Strategic Depth** | /100 | 0.05 | | HIGH/MED/LOW | [Framework coverage] |
+| **Strategic Clarity** | /100 | 0.05 | | HIGH/MED/LOW | [Positioning, GTM, strategy] |
 | **Validation Rigor** | /100 | 0.05 | | HIGH/MED/LOW | [Hypothesis status] |
 | **Transparency** | /100 | 0.05 | | HIGH/MED/LOW | [Decision rationale] |
+| **Quality Intent** | /100 | 0.05 | | HIGH/MED/LOW | [Constitution quality targets] |
 | **Base CQS** | | | **/100** | | |
 | **Evidence Multiplier** | | | **×[0.8-1.2]** | | |
 | **CQS-E Total** | | | **/120** | | |
@@ -244,35 +251,54 @@ When multiple sources provide contradictory information:
 - Domain entities: Architecture review OR working prototype
 - Integrations: Documentation review completed
 
-### Strategic Depth (5% weight)
+### Strategic Clarity (5% weight)
+
+> **Updated v0.6.1**: Expanded to include strategic positioning from Q6-Q10 in `/speckit.concept`
 
 | Criterion | Max Pts | Evidence Tier | Score | Sources |
 |-----------|:-------:|:-------------:|:-----:|---------|
-| **Product Alternatives generated** ← NEW | **30** | N/W/M/S/VS | | [Source IDs] |
-| PR/FAQ completed (Amazon format) | 15 | N/W/M/S/VS | | [Source IDs] |
-| Blue Ocean Canvas (ERRC grid) | 15 | N/W/M/S/VS | | [Source IDs] |
-| Business Model Canvas with unit economics | 15 | N/W/M/S/VS | | [Source IDs] |
-| Three Horizons allocation | 10 | N/W/M/S/VS | | [Source IDs] |
-| Trade-off Resolution hierarchy | 10 | N/W/M/S/VS | | [Source IDs] |
-| Scope Exclusions documented | 5 | N/W/M/S/VS | | [Source IDs] |
+| Market positioning defined with rationale | 20 | N/W/M/S/VS | | [§ Strategic Positioning] |
+| Differentiation strategy clear with evidence | 30 | N/W/M/S/VS | | [§ Strategic Positioning] |
+| GTM strategy documented with tactics + metrics | 30 | N/W/M/S/VS | | [§ Strategic Positioning] |
+| Timeline realistic with milestones | 10 | N/W/M/S/VS | | [§ Strategic Positioning] |
+| Success metric (North Star) defined with Y1 target | 10 | N/W/M/S/VS | | [§ Strategic Positioning] |
 | **Subtotal** | 100 | | **/100** | |
 
 **Evidence Requirements**:
-- **Product Alternatives**: ≥3 alternatives documented with scoring (Problem Fit, Differentiation, Feasibility, Time)
-- **Selection Rationale**: Clear explanation of why chosen alternative over others
-- Unit economics: Based on actual cost data OR comparable company analysis
-- Blue Ocean: Competitive differentiation validated with users
+- **Market Positioning**: Documented in § Strategic Positioning with rationale from market research
+- **Differentiation**: Competitive matrix showing advantage in chosen area
+- **GTM Strategy**: Tactics with CAC targets, conversion rates, channel-specific metrics
+- **Timeline**: Aligned with feature scope (aggressive timeline = reduced scope)
+- **North Star Metric**: Definition + Y1 target + leading indicators
 
-**Scoring Logic for Product Alternatives**:
+**Scoring Logic**:
 ```
-IF alternatives_count >= 5 AND selected_alternative documented AND selection_rationale >= 3 reasons:
-    SCORE = 30 points
-ELIF alternatives_count >= 3 AND selected_alternative documented:
-    SCORE = 25 points
-ELIF alternatives_count >= 3:
-    SCORE = 15 points
-ELSE:
-    SCORE = 0 points
+Market Positioning (20 pts):
+  IF positioning documented + rationale + implications: 20 pts
+  ELIF positioning documented: 10 pts
+  ELSE: 0 pts
+
+Differentiation (30 pts):
+  IF differentiation + competitive matrix + evidence: 30 pts
+  ELIF differentiation + competitive matrix: 20 pts
+  ELIF differentiation documented: 10 pts
+  ELSE: 0 pts
+
+GTM Strategy (30 pts):
+  IF GTM + tactics + metrics (CAC, conversion): 30 pts
+  ELIF GTM + tactics: 20 pts
+  ELIF GTM documented: 10 pts
+  ELSE: 0 pts
+
+Timeline (10 pts):
+  IF timeline + milestones + risks: 10 pts
+  ELIF timeline documented: 5 pts
+  ELSE: 0 pts
+
+North Star Metric (10 pts):
+  IF metric + definition + Y1 target + leading indicators: 10 pts
+  ELIF metric + Y1 target: 5 pts
+  ELSE: 0 pts
 ```
 
 ### Validation Rigor (5% weight)
@@ -304,6 +330,57 @@ ELSE:
 - JTBD links: Traced to user research evidence
 - Reasoning traces: Show decision chain from problem to feature
 - Scope variants: OPTIONAL in v2.0 (use /speckit.concept-variants to generate)
+
+### Quality Intent (5% weight) — NEW v0.6.1
+
+> **Purpose**: Evaluate quality standards set in `/memory/constitution.md` (Project Settings) from `/speckit.constitution` questionnaire.
+
+| Criterion | Max Pts | Evidence Tier | Score | Sources |
+|-----------|:-------:|:-------------:|:-----:|---------|
+| Performance targets set with rationale | 30 | N/W/M/S/VS | | [constitution.md § Project Settings] |
+| Reliability targets set with rationale | 30 | N/W/M/S/VS | | [constitution.md § Project Settings] |
+| Accessibility targets set with rationale | 20 | N/W/M/S/VS | | [constitution.md § Project Settings] |
+| Quality-first principles strengthened (≥3 MUST) | 20 | N/W/M/S/VS | | [constitution.md § Strengthened Principles] |
+| **Subtotal** | 100 | | **/100** | |
+
+**Evidence Requirements**:
+- **Performance targets**: `perf_priority` documented AND (`response_time_p95_ms` set OR `perf_priority` = best-in-class)
+- **Reliability targets**: `uptime_sla` documented AND (`uptime_sla` ≥ 99.9% OR `error_tolerance` documented)
+- **Accessibility targets**: `accessibility_level` ≥ wcag21-a AND (`a11y_groups` non-empty if level ≥ AA)
+- **Quality-first principles**: ≥3 principles strengthened to MUST (PERF-010, REL-010/011, A11Y-001..005)
+
+**Scoring Logic**:
+```
+Performance Targets (30 pts):
+  IF perf_priority = best-in-class AND response_time_p95_ms < 200: 30 pts
+  ELIF perf_priority >= competitive AND response_time_p95_ms set: 25 pts
+  ELIF perf_priority documented: 15 pts
+  ELSE: 0 pts
+
+Reliability Targets (30 pts):
+  IF uptime_sla >= 99.99% AND error_tolerance = zero: 30 pts
+  ELIF uptime_sla >= 99.9% OR error_tolerance documented: 25 pts
+  ELIF uptime_sla documented: 15 pts
+  ELSE: 0 pts
+
+Accessibility Targets (20 pts):
+  IF accessibility_level >= wcag22-aa AND a11y_groups.length >= 2: 20 pts
+  ELIF accessibility_level >= wcag21-aa: 15 pts
+  ELIF accessibility_level documented: 10 pts
+  ELSE: 0 pts
+
+Quality-First Principles (20 pts):
+  IF ≥5 principles strengthened to MUST: 20 pts
+  ELIF ≥3 principles strengthened to MUST: 15 pts
+  ELIF ≥1 principle strengthened to MUST: 10 pts
+  ELSE: 0 pts
+```
+
+**Integration with Concept**:
+- If § Strategic Positioning → Differentiation = "Performance": Expect `perf_priority` = best-in-class
+- If § Strategic Positioning → Differentiation = "Reliability": Expect `uptime_sla` ≥ 99.99%
+- If § Strategic Positioning → GTM Strategy = "Sales-Led Growth": Expect `uptime_sla` ≥ 99.9% (enterprise)
+- If § Strategic Positioning → Market Position = "Premium": Expect `accessibility_level` ≥ wcag22-aa
 
 ---
 
@@ -347,26 +424,37 @@ Complete these items to improve CQS:
 - [ ] Assess external integration complexity
 - [ ] Check for constitution principle conflicts
 
-### Strategic (if score < 80) — NEW
-- [ ] Complete PR/FAQ using Amazon Working Backwards
-- [ ] Fill Blue Ocean Canvas (ERRC grid)
-- [ ] Document Business Model Canvas with unit economics
-- [ ] Allocate features to Three Horizons
-- [ ] Define Trade-off Resolution hierarchy
-- [ ] Document explicit Scope Exclusions
+### Strategic Clarity (if score < 80) — UPDATED v0.6.1
+- [ ] Document market positioning (Premium/Value/Budget/Niche/Disruptive) with rationale
+- [ ] Define differentiation strategy (Technology/UX/Price/Performance/Integration/Service)
+- [ ] Complete GTM strategy with tactics, CAC targets, and conversion metrics
+- [ ] Set realistic timeline with milestones (Alpha, Beta, Launch)
+- [ ] Define North Star metric with Year 1 target and leading indicators
 
-### Validation (if score < 80) — NEW
+### Validation (if score < 80)
 - [ ] Document at least 3 hypotheses (HYP-001 format)
 - [ ] Include at least 1 Desirability, 1 Feasibility, 1 Viability hypothesis
 - [ ] Collect evidence for each hypothesis
 - [ ] Document Pre-Mortem failure scenarios
 
-### Transparency (if score < 80) — NEW
+### Transparency (if score < 80)
 - [ ] Document 3 concept variants (MINIMAL, BALANCED, AMBITIOUS)
 - [ ] Link each feature to JTBD (>80% coverage required)
 - [ ] Add wave rationale for each wave (why grouped together)
 - [ ] Create at least 3 reasoning traces (RT-001 format)
 - [ ] Complete feature selection table with alternatives
+
+### Quality Intent (if score < 80) — NEW v0.6.1
+- [ ] Run `/speckit.constitution` to set quality targets (if not done)
+- [ ] Set performance priority (`perf_priority`) and response time budget
+- [ ] Set reliability targets (`uptime_sla`, `error_tolerance`)
+- [ ] Set accessibility level (`accessibility_level`, `a11y_groups`)
+- [ ] Review § Strengthened Principles: Verify ≥3 principles are MUST
+- [ ] Cross-check with § Strategic Positioning:
+  - [ ] If Differentiation = Performance → perf_priority = best-in-class
+  - [ ] If Differentiation = Reliability → uptime_sla ≥ 99.99%
+  - [ ] If GTM = Sales-Led Growth → uptime_sla ≥ 99.9%
+  - [ ] If Positioning = Premium → accessibility_level ≥ wcag22-aa
 
 ---
 

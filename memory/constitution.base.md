@@ -412,6 +412,60 @@ Entities subject to concurrent updates SHOULD use optimistic locking (version fi
 
 ---
 
+### REL-010: Uptime SLA Compliance
+
+**Level**: SHOULD (→ MUST if uptime_sla >= 99.9% OR target_scale = enterprise OR gtm_strategy = sales-led)
+**Applies to**: All production services
+
+Services MUST achieve documented uptime SLA targets set in Project Settings (constitution.md).
+
+**Strengthening Conditions**:
+- `uptime_sla >= 99.9%` → MUST (three nines or higher)
+- `target_scale = enterprise` → MUST (mission-critical systems)
+- Concept integration: `gtm_strategy = "Sales-Led Growth"` → MUST (enterprise customer expectations)
+
+**Implementation**:
+- Uptime monitoring with alerting (UptimeRobot, Pingdom, or equivalent)
+- Status page for customer transparency (statuspage.io)
+- Incident response procedures documented
+- Post-mortem process for outages
+- Regular uptime reports (weekly/monthly)
+
+**Validation**: Check monitoring configuration, uptime reports, incident history
+**Violations**: HIGH - SLA breach, customer trust erosion, potential contract penalties
+
+---
+
+### REL-011: Disaster Recovery Plan
+
+**Level**: SHOULD (→ MUST if uptime_sla >= 99.99% OR error_tolerance = zero OR differentiation = reliability)
+**Applies to**: All stateful services (databases, file storage, critical state)
+
+Services with high reliability requirements MUST have documented and tested disaster recovery (DR) plan including:
+- Recovery Time Objective (RTO): Maximum acceptable downtime
+- Recovery Point Objective (RPO): Maximum acceptable data loss
+- Backup strategy (frequency, retention, encryption)
+- Restore procedure (documented, tested quarterly)
+- Geographic redundancy for four-nines SLA or higher
+- Failover automation where feasible
+
+**Strengthening Conditions**:
+- `uptime_sla >= 99.99%` → MUST (four nines requires DR)
+- `error_tolerance = zero` → MUST (no tolerance for data loss)
+- Concept integration: `differentiation = "Reliability"` → MUST (reliability is competitive advantage)
+
+**Implementation**:
+- Automated daily backups with encryption
+- Cross-region replication for critical data
+- Documented restore runbooks
+- Quarterly DR drill (restore from backup, measure RTO)
+- Backup verification (test restore integrity monthly)
+
+**Validation**: Check for DR documentation, backup configuration, drill logs
+**Violations**: CRITICAL (if strengthened to MUST) / HIGH (if SHOULD) - Data loss risk, extended outages
+
+---
+
 ## API: API Design
 
 ### API-001: Versioning
@@ -880,6 +934,45 @@ Repeated reads SHOULD use appropriate caching (memory, Redis, CDN). Cache invali
 
 ---
 
+## PERF: Performance (Quality Targets)
+
+<!--
+  Performance principles tied to quality targets set in Project Settings.
+  These complement PRF principles by adding automated benchmarking and
+  continuous performance regression testing.
+-->
+
+### PERF-010: Performance Benchmarking
+
+**Level**: SHOULD (→ MUST if perf_priority = best-in-class OR response_time_p95_ms < 200 OR differentiation = performance)
+**Applies to**: All performance-critical code paths
+
+Performance regression tests SHOULD be automated and run on every commit to detect performance degradation early.
+
+**Strengthening Conditions**:
+- `perf_priority = best-in-class` → MUST (top 10% performance targets)
+- `response_time_p95_ms < 200` → MUST (aggressive latency targets)
+- Concept integration: `differentiation = "Performance"` → MUST (performance is competitive advantage)
+
+**Implementation**:
+- **Web applications**: Lighthouse CI for Core Web Vitals (LCP, FID, CLS)
+  - Target: LCP < 2.5s, FID < 100ms, CLS < 0.1
+  - Run on every PR, fail builds on regression
+- **API/Backend**: k6 or Locust load testing in CI
+  - Measure P50, P95, P99 latency
+  - Test with realistic load (e.g., 100 req/s)
+  - Alert on >10% latency regression
+- **Mobile**: App startup time, frame rate monitoring
+  - Measure cold start, warm start times
+  - Track jank frames (target: <1% dropped frames)
+- Performance budget enforcement (bundle size, asset size)
+- Automated alerts on performance degradation
+
+**Validation**: Check CI for performance tests, review performance budgets, verify regression alerts
+**Violations**: HIGH (if MUST) / MEDIUM (if SHOULD) - Performance degradation undetected, user experience erosion
+
+---
+
 ## CMP: Compliance
 
 ### CMP-001: Audit Logging
@@ -937,6 +1030,156 @@ UI SHOULD meet WCAG 2.1 AA standards:
 
 **Validation**: Run accessibility audit tools
 **Violations**: MEDIUM - Exclusion of users with disabilities
+
+---
+
+## A11Y: Accessibility (Quality Targets)
+
+<!--
+  Accessibility principles tied to quality targets set in Project Settings.
+  These complement CMP-004 by providing granular, conditional requirements
+  based on WCAG compliance level and prioritized user groups.
+
+  Note: CMP-004 provides baseline accessibility guidance. A11Y principles
+  strengthen requirements when specific accessibility targets are set.
+-->
+
+### A11Y-001: Accessibility Standard Compliance
+
+**Level**: SHOULD (→ MUST if accessibility_level >= wcag22-aa OR accessibility_level >= wcag21-aa OR market_positioning = premium OR domain = healthcare/government/education)
+**Applies to**: All user-facing UI (web, mobile, desktop)
+
+UI MUST comply with the WCAG accessibility level configured in Project Settings:
+- **WCAG 2.2 AAA**: Highest standard (government sites, public services)
+- **WCAG 2.2 AA**: Recommended for most sites (SaaS, e-commerce, healthcare)
+- **WCAG 2.1 AA**: Legacy standard (older projects)
+- **WCAG 2.1 A**: Basic compliance (internal tools)
+- **None**: No accessibility requirements (prototypes, MVPs only)
+
+**Strengthening Conditions**:
+- `accessibility_level >= "wcag22-aa"` → MUST
+- `accessibility_level >= "wcag21-aa"` → MUST
+- Concept integration: `market_positioning = "Premium"` → MUST (premium quality expectations)
+- Domain: `healthcare`, `government`, `education` → MUST (regulatory compliance)
+
+**Implementation**:
+- Automated accessibility testing in CI (axe-core, pa11y, Lighthouse)
+- Manual testing with screen readers (NVDA, JAWS, VoiceOver)
+- Keyboard navigation testing (all functionality accessible without mouse)
+- Color contrast analysis (4.5:1 for text, 3:1 for UI components)
+- Focus indicator visibility (clear focus states on all interactive elements)
+- ARIA labels for dynamic content and custom components
+- Alt text for images and meaningful link text
+- Heading hierarchy (proper H1-H6 structure)
+
+**Validation**: Run accessibility audit tools, manual testing checklist, user testing with assistive technologies
+**Violations**: CRITICAL (if MUST) / HIGH (if SHOULD) - Legal liability, user exclusion, brand damage
+
+---
+
+### A11Y-002: Screen Reader Support
+
+**Level**: SHOULD (→ MUST if "visual" in a11y_groups OR accessibility_level >= wcag22-aa)
+**Applies to**: All user-facing UI
+
+Applications MUST be fully navigable and usable with screen readers (NVDA, JAWS, VoiceOver, TalkBack).
+
+**Strengthening Conditions**:
+- `"visual" in a11y_groups` → MUST (visual impairments prioritized)
+- `accessibility_level >= "wcag22-aa"` → MUST (AA+ requires screen reader support)
+
+**Implementation**:
+- Semantic HTML (use correct elements: button, nav, article, etc.)
+- ARIA labels for all interactive elements
+- ARIA live regions for dynamic content updates
+- Skip navigation links
+- Descriptive link text (no "click here")
+- Form labels and error associations
+- Alt text for images (decorative images use alt="")
+- Screen reader testing on every feature
+- Automated tools: axe-core, WAVE
+
+**Validation**: Screen reader testing checklist, automated ARIA validation
+**Violations**: CRITICAL (if MUST) / HIGH (if SHOULD) - Screen reader users cannot use application
+
+---
+
+### A11Y-003: Keyboard Navigation
+
+**Level**: SHOULD (→ MUST if "motor" in a11y_groups OR accessibility_level >= wcag22-aa)
+**Applies to**: All interactive elements
+
+All functionality MUST be accessible via keyboard without requiring a mouse.
+
+**Strengthening Conditions**:
+- `"motor" in a11y_groups` → MUST (motor impairments prioritized)
+- `accessibility_level >= "wcag22-aa"` → MUST (AA+ requires keyboard navigation)
+
+**Implementation**:
+- Tab order matches visual order
+- All interactive elements focusable (tabindex where needed)
+- Visible focus indicators (outline, border, background change)
+- Escape key closes modals/dropdowns
+- Enter/Space activates buttons and links
+- Arrow keys for menus and custom components
+- No keyboard traps (user can tab out of all elements)
+- Skip links to main content
+- Touch targets minimum 44×44px (mobile)
+
+**Validation**: Keyboard-only testing (unplug mouse), focus indicator checklist
+**Violations**: CRITICAL (if MUST) / HIGH (if SHOULD) - Keyboard users cannot access functionality
+
+---
+
+### A11Y-004: Cognitive Accessibility
+
+**Level**: SHOULD (→ MUST if "cognitive" in a11y_groups OR accessibility_level = wcag22-aaa)
+**Applies to**: Content and UI patterns
+
+Content and interactions MUST be clear, simple, and predictable for users with cognitive impairments.
+
+**Strengthening Conditions**:
+- `"cognitive" in a11y_groups` → MUST (cognitive impairments prioritized)
+- `accessibility_level = "wcag22-aaa"` → MUST (AAA requires cognitive accessibility)
+
+**Implementation**:
+- Plain language (8th-grade reading level or lower)
+- Clear, descriptive headings and labels
+- Consistent navigation and UI patterns
+- Provide context and help text
+- Error messages that explain how to fix issues
+- Adequate time for tasks (no auto-timeouts without warning)
+- Predictable behavior (no unexpected context changes)
+- Multiple ways to find content (search, sitemap, nav)
+- Chunking information (short paragraphs, bullet points)
+- Visual hierarchy and white space
+
+**Validation**: Readability analysis (Flesch-Kincaid), usability testing with diverse users
+**Violations**: HIGH (if MUST) / MEDIUM (if SHOULD) - Confusing or overwhelming experience
+
+---
+
+### A11Y-005: Hearing Accessibility
+
+**Level**: SHOULD (→ MUST if "hearing" in a11y_groups OR accessibility_level >= wcag22-aa)
+**Applies to**: Audio and video content
+
+All audio and video content MUST have text alternatives (captions, transcripts).
+
+**Strengthening Conditions**:
+- `"hearing" in a11y_groups` → MUST (hearing impairments prioritized)
+- `accessibility_level >= "wcag22-aa"` → MUST (AA+ requires captions)
+
+**Implementation**:
+- Captions for all video content (synchronized, accurate)
+- Transcripts for audio-only content (podcasts, voiceovers)
+- Visual indicators for audio cues (doorbell, notifications)
+- No audio-only critical information
+- Caption controls easily discoverable
+- Live captions for live streams (if applicable)
+
+**Validation**: Review all video/audio content for captions, test caption accuracy
+**Violations**: HIGH (if MUST) / MEDIUM (if SHOULD) - Deaf/hard-of-hearing users excluded from content
 
 ---
 
@@ -999,15 +1242,17 @@ Text styling SHOULD use typography tokens from the design system (font-family, f
 | OBS (Observability) | 4 | 2 | 2 |
 | ERR (Error Exposure) | 3 | 3 | 0 |
 | QUA (Quality) | 7 | 1 | 6 |
-| REL (Reliability) | 6 | 2 | 4 |
+| REL (Reliability) | 8 | 2 | 6 |
 | API (API Design) | 6 | 3 | 3 |
 | DOC (API Documentation) | 6 | 4 | 2 |
 | TFA (Twelve-Factor App) | 9 | 4 | 5 |
 | TST (Test-Spec Traceability) | 5 | 2 | 3 |
 | PRF (Performance) | 4 | 1 | 3 |
+| PERF (Performance - Quality Targets) | 1 | 0 | 1 |
 | CMP (Compliance) | 4 | 1 | 3 |
+| A11Y (Accessibility - Quality Targets) | 5 | 0 | 5 |
 | DSS (Design System) | 3 | 1 | 2 |
-| **Total** | **65** | **31** | **34** |
+| **Total** | **73** | **31** | **42** |
 
 ---
 

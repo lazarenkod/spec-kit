@@ -215,6 +215,119 @@ Ask: "Do you want to include analytics support for tracking user behavior and pr
 
 **Privacy**: When analytics is enabled, GDPR/CCPA compliance controls (cookie consent, IP anonymization, PII masking, opt-out) are included by default.
 
+### Question 6: Target Scale
+
+Ask: "What is the target scale and ambition level for this project?"
+
+| Option | Description | Resulting Settings |
+|--------|-------------|-------------------|
+| Prototype/POC | Just validating idea, throwaway code | `target_scale: prototype` |
+| Startup/MVP | Growing user base, production-grade | `target_scale: startup` |
+| Scale | Thousands of users, battle-tested | `target_scale: scale` |
+| Enterprise | Mission-critical, thousands/millions of users | `target_scale: enterprise` |
+
+**Impact**: Performance and reliability expectations scale with ambition. Enterprise targets trigger strict SLA requirements.
+
+### Question 7: Performance Priority (Conditional)
+
+**Condition**: Only ask if Question 1 answer is "Web Application", "API/Backend Service", or "Mobile Application"
+
+Ask: "What is the performance priority for this project?"
+
+| Option | Description | Resulting Settings |
+|--------|-------------|-------------------|
+| Best-in-class | Top 10% of industry, Core Web Vitals perfection | `perf_priority: best` → PERF-010 becomes MUST |
+| Competitive | Industry average, good enough | `perf_priority: competitive` |
+| Acceptable | Functional, not optimized | `perf_priority: acceptable` |
+| Low priority | Prototype speed, performance not critical | `perf_priority: low` |
+
+**Impact**: Best-in-class or competitive priorities trigger automated performance benchmarking (PERF-010).
+
+**Skip**: If Question 1 is "CLI Tool" or "Desktop Application", skip this question (performance less critical for non-server/UI apps).
+
+### Question 7.5: Response Time Budget (Conditional)
+
+**Condition**: Only ask if Question 7 answer is "Best-in-class" or "Competitive"
+
+Ask: "What is the target P95 response time for key operations?"
+
+| Option | Description | Resulting Settings |
+|--------|-------------|-------------------|
+| P95 < 100ms | Instant, Google-level | `response_time_p95_ms: 100` → Add NFR-PERF-001 to spec template |
+| P95 < 200ms | Fast, industry best practices | `response_time_p95_ms: 200` |
+| P95 < 500ms | Responsive | `response_time_p95_ms: 500` |
+| P95 < 1s | Acceptable | `response_time_p95_ms: 1000` |
+
+**Impact**: Concrete P95 targets enable performance regression testing and API performance requirements in specifications.
+
+### Question 8: Uptime Target (Conditional)
+
+**Condition**: Only ask if Question 2 answer is "SaaS", "Fintech", "Healthcare", or "E-commerce"
+
+Ask: "What is the target uptime SLA for this service?"
+
+| Option | Description | Downtime/Year | Resulting Settings |
+|--------|-------------|---------------|-------------------|
+| 99.0% | Acceptable for startups | 87.6 hours | `uptime_sla: 99.0` |
+| 99.5% | Standard | 43.8 hours | `uptime_sla: 99.5` |
+| 99.9% | Three nines, business-critical | 8.76 hours | `uptime_sla: 99.9` → REL-010 becomes MUST |
+| 99.99% | Four nines, mission-critical | 52.6 minutes | `uptime_sla: 99.99` → REL-010, REL-011 become MUST |
+| 99.999% | Five nines, requires DR plan | 5.26 minutes | `uptime_sla: 99.999` → REL-010, REL-011 become MUST |
+
+**Impact**: Uptime SLA ≥99.9% strengthens reliability principles and mandates uptime monitoring. SLA ≥99.99% requires disaster recovery planning.
+
+**Skip**: If Question 2 is "General/Minimal", "Gaming", or "Other", skip this question (uptime SLA less relevant for non-enterprise domains).
+
+### Question 8.5: Error Tolerance (Conditional)
+
+**Condition**: Only ask if Question 8 answer is "99.99%" (four nines) or "99.999%" (five nines)
+
+Ask: "What is the error tolerance for this high-SLA system?"
+
+| Option | Description | Resulting Settings |
+|--------|-------------|-------------------|
+| Zero tolerance | All errors logged, alerted, tracked | `error_tolerance: zero` → REL-011 becomes MUST |
+| Low tolerance | Critical errors only | `error_tolerance: low` |
+| Moderate | Best effort | `error_tolerance: moderate` |
+
+**Impact**: Zero error tolerance mandates comprehensive error tracking, alerting, and disaster recovery drills every 90 days.
+
+### Question 9: Accessibility Level (Conditional)
+
+**Condition**: Only ask if Question 1 answer is "Web Application", "Mobile Application", or "Desktop Application"
+
+Ask: "What is the target WCAG accessibility compliance level?"
+
+| Option | Description | Use Cases | Resulting Settings |
+|--------|-------------|-----------|-------------------|
+| WCAG 2.2 AAA | Highest standard | Government sites, public services | `accessibility_level: wcag22-aaa` → A11Y-001 becomes MUST |
+| WCAG 2.2 AA | Recommended for most sites | SaaS, e-commerce, healthcare | `accessibility_level: wcag22-aa` → A11Y-001 becomes MUST |
+| WCAG 2.1 AA | Legacy standard | Older projects | `accessibility_level: wcag21-aa` → A11Y-001 becomes MUST |
+| WCAG 2.1 A | Basic | Internal tools | `accessibility_level: wcag21-a` |
+| None | No accessibility requirements | Prototypes, MVPs | `accessibility_level: none` |
+
+**Impact**: WCAG level ≥AA strengthens A11Y-001 principle (accessibility standard compliance) and requires automated testing with axe-core.
+
+**Skip**: If Question 1 is "API/Backend Service" or "CLI Tool", skip this question (no UI to make accessible).
+
+### Question 9.5: Accessibility User Groups (Conditional)
+
+**Condition**: Only ask if Question 9 answer is "WCAG 2.2 AA", "WCAG 2.2 AAA", or "WCAG 2.1 AA"
+
+Ask: "Which user groups should be prioritized for accessibility? (Select all that apply)"
+
+| Option | Description | Resulting Settings |
+|--------|-------------|-------------------|
+| Visual impairments | Screen readers (NVDA, JAWS), high contrast | Add "visual" → A11Y-002 becomes MUST |
+| Motor impairments | Keyboard navigation, large touch targets | Add "motor" → A11Y-003 becomes MUST |
+| Cognitive impairments | Simple language, clear layout | Add "cognitive" → A11Y-004 becomes MUST |
+| Hearing impairments | Captions, transcripts for video/audio | Add "hearing" → A11Y-005 becomes MUST |
+| All of the above | Full accessibility support | All A11Y principles become MUST |
+
+**Impact**: Each selected group strengthens corresponding A11Y principles (A11Y-002 through A11Y-005).
+
+**Storage**: Store as array in `a11y_groups` setting (e.g., `["visual", "motor"]`)
+
 ### After Collecting Answers
 
 1. **Map App Type → Principles**: Apply relevant principle sets based on application type
@@ -225,7 +338,16 @@ Ask: "Do you want to include analytics support for tracking user behavior and pr
    - `analytics_enabled`: `true` or `false`
    - `analytics_types`: `["web"]`, `["product"]`, `["web", "product"]`, or `[]`
    - `analytics_provider`: (empty until `/speckit.integrate` runs)
-6. **Generate Constitution**: Merge all layers and generate complete constitution
+6. **Set Quality Targets**: Store quality settings from Q6-Q9.5 in Project Settings table:
+   - `target_scale`: `prototype`, `startup`, `scale`, or `enterprise`
+   - `perf_priority`: `best`, `competitive`, `acceptable`, or `low` (if applicable)
+   - `response_time_p95_ms`: milliseconds (100, 200, 500, or 1000) (if applicable)
+   - `uptime_sla`: percentage (99.0, 99.5, 99.9, 99.99, or 99.999) (if applicable)
+   - `error_tolerance`: `zero`, `low`, or `moderate` (if applicable)
+   - `accessibility_level`: `wcag22-aaa`, `wcag22-aa`, `wcag21-aa`, `wcag21-a`, or `none` (if applicable)
+   - `a11y_groups`: array like `["visual", "motor"]` (if applicable)
+7. **Strengthen Principles**: Apply principle strengthening based on quality targets (see below)
+8. **Generate Constitution**: Merge all layers and generate complete constitution
 
 **Example Flow (Web)**:
 ```text
@@ -437,6 +559,13 @@ If configuring project settings:
    | analytics_enabled | `true`, `false` | `false` |
    | analytics_types | `["web"]`, `["product"]`, `["web", "product"]`, `[]` | `[]` |
    | analytics_provider | `posthog`, `mixpanel`, `amplitude`, (empty) | (empty) |
+   | target_scale | `prototype`, `startup`, `scale`, `enterprise` | `startup` |
+   | perf_priority | `best`, `competitive`, `acceptable`, `low` | `acceptable` |
+   | response_time_p95_ms | number (milliseconds: 100, 200, 500, 1000) | `1000` |
+   | uptime_sla | `99.0`, `99.5`, `99.9`, `99.99`, `99.999` | `99.5` |
+   | error_tolerance | `zero`, `low`, `moderate` | `moderate` |
+   | accessibility_level | `wcag22-aaa`, `wcag22-aa`, `wcag21-aa`, `wcag21-a`, `none` | `none` |
+   | a11y_groups | array: `["visual", "motor", "cognitive", "hearing"]` | `[]` |
 
 3. Report: "Project setting updated: language = ru"
 
@@ -463,7 +592,68 @@ Before finalizing:
 - MINOR: New principle or significant expansion
 - PATCH: Clarifications, parameter tweaks
 
-### 5. Consistency Propagation
+### 5. Principle Strengthening (Quality Targets + Concept Integration)
+
+After collecting questionnaire answers and storing quality targets, apply principle strengthening logic.
+
+**Step 1: Quality-Based Strengthening** (from Q6-Q9.5):
+
+```text
+Performance:
+IF perf_priority == "best": PERF-010 SHOULD → MUST
+IF response_time_p95_ms < 200: PERF-010 SHOULD → MUST
+
+Reliability:
+IF uptime_sla >= 99.9: REL-010 SHOULD → MUST
+IF uptime_sla >= 99.99: REL-010 SHOULD → MUST, REL-011 SHOULD → MUST
+IF target_scale == "enterprise": REL-010 SHOULD → MUST
+IF error_tolerance == "zero": REL-011 SHOULD → MUST
+
+Accessibility:
+IF accessibility_level >= "wcag22-aa" OR accessibility_level >= "wcag21-aa": A11Y-001 SHOULD → MUST
+IF "visual" in a11y_groups: A11Y-002 SHOULD → MUST
+IF "motor" in a11y_groups: A11Y-003 SHOULD → MUST
+IF "cognitive" in a11y_groups: A11Y-004 SHOULD → MUST
+IF "hearing" in a11y_groups: A11Y-005 SHOULD → MUST
+```
+
+**Step 2: Concept-Based Strengthening** (read from `/memory/concept.md` if exists):
+
+```text
+Read concept.md § Strategic Positioning (if file exists):
+
+IF concept.market_positioning == "Premium":
+  A11Y-001 SHOULD → MUST (premium quality expectations)
+  PERF-010 SHOULD → MUST (premium performance expectations)
+
+IF concept.differentiation == "Performance":
+  PERF-010 SHOULD → MUST (performance is competitive advantage)
+  response_time_p95_ms DEFAULT → 200 (if not already set)
+
+IF concept.differentiation == "Reliability":
+  REL-010 SHOULD → MUST (reliability is competitive advantage)
+  REL-011 SHOULD → MUST (disaster recovery mandatory)
+  uptime_sla DEFAULT → 99.99 (if not already set)
+
+IF concept.gtm_strategy == "Sales-Led Growth":
+  REL-010 SHOULD → MUST (enterprise sales expectations)
+  uptime_sla DEFAULT → 99.9 (if not already set)
+  target_scale DEFAULT → enterprise (if not already set)
+```
+
+**Step 3: Document Strengthened Principles**
+
+Add to constitution.md § Strengthened Principles table:
+
+| Principle | Original Level | New Level | Reason |
+|-----------|----------------|-----------|--------|
+| PERF-010 | SHOULD | MUST | perf_priority = best-in-class |
+| REL-010 | SHOULD | MUST | uptime_sla = 99.99% |
+| A11Y-001 | SHOULD | MUST | accessibility_level = wcag22-aa |
+
+**Validation**: Ensure concept integration doesn't create conflicts with explicit questionnaire answers. User's explicit answers always take precedence over concept-inferred defaults.
+
+### 6. Consistency Propagation
 
 Check dependent templates for alignment:
 

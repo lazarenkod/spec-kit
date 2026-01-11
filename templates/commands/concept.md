@@ -629,7 +629,217 @@ This command captures the **complete vision and scope** of a service/product BEF
       "Describe the ideal outcome if this were perfectly solved."
       - Listen for: success criteria, feature hints, user delight moments
 
-   **Output**: Document answers in "Problem Discovery" section of concept.md
+   6. **Market Positioning Question**:
+      "How will your product be positioned in the market?"
+
+      **Options** (use AskUserQuestion with header "Market Position"):
+      - **Premium/High-end**: Highest quality, best experience, premium pricing
+      - **Value/Mid-market**: Good quality/price balance, competitive pricing
+      - **Budget/Mass-market**: Lowest price, acceptable quality
+      - **Niche/Specialized**: Focused on specific segment, premium pricing for domain expertise
+      - **Disruptive/Category-creating**: Creating new market category, redefining how users solve the problem
+
+      - Listen for: quality expectations, pricing strategy, target customer segment
+      - Store in concept.md § Strategic Positioning → "Market Position: [answer]"
+
+   7. **Primary Differentiation Question**:
+      "What will be your primary competitive advantage?"
+
+      **Options** (use AskUserQuestion with header "Differentiation"):
+      - **Technology/Innovation**: Better tech, faster algorithms, novel approach
+      - **User Experience**: Simpler, more intuitive, better design
+      - **Price**: Cheaper, better value, generous free tier
+      - **Performance**: Faster, more reliable, higher uptime
+      - **Integration/Ecosystem**: Better integrations, platform effects, marketplace
+      - **Service/Support**: Better support, professional services, community
+
+      - Listen for: what makes you unique, why customers will switch
+      - Store in concept.md § Strategic Positioning → "Differentiation: [answer]"
+      - **Cross-integration**: If "Performance" selected → recommend perf_priority=best-in-class in constitution
+
+   8. **Go-to-Market Strategy Question**:
+      "What's your primary go-to-market strategy?"
+
+      **Options** (use AskUserQuestion with header "GTM Strategy"):
+      - **Product-Led Growth (PLG)**: Free tier, viral loops, self-serve signup, low-touch onboarding
+      - **Sales-Led Growth**: Enterprise sales, demos, pilots, high-touch onboarding
+      - **Marketing-Led Growth**: Content marketing, ads, SEO, community building
+      - **Partnership-Led Growth**: Integrations, OEM deals, white-label, channel partners
+      - **Hybrid**: Combination of above (PLG for SMB, Sales for Enterprise)
+
+      - Listen for: how you'll acquire first 100 customers, channel strategy
+      - Store in concept.md § Strategic Positioning → "GTM Strategy: [answer]"
+      - **Cross-integration**: If "Sales-Led Growth" selected → recommend uptime_sla=99.9%+ in constitution
+
+   9. **Target Timeline Question**:
+      "What's your target timeline to launch MVP?"
+
+      **Options** (use AskUserQuestion with header "Timeline"):
+      - **1-3 months**: Rapid prototype, minimal features, accept technical debt
+      - **3-6 months**: Solid MVP, core features polished, production-grade
+      - **6-12 months**: Full product, polished UX, comprehensive feature set
+      - **12+ months**: Complex platform, enterprise-grade, high polish
+
+      - Listen for: urgency, market window, funding runway, scope ambition
+      - Store in concept.md § Strategic Positioning → "Timeline: [answer]"
+
+   10. **Success Metric Priority Question**:
+       "What's your most important success metric in first year?"
+
+       **Options** (use AskUserQuestion with header "Success Metric"):
+       - **User Growth**: MAU, signups, viral coefficient, activation rate
+       - **Revenue/ARR**: MRR, ARPU, LTV, net revenue retention
+       - **Engagement**: DAU/MAU ratio, retention curves, session time, feature adoption
+       - **Market Share**: Competitive displacement, category leadership, brand awareness
+       - **Product Quality**: NPS, CSAT, low churn, bug resolution time
+       - **Learning/Validation**: Experiments run, hypotheses tested, pivot readiness
+
+       - Listen for: what "winning" looks like, how you'll measure success
+       - Store in concept.md § Strategic Positioning → "North Star Metric: [answer]"
+
+   **Output**: Document all 10 answers in "Problem Discovery" and new "Strategic Positioning" sections of concept.md
+
+   #### § Strategic Positioning Section Format
+
+   Add the following new section to concept.md after "§ Problem & Opportunity":
+
+   ```markdown
+   ## § Strategic Positioning
+
+   **Purpose**: Define market strategy, competitive positioning, and success metrics to guide product decisions.
+
+   ### Market Position
+   [Answer from Q6: Premium/Value/Budget/Niche/Disruptive]
+
+   **Rationale**: [Why this positioning? Evidence from market research]
+
+   **Implications for Product**:
+   - Quality expectations: [High/Medium/Low based on positioning]
+   - Price positioning: [Premium/Competitive/Budget]
+   - Target customer segment: [Enterprise/SMB/Consumer]
+   - Feature complexity: [Rich/Balanced/Minimal]
+
+   ### Primary Differentiation
+   [Answer from Q7: Technology/UX/Price/Performance/Integration/Service]
+
+   **How we'll win**: [Specific advantages over competitors]
+
+   **Evidence**: [Market gaps, competitor weaknesses, our strengths from research]
+
+   **Competitive Matrix** (from Phase 0b research):
+   | Feature/Aspect | Us | Competitor A | Competitor B |
+   |----------------|:--:|:------------:|:------------:|
+   | [Differentiator] | ✅ Best | ⚠️ Acceptable | ❌ Weak |
+
+   ### Go-to-Market Strategy
+   [Answer from Q8: PLG/Sales-Led/Marketing-Led/Partnership-Led/Hybrid]
+
+   **Tactics** (Phase 1 - First 1000 customers):
+   - **Channel 1**: [Primary acquisition channel with specific tactics]
+   - **Channel 2**: [Secondary channel]
+   - **Channel 3**: [Tertiary channel]
+
+   **Success Metrics** (GTM-specific):
+   - CAC (Customer Acquisition Cost): [Target range]
+   - Conversion rates: [Funnel metrics by channel]
+   - Time to first value: [Target onboarding speed]
+
+   **Sales Motion** (if applicable):
+   - Sales cycle length: [Target days]
+   - Deal size (ACV): [Target range]
+   - Sales team structure: [Inside/field/hybrid]
+
+   ### Timeline to Market
+   [Answer from Q9: 1-3 months / 3-6 months / 6-12 months / 12+ months]
+
+   **MVP Scope** (based on timeline):
+   - [List P1a features aligned with timeline]
+   - [Trade-offs made to hit timeline]
+
+   **Milestones**:
+   | Milestone | Target Date | Exit Criteria |
+   |-----------|-------------|---------------|
+   | Alpha | [Date] | [Criteria] |
+   | Beta | [Date] | [Criteria] |
+   | Launch | [Date] | [Criteria] |
+
+   **Risks**:
+   - **Aggressive timeline (1-3m)**: Quality trade-offs, technical debt accumulation
+   - **Extended timeline (12m+)**: Market changes, competitor moves, funding runway
+   - **Mitigation**: [Specific strategies]
+
+   ### North Star Metric
+   [Answer from Q10: User Growth / Revenue / Engagement / Market Share / Quality / Learning]
+
+   **Definition**: [Precise metric definition, e.g., "Monthly Active Users who complete ≥1 core action"]
+
+   **Target** (Year 1): [Specific number, e.g., "10K MAU", "$1M ARR", "40% DAU/MAU"]
+
+   **Why this metric**: [Alignment with business model, stage, and strategy]
+
+   **Leading Indicators** (track weekly):
+   - [Metric 1 that predicts North Star]
+   - [Metric 2 that predicts North Star]
+   - [Metric 3 that predicts North Star]
+
+   **Dashboard Integration**: [How this will be tracked and visualized]
+   ```
+
+   #### Phase 0c: Strategic Implications for Constitution (Cross-Command Integration)
+
+   After completing § Strategic Positioning, provide recommendations for `/speckit.constitution`:
+
+   ```text
+   IF market_positioning == "Premium":
+     RECOMMEND: accessibility_level >= wcag22-aa (premium quality expectations)
+     RECOMMEND: perf_priority = best-in-class (premium performance expectations)
+
+   IF market_positioning == "Budget":
+     RECOMMEND: perf_priority = acceptable (cost-conscious trade-offs)
+     RECOMMEND: target_scale = startup (right-sized infrastructure)
+
+   IF differentiation == "Performance":
+     RECOMMEND: perf_priority = best-in-class (performance is competitive advantage)
+     RECOMMEND: response_time_p95_ms = 200 (aggressive latency targets)
+     AUTO-APPLY: Constitution PERF-010 strengthened to MUST
+
+   IF differentiation == "Reliability":
+     RECOMMEND: uptime_sla >= 99.99% (reliability is competitive advantage)
+     RECOMMEND: error_tolerance = zero (no tolerance for failures)
+     AUTO-APPLY: Constitution REL-010, REL-011 strengthened to MUST
+
+   IF differentiation == "User Experience":
+     RECOMMEND: accessibility_level >= wcag22-aa (UX includes accessibility)
+     RECOMMEND: a11y_groups = ["visual", "motor"] (broad UX considerations)
+
+   IF gtm_strategy == "Sales-Led Growth":
+     RECOMMEND: uptime_sla >= 99.9% (enterprise customer expectations)
+     RECOMMEND: target_scale = enterprise (sales-led implies enterprise)
+     AUTO-APPLY: Constitution REL-010 strengthened to MUST
+
+   IF gtm_strategy == "Product-Led Growth (PLG)":
+     RECOMMEND: perf_priority = best-in-class (PLG demands fast onboarding)
+     RECOMMEND: target_scale = scale (viral growth anticipation)
+   ```
+
+   **Output to User**:
+   ```markdown
+   ### Constitution Recommendations
+
+   Based on your strategic positioning, we recommend these constitution settings when you run `/speckit.constitution`:
+
+   - **perf_priority**: [recommended value] — Rationale: [why based on strategy]
+   - **uptime_sla**: [recommended value] — Rationale: [why based on GTM]
+   - **accessibility_level**: [recommended value] — Rationale: [why based on positioning]
+   - **target_scale**: [recommended value] — Rationale: [why based on timeline/GTM]
+
+   These recommendations will:
+   - Strengthen [N] constitution principles to MUST (PERF-010, REL-010, etc.)
+   - Set appropriate quality expectations for your market position
+   - Align technical decisions with strategic differentiation
+
+   **Next Step**: Run `/speckit.constitution` to configure your project's quality standards.
+   ```
 
    ### Phase 0b: Market & User Research
 

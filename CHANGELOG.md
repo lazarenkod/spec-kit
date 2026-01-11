@@ -7,6 +7,72 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-01-11
+
+### Added
+
+- **Constitution Quality Questions** (7 new questions Q6-Q9.5):
+  - Q6: Target Scale (prototype/startup/scale/enterprise) - always asked
+  - Q7: Performance Priority (best-in-class/competitive/acceptable/low) - conditional on Web/API/Mobile
+  - Q7.5: Response Time Budget (P95 < 100ms/200ms/500ms/1s) - conditional on Q7=best/competitive
+  - Q8: Uptime Target (99.0%/99.5%/99.9%/99.99%/99.999%) - conditional on SaaS/Fintech/Healthcare/E-commerce
+  - Q8.5: Error Tolerance (zero/low/moderate) - conditional on Q8≥99.99%
+  - Q9: Accessibility Level (WCAG 2.2 AAA/AA, 2.1 AA/A, None) - conditional on Web/Mobile/Desktop
+  - Q9.5: Accessibility User Groups (visual/motor/cognitive/hearing) - conditional on Q9≥AA
+
+- **Constitution Base Principles** (8 new principles):
+  - PERF-010: Performance Benchmarking (SHOULD → MUST if perf_priority=best OR differentiation=performance)
+  - REL-010: Uptime SLA Compliance (SHOULD → MUST if uptime_sla≥99.9% OR target_scale=enterprise)
+  - REL-011: Disaster Recovery Plan (SHOULD → MUST if uptime_sla≥99.99% OR error_tolerance=zero)
+  - A11Y-001: Accessibility Standard Compliance (SHOULD → MUST if accessibility_level≥AA OR market_positioning=premium)
+  - A11Y-002: Screen Reader Support (SHOULD → MUST if "visual" in a11y_groups)
+  - A11Y-003: Keyboard Navigation (SHOULD → MUST if "motor" in a11y_groups)
+  - A11Y-004: Cognitive Accessibility (SHOULD → MUST if "cognitive" in a11y_groups)
+  - A11Y-005: Hearing Accessibility (SHOULD → MUST if "hearing" in a11y_groups)
+
+- **Concept Vision/Strategy Questions** (5 new questions Q6-Q10):
+  - Q6: Market Positioning (premium/value/budget/niche/disruptive)
+  - Q7: Primary Differentiation (technology/UX/price/performance/integration/service)
+  - Q8: Go-to-Market Strategy (PLG/sales-led/marketing-led/partnership-led/hybrid)
+  - Q9: Target Timeline to Market (1-3m/3-6m/6-12m/12m+)
+  - Q10: Success Metric Priority (user growth/revenue/engagement/market share/quality/learning)
+
+- **Concept Strategic Positioning Section**:
+  - New § Strategic Positioning section in concept.md output
+  - Subsections: Market Position, Differentiation, GTM Strategy, Timeline, North Star Metric
+  - Detailed output format with implications, tactics, milestones, and risks
+
+- **Cross-Command Integration**:
+  - Phase 0c: Strategic Implications for Constitution
+  - Concept strategic choices influence constitution defaults:
+    - Differentiation="Performance" → perf_priority="best-in-class" → PERF-010 becomes MUST
+    - Differentiation="Reliability" → uptime_sla≥99.99% → REL-010, REL-011 become MUST
+    - GTM="Sales-Led Growth" → uptime_sla≥99.9% → REL-010 becomes MUST
+    - Market Positioning="Premium" → accessibility_level≥wcag22-aa → A11Y-001 becomes MUST
+
+- **CQS Formula Update** (9 → 10 components):
+  - Renamed: "Strategic" → "Strategic Clarity" (positioning, differentiation, GTM, timeline, metrics)
+  - Added: "Quality Intent" (5% weight) - from constitution quality targets
+  - Rebalanced weights: Market (20%→18%), Persona/Metrics/Features (15%→14%)
+  - New scoring criteria for Strategic Clarity and Quality Intent components
+
+### Changed
+
+- Version bump from 0.6.0 to 0.6.1 (PATCH: questionnaire expansion)
+- Constitution questionnaire expanded from 5 to up to 12 questions (Q1-Q9.5, conditional)
+- Constitution Project Settings table expanded with 7 quality target fields
+- Constitution principle strengthening logic includes concept integration
+- Concept questionnaire expanded from 5 to 10 questions (Q1-Q10)
+- CQS total now evaluates 10 components instead of 9
+- Constitution base principles: 65 → 73 (+8), SHOULD: 34 → 42 (+8)
+
+### Documentation
+
+- Updated constitution.md template with Q6-Q9.5 and strengthening logic
+- Updated constitution.base.md with PERF/REL/A11Y principles
+- Updated concept.md template with Q6-Q10 and Phase 0c integration
+- Updated cqs-score.md formula and validation checklist
+
 ## [0.6.0] - 2026-01-11
 
 ### Added
