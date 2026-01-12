@@ -603,7 +603,7 @@ This command captures the **complete vision and scope** of a service/product BEF
 
 3. **Phase 0: Discovery Mode** (if triggered):
 
-   ### Phase 0a: Problem Discovery (Brainstorming)
+   ### Phase 0a-1: Problem Discovery — Basic Questions (Interactive)
 
    **Goal**: Help user articulate the real problem before jumping to solutions.
 
@@ -630,79 +630,18 @@ This command captures the **complete vision and scope** of a service/product BEF
       "Describe the ideal outcome if this were perfectly solved."
       - Listen for: success criteria, feature hints, user delight moments
 
-   6. **Market Positioning Question**:
-      "How will your product be positioned in the market?"
+   **STOP HERE**: Do NOT ask Q6-Q10 yet. These strategic positioning questions will be asked AFTER:
+   - Market research is complete (Phase 0b)
+   - Product alternatives are generated (Phase 3c)
+   - User has reviewed alternatives
 
-      **Options** (use AskUserQuestion with header "Market Position"):
-      - **Premium/High-end**: Highest quality, best experience, premium pricing
-      - **Value/Mid-market**: Good quality/price balance, competitive pricing
-      - **Budget/Mass-market**: Lowest price, acceptable quality
-      - **Niche/Specialized**: Focused on specific segment, premium pricing for domain expertise
-      - **Disruptive/Category-creating**: Creating new market category, redefining how users solve the problem
+   Proceed directly to Phase 0b (Market & User Research).
 
-      - Listen for: quality expectations, pricing strategy, target customer segment
-      - Store in concept.md § Strategic Positioning → "Market Position: [answer]"
-
-   7. **Primary Differentiation Question**:
-      "What will be your primary competitive advantage?"
-
-      **Options** (use AskUserQuestion with header "Differentiation"):
-      - **Technology/Innovation**: Better tech, faster algorithms, novel approach
-      - **User Experience**: Simpler, more intuitive, better design
-      - **Price**: Cheaper, better value, generous free tier
-      - **Performance**: Faster, more reliable, higher uptime
-      - **Integration/Ecosystem**: Better integrations, platform effects, marketplace
-      - **Service/Support**: Better support, professional services, community
-
-      - Listen for: what makes you unique, why customers will switch
-      - Store in concept.md § Strategic Positioning → "Differentiation: [answer]"
-      - **Cross-integration**: If "Performance" selected → recommend perf_priority=best-in-class in constitution
-
-   8. **Go-to-Market Strategy Question**:
-      "What's your primary go-to-market strategy?"
-
-      **Options** (use AskUserQuestion with header "GTM Strategy"):
-      - **Product-Led Growth (PLG)**: Free tier, viral loops, self-serve signup, low-touch onboarding
-      - **Sales-Led Growth**: Enterprise sales, demos, pilots, high-touch onboarding
-      - **Marketing-Led Growth**: Content marketing, ads, SEO, community building
-      - **Partnership-Led Growth**: Integrations, OEM deals, white-label, channel partners
-      - **Hybrid**: Combination of above (PLG for SMB, Sales for Enterprise)
-
-      - Listen for: how you'll acquire first 100 customers, channel strategy
-      - Store in concept.md § Strategic Positioning → "GTM Strategy: [answer]"
-      - **Cross-integration**: If "Sales-Led Growth" selected → recommend uptime_sla=99.9%+ in constitution
-
-   9. **Target Timeline Question**:
-      "What's your target timeline to launch MVP?"
-
-      **Options** (use AskUserQuestion with header "Timeline"):
-      - **1-3 months**: Rapid prototype, minimal features, accept technical debt
-      - **3-6 months**: Solid MVP, core features polished, production-grade
-      - **6-12 months**: Full product, polished UX, comprehensive feature set
-      - **12+ months**: Complex platform, enterprise-grade, high polish
-
-      - Listen for: urgency, market window, funding runway, scope ambition
-      - Store in concept.md § Strategic Positioning → "Timeline: [answer]"
-
-   10. **Success Metric Priority Question**:
-       "What's your most important success metric in first year?"
-
-       **Options** (use AskUserQuestion with header "Success Metric"):
-       - **User Growth**: MAU, signups, viral coefficient, activation rate
-       - **Revenue/ARR**: MRR, ARPU, LTV, net revenue retention
-       - **Engagement**: DAU/MAU ratio, retention curves, session time, feature adoption
-       - **Market Share**: Competitive displacement, category leadership, brand awareness
-       - **Product Quality**: NPS, CSAT, low churn, bug resolution time
-       - **Learning/Validation**: Experiments run, hypotheses tested, pivot readiness
-
-       - Listen for: what "winning" looks like, how you'll measure success
-       - Store in concept.md § Strategic Positioning → "North Star Metric: [answer]"
-
-   **Output**: Document all 10 answers in "Problem Discovery" and new "Strategic Positioning" sections of concept.md
+   **Output**: Document Q1-Q5 answers in "Problem Discovery" section of concept.md. Strategic positioning questions (Q6-Q10) will be asked later in Phase 0a-2 after research and alternatives are generated.
 
    #### § Strategic Positioning Section Format
 
-   Add the following new section to concept.md after "§ Problem & Opportunity":
+   Add the following new section to concept.md after "§ Problem & Opportunity" (populated from Phase 0a-2 answers):
 
    ```markdown
    ## § Strategic Positioning
@@ -710,9 +649,9 @@ This command captures the **complete vision and scope** of a service/product BEF
    **Purpose**: Define market strategy, competitive positioning, and success metrics to guide product decisions.
 
    ### Market Position
-   [Answer from Q6: Premium/Value/Budget/Niche/Disruptive]
+   [Answer from Phase 0a-2 Q6: Premium/Value/Budget/Niche/Disruptive]
 
-   **Rationale**: [Why this positioning? Evidence from market research]
+   **Rationale**: [Why this positioning? Reference research findings: {specific_evidence_from_phase_0b}]
 
    **Implications for Product**:
    - Quality expectations: [High/Medium/Low based on positioning]
@@ -721,11 +660,11 @@ This command captures the **complete vision and scope** of a service/product BEF
    - Feature complexity: [Rich/Balanced/Minimal]
 
    ### Primary Differentiation
-   [Answer from Q7: Technology/UX/Price/Performance/Integration/Service]
+   [Answer from Phase 0a-2 Q7: Technology/UX/Price/Performance/Integration/Service]
 
    **How we'll win**: [Specific advantages over competitors]
 
-   **Evidence**: [Market gaps, competitor weaknesses, our strengths from research]
+   **Evidence**: [Market gaps from Phase 0b: {gaps}, Competitor weaknesses: {weaknesses}, Selected alternative strengths: {strengths}]
 
    **Competitive Matrix** (from Phase 0b research):
    | Feature/Aspect | Us | Competitor A | Competitor B |
@@ -733,7 +672,7 @@ This command captures the **complete vision and scope** of a service/product BEF
    | [Differentiator] | ✅ Best | ⚠️ Acceptable | ❌ Weak |
 
    ### Go-to-Market Strategy
-   [Answer from Q8: PLG/Sales-Led/Marketing-Led/Partnership-Led/Hybrid]
+   [Answer from Phase 0a-2 Q8: PLG/Sales-Led/Marketing-Led/Partnership-Led/Hybrid]
 
    **Tactics** (Phase 1 - First 1000 customers):
    - **Channel 1**: [Primary acquisition channel with specific tactics]
@@ -751,7 +690,7 @@ This command captures the **complete vision and scope** of a service/product BEF
    - Sales team structure: [Inside/field/hybrid]
 
    ### Timeline to Market
-   [Answer from Q9: 1-3 months / 3-6 months / 6-12 months / 12+ months]
+   [Answer from Phase 0a-2 Q9: 1-3 months / 3-6 months / 6-12 months / 12+ months]
 
    **MVP Scope** (based on timeline):
    - [List P1a features aligned with timeline]
@@ -770,7 +709,7 @@ This command captures the **complete vision and scope** of a service/product BEF
    - **Mitigation**: [Specific strategies]
 
    ### North Star Metric
-   [Answer from Q10: User Growth / Revenue / Engagement / Market Share / Quality / Learning]
+   [Answer from Phase 0a-2 Q10: User Growth / Revenue / Engagement / Market Share / Quality / Learning]
 
    **Definition**: [Precise metric definition, e.g., "Monthly Active Users who complete ≥1 core action"]
 
@@ -1060,6 +999,51 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Minimum requirement**: At least 3 of 4 perspectives explored with High/Med confidence.
 
+   ### Phase 0b-summary: Present Research Findings to User
+
+   **Goal**: Give user context from research before generating alternatives.
+
+   **Display to User**:
+
+   ```
+   ## 🔍 Research Complete
+
+   We've analyzed the market, competitors, and user landscape based on your answers to the problem discovery questions.
+
+   ### Key Findings Summary
+
+   **Market Opportunity**:
+   - TAM: {tam_value} ({source_count} sources)
+   - SAM: {sam_value}
+   - SOM (3yr): {som_value}
+   - Growth rate: {growth_rate}%/year
+
+   **Competitive Landscape**:
+   - {competitor_count} direct competitors identified
+   - Average pricing: {pricing_range}
+   - Key gaps we can exploit: {top_3_gaps}
+
+   **Target Personas**:
+   - {persona_1_name}: {persona_1_pain_point_summary} (WTP: {wtp_range_1})
+   - {persona_2_name}: {persona_2_pain_point_summary} (WTP: {wtp_range_2})
+
+   **Market Trends**:
+   - {trend_1}: {trend_1_impact}
+   - {trend_2}: {trend_2_impact}
+
+   📊 **Full research report**: `specs/concept-research.md` (detailed findings, sources, competitive matrix)
+
+   ---
+
+   **Next**: I'll generate 5 product alternatives (different strategic approaches) for you to review.
+
+   Press Enter when ready to see the alternatives...
+   ```
+
+   **Wait for user input** (Enter keypress).
+
+   Proceed to Phase 0c.
+
    ### Phase 0c: Solution Ideation (Enhanced)
 
    **Goal**: Generate feature ideas based on discovered problems and market gaps.
@@ -1232,9 +1216,197 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Reference template**: `templates/shared/concept-sections/product-alternatives.md`
 
+3c-review. **Guided Alternatives Review** — NEW:
+
+   **Goal**: Help user understand each alternative before answering strategic positioning questions.
+
+   **Interactive Flow**:
+
+   1. **Display Summary Table** (already generated in Phase 3c):
+      ```markdown
+      ## 🎯 5 Product Alternatives
+
+      | # | Strategy | Score | MVP Time | Risk | Key Differentiator |
+      |:-:|----------|:-----:|:--------:|:----:|--------------------|
+      | 1 | Conventional | X/40 | X wks | [L/M/H] | [Industry standard] |
+      | 2 | Minimal | X/40 | X wks | [L/M/H] | [Fastest to market] |
+      | 3 | Disruptive | X/40 | X wks | [L/M/H] | [Contrarian approach] |
+      | 4 | Premium | X/40 | X wks | [L/M/H] | [Best-in-class] |
+      | 5 | Platform | X/40 | X wks | [L/M/H] | [Ecosystem play] |
+      ```
+
+   2. **Explain Each Alternative** (AI-guided):
+
+      FOR EACH alternative (1-5):
+        ```
+        **Alternative {N}: {Name}** ({Strategy} approach)
+
+        **Vision**: {vision_statement}
+
+        **Core Features** (5-7 epics):
+        - {epic_1}
+        - {epic_2}
+        - ...
+
+        **Why Consider This**:
+        ✅ {pro_1}
+        ✅ {pro_2}
+        ✅ {pro_3}
+
+        **Trade-offs**:
+        ⚠️ {con_1}
+        ⚠️ {con_2}
+        ⚠️ {con_3}
+
+        **Fits Best When**: {ideal_scenario}
+
+        **Aligns With Research**: {how_it_addresses_market_gaps}
+
+        ---
+        ```
+
+   3. **Offer Questions**:
+      "Do you have any questions about this alternative before we continue?"
+      - Allow user to ask clarifications
+      - Answer specific questions about features, effort, risks
+
+   4. **Repeat** for all 5 alternatives
+
+   5. **Summary**:
+      ```
+      You've now seen all 5 alternatives with different strategic lenses:
+      - **Highest Score**: Alternative {N} ({score}/40) — Best problem-solution fit
+      - **Fastest**: Alternative {M} ({time} weeks) — Quickest to market
+      - **Lowest Risk**: Alternative {K} (Risk: {risk_level})
+      - **Most Differentiated**: Alternative {J} — Strongest competitive moat
+
+      📊 Full comparison: `specs/concept-alternatives.md`
+
+      ---
+
+      **Next**: I'll ask you 5 strategic positioning questions (market position, differentiation strategy, GTM approach, timeline, success metric).
+
+      These questions will help us select the right alternative and define your product strategy.
+
+      Press Enter when ready...
+      ```
+
+   6. **Wait for user input** (Enter keypress).
+
+   Proceed to Phase 0a-2 (Strategic Positioning Questions).
+
+   ### Phase 0a-2: Strategic Positioning — Context-Informed Questions (Interactive)
+
+   **Goal**: Ask strategic questions NOW that user has full context from research and alternatives.
+
+   **Context Available to User**:
+   - ✅ Research findings (TAM/SAM/SOM, competitors, personas, trends)
+   - ✅ 5 product alternatives reviewed with AI guidance
+   - ✅ Evidence-based insights from Phase 0b
+
+   **Interactive questioning flow** (ask sequentially with AskUserQuestion tool):
+
+   6. **Market Positioning Question** (with research context):
+
+      "Based on research findings:
+      - **Competitors**: {competitor_names} priced at {pricing_range}
+      - **Target WTP**: {willingness_to_pay_range} ({persona_names})
+      - **Market maturity**: {market_stage} (growing at {growth_rate}%/year)
+
+      **How will your product be positioned in the market?**"
+
+      **Options** (use AskUserQuestion with header "Market Position"):
+      - **Premium/High-end**: Highest quality, best experience, premium pricing
+      - **Value/Mid-market**: Good quality/price balance, competitive pricing
+      - **Budget/Mass-market**: Lowest price, acceptable quality
+      - **Niche/Specialized**: Focused on specific segment, premium for expertise
+      - **Disruptive/Category-creating**: New market category, redefining solution space
+
+      Store in concept.md § Strategic Positioning → "Market Position: [answer]"
+
+   7. **Primary Differentiation Question** (with competitive context):
+
+      "Review the 5 alternatives above.
+
+      **Competitive Intel**:
+      - Competitors lead with: {competitor_strengths}
+      - Key market gaps: {top_differentiation_opportunities}
+      - Your unique strengths: {our_potential_advantages}
+
+      **What will be your primary competitive advantage?**"
+
+      **Options** (use AskUserQuestion with header "Differentiation"):
+      - **Technology/Innovation**: Better tech, faster algorithms, novel approach
+      - **User Experience**: Simpler, more intuitive, better design
+      - **Price**: Cheaper, better value, generous free tier
+      - **Performance**: Faster, more reliable, higher uptime
+      - **Integration/Ecosystem**: Better integrations, platform effects
+      - **Service/Support**: Better support, professional services, community
+
+      Store in concept.md § Strategic Positioning → "Differentiation: [answer]"
+
+   8. **Go-to-Market Strategy Question** (with persona context):
+
+      "**Target Personas**: {persona_names}
+      **Market Maturity**: {market_stage}
+      **Buying Behavior**: {persona_buying_patterns_from_research}
+
+      **What's your primary go-to-market strategy?**"
+
+      **Options** (use AskUserQuestion with header "GTM Strategy"):
+      - **Product-Led Growth (PLG)**: Free tier, viral, self-serve, low-touch
+      - **Sales-Led Growth**: Enterprise sales, demos, pilots, high-touch
+      - **Marketing-Led Growth**: Content, ads, SEO, community
+      - **Partnership-Led Growth**: Integrations, OEM, white-label, channels
+      - **Hybrid**: Combination (e.g., PLG for SMB, Sales for Enterprise)
+
+      Store in concept.md § Strategic Positioning → "GTM Strategy: [answer]"
+
+   9. **Target Timeline Question** (with effort context):
+
+      "**Effort estimates from alternatives**:
+      - Minimal (Alt 2): {minimal_effort} weeks
+      - Balanced: {balanced_effort} weeks
+      - Ambitious (Alt 4): {ambitious_effort} weeks
+
+      **Market window**: {market_timing_insight_from_trend_analysis}
+
+      **What's your target timeline to launch MVP?**"
+
+      **Options** (use AskUserQuestion with header "Timeline"):
+      - **1-3 months**: Rapid prototype, minimal features, accept tech debt
+      - **3-6 months**: Solid MVP, core features polished, production-grade
+      - **6-12 months**: Full product, polished UX, comprehensive feature set
+      - **12+ months**: Complex platform, enterprise-grade, high polish
+
+      Store in concept.md § Strategic Positioning → "Timeline: [answer]"
+
+   10. **Success Metric Priority Question**:
+
+       "**What's your most important success metric in first year?**"
+
+       **Options** (use AskUserQuestion with header "Success Metric"):
+       - **User Growth**: MAU, signups, viral coefficient, activation rate
+       - **Revenue/ARR**: MRR, ARPU, LTV, net revenue retention
+       - **Engagement**: DAU/MAU, retention curves, session time, feature adoption
+       - **Market Share**: Competitive displacement, category leadership, brand
+       - **Product Quality**: NPS, CSAT, low churn, bug resolution time
+       - **Learning/Validation**: Experiments run, hypotheses tested, pivot-ready
+
+       Store in concept.md § Strategic Positioning → "North Star Metric: [answer]"
+
+   **Output**: Document all 5 strategic answers in "§ Strategic Positioning" section of concept.md
+
+   Proceed to Phase 3d (User Selects Alternative).
+
 3d. **User Selects Preferred Alternative** — NEW:
 
    **Goal**: User reviews alternatives and selects one to expand into full concept.
+
+   **Context**: User now has:
+   - Research findings (Phase 0b-summary)
+   - 5 alternatives reviewed (Phase 3c-review)
+   - Strategic positioning defined (Phase 0a-2, Q6-Q10)
 
    **Interactive Flow**:
 
@@ -1251,7 +1423,17 @@ This command captures the **complete vision and scope** of a service/product BEF
       | 5. [Name] | [Type] | X/40 | X weeks | [L/M/H] | [Key differentiator] |
       ```
 
-   2. **ASK USER**: "Which alternative would you like to expand into a full concept? (1-5, or ask questions)"
+   2. **ASK USER** (with strategic context):
+      "Based on your strategic positioning:
+      - **Market Position**: {q6_answer}
+      - **Differentiation**: {q7_answer}
+      - **GTM Strategy**: {q8_answer}
+      - **Timeline**: {q9_answer}
+      - **Success Metric**: {q10_answer}
+
+      **Which alternative aligns best with your strategy? (1-5, or ask questions)**
+
+      💡 **Tip**: Consider which alternative best delivers your chosen differentiation within your timeline."
 
    3. **Allow Questions**: User can ask for clarification about any alternative before deciding
 

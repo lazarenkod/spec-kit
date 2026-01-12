@@ -9,6 +9,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.2] - 2026-01-11
 
+### Changed — Reordered `/speckit.concept` Strategic Questions
+
+**Improvement**: Strategic positioning questions (Q6-Q10) in `/speckit.concept` are now asked AFTER market research and product alternatives generation, enabling users to make informed strategic decisions with full context.
+
+#### New Discovery Flow
+
+**Before**:
+- Phase 0a: Ask ALL 10 questions (Q1-Q10) → Research agents → Alternatives → Selection
+
+**After**:
+- Phase 0a-1: Ask Q1-Q5 (problem discovery) → Phase 0b: Research agents → Phase 0b-summary: Display findings → Phase 3c: Generate alternatives → Phase 3c-review: Guided alternatives review → Phase 0a-2: Ask Q6-Q10 (strategic positioning with context) → Phase 3d: Select alternative
+
+#### What Changed
+
+**Phase 0a-1 (NEW)**: Problem Discovery — Basic Questions
+- Only asks Q1-Q5 (Root Problem, Scale, Current Solutions, Stakes, Vision)
+- No strategic decisions required yet
+- Proceeds directly to research
+
+**Phase 0b-summary (NEW)**: Present Research Findings
+- Displays hybrid research summary after agents complete
+- Shows TAM/SAM/SOM, competitors, personas, trends
+- Links to full `specs/concept-research.md` report
+- Waits for user acknowledgment before continuing
+
+**Phase 3c-review (NEW)**: Guided Alternatives Review
+- AI explains each of 5 alternatives one-by-one
+- Shows vision, core features, pros/cons, fit scenarios
+- Allows user to ask clarification questions
+- Prepares user for strategic positioning questions
+
+**Phase 0a-2 (NEW)**: Strategic Positioning — Context-Informed Questions
+- Asks Q6-Q10 (Market Position, Differentiation, GTM, Timeline, Success Metric)
+- Questions include 2-3 specific facts from research (e.g., "Competitors priced at $X-Y...")
+- User makes strategic decisions with full visibility into market data
+- Proceeds to alternative selection with strategic context
+
+**Phase 3d (UPDATED)**: User Selects Alternative
+- Now displays strategic positioning recap (Q6-Q10 answers)
+- Question: "Which alternative aligns best with your strategy?"
+- Selection informed by both research findings and strategic positioning
+
+#### Benefits
+
+- **Informed Decisions**: Users answer strategic questions with research data visible
+- **Better Alignment**: Market positioning matches actual competitive landscape
+- **Reduced Cognitive Load**: No blind strategic guessing before seeing market data
+- **Traceability**: Strategic choices linked to evidence from research
+
+#### Backward Compatibility
+
+- **Capture Mode** (clear input): Unchanged — skips Discovery Mode entirely
+- **Validation Mode** (existing concept): Unchanged — supplements missing sections only
+- Only affects **Discovery Mode** (vague input requiring brainstorming)
+
 ### Added — Project-Level Model Cap
 
 **New Feature**: Add project-level model cap to limit maximum Claude model tier used by speckit commands, enabling cost control when approaching API limits.
