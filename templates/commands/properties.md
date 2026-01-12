@@ -689,6 +689,8 @@ quality_gates:
     block_if: "unresolved_counterexamples > 0"
     severity: CRITICAL
     message: "PGS mode found {unresolved} unresolved counterexamples. Review and fix."
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 ## User Input

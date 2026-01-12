@@ -23,6 +23,8 @@ claude_code:
         batch_delay: 1500
         wave_overlap_threshold: 0.65
   cache_hierarchy: full
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 # /speckit.concept-variants

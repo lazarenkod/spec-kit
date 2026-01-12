@@ -463,6 +463,8 @@ validation_profiles:
         platforms: [unity, godot, native_game]
     timeout_seconds: 900
     output_mode: detailed
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 ## User Input

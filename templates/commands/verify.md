@@ -666,6 +666,8 @@ claude_code:
               reason: "Complex refactor required - needs manual implementation"
               suggestion: "Add PaymentStep component between steps 2 and 3"
         ```
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 ## Command Overview

@@ -102,6 +102,8 @@ claude_code:
         Validate: no unexplained brackets, version updated.
         Generate sync impact report as HTML comment.
         Output: updated /memory/constitution.md.
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 ## User Input

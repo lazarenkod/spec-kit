@@ -116,6 +116,8 @@ claude_code:
         Include Infrastructure and Database panels.
         Configure data sources for Prometheus, Loki, Jaeger.
         Output: infra/observability/grafana/dashboards/.
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 # /speckit.monitor

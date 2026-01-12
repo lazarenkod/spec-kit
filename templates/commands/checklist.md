@@ -42,6 +42,8 @@ claude_code:
         Create checklist that tests requirements quality (not implementation).
         Use CHK### IDs with quality dimension tags.
         Output to FEATURE_DIR/checklists/{domain}.md.
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 ## Checklist Purpose: "Unit Tests for English"

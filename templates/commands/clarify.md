@@ -188,6 +188,8 @@ claude_code:
         Replace obsolete statements, normalize terminology.
         Perform self-review: verify integration, check contradictions.
         Output: updated spec with clarifications applied.
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 ## User Input

@@ -66,6 +66,8 @@ claude_code:
     wave_1_detection: 3
     wave_2_analysis: 3
     wave_6_validation: 3
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 # /speckit.fix — Synchronize Specifications with Code

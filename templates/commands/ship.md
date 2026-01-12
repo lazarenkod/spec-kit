@@ -245,6 +245,8 @@ claude_code:
         - Test summary with pass/fail counts
         - Snapshot ID (if successful)
         - Rollback recommendation (if failed)
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 ## User Input

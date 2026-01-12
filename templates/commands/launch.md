@@ -231,6 +231,8 @@ claude_code:
         - Complete launch documentation
         - Readiness score (target: >= 90%)
         - Action items for any gaps
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 # /speckit.launch

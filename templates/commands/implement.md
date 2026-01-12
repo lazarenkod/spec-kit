@@ -3979,6 +3979,8 @@ Alternatives:
         💡 All documentation ready for review
         ```
       model_override: haiku
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 ## User Input

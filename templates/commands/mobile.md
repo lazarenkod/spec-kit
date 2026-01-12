@@ -53,6 +53,8 @@ handoffs:
   - label: Analyze Quality
     agent: speckit.analyze
     prompt: Validate MQS and binding coverage
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 # Mobile Development Orchestrator

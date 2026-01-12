@@ -43,7 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Project-Level**: Each project can have different model caps based on budget constraints
 
 **CLI Flag Support** (in command templates):
-- Added `--max-model <opus|sonnet|haiku>` flag to commands: `/speckit.concept`, `/speckit.specify`, `/speckit.plan`, `/speckit.tasks`, `/speckit.design`, `/speckit.preview`
+- Added `--max-model <opus|sonnet|haiku>` flag to **27 commands (87% coverage)**: concept, specify, plan, tasks, design, preview, implement, properties, reverse-engineer, migrate, verify, constitution, discover, launch, analyze, baseline, validate-concept, integrate, clarify, monitor, ship, extend, checklist, merge, fix, concept-variants, mobile
+- Intentionally excluded 4 lightweight commands optimized for haiku: list, switch, staging, taskstoissues
 - Flag overrides constitution setting and default model for a single command execution
 - Priority: CLI flag > constitution.md > default model
 - Example: `/speckit.concept --max-model sonnet "feature description"` runs concept command with sonnet regardless of constitution setting

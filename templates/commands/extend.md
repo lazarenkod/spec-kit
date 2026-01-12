@@ -79,6 +79,8 @@ claude_code:
         Pre-populate inherited context section.
         Identify system specs to update.
         Output: new feature spec with lineage established.
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 ## User Input

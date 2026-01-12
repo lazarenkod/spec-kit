@@ -291,6 +291,8 @@ skills:
   - name: code-explore
     trigger: "When analyzing code structure or tracing dependencies"
     usage: "Read templates/skills/code-explore.md for thorough codebase analysis"
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 ## User Input

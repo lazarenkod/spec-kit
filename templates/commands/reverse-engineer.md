@@ -638,6 +638,8 @@ claude_code:
 
         WRITE_YAML(reverse-engineered/.extraction-manifest.yaml, manifest)
 
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 ## User Input

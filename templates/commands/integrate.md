@@ -122,6 +122,8 @@ claude_code:
         Update .env.example with required variables.
         Generate documentation: docs/integrations/{service}.md.
         Verify TypeScript compiles and imports work.
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 # /speckit.integrate

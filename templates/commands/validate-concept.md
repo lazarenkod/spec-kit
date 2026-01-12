@@ -97,6 +97,8 @@ claude_code:
         2. Generate unified diff report
         3. Recommend actions based on impact severity
         Output: validation_synthesis
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 # `/speckit.validate-concept` — Continuous Concept Validation

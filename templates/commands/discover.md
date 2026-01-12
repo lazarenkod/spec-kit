@@ -174,6 +174,8 @@ claude_code:
         - Decision matrix with quantified thresholds
         - Executive report template
         - Integration points with /speckit.concept
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 # /speckit.discover
