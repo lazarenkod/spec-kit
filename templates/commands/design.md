@@ -947,6 +947,8 @@ preset_recommendation:
   framework_presets_source: "templates/shared/design-system-presets.md"
   aesthetic_presets_source: "templates/shared/design-aesthetic-presets.md"  # NEW
   component_registry: "templates/shared/shadcn-registry.md"
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 ## User Input

@@ -3185,6 +3185,8 @@ preview_config:
   output_dir: ".preview"
   screenshot_dir: ".preview/screenshots"
   auto_open: true
+flags:
+  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 
 ## User Input
