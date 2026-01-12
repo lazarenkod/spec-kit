@@ -194,6 +194,7 @@ plan_mode:
     depth: "--depth-level <0-3>"  # Primary flag
     enable: "--plan-mode"         # Alias for --depth-level 3
     disable: "--no-plan-mode"     # Alias for --depth-level 0
+    max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 claude_code:
   model: opus
   reasoning_mode: extended

@@ -127,6 +127,7 @@ plan_mode:
     depth: "--depth-level <0-3>"
     enable: "--plan-mode"
     disable: "--no-plan-mode"
+    max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json
   ps: scripts/powershell/check-prerequisites.ps1 -Json

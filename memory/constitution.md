@@ -44,6 +44,7 @@ Layer 2: constitution.md (this file) ─ Your project overrides
 | **language** | `en` | Primary language for generated artifacts. Options: `en` (English), `ru` (Russian), `de` (German), `fr` (French), `es` (Spanish), `zh` (Chinese), `ja` (Japanese), `ko` (Korean), `pt` (Portuguese), `it` (Italian), `pl` (Polish), `uk` (Ukrainian), `ar` (Arabic), `hi` (Hindi) |
 | **date_format** | `ISO` | Date format in documents. Options: `ISO` (2024-01-15), `US` (01/15/2024), `EU` (15.01.2024) |
 | **measurements** | `metric` | Unit system. Options: `metric`, `imperial` |
+| **max_model** | `none` | Maximum Claude model tier allowed for commands. Options: `none` (no limit, default), `opus`, `sonnet`, `haiku`. When set, commands requesting higher tiers are automatically downgraded. Example: Set `max_model: sonnet` to prevent opus usage and control API costs. |
 
 ### Language Guidelines
 

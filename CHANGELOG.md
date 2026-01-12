@@ -7,6 +7,51 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-01-11
+
+### Added — Project-Level Model Cap
+
+**New Feature**: Add project-level model cap to limit maximum Claude model tier used by speckit commands, enabling cost control when approaching API limits.
+
+#### Model Cap Configuration
+
+**Constitution Setting** (in `memory/constitution.md` Project Settings table):
+- New `max_model` setting with options: `none` (no limit, default), `opus`, `sonnet`, `haiku`
+- Opt-in mechanism: opus works normally by default, users explicitly set `max_model: sonnet` to enable cap
+- Example: Set `max_model: sonnet` in constitution.md to prevent opus usage and control API costs
+
+**Automatic Downgrade Logic**:
+- If `max_model: sonnet`: opus → sonnet (downgraded), sonnet → sonnet (unchanged), haiku → haiku (unchanged)
+- If `max_model: haiku`: opus → haiku (downgraded), sonnet → haiku (downgraded), haiku → haiku (unchanged)
+- If `max_model: none` or missing: No cap applied (backward compatible)
+
+**Python Implementation** (in `src/specify_cli/template_parser.py`):
+- Added `MODEL_TIERS` dict: opus=3, sonnet=2, haiku=1 (tier hierarchy)
+- Added `TIER_TO_MODEL` dict: reverse mapping from tier to model shorthand
+- Added `read_max_model_from_constitution()` function: reads max_model setting from constitution.md
+- Enhanced `resolve_model()` function: applies model cap if set, returns downgraded model
+
+**Unit Tests** (in `tests/test_template_parser.py`):
+- 30+ test cases covering: no cap baseline, cap at sonnet/haiku/opus, constitution reading, integration workflows
+- Test coverage: model tier mappings, resolve_model with cap, read_max_model_from_constitution, edge cases
+
+#### Key Benefits
+
+- **Cost Control**: Limit opus usage when approaching API limits without manually editing 37+ command templates
+- **Temporary Caps**: Easy opt-in/opt-out via constitution.md (no permanent template changes)
+- **Backward Compatible**: Default `max_model: none` ensures no breaking changes for existing projects
+- **Project-Level**: Each project can have different model caps based on budget constraints
+
+**CLI Flag Support** (in command templates):
+- Added `--max-model <opus|sonnet|haiku>` flag to commands: `/speckit.concept`, `/speckit.specify`, `/speckit.plan`, `/speckit.tasks`
+- Flag overrides constitution setting and default model for a single command execution
+- Priority: CLI flag > constitution.md > default model
+- Example: `/speckit.concept --max-model sonnet "feature description"` runs concept command with sonnet regardless of constitution setting
+
+#### Use Case
+
+"My opus limits are running out and I'm ready to work on sonnet" → User adds `max_model: sonnet` to constitution.md → All opus commands automatically use sonnet instead. Or use `--max-model sonnet` flag for one-time override.
+
 ## [0.7.1] - 2026-01-11
 
 ### Added — Design UX & Brand Questionnaire Expansion

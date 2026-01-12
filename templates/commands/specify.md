@@ -120,6 +120,7 @@ plan_mode:
     depth: "--depth-level <0-3>"  # Primary flag
     enable: "--plan-mode"         # Alias for --depth-level 3
     disable: "--no-plan-mode"     # Alias for --depth-level 0
+    max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 scripts:
   sh: scripts/bash/create-new-feature.sh --json "{ARGS}"
   ps: scripts/powershell/create-new-feature.ps1 -Json "{ARGS}"

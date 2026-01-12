@@ -61,6 +61,7 @@ plan_mode:
     depth: "--depth-level <0-3>"
     enable: "--plan-mode"
     disable: "--no-plan-mode"
+    max_model: "--max-model <opus|sonnet|haiku>"
 claude_code:
   model: opus
   reasoning_mode: extended

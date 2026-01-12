@@ -58,6 +58,23 @@ MODEL_MAP: Dict[str, str] = {
     "claude-3-5-haiku-20241022": ModelTier.HAIKU.value,
 }
 
+# Model tier hierarchy (for cap enforcement)
+MODEL_TIERS: Dict[str, int] = {
+    "opus": 3,
+    "sonnet": 2,
+    "haiku": 1,
+    "claude-opus-4-5-20251101": 3,
+    "claude-sonnet-4-5-20250929": 2,
+    "claude-3-5-haiku-20241022": 1,
+}
+
+# Reverse mapping: tier → model shorthand
+TIER_TO_MODEL: Dict[int, str] = {
+    3: "opus",
+    2: "sonnet",
+    1: "haiku",
+}
+
 
 @dataclass
 class TemplateConfig:
@@ -178,24 +195,75 @@ def parse_template_config(template_path: Path) -> TemplateConfig:
     )
 
 
+def read_max_model_from_constitution(project_root: Path) -> Optional[str]:
+    """
+    Read max_model setting from constitution.md.
+
+    Args:
+        project_root: Path to project root directory
+
+    Returns:
+        max_model value ("opus", "sonnet", "haiku") or None if not set
+    """
+    constitution_path = project_root / "memory" / "constitution.md"
+
+    if not constitution_path.exists():
+        return None
+
+    try:
+        content = constitution_path.read_text(encoding="utf-8")
+
+        # Search for: | **max_model** | `VALUE` | ... |
+        # Pattern: | **max_model** | `(opus|sonnet|haiku|none)` |
+        pattern = r'\|\s*\*\*max_model\*\*\s*\|\s*`([^`]+)`\s*\|'
+        match = re.search(pattern, content)
+
+        if match:
+            value = match.group(1).strip()
+            if value in ["opus", "sonnet", "haiku"]:
+                return value
+            elif value == "none":
+                return None
+
+        return None
+    except Exception:
+        # Silent fallback if constitution read fails
+        return None
+
+
 def resolve_model(
     model_override: Optional[str],
-    default_model: str
+    default_model: str,
+    max_model: Optional[str] = None
 ) -> str:
     """
-    Resolve a model name to full model ID.
+    Resolve a model name to full model ID, applying model cap if set.
 
     Args:
         model_override: Optional model shorthand (e.g., "haiku")
         default_model: Default model to use if no override
+        max_model: Optional maximum model tier ("opus", "sonnet", "haiku")
 
     Returns:
-        Full model ID string
+        Full model ID string (potentially downgraded)
     """
-    if model_override is None:
-        return default_model
+    # Determine requested model
+    requested_model = model_override if model_override else default_model
 
-    return MODEL_MAP.get(model_override, model_override)
+    # Resolve shorthand to full ID
+    resolved_model = MODEL_MAP.get(requested_model, requested_model)
+
+    # Apply model cap if set
+    if max_model:
+        requested_tier = MODEL_TIERS.get(resolved_model, MODEL_TIERS.get(requested_model, 0))
+        max_tier = MODEL_TIERS.get(max_model, 0)
+
+        if requested_tier > max_tier and max_tier > 0:
+            # Downgrade: return model at max_tier
+            downgraded_model = TIER_TO_MODEL.get(max_tier, requested_model)
+            return MODEL_MAP.get(downgraded_model, downgraded_model)
+
+    return resolved_model
 
 
 def build_prompt_with_context(
@@ -261,6 +329,9 @@ def parse_subagents_from_template(
     """
     config = parse_template_config(template_path)
 
+    # Read model cap from constitution (project root = current working directory)
+    max_model = read_max_model_from_constitution(Path.cwd())
+
     tasks: List[AgentTask] = []
 
     for agent_def in config.subagents:
@@ -271,7 +342,8 @@ def parse_subagents_from_template(
         # Resolve model
         model = resolve_model(
             agent_def.get("model_override"),
-            config.default_model
+            config.default_model,
+            max_model
         )
 
         # Build prompt with context
