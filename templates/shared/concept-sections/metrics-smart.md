@@ -51,6 +51,125 @@
 
 ---
 
+## Metric Categorization
+
+**Synthesis from**: Three Foundational Pillars (strategic), Product Features (product), Business Model (business)
+
+### Strategic Metrics (Positioning & Moat)
+
+Measure competitive position, market share, and defensibility of strategic pillars.
+
+| Metric | Definition | Target | Why Strategic |
+|--------|------------|--------|---------------|
+| [Strategic 1] | [Calculation] | [Target] | [Measures pillar strength or market position] |
+| [Strategic 2] | [Calculation] | [Target] | [Measures competitive moat or differentiation] |
+
+**Examples**:
+- Market share in beachhead segment (measures dominance)
+- Net Promoter Score relative to competitors (measures differentiation perception)
+- Time-to-value vs. alternatives (measures pillar effectiveness)
+- Partner ecosystem size (measures network effects moat)
+
+### Product Metrics (Engagement & Value)
+
+Measure product usage, feature adoption, and user value delivery.
+
+| Metric | Definition | Target | Why Product |
+|--------|------------|--------|-------------|
+| [Product 1] | [Calculation] | [Target] | [Measures feature usage or engagement] |
+| [Product 2] | [Calculation] | [Target] | [Measures user value or retention] |
+
+**Examples**:
+- Daily/Weekly Active Users (engagement)
+- Feature adoption rate (value discovery)
+- Time spent in core workflow (engagement quality)
+- Retention cohorts (long-term value)
+
+### Business Metrics (Economics & Growth)
+
+Measure unit economics, revenue, and business model health.
+
+| Metric | Definition | Target | Why Business |
+|--------|------------|--------|-------------|
+| [Business 1] | [Calculation] | [Target] | [Measures revenue or profitability] |
+| [Business 2] | [Calculation] | [Target] | [Measures growth or efficiency] |
+
+**Examples**:
+- MRR/ARR (revenue growth)
+- CAC/LTV ratio (unit economics)
+- Net Revenue Retention (expansion)
+- Gross margin (profitability)
+
+### Metric Hierarchy
+
+```
+                   [North Star Metric]
+                          |
+        +----------------+----------------+
+        |                |                |
+   Strategic         Product          Business
+   Metrics           Metrics          Metrics
+        |                |                |
+ Pillar strength    Engagement      Unit economics
+ Market position    Value delivery   Revenue growth
+ Differentiation    Retention        Profitability
+```
+
+**North Star Selection Logic**: Choose the metric that best bridges user value and business value. Should be influenced by all three categories.
+
+---
+
+## Outcome vs. Output Metrics
+
+**Synthesis from**: Strategic Recommendations (outcome-focused), Hypothesis Testing (learning metrics)
+
+### Outcome-Based Metrics (PREFERRED)
+
+Measure **results and impact**, not just activity. Answers "Did we achieve the desired change?"
+
+| Outcome Metric | Output Metric (Avoid) | Why Outcome is Better |
+|----------------|----------------------|----------------------|
+| [Customer success rate] | [Features shipped] | Measures actual value, not just delivery |
+| [Time saved per user] | [API calls made] | Measures impact, not just usage |
+| [Revenue per customer] | [Users onboarded] | Measures monetization, not just growth |
+| [Problem resolution rate] | [Support tickets closed] | Measures effectiveness, not just throughput |
+
+### Output Metrics (Use Sparingly)
+
+Output metrics track **activity and effort**. Useful for:
+- Early-stage validation (before outcomes measurable)
+- Leading indicators (predict outcomes)
+- Operational health (capacity/efficiency)
+
+**When Output Metrics are OK**:
+- Pre-PMF: "X customer interviews completed" (learning metric)
+- Infrastructure: "99.9% uptime" (operational health)
+- Leading indicator: "Sign-ups per week" (predicts future revenue)
+
+**When to Avoid**:
+- Post-PMF: "Features shipped" doesn't prove value
+- Vanity metrics: "Page views" without conversion context
+- Activity traps: "Meetings held" doesn't measure progress
+
+### Outcome Validation Checklist
+
+For each metric, ask:
+- [ ] **User benefit**: Does this measure a result users care about?
+- [ ] **Business impact**: Does this tie to revenue, retention, or strategic goals?
+- [ ] **Causality**: Can we influence this through our actions?
+- [ ] **Manipulation-resistant**: Hard to game without delivering real value?
+
+**Example Outcome-Focused Metric Definition**:
+
+| Attribute | Good (Outcome) | Bad (Output) |
+|-----------|----------------|--------------|
+| **Metric** | "Hours saved per executive per week" | "Features used per session" |
+| **Why Better** | Measures actual impact on customer's life | Measures activity, not value |
+| **Ties to** | Willingness to pay, retention | Usage != value |
+| **Validation** | Customer testimonials, renewal rate | Engagement can be high but valueless |
+
+---
+
 ## OKR Structure
 
 ### Objective 1: [Qualitative goal statement]

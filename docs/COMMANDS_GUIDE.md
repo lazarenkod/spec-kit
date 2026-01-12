@@ -96,11 +96,23 @@ graph LR
 
 ### 2. `/speckit.concept` {#speckitconcept}
 
-**Назначение:** Fully autonomous concept generation with 5 product variants. Generates ultrathink-quality strategic documents (CQS ≥85) without interactive questions. Use BEFORE /speckit.specify for large projects (50+ requirements).
+**Назначение:** Fully autonomous concept generation with 5 product variants. Generates CEO-focused strategic blueprints (CQS ≥85) with Problem→Market→Vision→Solution→Execution narrative flow. Use BEFORE /speckit.specify for large projects (50+ requirements).
 
 **Модель:** `opus` (thinking_budget: 120000, ultrathink tier)
 
-**Autonomous Workflow (v0.8.0 - BREAKING CHANGE):**
+**New in v0.7.0 — Strategic Restructuring:**
+
+**Added:**
+- ✅ **Problem Analysis** section — Top 10 ranked pain points with evidence
+- ✅ **Three Foundational Pillars** — Strategic pillars with proof points, differentiation, time to imitation
+- ✅ **Differentiation Strategy** — 5 breakthrough differentiators with barriers to entry
+- ✅ **Strategic Recommendations** — Phase-based roadmap (Foundation/Scale/Dominate) with CSFs, risks
+- ✅ **CQS Formula v0.7.0** — New Strategic Depth component (10% weight), 11 components, 0-120 scale
+- ✅ **Intelligent Section Selection** — Auto-selects sections based on domain, timeline, complexity
+- ✅ **Strategic Language** — CEO/board-focused tone (not technical-product language)
+- ✅ **Narrative Flow** — Problem→Market→Vision→Solution→Execution structure
+
+**Autonomous Workflow (v0.8.0 + v0.7.0):**
 
 **Removed:**
 - ❌ All Q1-Q10 interactive questions
@@ -111,19 +123,42 @@ graph LR
 **New Flow:**
 
 1. **Phase 0.5: Context Extraction (Autonomous)**
-   - Classification agent extracts: domain, industry, target users, problem space
+   - Classification agent extracts: domain, industry, target users, problem space, timeline, complexity
    - Confidence-based: ≥0.8 = fully autonomous, <0.5 = 1-2 clarifying questions only
    - Adaptive agent selection (e.g., FinTech → compliance agents)
+   - Domain classification: B2B SaaS / B2C App / Gaming / FinTech / Enterprise / Healthcare / EdTech
 
-2. **Phase 0b: Deep Research (Parallel, 10-12 min)**
+2. **Phase 0b: Deep Research (Parallel, 10-12 min) — 7 Waves**
    - **Wave 1 (Research, 10+ agents, opus/120K)**: market-researcher (Porter's 5 Forces, Blue Ocean), competitive-analyst (ERRC Grid), persona-designer (JTBD, WTP), standards-researcher, academic-researcher, community-intelligence, trend-analyst
-   - **Wave 2 (Synthesis)**: jtbd-analyst, value-prop-designer, glossary-builder, constraints-analyzer, metrics-designer, risk-assessor
-   - **Strategic Frameworks Applied**: Porter's 5 Forces, Blue Ocean Canvas (ERRC), Business Model Canvas, Jobs-to-Be-Done
+   - **Wave 2-3 (Analysis)**: jtbd-analyst, value-prop-designer, glossary-builder, constraints-analyzer
+   - **Wave 3 (Validation)**: metrics-designer, risk-assessor
+   - **Wave 4 (Technical)**: technical-hint-generator (architecture strategist)
+   - **Wave 5 (Synthesis) — NEW**: strategic-synthesis-ai → Generates Three Foundational Pillars
+   - **Wave 6 (Recommendations) — NEW**: strategic-recommendations-ai → Phase-based roadmap
+   - **Wave 7 (Quality)**: concept-quality-scorer → CQS v0.7.0 calculation
+
+2a. **Phase 2a: Intelligent Section Selection (Autonomous) — NEW**
+   - **Core Sections** (always): executive-summary, problem-analysis, market-framework, three-pillars, differentiation-strategy, metrics-smart, strategic-recommendations, cqs-score
+   - **Domain-Specific Sections**:
+     - B2B SaaS: business-model-canvas, porters-five-forces, persona-jtbd, investment-thesis
+     - B2C App: persona-jtbd, retention-strategy, growth-loops
+     - Gaming: game-economy-design, live-ops-planning, monetization-strategy
+     - FinTech: risk-matrix, ai-responsibility, regulatory compliance
+     - Enterprise: technical-hints, ecosystem-strategy, decision-log
+   - **Timeline-Based Sections**:
+     - Short (1-3mo): pre-mortem, hypothesis-testing
+     - Long (12+mo): investment-thesis, ecosystem-strategy, three-horizons, scenario-planning
+   - **Complexity-Based Sections**:
+     - SIMPLE: Skip technical-hints, ecosystem-strategy
+     - COMPLEX: Include decision-log, portfolio-context
+   - **Section Count**: 10-25 sections depending on configuration
 
 3. **Phase 3: Generate 5 Complete Variants (Parallel, 3-5 min)**
    - 5 strategic lenses: **Conventional**, **Minimal**, **Disruptive**, **Premium**, **Platform**
-   - Each variant: 15-25 pages (Vision, Market, Personas, Features, Frameworks, Metrics, Risks)
-   - CQS scoring: Target ≥85/100 per variant
+   - Each variant: 15-30 pages with narrative flow (Problem→Market→Vision→Solution→Execution)
+   - New sections included: Problem Analysis, Three Pillars, Differentiation Strategy, Strategic Recommendations
+   - Alternative scoring: 50 points (was 40) — Added Strategic Depth (0-10 pts)
+   - CQS scoring: Target ≥85/120 per variant (CQS v0.7.0)
    - Auto-regenerate if CQS < 80 (max 2 retries)
 
 4. **Auto-Select & Save (Non-blocking, 10s)**
@@ -134,22 +169,51 @@ graph LR
 
 **Strategic Positioning (Auto-Inferred):**
 - Market Position, Differentiation, GTM Strategy, Timeline, North Star Metric
+- Three Foundational Pillars with proof points and time to imitation
+- 5 Breakthrough Differentiators with barriers to entry
+- Phase-based Strategic Recommendations (Foundation/Scale/Dominate)
 - All inferred from research with rationale and evidence
 
+**CQS Formula v0.7.0 (NEW — 11 Components, 0-120 scale):**
+```
+CQS-E = (
+  Market × 0.16 +            # ↓ from 0.18
+  Persona × 0.12 +           # ↓ from 0.14
+  Metrics × 0.12 +           # ↓ from 0.14
+  Features × 0.12 +          # ↓ from 0.14
+  Risk × 0.08 +              # ↓ from 0.10
+  Technical × 0.08 +         # ↓ from 0.10
+  Strategic_Clarity × 0.08 + # ↑ from 0.05
+  Strategic_Depth × 0.10 +   # NEW (Three Pillars, Differentiators, Roadmap)
+  Validation × 0.05 +
+  Transparency × 0.05 +
+  Quality_Intent × 0.04      # ↓ from 0.05
+) × 100 × Evidence_Multiplier
+```
+
+**Strategic Depth Component (NEW — 100 pts max, 10% weight):**
+- Three Foundational Pillars with proof points: 25 pts (STRONG+ evidence required)
+- Five Breakthrough Differentiators with barriers: 25 pts (STRONG+ evidence required)
+- Phase-based Strategic Recommendations: 25 pts (MEDIUM+ evidence required)
+- Critical Success Factors (≥5): 15 pts (MEDIUM+ evidence required)
+- Risk/Mitigation matrix (≥5): 10 pts (MEDIUM+ evidence required)
+
 **Output Files:**
-- `specs/concept.md` — Auto-selected highest CQS variant
+- `specs/concept.md` — Auto-selected highest CQS variant with new strategic sections
 - `specs/alternatives/*.md` — All 5 variants preserved (01-conventional, 02-minimal, 03-disruptive, 04-premium, 05-platform)
-- `specs/concept-alternatives.md` — Comparison table with recommendation
+- `specs/concept-alternatives.md` — Comparison table with recommendation (50-point scoring)
 - `specs/next-steps.md` — Ready-to-Execute Commands (4 variants: By Waves, By Epics, By Priorities, Entire)
-- `specs/quality-report.md` — CQS breakdown, evidence coverage, frameworks applied, quality gate verdict
+- `specs/quality-report.md` — CQS v0.7.0 breakdown with Strategic Depth score, evidence coverage, frameworks applied
 - `specs/generation-summary.md` — CLI completion summary, comparison table, file list, next steps guide
 - `memory/knowledge/` — Domain glossaries, best practices, compliance checklists
 
 **Quality Metrics:**
-- CQS Target: 85-95/100 (up from 60-80 in v0.7.2)
-- Evidence Coverage: ≥80% claims sourced
+- CQS Target: 85-100/120 (v0.7.0 scale, up from 60-80/100 in v0.6.x)
+- Strategic Depth Target: 70-90/100 (new component)
+- Evidence Coverage: ≥80% claims sourced, STRONG+ tier for pillars/differentiators
 - Strategic Frameworks: ≥3 frameworks applied per variant
-- Generation Time: 15-20 min end-to-end
+- Section Count: 10-25 sections (auto-selected based on domain/timeline/complexity)
+- Generation Time: 15-25 min end-to-end (increased due to synthesis waves)
 
 **Флаги:**
 

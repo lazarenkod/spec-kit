@@ -2,8 +2,8 @@
 ## Полное руководство по устройству системы Spec-Driven Development
 
 <!-- AUTO-GENERATED SECTIONS - DO NOT EDIT MANUALLY -->
-<!-- Generated at: 2026-01-11 -->
-<!-- Version: 0.4.0 (from pyproject.toml) -->
+<!-- Generated at: 2026-01-12 -->
+<!-- Version: 0.7.0 (from pyproject.toml) -->
 <!-- Sources: src/specify_cli/*.py, templates/**/*.md, scripts/**/* -->
 
 ---
@@ -1036,9 +1036,9 @@ specify workspace link backend:FEA-001 frontend:FEA-002 --type REQUIRES
 
 **Назначение**: Template System управляет жизненным циклом спецификаций через 50+ slash commands. Каждая команда представлена markdown-файлом с YAML frontmatter.
 
-**Статистика** (версия 0.4.0):
+**Статистика** (версия 0.7.0):
 - **Команд**: 52 (29 основных + 23 compressed variants)
-- **Modular concept sections**: 36
+- **Modular concept sections**: 40 (↑ from 36 in v0.4.0 — added problem-analysis, three-pillars, differentiation-strategy, strategic-recommendations)
 - **Shared templates**: 20+ (quality, traceability, implement, etc.)
 
 **Основные команды** (по фазам):
@@ -1839,6 +1839,7 @@ inline_gates:
 | `/speckit.plan` | IG-PLAN-001..004 | ADR quality, Testability, Dependency graph, Traceability | CRITICAL, HIGH | Yes |
 | `/speckit.tasks` | IG-TASK-001..004 | Test completeness, Dependency order, File conflicts, Traceability | CRITICAL, HIGH | Yes |
 | `/speckit.implement` | IG-IMPL-001..104 | Pre-impl (staging, plan exists, SQS ≥80), Post-impl (tests pass, build succeeds) | CRITICAL, HIGH | Yes |
+| `/speckit.concept` | IG-CONCEPT-001..004 | CQS ≥80 (v0.7.0), Strategic Depth component, Evidence tiers, Alternative scoring | CRITICAL, HIGH | Yes |
 
 **Example: IG-SPEC-001** (Constitution Alignment):
 ```yaml
@@ -1884,6 +1885,67 @@ inline_gates:
 **Решение trade-offs**:
 - Use `/speckit.analyze --profile full` for comprehensive audit (periodic, not per-command)
 - Inline gates catch 80% of issues, full gates catch remaining 20%
+
+#### 5.2.3. Strategic Depth Component (v0.7.0)
+
+**Introduced**: Version 0.7.0 (2026-01-12) — `/speckit.concept` command
+
+**Назначение**: Validate CEO-focused strategic clarity in concept generation.
+
+**CQS Formula v0.7.0** (11 components, 0-120 scale):
+```
+CQS-E = (
+  Market × 0.16 +            # ↓ from 0.18
+  Persona × 0.12 +           # ↓ from 0.14
+  Metrics × 0.12 +           # ↓ from 0.14
+  Features × 0.12 +          # ↓ from 0.14
+  Risk × 0.08 +              # ↓ from 0.10
+  Technical × 0.08 +         # ↓ from 0.10
+  Strategic_Clarity × 0.08 + # ↑ from 0.05
+  Strategic_Depth × 0.10 +   # NEW (Three Pillars, Differentiators, Roadmap)
+  Validation × 0.05 +
+  Transparency × 0.05 +
+  Quality_Intent × 0.04      # ↓ from 0.05
+) × 100 × Evidence_Multiplier
+```
+
+**Strategic Depth Criteria** (100 points max, 10% weight):
+
+| Criterion | Points | Evidence Required | Validates |
+|-----------|--------|-------------------|-----------|
+| **Three Foundational Pillars** | 25 | STRONG+ | Strategic pillars with proof points, differentiation, time to imitation |
+| **Five Breakthrough Differentiators** | 25 | STRONG+ | Differentiators with market reality, tactics, barriers to entry |
+| **Phase-Based Strategic Recommendations** | 25 | MEDIUM+ | Foundation/Scale/Dominate phases with actions, milestones |
+| **Critical Success Factors** | 15 | MEDIUM+ | ≥5 CSFs documented with explanations |
+| **Risk/Mitigation Matrix** | 10 | MEDIUM+ | ≥5 risks with likelihood, impact, mitigations |
+
+**Evidence Tier Requirements**:
+- **VERY_STRONG (VS)**: Primary research, official reports, cited statistics
+- **STRONG (S)**: Industry reports, case studies, expert quotes
+- **MEDIUM (M)**: Blog posts, inferred from data, logical reasoning
+- **WEAK (W)**: Anecdotal, general knowledge
+- **NONE (N)**: No evidence provided
+
+**Quality Gate**: CQS ≥ 80 for "Ready to Proceed" to `/speckit.specify`
+
+**Alternative Scoring Enhancement** (v0.7.0):
+- Increased from 40 → 50 points total
+- Added Strategic Depth component: 0-10 pts
+  * 3 Foundational Pillars defined: 3 pts
+  * 5 Breakthrough Differentiators: 3 pts
+  * Phase-based Strategic Recommendations: 4 pts
+
+**ПОЧЕМУ Strategic Depth?**
+- ✅ Forces strategic thinking (not just feature lists)
+- ✅ Ensures CEO/board-ready output (investor-grade quality)
+- ✅ Validates narrative flow (Problem→Market→Vision→Solution→Execution)
+- ✅ Catches weak positioning early (before spec/plan phases)
+
+**Integration with Inline Gates**:
+- IG-CONCEPT-001: Validates CQS ≥ 80 threshold
+- IG-CONCEPT-002: Validates Strategic Depth ≥ 60/100 (minimum)
+- IG-CONCEPT-003: Validates evidence tiers (STRONG+ for pillars/differentiators)
+- IG-CONCEPT-004: Validates alternative scoring (all 5 alternatives have Strategic Depth)
 
 ### 5.3. Quality Gates (QG-001 to QG-012)
 
@@ -3227,6 +3289,117 @@ Wave 3: [TASK-005]                 # Level 2 (depends on level 1)
 Total time: 2m 15s (vs 3m 30s sequential, 37% faster)
 ```
 
+#### 8.2.4. Concept Command Wave Orchestration (v0.7.0)
+
+**Command**: `/speckit.concept`
+
+**Purpose**: Generate CEO-focused strategic blueprints with 7-wave research agent orchestration.
+
+**Wave Structure** (v0.7.0 — increased from 5 to 7 waves):
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│ Wave 1: RESEARCH (Parallel — Market Intelligence)                  │
+│  ├─ market-researcher (opus/120K)                                  │
+│  ├─ competitive-analyst (opus/120K)                                │
+│  └─ problem-analyst (opus/120K)                                    │
+│  Duration: ~3-5 min (parallel execution)                           │
+└────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ Wave 2: PERSONAS (Parallel — User Research)                        │
+│  ├─ persona-designer (opus/120K)                                   │
+│  └─ jtbd-analyst (opus/120K)                                       │
+│  Duration: ~2-4 min (parallel execution)                           │
+└────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ Wave 3: VALUE PROPOSITION (Sequential — Synthesis)                 │
+│  └─ value-prop-designer (opus/120K)                                │
+│     Depends on: Wave 2 (persona-designer, jtbd-analyst)            │
+│  Duration: ~2-3 min                                                │
+└────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ Wave 4: METRICS & RISKS (Parallel — Assessment)                    │
+│  ├─ metrics-designer (sonnet) — Strategic metrics, North Star      │
+│  ├─ risk-assessor (sonnet) — Risk matrix, pivot criteria           │
+│  └─ technical-hint-generator (sonnet) — Architecture principles    │
+│  Duration: ~1-2 min (parallel execution)                           │
+└────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ Wave 5: STRATEGIC SYNTHESIS (Sequential — NEW v0.7.0)              │
+│  └─ strategic-synthesis-ai (opus/120K)                             │
+│     Generates: Three Foundational Pillars                          │
+│     Depends on: Waves 1-4 (all research findings)                  │
+│     - Links pillars to pain points (PP-XXX IDs)                    │
+│     - Provides proof points (STRONG+ evidence)                     │
+│     - Defines differentiation & time to imitation                  │
+│  Duration: ~3-4 min                                                │
+└────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ Wave 6: STRATEGIC RECOMMENDATIONS (Sequential — NEW v0.7.0)        │
+│  └─ strategic-recommendations-ai (opus/120K)                       │
+│     Generates: Phase-Based Roadmap                                 │
+│     Depends on: Wave 5 (strategic-synthesis-ai), Wave 4 (risks)    │
+│     - Foundation Phase (0-6mo): MVP, pillar validation             │
+│     - Scale Phase (7-18mo): Growth, market expansion               │
+│     - Dominate Phase (19-36mo): Market leadership                  │
+│     - Critical Success Factors (5-7)                               │
+│     - Risk/Mitigation Matrix                                       │
+│  Duration: ~3-4 min                                                │
+└────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ Wave 7: REVIEW (Sequential — Quality Scoring)                      │
+│  └─ concept-quality-scorer (opus/120K)                             │
+│     Calculates: CQS v0.7.0 (0-120 scale)                           │
+│     Depends on: All previous waves                                 │
+│     - Validates Strategic Depth component (10% weight)             │
+│     - Checks evidence tiers (STRONG+ for pillars/differentiators)  │
+│     - Selects best alternative (highest CQS score)                 │
+│  Duration: ~2-3 min                                                │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+**Total Execution Time**: ~15-25 minutes (7 waves, depends on complexity)
+
+**Parallelism**: 3 waves run fully parallel (1, 2, 4), 4 waves sequential due to dependencies
+
+**Model Selection**:
+- **Opus/120K**: Research-heavy agents requiring deep thinking (Waves 1-3, 5-7)
+- **Sonnet**: Faster agents for structured outputs (Wave 4)
+
+**Key Improvements v0.7.0**:
+1. **Wave 5 (Strategic Synthesis)**: Generates Three Foundational Pillars from all research
+2. **Wave 6 (Strategic Recommendations)**: Creates phase-based execution roadmap
+3. **Wave 7 (Enhanced Scorer)**: CQS v0.7.0 with Strategic Depth component (10%)
+4. **Alternative Scoring**: Enhanced from 40→50 points (added Strategic Depth 0-10)
+
+**Dependency Graph**:
+```
+Wave 1 (market-researcher, competitive-analyst, problem-analyst)
+  ↓
+Wave 2 (persona-designer, jtbd-analyst)
+  ↓
+Wave 3 (value-prop-designer) ← depends on Wave 2
+  ↓
+Wave 4 (metrics-designer, risk-assessor, technical-hint-generator) ← parallel
+  ↓
+Wave 5 (strategic-synthesis-ai) ← depends on Waves 1-4
+  ↓
+Wave 6 (strategic-recommendations-ai) ← depends on Wave 5, Wave 4 (risks)
+  ↓
+Wave 7 (concept-quality-scorer) ← depends on all previous waves
+```
+
+**Performance Optimization**:
+- Waves 1, 2, 4 execute in parallel (max parallelism: 3 agents simultaneously)
+- Waves 3, 5, 6, 7 sequential (dependency-driven)
+- Overlap strategy: Wave N+1 starts when Wave N reaches 60% completion (if deps satisfied)
+
 ### 8.3. Agent Pool (Concurrent Claude API Calls)
 
 **Source**: `src/specify_cli/agent_pool.py:1-600`
@@ -4421,6 +4594,76 @@ def register(email: str):
 
 ### 11.3. Changelog Highlights
 
+#### Version 0.7.0 (2026-01-12) - Strategic Concept Restructuring
+
+**Major Features:**
+
+1. **CEO-Focused Strategic Blueprint** (`/speckit.concept` enhancement)
+   - Problem Analysis section with Top 10 ranked pain points (Impact Score = Severity × Frequency)
+   - Three Foundational Pillars framework with proof points, differentiation, time to imitation
+   - Differentiation Strategy with 5 breakthrough differentiators and barriers to entry
+   - Phase-Based Strategic Recommendations (Foundation/Scale/Dominate with CSFs and risks)
+   - Narrative flow: Problem→Market→Vision→Solution→Execution
+
+2. **CQS Formula v0.7.0** (11 components, 0-120 scale)
+   - NEW: Strategic Depth component (10% weight, 100 points max)
+     - Three Foundational Pillars: 25 pts (STRONG+ evidence)
+     - Five Breakthrough Differentiators: 25 pts (STRONG+ evidence)
+     - Phase-Based Strategic Recommendations: 25 pts (MEDIUM+ evidence)
+     - Critical Success Factors (≥5): 15 pts
+     - Risk/Mitigation Matrix (≥5): 10 pts
+   - Rebalanced weights: Market (16%), Strategic_Clarity (8%), Strategic_Depth (10%)
+   - Quality Gate: CQS ≥ 80 for "Ready to Proceed"
+
+3. **7-Wave Concept Orchestration** (increased from 5 waves)
+   - Wave 5 (NEW): Strategic Synthesis AI — Generates Three Foundational Pillars
+   - Wave 6 (NEW): Strategic Recommendations AI — Creates phase-based execution roadmap
+   - Wave 7: Enhanced CQS Scorer with Strategic Depth validation
+   - All research agents upgraded to opus/120K for strategic thinking depth
+
+4. **Intelligent Section Auto-Selection**
+   - Auto-selects 10-25 modular sections from 40 available
+   - Domain-based: B2B SaaS, B2C App, Gaming, FinTech, Enterprise, Healthcare, EdTech
+   - Timeline-based: Short (1-3mo), Medium (3-6mo), Long (12+mo)
+   - Complexity-based: SIMPLE, MODERATE, COMPLEX
+   - Section ordering follows strategic narrative flow
+
+5. **Strategic Language Transformation**
+   - CEO/board-focused tone (not technical-product language)
+   - "Capabilities enabling business outcomes" vs "Features for users"
+   - "Strategic initiatives" vs "User stories"
+   - Investor-grade quality throughout all sections
+
+**File Changes:**
+- Added 4 new modular sections:
+  - `templates/shared/concept-sections/problem-analysis.md` (~400 lines)
+  - `templates/shared/concept-sections/three-pillars.md` (~600 lines)
+  - `templates/shared/concept-sections/differentiation-strategy.md` (~750 lines)
+  - `templates/shared/concept-sections/strategic-recommendations.md` (~900 lines)
+- Enhanced 3 existing sections:
+  - `executive-summary.md` (+70 lines: opportunity framing, strategic positioning)
+  - `market-framework.md` (+130 lines: segmentation, white space, dynamics)
+  - `metrics-smart.md` (+140 lines: strategic metrics, outcome-based)
+- Updated `templates/commands/concept.md` (~400 lines changed):
+  - Added 2 synthesis agents (strategic-synthesis-ai, strategic-recommendations-ai)
+  - Added Phase 2a: Intelligent Section Selection
+  - Updated alternative scoring (40→50 points)
+  - Transformed agent prompts to strategic language
+- Updated `templates/shared/concept-sections/cqs-score.md`:
+  - CQS formula v0.6.1 → v0.7.0
+
+**Performance:**
+- Concept generation: 15-25 min (7 waves, depends on complexity)
+- CQS calculation: <30s with Strategic Depth validation
+- Alternative generation: 5 variants with Strategic Depth scoring (0-10 pts)
+
+**Quality Impact:**
+- Strategic Depth distinguishes weak vs strong concepts (10% CQS weight)
+- Evidence tier enforcement (STRONG+ required for pillars/differentiators)
+- Narrative coherence: Problem links to Pillars, Pillars link to Differentiators
+
+---
+
 #### Version 0.4.0 (2026-01-11) - Drift Detection & Plan Mode
 
 **Major Features:**
@@ -4550,6 +4793,7 @@ def register(email: str):
 
 | Version | Date | Key Feature | Lines Changed |
 |---------|------|-------------|---------------|
+| 0.7.0 | 2026-01-12 | Strategic Concept Restructuring, CQS v0.7.0 | +3200 |
 | 0.4.0 | 2026-01-11 | Drift Detection, Plan Mode | +3500 |
 | 0.3.0 | 2026-01-11 | UI Testing, Design Quality | +2200 |
 | 0.2.0 | 2026-01-10 | Design System, Inline Gates | +1800 |
@@ -4557,7 +4801,7 @@ def register(email: str):
 | 0.0.110 | 2025-12-01 | Task Batching | +1200 |
 | 0.0.100 | 2025-11-15 | Initial Release | Initial |
 
-**Total Growth**: 0.0.100 (30 commands, 5K lines) → 0.4.0 (50+ commands, 20K+ lines)
+**Total Growth**: 0.0.100 (30 commands, 5K lines) → 0.7.0 (52 commands, 40 modular sections, 24K+ lines)
 
 ### 11.4. Further Reading
 
@@ -4624,7 +4868,7 @@ def register(email: str):
 
 ---
 
-**Документ версия**: 0.5.0
+**Документ версия**: 0.7.0
 **Последнее обновление**: 2026-01-12
 **Сгенерировано**: Автоматически из кодовой базы spec-kit
 

@@ -48,11 +48,15 @@
 
 **Synthesis from**: Market Framework (TAM/SAM/SOM), Persona-JTBD (target customer), Business Model Canvas (willingness to pay)
 
-| Metric | Value | Methodology |
-|--------|:-----:|-------------|
-| TAM | $[X]B | [Top-down/Bottom-up] |
-| SAM | $[X]M | [Geographic/Segment filters] |
-| SOM Year 1 | $[X]M | [Realistic capture rate] |
+#### Opportunity Framing
+
+| Market Layer | Size | Summary | Validation |
+|--------------|:----:|---------|------------|
+| **TAM** (Total Addressable) | $[X]B | [One-line: global market for this category] | [Methodology: Top-down/Bottom-up/Value-theory] |
+| **SAM** (Serviceable Available) | $[X]M | [One-line: addressable with our go-to-market] | [Filters: Geographic/Segment/Tech constraints] |
+| **SOM** (Serviceable Obtainable) | $[X]M | [One-line: realistic capture in Year 1-3] | [Capture rate: X% of SAM based on comparable benchmarks] |
+
+**Market Opportunity Grade**: [A/B/C] — [Rationale: venture-scale, niche valuable, lifestyle business]
 
 **Primary Customer**: [Persona name] at [Company type/size]
 
@@ -64,12 +68,18 @@
 
 [2-3 sentences: Core differentiation, how we'll win, key strategic choices]
 
-**Synthesis from**: Blue Ocean Canvas (ERRC grid), PR/FAQ (value proposition), Three Horizons (innovation positioning)
+**Synthesis from**: Three Foundational Pillars, Differentiation Strategy, Blue Ocean Canvas (ERRC grid), PR/FAQ (value proposition)
+
+#### Strategic Positioning
+
+[2-3 sentences synthesizing competitive positioning and strategic moat]
+
+**Example**: "We compete in the [category] but position as the only [unique positioning]. Unlike [Competitor A's approach] or [Competitor B's weakness], we [strategic advantage] through [defensible capability]. Our [X-month/year] head start in [specific moat] creates a winner-take-most dynamic in [segment]."
 
 **Key Differentiators**:
-1. [Differentiator 1] — [Why hard to copy]
-2. [Differentiator 2] — [Why hard to copy]
-3. [Differentiator 3] — [Why hard to copy]
+1. [Differentiator 1] — [Why hard to copy] (Time to imitate: [X months])
+2. [Differentiator 2] — [Why hard to copy] (Moat type: [Network/Data/Brand/Tech])
+3. [Differentiator 3] — [Why hard to copy] (Defensibility: [High/Medium/Low])
 
 ---
 
@@ -105,13 +115,22 @@
 
 **Synthesis from**: Metrics-SMART (North Star, leading/lagging indicators)
 
-| Timeframe | Metric | Target | Rationale |
-|-----------|--------|:------:|-----------|
-| 6 months | [Leading indicator] | [Value] | [Why this milestone] |
-| 12 months | [North Star metric] | [Value] | [Why this target] |
-| 36 months | [Lagging outcome] | [Value] | [Strategic aspiration] |
+#### Key Metrics Dashboard
+
+| Metric | Baseline | 6mo Target | 12mo Target | 36mo Target | Signal Type |
+|--------|:--------:|:----------:|:-----------:|:-----------:|:-----------:|
+| **[North Star]** | [Current] | [Target] | [Target] | [Target] | Value capture |
+| [Leading 1] | [Current] | [Target] | [Target] | [Target] | Early signal |
+| [Product 1] | [Current] | [Target] | [Target] | [Target] | Engagement |
+| [Business 1] | [Current] | [Target] | [Target] | [Target] | Economics |
+| [Strategic 1] | [Current] | [Target] | [Target] | [Target] | Market position |
 
 **North Star Metric**: [Metric name] — [Why this metric captures value]
+
+**Quality Gate Metrics** (Phase 1 exit criteria):
+- [Metric 1]: [Threshold] (Go/No-Go)
+- [Metric 2]: [Threshold] (Go/No-Go)
+- [Metric 3]: [Threshold] (Go/No-Go)
 
 ---
 

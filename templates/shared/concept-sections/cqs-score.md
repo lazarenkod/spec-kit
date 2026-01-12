@@ -4,39 +4,45 @@
 
 ## CQS-E Calculation
 
-**Formula** (Updated v0.6.1 — 10 Components):
+**Formula** (Updated v0.7.0 — 11 Components):
 ```
 CQS-E = (
-  Market × 0.18 +           # Market validation (↓ from 0.20)
-  Persona × 0.14 +          # Persona depth (↓ from 0.15)
-  Metrics × 0.14 +          # Metrics quality (↓ from 0.15)
-  Features × 0.14 +         # Feature completeness (↓ from 0.15)
-  Risk × 0.10 +             # Risk assessment
-  Technical × 0.10 +        # Technical hints
-  Strategic_Clarity × 0.05 + # Strategic positioning (renamed from Strategic)
-  Validation × 0.05 +       # Hypothesis test status
-  Transparency × 0.05 +     # Decision transparency
-  Quality_Intent × 0.05     # NEW: Quality targets from constitution
+  Market × 0.16 +            # Market validation (↓ from 0.18)
+  Persona × 0.12 +           # Persona depth (↓ from 0.14)
+  Metrics × 0.12 +           # Metrics quality (↓ from 0.14)
+  Features × 0.12 +          # Feature completeness (↓ from 0.14)
+  Risk × 0.08 +              # Risk assessment (↓ from 0.10)
+  Technical × 0.08 +         # Technical hints (↓ from 0.10)
+  Strategic_Clarity × 0.08 + # Strategic positioning (↑ from 0.05)
+  Strategic_Depth × 0.10 +   # NEW: Three Pillars, Differentiation, Recommendations
+  Validation × 0.05 +        # Hypothesis test status
+  Transparency × 0.05 +      # Decision transparency
+  Quality_Intent × 0.04      # Quality targets from constitution (↓ from 0.05)
 ) × 100 × Evidence_Multiplier
 ```
 
-**Change Log (v0.6.1)**:
-- Rebalanced weights: Market (20%→18%), Persona/Metrics/Features (15%→14%)
-- Renamed: Strategic → Strategic Clarity (positioning, differentiation, GTM)
-- Added: Quality Intent (5% weight) - quality targets from constitution
+**Change Log (v0.7.0)**:
+- **Added**: Strategic Depth (10% weight) - Three Pillars, Differentiation Strategy, Strategic Recommendations
+- **Rebalanced weights**: Market (18%→16%), Persona/Metrics/Features (14%→12%), Risk/Technical (10%→8%), Strategic_Clarity (5%→8%), Quality_Intent (5%→4%)
+- **Rationale**: Strategic depth (why/how we'll win) now weighted equally with market/persona/metrics/features
+
+**Previous Versions**:
+- v0.6.1: 10 components, added Quality Intent (5%)
+- v0.6.0: Renamed Strategic → Strategic Clarity
 
 | Component | Score | Weight | Weighted | Evidence Quality | Notes |
 |-----------|:-----:|:------:|:--------:|:----------------:|-------|
-| Market Validation | /100 | 0.18 | | HIGH/MED/LOW | [Gaps to address] |
-| Persona Depth | /100 | 0.14 | | HIGH/MED/LOW | [Gaps to address] |
-| Metrics Quality | /100 | 0.14 | | HIGH/MED/LOW | [Gaps to address] |
-| Feature Completeness | /100 | 0.14 | | HIGH/MED/LOW | [Gaps to address] |
-| Risk Assessment | /100 | 0.10 | | HIGH/MED/LOW | [Gaps to address] |
-| Technical Hints | /100 | 0.10 | | HIGH/MED/LOW | [Gaps to address] |
-| **Strategic Clarity** | /100 | 0.05 | | HIGH/MED/LOW | [Positioning, GTM, strategy] |
+| Market Validation | /100 | 0.16 | | HIGH/MED/LOW | [Gaps to address] |
+| Persona Depth | /100 | 0.12 | | HIGH/MED/LOW | [Gaps to address] |
+| Metrics Quality | /100 | 0.12 | | HIGH/MED/LOW | [Gaps to address] |
+| Feature Completeness | /100 | 0.12 | | HIGH/MED/LOW | [Gaps to address] |
+| Risk Assessment | /100 | 0.08 | | HIGH/MED/LOW | [Gaps to address] |
+| Technical Hints | /100 | 0.08 | | HIGH/MED/LOW | [Gaps to address] |
+| **Strategic Clarity** | /100 | 0.08 | | HIGH/MED/LOW | [Positioning, GTM, strategy] |
+| **Strategic Depth** | /100 | 0.10 | | HIGH/MED/LOW | [Three Pillars, Differentiation, Recommendations] |
 | **Validation Rigor** | /100 | 0.05 | | HIGH/MED/LOW | [Hypothesis status] |
 | **Transparency** | /100 | 0.05 | | HIGH/MED/LOW | [Decision rationale] |
-| **Quality Intent** | /100 | 0.05 | | HIGH/MED/LOW | [Constitution quality targets] |
+| **Quality Intent** | /100 | 0.04 | | HIGH/MED/LOW | [Constitution quality targets] |
 | **Base CQS** | | | **/100** | | |
 | **Evidence Multiplier** | | | **×[0.8-1.2]** | | |
 | **CQS-E Total** | | | **/120** | | |
@@ -166,7 +172,7 @@ When multiple sources provide contradictory information:
 
 ## Component Scoring Criteria
 
-### Market Validation (20% weight)
+### Market Validation (16% weight)
 
 | Criterion | Max Pts | Evidence Tier | Score | Sources |
 |-----------|:-------:|:-------------:|:-----:|---------|
@@ -180,7 +186,7 @@ When multiple sources provide contradictory information:
 - TAM: ≥3 independent sources, bottom-up AND top-down (variance <30%)
 - Competitors: ≥3 analyzed with pricing data
 
-### Persona Depth (15% weight)
+### Persona Depth (12% weight)
 
 | Criterion | Max Pts | Evidence Tier | Score | Sources |
 |-----------|:-------:|:-------------:|:-----:|---------|
@@ -195,7 +201,7 @@ When multiple sources provide contradictory information:
 - Personas: ≥5 customer interviews OR ≥100 survey responses
 - WTP: Van Westendorp analysis OR pricing research conducted
 
-### Metrics Quality (15% weight)
+### Metrics Quality (12% weight)
 
 | Criterion | Max Pts | Evidence Tier | Score | Sources |
 |-----------|:-------:|:-------------:|:-----:|---------|
@@ -209,7 +215,7 @@ When multiple sources provide contradictory information:
 - North Star: ≥2 comparable company benchmarks
 - SMART: Each metric has baseline + target with measurement methodology
 
-### Feature Completeness (15% weight)
+### Feature Completeness (12% weight)
 
 | Criterion | Max Pts | Evidence Tier | Score | Sources |
 |-----------|:-------:|:-------------:|:-----:|---------|
@@ -223,7 +229,7 @@ When multiple sources provide contradictory information:
 - Golden Path: Validated with ≥3 target users
 - Feature hierarchy: Each feature traced to ≥1 JTBD
 
-### Risk Assessment (10% weight)
+### Risk Assessment (8% weight)
 
 | Criterion | Max Pts | Evidence Tier | Score | Sources |
 |-----------|:-------:|:-------------:|:-----:|---------|
@@ -237,7 +243,7 @@ When multiple sources provide contradictory information:
 - Risks: Industry research OR expert consultation
 - Pivot criteria: Quantitative thresholds defined
 
-### Technical Hints (10% weight)
+### Technical Hints (8% weight)
 
 | Criterion | Max Pts | Evidence Tier | Score | Sources |
 |-----------|:-------:|:-------------:|:-----:|---------|
@@ -251,7 +257,7 @@ When multiple sources provide contradictory information:
 - Domain entities: Architecture review OR working prototype
 - Integrations: Documentation review completed
 
-### Strategic Clarity (5% weight)
+### Strategic Clarity (8% weight)
 
 > **Updated v0.6.1**: Expanded to include strategic positioning from Q6-Q10 in `/speckit.concept`
 
@@ -331,7 +337,73 @@ North Star Metric (10 pts):
 - Reasoning traces: Show decision chain from problem to feature
 - Scope variants: OPTIONAL in v2.0 (use /speckit.concept-variants to generate)
 
-### Quality Intent (5% weight) — NEW v0.6.1
+### Strategic Depth (10% weight) — NEW v0.7.0
+
+> **Purpose**: Evaluate strategic foundation (why we'll win) through Three Foundational Pillars, Differentiation Strategy, and Phase-based Strategic Recommendations.
+
+| Criterion | Max Pts | Evidence Tier | Score | Sources |
+|-----------|:-------:|:-------------:|:-----:|---------|
+| Three Foundational Pillars defined with proof points | 25 | N/W/M/S/VS | | [§ Three Foundational Pillars] |
+| Five Breakthrough Differentiators with barriers to entry | 25 | N/W/M/S/VS | | [§ Differentiation Strategy] |
+| Phase-based Strategic Recommendations (Foundation/Scale/Dominate) | 25 | N/W/M/S/VS | | [§ Strategic Recommendations] |
+| Critical Success Factors documented (≥5 CSFs) | 15 | N/W/M/S/VS | | [§ Strategic Recommendations] |
+| Risk/Mitigation matrix complete (≥5 risks) | 10 | N/W/M/S/VS | | [§ Strategic Recommendations] |
+| **Subtotal** | 100 | | **/100** | |
+
+**Evidence Requirements**:
+- **Three Pillars**: Each pillar has ≥2 proof points with STRONG+ evidence tier, addresses ≥1 top-5 pain point from Problem Analysis
+- **Differentiators**: Each differentiator has Market Reality (statistics), Our Approach (3-5 tactics), Proof Point (measurable claim), Time to Imitation estimate
+- **Strategic Recommendations**: 3 phases with 3-5 actions each, Phase 1 targets aligned with 6-month milestones, success criteria quantified
+- **Critical Success Factors**: 5-7 CSFs with "How to Ensure" specifics, linked to Three Pillars or Differentiation Strategy
+- **Risk/Mitigation**: ≥5 risks with likelihood (H/M/L), impact (H/M/L), mitigation strategy, owner assigned
+
+**Scoring Logic**:
+```
+Three Foundational Pillars (25 pts):
+  IF 3 pillars + ≥2 proof points each (STRONG+) + pain point links: 25 pts
+  ELIF 3 pillars + ≥1 proof point each: 20 pts
+  ELIF 3 pillars defined: 15 pts
+  ELIF 1-2 pillars defined: 10 pts
+  ELSE: 0 pts
+
+Breakthrough Differentiators (25 pts):
+  IF 5 differentiators + proof points + time to imitation: 25 pts
+  ELIF 5 differentiators + proof points: 20 pts
+  ELIF 3-4 differentiators documented: 15 pts
+  ELIF 1-2 differentiators documented: 10 pts
+  ELSE: 0 pts
+
+Strategic Recommendations (25 pts):
+  IF 3 phases + 3-5 actions each + success criteria: 25 pts
+  ELIF 3 phases + actions: 20 pts
+  ELIF 2 phases documented: 15 pts
+  ELIF 1 phase documented: 10 pts
+  ELSE: 0 pts
+
+Critical Success Factors (15 pts):
+  IF ≥7 CSFs with "How to Ensure": 15 pts
+  ELIF 5-6 CSFs with specifics: 12 pts
+  ELIF 3-4 CSFs documented: 8 pts
+  ELIF 1-2 CSFs documented: 4 pts
+  ELSE: 0 pts
+
+Risk/Mitigation Matrix (10 pts):
+  IF ≥5 risks + likelihood/impact/mitigation/owner: 10 pts
+  ELIF ≥5 risks + mitigation: 8 pts
+  ELIF 3-4 risks documented: 5 pts
+  ELIF 1-2 risks documented: 2 pts
+  ELSE: 0 pts
+```
+
+**Integration with Concept**:
+- § Three Foundational Pillars → feeds into Differentiation Strategy
+- § Differentiation Strategy → expands on pillars with 5 specific differentiators
+- § Strategic Recommendations → Phase 1 actions build pillar foundations
+- § Problem Analysis → Pillars address top 5 pain points
+
+---
+
+### Quality Intent (4% weight) — v0.6.1
 
 > **Purpose**: Evaluate quality standards set in `/memory/constitution.md` (Project Settings) from `/speckit.constitution` questionnaire.
 
@@ -424,12 +496,26 @@ Complete these items to improve CQS:
 - [ ] Assess external integration complexity
 - [ ] Check for constitution principle conflicts
 
-### Strategic Clarity (if score < 80) — UPDATED v0.6.1
+### Strategic Clarity (if score < 80) — v0.7.0
 - [ ] Document market positioning (Premium/Value/Budget/Niche/Disruptive) with rationale
 - [ ] Define differentiation strategy (Technology/UX/Price/Performance/Integration/Service)
 - [ ] Complete GTM strategy with tactics, CAC targets, and conversion metrics
 - [ ] Set realistic timeline with milestones (Alpha, Beta, Launch)
 - [ ] Define North Star metric with Year 1 target and leading indicators
+
+### Strategic Depth (if score < 80) — NEW v0.7.0
+- [ ] Define Three Foundational Pillars (memorable 3-4 word names)
+- [ ] Link each pillar to ≥1 pain point from top 5 (Problem Analysis)
+- [ ] Provide ≥2 proof points per pillar with STRONG+ evidence tier
+- [ ] Explain "Why We Win" and "Why Competitors Lose" for each pillar
+- [ ] Estimate time to imitation for each pillar with justification
+- [ ] Define 5 Breakthrough Differentiators (Market Reality, Our Approach, Proof Point)
+- [ ] Document barriers to entry and defensibility for differentiators
+- [ ] Create time to imitation matrix with moat types
+- [ ] Create Phase-based Strategic Recommendations (Foundation/Scale/Dominate)
+- [ ] Define 3-5 actions per phase with measurable targets
+- [ ] Document 5-7 Critical Success Factors with "How to Ensure"
+- [ ] Create Risk/Mitigation matrix with ≥5 risks (likelihood/impact/mitigation/owner)
 
 ### Validation (if score < 80)
 - [ ] Document at least 3 hypotheses (HYP-001 format)
@@ -444,15 +530,15 @@ Complete these items to improve CQS:
 - [ ] Create at least 3 reasoning traces (RT-001 format)
 - [ ] Complete feature selection table with alternatives
 
-### Quality Intent (if score < 80) — NEW v0.6.1
+### Quality Intent (if score < 80) — v0.6.1
 - [ ] Run `/speckit.constitution` to set quality targets (if not done)
 - [ ] Set performance priority (`perf_priority`) and response time budget
 - [ ] Set reliability targets (`uptime_sla`, `error_tolerance`)
 - [ ] Set accessibility level (`accessibility_level`, `a11y_groups`)
 - [ ] Review § Strengthened Principles: Verify ≥3 principles are MUST
-- [ ] Cross-check with § Strategic Positioning:
-  - [ ] If Differentiation = Performance → perf_priority = best-in-class
-  - [ ] If Differentiation = Reliability → uptime_sla ≥ 99.99%
+- [ ] Cross-check with § Differentiation Strategy:
+  - [ ] If Differentiator emphasizes Performance → perf_priority = best-in-class
+  - [ ] If Differentiator emphasizes Reliability → uptime_sla ≥ 99.99%
   - [ ] If GTM = Sales-Led Growth → uptime_sla ≥ 99.9%
   - [ ] If Positioning = Premium → accessibility_level ≥ wcag22-aa
 

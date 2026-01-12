@@ -451,22 +451,45 @@ claude_code:
       depends_on: [value-prop-designer]
       priority: 30
       model_override: sonnet
+      role_description: "Strategic Metrics Architect"
       prompt: |
         ## Context
         Value Proposition: (from value-prop-designer)
         JTBD Analysis: (from jtbd-analyst)
+        Three Foundational Pillars: (if available)
+
+        ## Your Role
+        You are a Strategic Metrics Architect designing outcome-based measurement systems that prove business value.
 
         ## Task
-        Design success metrics:
-        1. Define North Star metric
-        2. Create SMART goals for launch
-        3. Design metric hierarchy (input/output/outcome)
-        4. Set realistic benchmarks
+        Design success metrics framework that answers: "How do we measure strategic success, not just product usage?"
+
+        **Critical Principle**: Focus on OUTCOMES (results, impact), NOT OUTPUTS (activity, features shipped).
+
+        1. **North Star Metric Selection**:
+           - Choose metric that bridges user value AND business value
+           - Must be influenced by all Three Pillars
+           - Example: "Hours saved per executive per week" (outcome) NOT "Features used per session" (output)
+           - Validate: Can this be gamed without delivering real value? How?
+
+        2. **Metric Categorization** (Strategic/Product/Business):
+           - **Strategic Metrics**: Measure competitive position, market share, pillar strength
+             Example: "Market share in beachhead segment", "NPS vs competitors"
+           - **Product Metrics**: Measure engagement, value delivery, retention
+             Example: "Weekly active executives", "Feature adoption rate"
+           - **Business Metrics**: Measure unit economics, revenue, growth
+             Example: "MRR growth rate", "CAC/LTV ratio", "Net revenue retention"
+
+        3. **Outcome vs. Output Metrics**:
+           - PREFER outcome-based: "Hours saved per executive per week" (measures impact)
+           - AVOID output metrics: "Features used per session" (measures activity, not value)
+           - Validate: Does metric tie to willingness-to-pay?
 
         ## Output
-        - North Star metric definition
-        - SMART launch goals
-        - Metric dashboard spec
+        - North Star metric with user/business value bridge
+        - SMART-validated metrics (Specific, Measurable, Achievable, Relevant, Time-bound)
+        - Metric categorization (Strategic/Product/Business)
+        - Outcome-focused metrics (not output metrics)
     - role: risk-assessor
       role_group: VALIDATION
       parallel: true
@@ -498,52 +521,448 @@ claude_code:
       depends_on: [value-prop-designer]
       priority: 40
       model_override: sonnet
+      role_description: "Technology Architecture Strategist"
       prompt: |
         ## Context
         Value Proposition: (from value-prop-designer)
+        Three Foundational Pillars: (if available from strategic-synthesis-ai)
         Project Type: {{PROJECT_TYPE}}
 
+        ## Your Role
+        You are a Technology Architecture Strategist translating business strategy into technical architecture principles.
+
         ## Task
-        Generate technical discovery hints:
-        1. Identify core domain entities
-        2. Sketch API surface area
-        3. Note integration requirements
-        4. Flag technical risk areas
+        Generate strategic technical discovery by answering:
+        "What technology decisions enable competitive advantage and long-term defensibility?"
+
+        1. **Strategic Architecture Principles** (not just tech stack):
+           - What architectural decisions create moats? (data network effects, platform extensibility, API-first)
+           - What enables fast iteration? (microservices, feature flags, experimentation framework)
+           - What enables scale? (horizontal scaling, caching strategy, CDN)
+           - What technical choices differentiate us? (AI/ML capabilities, real-time processing, offline-first)
+
+        2. **Core Domain Entities** (business-focused):
+           - Identify entities that represent business value, not just technical objects
+           - Link to Three Foundational Pillars: Which entities enable which pillar?
+           - Example: "Executive" entity (not "User") because we're CEO-focused
+           - Example: "Strategic Decision" entity (enables decision intelligence pillar)
+
+        3. **API Surface & Integration Strategy**:
+           - What business capabilities does API expose? (not just CRUD endpoints)
+           - What strategic integrations create network effects? (calendar, email, CRM = data moat)
+           - What integration strategy enables ecosystem? (webhook platform, plugin architecture)
+
+        4. **Technical Risk Areas** (business impact framing):
+           - NOT: "Database scaling risk"
+           - YES: "Data growth >1M records/month could increase infrastructure cost 3x by Month 12, impacting unit economics"
+           - Link technical risks to business metrics (CAC, margins, time-to-value)
+
+        ## Output Format
+        Generate content for templates/shared/concept-sections/technical-hints.md:
+
+        ```markdown
+        # Technology Architecture Strategy
+
+        ## Strategic Architecture Principles
+        1. **[Principle 1]** — [Why this creates competitive advantage]
+           - Business Impact: [Faster iteration / Lower CAC / Higher retention]
+           - Moat Type: [Data / Platform / Speed]
+           - Example: [Concrete technical decision]
+
+        ## Core Domain Entities (Business-Focused)
+        | Entity | Business Purpose | Pillar Enabled | Strategic Value |
+        |--------|------------------|----------------|-----------------|
+        | [Entity 1] | [What business capability] | [Pillar 1] | [Data moat / Network effect] |
+
+        ## API Strategy & Integration Points
+        **Strategic Integrations** (create network effects):
+        - [Integration 1]: [Business capability enabled] → [Moat created]
+
+        **API Surface** (business capabilities):
+        - [Capability 1]: [Business outcome] (not just "GET /users")
+
+        ## Technical Risk Assessment (Business Impact)
+        | Risk | Business Impact | Probability | Mitigation |
+        |------|----------------|-------------|------------|
+        | [Technical risk] | [Impact on CAC/LTV/TTM] | H/M/L | [Strategy] |
+        ```
 
         ## Output
-        - Domain entity list
-        - API surface sketch
-        - Integration requirements
-        - Technical risk notes
+        - Architecture principles linked to competitive advantage
+        - Domain entities mapped to business pillars
+        - API strategy focused on business capabilities
+        - Technical risks framed by business impact
 
-    # Wave 5: Quality Validation (final)
-    - role: concept-quality-scorer
-      role_group: REVIEW
+    # Wave 5: Strategic Synthesis (after validation & technical discovery)
+    - role: strategic-synthesis-ai
+      role_group: SYNTHESIS
       parallel: false
-      depends_on: [metrics-designer, risk-assessor, technical-hint-generator]
+      depends_on: [market-researcher, competitive-analyst, persona-designer, jtbd-analyst, value-prop-designer]
       priority: 50
       model_override: opus
       thinking_budget: 120000
       reasoning_mode: extended
+      role_description: "Strategic Synthesis Architect"
+      prompt: |
+        ## Context
+        Market Research: (from market-researcher)
+        Competitive Analysis: (from competitive-analyst)
+        Persona & JTBD: (from persona-designer, jtbd-analyst)
+        Value Proposition: (from value-prop-designer)
+        Problem Analysis: (from earlier research)
+
+        ## Your Role
+        You are a Strategic Synthesis Architect synthesizing research findings into Three Foundational Pillars that form the strategic core of this product.
+
+        ## Task
+        Generate Three Foundational Pillars by:
+
+        1. **Analyze Research Findings**:
+           - Review top 10 pain points from Problem Analysis
+           - Identify market gaps from Competitive Analysis
+           - Map JTBD to unmet needs
+           - Extract strategic themes from all research
+
+        2. **Identify Top 3 Strategic Themes** that:
+           - Address highest-severity pain points (Impact Score ≥ 15/20)
+           - Leverage identified market gaps and white space
+           - Create defensible competitive advantage
+           - Enable sustainable business model
+
+        3. **For Each Pillar, Define**:
+           - **Name**: Memorable, strategic (3-4 words) - NOT feature names
+           - **Problem Addressed**: Link to specific pain points (use PP-XXX IDs)
+           - **Solution Approach**: How we uniquely solve it (capabilities, not features)
+           - **Proof Points**: 2+ evidence-backed claims (STRONG+ tier required)
+           - **Differentiation**: Why we win, why competitors lose, time to imitation
+           - **Strategic Value**: Market positioning, moat type, business impact
+
+        4. **Ensure Pillar Quality**:
+           - Pillars are interdependent (synergy matrix)
+           - Each addresses ≥2 pain points
+           - Each has ≥2 proof points with evidence citations [EV-XXX]
+           - Differentiation is specific to competitor weaknesses
+           - Time to imitation justified (6-36 months realistic range)
+
+        ## Output Format
+        Generate content for templates/shared/concept-sections/three-pillars.md:
+
+        ```markdown
+        # Three Foundational Pillars
+
+        ## Pillar 1: [Strategic Name]
+
+        ### Problem Addressed
+        - Primary: [Pain Point Name] (PP-001) - Impact: [X]/20
+        - Secondary: [Pain Point Name] (PP-003) - Impact: [X]/20
+
+        ### Solution Approach
+        [75-125 words explaining unique capability, not feature list]
+
+        **Core Capabilities**:
+        1. [Capability 1] - [Business outcome enabled]
+        2. [Capability 2] - [Business outcome enabled]
+        3. [Capability 3] - [Business outcome enabled]
+
+        ### Proof Points
+        | Claim | Evidence | Source | Tier |
+        |-------|----------|--------|------|
+        | [Measurable claim] | [Data/study] | [EV-001] | STRONG |
+        | [Measurable claim] | [Data/study] | [EV-002] | STRONG |
+
+        ### Differentiation Analysis
+        **Why We Win**:
+        1. [Unique advantage] - [Barrier to entry]
+        2. [Unique advantage] - [Barrier to entry]
+        3. [Unique advantage] - [Barrier to entry]
+
+        **Why Competitors Lose**:
+        | Competitor Type | Why They Can't/Won't | Barrier |
+        |----------------|----------------------|---------|
+        | [Incumbent X] | [Structural limitation] | [Business model conflict] |
+        | [Startup Y] | [Resource constraint] | [Requires 2+ years R&D] |
+
+        **Time to Imitation**: [12-24] months — [Justification: complexity, moat type, resource requirements]
+
+        ### Strategic Value
+        - **Market Positioning**: [How this positions us in market]
+        - **Moat Type**: [Network effects / Data / Brand / Tech / Switching costs]
+        - **Business Impact**: [Revenue / Retention / Market share impact]
+
+        [Repeat for Pillar 2 and Pillar 3]
+
+        ## Pillar Synergy Matrix
+        | Pillar Pair | Synergy | Value Created |
+        |-------------|---------|---------------|
+        | P1 + P2 | [How they reinforce] | [1+1=3 effect] |
+        | P1 + P3 | [How they reinforce] | [Compounding value] |
+        | P2 + P3 | [How they reinforce] | [Ecosystem effect] |
+
+        ## Pillar-to-Pain Point Mapping
+        | Pain Point | Pillar 1 | Pillar 2 | Pillar 3 | Coverage |
+        |------------|:--------:|:--------:|:--------:|:--------:|
+        | PP-001 | ● | ○ | | Primary |
+        | PP-002 | ○ | ● | | Primary |
+        | PP-003 | | ● | ● | Dual |
+
+        Legend: ● Primary solution, ○ Secondary contribution
+        ```
+
+        ## Quality Checklist
+        - [ ] Each pillar has memorable 3-4 word name (strategic, not feature-focused)
+        - [ ] Each addresses ≥2 pain points with explicit PP-XXX references
+        - [ ] Each has ≥2 proof points with STRONG+ evidence tier
+        - [ ] Differentiation specific to named competitors
+        - [ ] Time to imitation justified (not generic "hard to copy")
+        - [ ] Strategic value explains market positioning and moat type
+        - [ ] Synergy matrix shows 1+1=3 effects
+
+        ## Output
+        - Three Foundational Pillars section content
+        - Pillar-to-pain-point mapping with traceability
+        - Evidence citations (EV-XXX) for all proof points
+        - Synergy analysis showing interdependencies
+
+    # Wave 6: Strategic Recommendations (after strategic synthesis)
+    - role: strategic-recommendations-ai
+      role_group: SYNTHESIS
+      parallel: false
+      depends_on: [strategic-synthesis-ai, risk-assessor, metrics-designer]
+      priority: 60
+      model_override: opus
+      thinking_budget: 120000
+      reasoning_mode: extended
+      role_description: "Strategic Roadmap Architect"
+      prompt: |
+        ## Context
+        Three Foundational Pillars: (from strategic-synthesis-ai)
+        Risk Assessment: (from risk-assessor)
+        Metrics Framework: (from metrics-designer)
+        Differentiation Strategy: (from value-prop-designer)
+        Market Analysis: (from market-researcher)
+
+        ## Your Role
+        You are a Strategic Roadmap Architect creating actionable, phase-based execution plan that sequences pillar development, manages risks, and defines critical success factors.
+
+        ## Task
+        Generate Phase-Based Strategic Recommendations by:
+
+        1. **Determine Timeline & Phases**:
+           - Parse {{TIMELINE_TARGET}} from user input or infer from market complexity
+           - Divide into 3 phases: Foundation (20%), Scale (40%), Dominate (40%)
+           - Adjust if regulated industry (longer) or consumer product (shorter)
+           - Default: B2B SaaS 36 months (Foundation 0-6mo, Scale 7-18mo, Dominate 19-36mo)
+
+        2. **Phase 1 Actions** (Foundation - Months 0-6):
+           - **Build MVP**: Select features addressing top 3 pain points from Problem Analysis
+           - **Establish Pillar Foundations**: Prove core hypothesis for Pillar 1 (most critical)
+           - **Prove Unit Economics**: First 10-100 customers, validate CAC/LTV
+           - **Establish Metrics Baseline**: Set targets for North Star metric
+           - Each action needs: Description (50-75 words), 3-4 sub-actions, measurable target
+
+        3. **Phase 2 Actions** (Scale - Months 7-18):
+           - **Expand Capabilities**: Develop Pillars 2-3, add features from roadmap Waves 2-3
+           - **Build Distribution**: Scale GTM from Market Framework
+           - **Develop Network Effects**: Implement differentiators with network moat
+           - **Achieve PMF at Scale**: 100-500 customers, positive unit economics, repeatable GTM
+
+        4. **Phase 3 Actions** (Dominate - Months 19-36):
+           - **Market Leadership**: Category definition, analyst recognition (Gartner/Forrester)
+           - **Vertical Expansion**: Industry-specific versions
+           - **Enterprise Expansion**: Upmarket motion with enterprise features
+           - **Ecosystem Development**: Plugin platform, partnerships, community
+
+        5. **Critical Success Factors** (5-7 CSFs):
+           - Extract from Three Pillars (what MUST work for pillars to succeed)
+           - Extract from Differentiation Strategy (what enables differentiators)
+           - Add execution factors (speed, focus, trust, quality)
+           - Each CSF needs: Brief explanation + "How to Ensure" (actions/metrics)
+
+        6. **Risks & Mitigations** (≥5 risks):
+           - Competitive risks: From Competitive Analysis (Microsoft/Google enters market)
+           - Execution risks: From Features and Technical Hints (complexity, timeline)
+           - Market risks: From Market Framework (timing, adoption rate, regulation)
+           - Financial risks: From Business Model (CAC too high, retention issues)
+           - Each risk needs: Likelihood (H/M/L), Impact (H/M/L), Mitigation, Owner
+
+        ## Output Format
+        Generate content for templates/shared/concept-sections/strategic-recommendations.md:
+
+        ```markdown
+        # Strategic Recommendations
+
+        ## Phase Structure Overview
+        | Phase | Duration | Focus | Success Criteria |
+        |-------|:--------:|-------|------------------|
+        | **Phase 1: Foundation** | Months 0-6 | Build MVP, prove unit economics, establish PMF signals | 10-100 paying customers, core metrics validated |
+        | **Phase 2: Scale** | Months 7-18 | Scale acquisition, expand capabilities, build network effects | 100-500 customers, positive unit economics, repeatable GTM |
+        | **Phase 3: Dominate** | Months 19-36 | Market leadership, category definition, ecosystem development | 500-5,000 customers, category leader, defensible moat |
+
+        ## Phase 1: Foundation (Months 0-6)
+        > **Objective**: Validate core hypothesis, build MVP, prove first customers will pay, establish baseline metrics
+
+        ### Key Actions
+        #### 1. [Action 1 Name] (e.g., "Build MVP with Laser Focus")
+        **Description** (50-75 words):
+        [WHAT to build and WHY this is the priority. Link to Three Pillars: "Focus on Pillar 1 [Name] first because..."]
+
+        **Sub-Actions**:
+        - [Sub-action 1]: [Specific deliverable with milestone]
+        - [Sub-action 2]: [Specific deliverable with milestone]
+        - [Sub-action 3]: [Specific deliverable with milestone]
+        - [Sub-action 4]: [Specific deliverable with milestone] (optional)
+
+        **Target**: [Measurable outcome with timeline - e.g., "20 design partners providing weekly feedback; 90% report 'valuable' by Month 3"]
+
+        [Repeat for Actions 2-4]
+
+        ### Phase 1 Success Criteria
+        **Quantitative**:
+        - [Metric 1]: [Target value] (e.g., "First 10 paying customers at $X/month")
+        - [Metric 2]: [Target value] (e.g., "NPS ≥ 50")
+        - [Metric 3]: [Target value] (e.g., "CAC < $800, LTV > $5,000")
+        - [Metric 4]: [Target value] (e.g., "Time saved: 5+ hours/week average")
+
+        **Qualitative**:
+        - [Criterion 1]: [Description] (e.g., "Strong PMF signals: customers refer others unprompted")
+        - [Criterion 2]: [Description] (e.g., "Clear value prop: customers explain in 1 sentence")
+
+        [Repeat Phase 2 and Phase 3 with same structure]
+
+        ## Critical Success Factors
+        **To win, we must**:
+
+        1. **[CSF 1 Name]** — [50-75 word explanation of why this is critical and what happens if we fail]
+
+           **How to Ensure**: [Specific actions or metrics to track - e.g., "Automated onboarding flow with personalized insights in <15 min; track 'aha moment' metric weekly; iterate until 70%+ threshold met"]
+
+        [Repeat for CSFs 2-7]
+
+        ## Risks & Mitigations
+        | Risk | Likelihood | Impact | Mitigation | Owner |
+        |------|:----------:|:------:|------------|:-----:|
+        | [Risk 1] | H/M/L | H/M/L | [Specific mitigation actions] | [Role] |
+        | [Risk 2] | H/M/L | H/M/L | [Mitigation actions] | [Role] |
+        | [Risk 3] | H/M/L | H/M/L | [Mitigation actions] | [Role] |
+        | [Risk 4] | H/M/L | H/M/L | [Mitigation actions] | [Role] |
+        | [Risk 5] | H/M/L | H/M/L | [Mitigation actions] | [Role] |
+
+        ### Contingency Plans
+        For HIGH likelihood + HIGH impact risks, define:
+
+        **Risk**: [Description of high-priority risk]
+        **Trigger**: [Specific metric/signal that activates contingency - e.g., "Microsoft announces CEO-specific product at Ignite conference (Nov 2026)"]
+        **Contingency**: [Alternative plan if mitigation fails - numbered steps]
+        ```
+
+        ## Quality Checklist
+        - [ ] 3 phases defined with realistic timelines
+        - [ ] 3-5 actions per phase with measurable targets
+        - [ ] Success criteria: ≥4 quantitative + ≥2 qualitative per phase
+        - [ ] 5-7 CSFs with "How to Ensure" guidance
+        - [ ] ≥5 risks with likelihood/impact/mitigation/owner
+        - [ ] Contingency plans for HIGH-HIGH risks
+        - [ ] Timeline realism validated against market benchmarks
+        - [ ] Actions explicitly reference Three Pillars
+
+        ## Output
+        - Strategic Recommendations section content
+        - Phase timeline with concrete milestones
+        - CSF list with actionable guidance
+        - Risk matrix with specific mitigations
+        - Contingency plans for critical risks
+
+    # Wave 7: Quality Validation (final)
+    - role: concept-quality-scorer
+      role_group: REVIEW
+      parallel: false
+      depends_on: [metrics-designer, risk-assessor, technical-hint-generator, strategic-synthesis-ai, strategic-recommendations-ai]
+      priority: 70
+      model_override: opus
+      thinking_budget: 120000
+      reasoning_mode: extended
+      role_description: "Concept Quality Auditor"
       prompt: |
         ## Context
         All Concept Artifacts: (from previous agents)
+        - Problem Analysis: Top 10 pain points
+        - Market Framework: TAM/SAM/SOM, segmentation
+        - Three Foundational Pillars: (from strategic-synthesis-ai)
+        - Differentiation Strategy: 5 breakthrough differentiators
+        - Strategic Recommendations: Phase-based roadmap
+        - Metrics Framework: North Star, categorization
+        - Risk Assessment: Risk matrix
+
+        ## Your Role
+        You are a Concept Quality Auditor applying CQS Formula v0.7.0 to validate strategic readiness.
 
         ## Task
-        Calculate Concept Quality Score (CQS):
-        1. Score each dimension (0-20 points):
-           - Problem Clarity (personas, JTBD defined)
-           - Solution Viability (value prop, differentiation)
-           - Market Validation (TAM/SAM/SOM, competition)
-           - Risk Awareness (risks identified, mitigations)
-           - Technical Readiness (domain hints, API surface)
-        2. Calculate total CQS (0-100)
-        3. Generate improvement recommendations
+        Calculate Concept Quality Score (CQS-E) using formula v0.7.0:
+
+        **Formula** (11 Components, 0-120 scale):
+        ```
+        CQS-E = (
+          Market × 0.16 +            # Market Framework quality
+          Persona × 0.12 +           # Persona-JTBD depth
+          Metrics × 0.12 +           # Metrics SMART validation
+          Features × 0.12 +          # Feature completeness
+          Risk × 0.08 +              # Risk assessment quality
+          Technical × 0.08 +         # Technical architecture
+          Strategic_Clarity × 0.08 + # Vision clarity
+          Strategic_Depth × 0.10 +   # NEW: Pillars, differentiators, roadmap
+          Validation × 0.05 +        # Evidence backing
+          Transparency × 0.05 +      # Decision rationale
+          Quality_Intent × 0.04      # Rigor signals
+        ) × 100 × Evidence_Multiplier
+        ```
+
+        **Focus on NEW Strategic Depth Component** (100 pts max, 10% weight):
+        1. **Three Foundational Pillars** (25 pts):
+           - Are 3 pillars defined with memorable names? (5 pts)
+           - Do they address ≥2 pain points each with PP-XXX links? (5 pts)
+           - Do they have ≥2 proof points each with STRONG+ evidence? (10 pts)
+           - Is differentiation specific to competitors? (5 pts)
+
+        2. **Five Breakthrough Differentiators** (25 pts):
+           - Are 5 differentiators defined? (5 pts)
+           - Do they have market reality + specific tactics? (10 pts)
+           - Are barriers to entry documented? (5 pts)
+           - Is time to imitation justified? (5 pts)
+
+        3. **Phase-Based Strategic Recommendations** (25 pts):
+           - Are 3 phases defined (Foundation/Scale/Dominate)? (5 pts)
+           - Do phases have 3-5 actions each with measurable targets? (10 pts)
+           - Are success criteria quantitative (≥4) + qualitative (≥2)? (5 pts)
+           - Are actions linked to Three Pillars? (5 pts)
+
+        4. **Critical Success Factors** (15 pts):
+           - Are ≥5 CSFs documented? (5 pts)
+           - Do CSFs have "How to Ensure" guidance? (5 pts)
+           - Are CSFs derived from Pillars/Differentiation? (5 pts)
+
+        5. **Risk/Mitigation Matrix** (10 pts):
+           - Are ≥5 risks documented? (3 pts)
+           - Do risks have likelihood/impact/mitigation/owner? (4 pts)
+           - Are contingency plans defined for HIGH-HIGH risks? (3 pts)
+
+        **Evidence Tier Requirements**:
+        - Pillars proof points: STRONG+ required
+        - Differentiators: MEDIUM+ required
+        - Strategic Recommendations: MEDIUM+ required
+
+        **Quality Gates**:
+        - ≥80: READY (Green) — Proceed to specification
+        - 60-79: CAUTION (Yellow) — Address gaps, then proceed
+        - <60: NOT READY (Red) — Substantial rework required
 
         ## Output
-        - CQS score with breakdown
-        - Quality gate verdict (PASS >= 80, REVIEW 60-79, FAIL < 60)
-        - Improvement recommendations
+        Generate content for templates/shared/concept-sections/cqs-score.md:
+        - CQS-E score with 11-component breakdown
+        - Strategic Depth score (0-100) with subscores
+        - Evidence multiplier calculation
+        - Quality gate verdict with color coding
+        - Improvement recommendations (prioritized by impact)
+        - Missing evidence list (EV-XXX citations needed)
 skills:
   - name: market-research
     trigger: "Phase 0b: Market & User Research"
@@ -1314,6 +1733,221 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Reference template**: `templates/shared/concept-sections/blue-ocean-canvas.md`
 
+2a. **Phase 2a: Intelligent Section Selection** — NEW v0.7.0
+
+   **Goal**: Auto-select modular concept sections based on domain, timeline, and complexity for optimal strategic narrative flow.
+
+   **Section Selection Logic**:
+
+   Parse user input and research findings to extract:
+   - **Domain Type**: B2B SaaS / B2C App / Gaming / FinTech / Enterprise / Healthcare / EdTech
+   - **Timeline Target**: 1-3mo / 3-6mo / 6-12mo / 12+mo (infer from "MVP in X months")
+   - **Complexity**: SIMPLE / MODERATE / COMPLEX (infer from feature count, integration needs)
+
+   **Core Sections** (ALWAYS included in all concepts):
+   ```yaml
+   core_sections:
+     - executive-summary.md       # Executive decision brief
+     - problem-analysis.md         # Top 10 pain points (NEW v0.7.0)
+     - market-framework.md         # TAM/SAM/SOM, segmentation
+     - three-pillars.md            # Strategic pillars (NEW v0.7.0)
+     - differentiation-strategy.md # 5 differentiators (NEW v0.7.0)
+     - metrics-smart.md            # North Star, SMART metrics
+     - strategic-recommendations.md # Phase-based roadmap (NEW v0.7.0)
+     - cqs-score.md                # Quality score v0.7.0
+   ```
+
+   **Conditional Sections** (domain-specific):
+   ```yaml
+   domain_sections:
+     b2b_saas:
+       - business-model-canvas.md     # Unit economics, LTV/CAC
+       - porters-five-forces.md       # Market dynamics
+       - persona-jtbd.md              # Enterprise buyer personas
+       - investment-thesis.md         # Board-ready investment case
+       - technical-hints.md           # API-first architecture
+
+     b2c_app:
+       - persona-jtbd.md              # Consumer personas
+       - retention-strategy.md        # Engagement loops
+       - business-model-canvas.md     # Monetization strategy
+       - growth-loops.md              # Viral coefficient, K-factor
+
+     gaming:
+       - game-economy-design.md       # Virtual economy, IAP
+       - retention-strategy.md        # DAU/MAU optimization
+       - live-ops-planning.md         # Content roadmap, events
+       - persona-jtbd.md              # Player archetypes
+       - monetization-strategy.md     # F2P, premium, hybrid
+
+     fintech:
+       - risk-matrix.md               # Regulatory, compliance risks
+       - ai-responsibility.md         # Fair lending, bias detection
+       - business-model-canvas.md     # Revenue model, unit economics
+       - technical-hints.md           # Security architecture
+       - porters-five-forces.md       # Competitive dynamics
+
+     enterprise:
+       - technical-hints.md           # Enterprise architecture
+       - ecosystem-strategy.md        # Partner ecosystem
+       - business-model-canvas.md     # Enterprise sales model
+       - investment-thesis.md         # Business case
+       - risk-matrix.md               # Implementation risks
+
+     healthcare:
+       - risk-matrix.md               # Regulatory (HIPAA, FDA)
+       - ai-responsibility.md         # Clinical safety, bias
+       - technical-hints.md           # Security, compliance
+       - persona-jtbd.md              # Clinician vs patient personas
+       - business-model-canvas.md     # Reimbursement model
+
+     edtech:
+       - persona-jtbd.md              # Student/teacher/admin personas
+       - retention-strategy.md        # Learning engagement
+       - business-model-canvas.md     # B2B2C model
+       - technical-hints.md           # LMS integration
+   ```
+
+   **Timeline-Based Sections**:
+   ```yaml
+   timeline_sections:
+     short_term: [1-3mo]
+       - pre-mortem.md              # Early failure scenarios
+       - hypothesis-testing.md      # Lean validation
+       - Skip: investment-thesis.md, ecosystem-strategy.md
+
+     medium_term: [3-6mo]
+       - pre-mortem.md
+       - hypothesis-testing.md
+       - business-model-canvas.md
+       - Skip: ecosystem-strategy.md
+
+     long_term: [12+mo]
+       - investment-thesis.md       # Multi-year business case
+       - ecosystem-strategy.md      # Platform strategy
+       - three-horizons.md          # H1/H2/H3 innovation
+       - scenario-planning.md       # Multiple futures
+   ```
+
+   **Complexity-Based Sections**:
+   ```yaml
+   complexity_sections:
+     SIMPLE: [<10 features, single platform]
+       - Skip: technical-hints.md, ecosystem-strategy.md, portfolio-context.md
+
+     MODERATE: [10-25 features, 2-3 integrations]
+       - technical-hints.md
+       - risk-matrix.md
+       - Skip: ecosystem-strategy.md, portfolio-context.md
+
+     COMPLEX: [25+ features, platform/ecosystem]
+       - technical-hints.md
+       - ecosystem-strategy.md
+       - risk-matrix.md
+       - decision-log.md            # Architecture decisions
+       - portfolio-context.md       # If part of larger portfolio
+   ```
+
+   **Section Ordering** (Narrative Flow v0.7.0):
+   ```python
+   # Problem→Market→Vision→Solution→Execution narrative
+   SECTION_ORDER = [
+       # PROBLEM Phase (WHY) — Understanding the crisis
+       1: "executive-summary.md",
+       2: "problem-analysis.md",              # NEW: Top 10 pain points
+
+       # MARKET Phase (WHERE) — Market landscape
+       3: "market-framework.md",              # TAM/SAM/SOM, segmentation
+       4: "porters-five-forces.md",           # Conditional: B2B SaaS, FinTech
+
+       # VISION Phase (WHAT) — Strategic positioning
+       5: "product-vision.md",                # Vision statement
+       6: "three-pillars.md",                 # NEW: Strategic pillars
+       7: "persona-jtbd.md",                  # Conditional: Based on domain
+
+       # SOLUTION Phase (HOW) — Differentiation & features
+       8: "differentiation-strategy.md",      # NEW: 5 differentiators
+       9: "blue-ocean-canvas.md",             # Conditional: If differentiation needed
+       10: "product-features-roadmap.md",     # Feature hierarchy
+       11: "technical-hints.md",              # Conditional: Based on complexity
+
+       # EXECUTION Phase (WHEN) — Business & GTM
+       12: "business-model-canvas.md",        # Conditional: Based on domain
+       13: "gtm-strategy.md",                 # Conditional: If timeline > 6mo
+       14: "metrics-smart.md",                # Always: North Star metrics
+       15: "strategic-recommendations.md",    # NEW: Phase-based roadmap
+
+       # RISK & VALIDATION Phase
+       16: "risk-matrix.md",                  # Conditional: Based on complexity
+       17: "pre-mortem.md",                   # Conditional: If timeline < 6mo
+       18: "hypothesis-testing.md",           # Conditional: If timeline < 6mo
+
+       # QUALITY Phase (SCORING)
+       19: "cqs-score.md",                    # Always: Quality validation
+   ]
+   ```
+
+   **Auto-Selection Algorithm**:
+   ```python
+   def select_sections(domain, timeline, complexity, user_input):
+       sections = []
+
+       # Always include core sections
+       sections.extend(CORE_SECTIONS)
+
+       # Add domain-specific sections
+       if domain in DOMAIN_SECTIONS:
+           sections.extend(DOMAIN_SECTIONS[domain])
+
+       # Add timeline-based sections
+       if timeline in TIMELINE_SECTIONS:
+           sections.extend(TIMELINE_SECTIONS[timeline]['include'])
+           sections.remove_if_present(TIMELINE_SECTIONS[timeline]['skip'])
+
+       # Add complexity-based sections
+       if complexity in COMPLEXITY_SECTIONS:
+           sections.extend(COMPLEXITY_SECTIONS[complexity]['include'])
+           sections.remove_if_present(COMPLEXITY_SECTIONS[complexity]['skip'])
+
+       # Remove duplicates, sort by SECTION_ORDER
+       sections = sorted(set(sections), key=lambda s: SECTION_ORDER.index(s))
+
+       return sections
+   ```
+
+   **Example: B2B SaaS, 12-month timeline, COMPLEX**:
+   ```yaml
+   selected_sections:
+     - executive-summary.md
+     - problem-analysis.md           # Core
+     - market-framework.md            # Core
+     - porters-five-forces.md         # Domain: B2B SaaS
+     - product-vision.md              # Core (implied)
+     - three-pillars.md               # Core
+     - persona-jtbd.md                # Domain: B2B SaaS
+     - differentiation-strategy.md    # Core
+     - blue-ocean-canvas.md           # Auto-added if differentiation present
+     - product-features-roadmap.md    # Core (implied)
+     - technical-hints.md             # Complexity: COMPLEX
+     - business-model-canvas.md       # Domain: B2B SaaS
+     - gtm-strategy.md                # Timeline: 12+mo
+     - metrics-smart.md               # Core
+     - strategic-recommendations.md   # Core
+     - risk-matrix.md                 # Complexity: COMPLEX
+     - ecosystem-strategy.md          # Complexity: COMPLEX
+     - investment-thesis.md           # Timeline: 12+mo
+     - three-horizons.md              # Timeline: 12+mo
+     - decision-log.md                # Complexity: COMPLEX
+     - cqs-score.md                   # Core
+   ```
+
+   **Section Count by Configuration**:
+   - **Minimal** (B2C App, 3mo, SIMPLE): 10-12 sections
+   - **Standard** (B2B SaaS, 6mo, MODERATE): 15-18 sections
+   - **Comprehensive** (Enterprise, 12+mo, COMPLEX): 20-25 sections
+
+   **Output**: Section selection manifest for Phase 3 variant generation
+
 3. **Phase 3: Generate 5 Complete Concept Variants (Parallel)**
 
    **Goal**: Generate 5 fundamentally different product visions autonomously.
@@ -1409,19 +2043,28 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Scoring Formula** (per variant):
    ```
-   Alternative Score (0-40 points):
+   Alternative Score (0-50 points):
    - Problem-Solution Fit: 0-12 (How well does this solve the problem?)
    - Market Differentiation: 0-10 (How unique vs competitors?)
    - Feasibility: 0-10 (Can we build this? Technical risk?)
    - Time to Market: 0-8 (Speed to MVP?)
+   - Strategic Depth: 0-10 (Pillars, differentiators, phase-based plan?)
+     * 3 Foundational Pillars defined: 3 pts
+     * 5 Breakthrough Differentiators: 3 pts
+     * Phase-based Strategic Recommendations: 4 pts
 
-   CQS Score (0-100 points):
-   - Use existing CQS calculation from templates/shared/quality/cqs-score.md
-   - Enhanced with "Strategic Depth" component (10% weight):
-     * Framework integration: ≥3 frameworks applied (40 pts)
-     * Trade-off transparency: ≥5 decisions explained (25 pts)
-     * Quantified triggers: Pre-mortem with numeric criteria (20 pts)
-     * Evidence quality: ≥80% claims sourced, tier ≥ STRONG (15 pts)
+   CQS Score (0-120 points) — Formula v0.7.0:
+   - Use CQS calculation from templates/shared/concept-sections/cqs-score.md
+   - Formula: 11 components weighted (see cqs-score.md for details):
+     * Market (16%), Persona (12%), Metrics (12%), Features (12%)
+     * Risk (8%), Technical (8%), Strategic_Clarity (8%), Strategic_Depth (10%)
+     * Validation (5%), Transparency (5%), Quality_Intent (4%)
+   - Strategic Depth component (100 pts max, weighted 10%):
+     * Three Foundational Pillars with proof points: 25 pts (STRONG+ evidence required)
+     * Five Breakthrough Differentiators with barriers: 25 pts (STRONG+ evidence required)
+     * Phase-based Strategic Recommendations: 25 pts (MEDIUM+ evidence required)
+     * Critical Success Factors (≥5): 15 pts (MEDIUM+ evidence required)
+     * Risk/Mitigation matrix (≥5): 10 pts (MEDIUM+ evidence required)
    ```
 
    **Quality Validation Agent** (runs after all 5 complete):

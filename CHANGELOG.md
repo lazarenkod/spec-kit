@@ -179,6 +179,225 @@ New command for switching between concept variants after autonomous generation.
 - Updates `specs/concept-alternatives.md` comparison table
 - Compatible with all downstream commands (`/speckit.specify`, `/speckit.plan`, etc.)
 
+---
+
+## [0.7.0] - 2026-01-12
+
+### Added — Strategic Concept Restructuring (CEO-Focused Blueprint)
+
+**Major Improvement**: `/speckit.concept` now generates CEO-focused strategic blueprints with improved narrative flow, strategic frameworks, and enhanced quality scoring.
+
+#### New Strategic Sections (4 new modular templates)
+
+1. **Problem Analysis** (`templates/shared/concept-sections/problem-analysis.md`) — NEW
+   - Top 10 pain points ranked by Impact Score (Severity + Frequency)
+   - Critical Statistics grouped by category with evidence sources
+   - "Perfect Storm" narrative explaining problem convergence
+   - Evidence requirement: MEDIUM+ tier for top 5 pain points
+   - CQS Impact: Problem Clarity component (10% weight)
+
+2. **Three Foundational Pillars** (`templates/shared/concept-sections/three-pillars.md`) — NEW
+   - Strategic pillars framework distilling entire differentiation into 3 memorable themes
+   - Each pillar includes:
+     - Problem addressed (linked to pain points via PP-XXX IDs)
+     - Solution approach with core capabilities
+     - Proof points (≥2 with STRONG+ evidence tier)
+     - Differentiation analysis (why we win, why competitors lose)
+     - Time to imitation justification (6-36 months)
+   - Pillar synergy matrix (1+1=3 effects)
+   - CQS Impact: Strategic Depth component (+25 pts)
+
+3. **Differentiation Strategy** (`templates/shared/concept-sections/differentiation-strategy.md`) — NEW
+   - 5 breakthrough differentiators creating sustainable competitive advantage
+   - Each differentiator includes:
+     - Market reality (current state with statistics)
+     - Our approach (strategic approach + specific tactics)
+     - Proof point (measurable claim with timeline)
+   - Barriers to entry analysis
+   - Time to imitation matrix
+   - CQS Impact: Strategic Depth component (+25 pts)
+
+4. **Strategic Recommendations** (`templates/shared/concept-sections/strategic-recommendations.md`) — NEW
+   - Phase-based roadmap: Foundation (0-6mo), Scale (7-18mo), Dominate (19-36mo)
+   - Each phase includes:
+     - 3-5 key actions with measurable targets
+     - Success criteria (quantitative + qualitative)
+   - Critical Success Factors (5-7 CSFs) with "How to Ensure" guidance
+   - Risk/Mitigation matrix (≥5 risks with likelihood/impact/mitigation/owner)
+   - Contingency plans for HIGH-HIGH risks
+   - CQS Impact: Strategic Depth component (+25 pts)
+
+#### Enhanced Existing Sections (3 updates)
+
+1. **Executive Summary** (`templates/shared/concept-sections/executive-summary.md`)
+   - Added Opportunity Framing Table (TAM/SAM/SOM with methodology)
+   - Added Strategic Positioning Summary (3 key differentiators with moat type)
+   - Added Key Metrics Dashboard (6mo/12mo/36mo targets by signal type)
+   - Purpose: Provide 90-second executive decision context
+
+2. **Market Framework** (`templates/shared/concept-sections/market-framework.md`)
+   - Added Market Segmentation Table (size, growth, competition, priority, strategy)
+   - Added Market Dynamics Section (enabling trends, constraining factors)
+   - Added White Space Analysis (underserved opportunities with evidence)
+   - Purpose: Validate market size and competitive positioning
+
+3. **Metrics Framework** (`templates/shared/concept-sections/metrics-smart.md`)
+   - Added Metric Categorization (Strategic/Product/Business with hierarchy)
+   - Added Outcome vs. Output Metrics (focus on results, not activity)
+   - Added Outcome Validation Checklist (user benefit, business impact, causality)
+   - Purpose: Define SMART + OKR success metrics
+
+#### CQS Formula Update (v0.6.1 → v0.7.0)
+
+**New Formula** (11 Components, 0-120 scale):
+```
+CQS-E = (
+  Market × 0.16 +            # ↓ from 0.18
+  Persona × 0.12 +           # ↓ from 0.14
+  Metrics × 0.12 +           # ↓ from 0.14
+  Features × 0.12 +          # ↓ from 0.14
+  Risk × 0.08 +              # ↓ from 0.10
+  Technical × 0.08 +         # ↓ from 0.10
+  Strategic_Clarity × 0.08 + # ↑ from 0.05
+  Strategic_Depth × 0.10 +   # NEW (Three Pillars, Differentiators, Roadmap)
+  Validation × 0.05 +
+  Transparency × 0.05 +
+  Quality_Intent × 0.04      # ↓ from 0.05
+) × 100 × Evidence_Multiplier
+```
+
+**Strategic Depth Component** (NEW — 100 pts max, 10% weight):
+- Three Foundational Pillars with proof points: 25 pts (STRONG+ evidence required)
+- Five Breakthrough Differentiators with barriers: 25 pts (STRONG+ evidence required)
+- Phase-based Strategic Recommendations: 25 pts (MEDIUM+ evidence required)
+- Critical Success Factors (≥5): 15 pts (MEDIUM+ evidence required)
+- Risk/Mitigation matrix (≥5): 10 pts (MEDIUM+ evidence required)
+
+**Quality Gates**: Same thresholds maintained (≥80 Ready, 60-79 Caution, <60 Not Ready)
+
+#### Research Agent Updates (2 new synthesis agents)
+
+**Wave 5: Strategic Synthesis** (NEW)
+- Agent: `strategic-synthesis-ai` (opus/120K, extended reasoning)
+- Purpose: Synthesize research findings into Three Foundational Pillars
+- Depends on: market-researcher, competitive-analyst, persona-designer, jtbd-analyst, value-prop-designer
+- Output: Three Pillars section with proof points, differentiation, time to imitation
+
+**Wave 6: Strategic Recommendations** (NEW)
+- Agent: `strategic-recommendations-ai` (opus/120K, extended reasoning)
+- Purpose: Generate phase-based roadmap with CSFs and risks
+- Depends on: strategic-synthesis-ai, risk-assessor, metrics-designer
+- Output: Strategic Recommendations section with 3 phases, CSFs, risk matrix
+
+**Wave Renumbering**:
+- Previous Wave 5 (concept-quality-scorer) → Now Wave 7
+- Total: 7 waves (was 5 waves)
+
+#### Alternative Scoring Update (40 → 50 points)
+
+**Enhanced Formula**:
+```
+Alternative Score (0-50 points):
+- Problem-Solution Fit: 0-12 (unchanged)
+- Market Differentiation: 0-10 (unchanged)
+- Feasibility: 0-10 (unchanged)
+- Time to Market: 0-8 (unchanged)
+- Strategic Depth: 0-10 (NEW)
+  * 3 Foundational Pillars defined: 3 pts
+  * 5 Breakthrough Differentiators: 3 pts
+  * Phase-based Strategic Recommendations: 4 pts
+```
+
+#### Intelligent Section Selection (NEW — Phase 2a)
+
+**Auto-Selection Logic**:
+- **Core Sections** (always included): executive-summary, problem-analysis, market-framework, three-pillars, differentiation-strategy, metrics-smart, strategic-recommendations, cqs-score
+- **Domain-Specific Sections**:
+  - B2B SaaS: business-model-canvas, porters-five-forces, persona-jtbd, investment-thesis
+  - B2C App: persona-jtbd, retention-strategy, growth-loops
+  - Gaming: game-economy-design, live-ops-planning, monetization-strategy
+  - FinTech: risk-matrix, ai-responsibility, regulatory compliance
+  - Enterprise: technical-hints, ecosystem-strategy, decision-log
+- **Timeline-Based Sections**:
+  - Short (1-3mo): pre-mortem, hypothesis-testing
+  - Long (12+mo): investment-thesis, ecosystem-strategy, three-horizons
+- **Complexity-Based Sections**:
+  - SIMPLE: Skip technical-hints, ecosystem-strategy
+  - COMPLEX: Include decision-log, portfolio-context
+
+**Section Count**: 10-25 sections depending on domain/timeline/complexity configuration
+
+**Section Ordering** (Narrative Flow):
+```
+Problem Phase (WHY) → Market Phase (WHERE) → Vision Phase (WHAT) →
+Solution Phase (HOW) → Execution Phase (WHEN) → Quality Phase (SCORING)
+```
+
+#### Language Transformation (Strategic/CEO-Focused)
+
+**Before (Product-Focused)**:
+- "Features for users"
+- "User stories"
+- "MVP scope"
+- "Technical requirements"
+
+**After (Strategic/CEO-Focused)**:
+- "Capabilities enabling business outcomes"
+- "Strategic initiatives"
+- "Foundation phase deliverables"
+- "Technology architecture principles"
+
+**Agent Prompts Updated**:
+- `technical-hint-generator` → Now "Technology Architecture Strategist"
+- `metrics-designer` → Now "Strategic Metrics Architect"
+- `concept-quality-scorer` → Enhanced with v0.7.0 formula awareness
+
+#### Benefits
+
+- **Strategic Depth**: Three Pillars and Differentiation Strategy provide clear competitive positioning
+- **Executive Readiness**: CEO/board-appropriate language and structure
+- **Narrative Flow**: Problem→Market→Vision→Solution→Execution tells compelling story
+- **Quality Improvement**: CQS v0.7.0 ensures strategic depth, not just feature completeness
+- **Auto-Selection**: Intelligent section selection reduces cognitive load
+- **Actionable Roadmap**: Phase-based recommendations with CSFs and risks enable execution
+
+#### Migration Guide
+
+**Existing Concepts**: No migration required - v0.6.x concepts work unchanged
+
+**New Concepts**: Automatic v0.7.0 structure
+```bash
+# Generates concept with new strategic sections
+/speckit.concept "CEO operating system app"
+
+# Result: 15-25 page concept with:
+# - Problem Analysis (Top 10 pain points)
+# - Three Foundational Pillars (strategic themes)
+# - Differentiation Strategy (5 differentiators)
+# - Strategic Recommendations (3-phase roadmap)
+# - CQS v0.7.0 score (0-120 scale)
+```
+
+#### Files Changed
+
+**New Files**:
+- `templates/shared/concept-sections/problem-analysis.md` (~400 lines)
+- `templates/shared/concept-sections/three-pillars.md` (~600 lines)
+- `templates/shared/concept-sections/differentiation-strategy.md` (~750 lines)
+- `templates/shared/concept-sections/strategic-recommendations.md` (~900 lines)
+
+**Updated Files**:
+- `templates/shared/concept-sections/executive-summary.md` (183→~250 lines)
+- `templates/shared/concept-sections/market-framework.md` (72→~200 lines)
+- `templates/shared/concept-sections/metrics-smart.md` (112→~250 lines)
+- `templates/shared/concept-sections/cqs-score.md` (formula v0.7.0, 490 lines)
+- `templates/commands/concept.md` (added 2 agents, Phase 2a, scoring updates)
+- `docs/COMMANDS_GUIDE.md` (updated /speckit.concept section)
+
+**Total Addition**: ~2,700 lines of new strategic content + enhanced templates
+
+---
+
 ## [0.7.2] - 2026-01-11
 
 ### Changed — Reordered `/speckit.concept` Strategic Questions
