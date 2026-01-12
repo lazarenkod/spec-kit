@@ -138,8 +138,11 @@ graph LR
 
 **Output Files:**
 - `specs/concept.md` — Auto-selected highest CQS variant
-- `specs/alternatives/*.md` — All 5 variants preserved
+- `specs/alternatives/*.md` — All 5 variants preserved (01-conventional, 02-minimal, 03-disruptive, 04-premium, 05-platform)
 - `specs/concept-alternatives.md` — Comparison table with recommendation
+- `specs/next-steps.md` — Ready-to-Execute Commands (4 variants: By Waves, By Epics, By Priorities, Entire)
+- `specs/quality-report.md` — CQS breakdown, evidence coverage, frameworks applied, quality gate verdict
+- `specs/generation-summary.md` — CLI completion summary, comparison table, file list, next steps guide
 - `memory/knowledge/` — Domain glossaries, best practices, compliance checklists
 
 **Quality Metrics:**

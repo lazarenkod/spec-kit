@@ -7,6 +7,78 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2026-01-12
+
+### Added — Enhanced Console Output Persistence
+
+**Feature**: `/speckit.concept` now saves all important console outputs to dedicated files for easier access and sharing.
+
+#### New Output Files (3 additional files)
+
+1. **`specs/next-steps.md`** — Ready-to-Execute Commands
+   - 4 command variants for quick copy-paste:
+     - **Option 1: By Waves** (dependency-aware, RECOMMENDED)
+     - **Option 2: By Epics** (feature team organization)
+     - **Option 3: By Priorities** (MVP speed focus)
+     - **Option 4: Entire** (comprehensive, all-at-once)
+   - Infrastructure prerequisites (INFRA-AUTH, INFRA-LAYOUT, etc.)
+   - Wave execution sequence with dependencies
+   - Workflow recommendations and next commands reference
+
+2. **`specs/quality-report.md`** — CQS Breakdown & Metrics
+   - Complete CQS Calculation section (extracted from concept.md)
+   - Quality gate verdict (✅ PASS / ⚠️ REVIEW / ❌ FAIL)
+   - Evidence coverage percentage (target ≥80%)
+   - Frameworks applied count (Porter's 5 Forces, Blue Ocean, BMC, JTBD, etc.)
+   - Quality improvement recommendations
+   - Strategic depth analysis
+
+3. **`specs/generation-summary.md`** — Generation Summary
+   - CLI completion timestamp and duration
+   - Auto-selected alternative (name, CQS score, rationale)
+   - Quick comparison table (all 5 variants)
+   - Complete list of files generated (9 files total)
+   - How to switch alternatives guide
+   - Next steps workflow with bash commands
+
+#### Why This Matters
+
+**Before v0.8.1**: Important information like Ready-to-Execute Commands only appeared in console output and could be lost after scrolling or terminal closure.
+
+**After v0.8.1**: All key information persisted to files for:
+- Quick reference without scrolling through full concept.md
+- Easy sharing with team members
+- Copy-paste ready commands without risk of editing concept.md
+- Quality metrics tracking and continuous improvement
+- Onboarding new developers to the project
+
+#### Quick Start After Generation
+
+```bash
+# View execution strategies
+cat specs/next-steps.md
+
+# Check quality metrics
+cat specs/quality-report.md
+
+# Review generation summary
+cat specs/generation-summary.md
+
+# Copy command and specify features
+/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02, ...
+```
+
+#### Backward Compatibility
+
+✅ **Fully backward compatible**: Ready-to-Execute Commands section still included in `specs/concept.md` for users who prefer single-file workflow.
+
+#### Total Files Generated
+
+**Before**: 3 files (concept.md, alternatives/, concept-alternatives.md)
+**After**: 6 files (+ next-steps.md, quality-report.md, generation-summary.md)
+
+---
+
 ## [0.8.0] - 2026-01-12
 
 ### Changed — **BREAKING CHANGE**: Autonomous Concept Generation
