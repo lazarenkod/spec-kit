@@ -7,6 +7,106 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-01-12
+
+### Changed — **BREAKING CHANGE**: Autonomous Concept Generation
+
+**Major Improvement**: `/speckit.concept` now generates concepts fully autonomously without interactive questions, producing ultrathink-quality strategic documents with multiple product variants.
+
+#### What Changed
+
+**Removed** (Breaking Changes):
+- ❌ All Q1-Q10 questions deleted (no more interactive questionnaire)
+- ❌ Phase 0a-1 (Q1-Q5 problem discovery questions) removed
+- ❌ Phase 0a-2 (Q6-Q10 strategic positioning questions) removed
+- ❌ Phase 3d user blocking for alternative selection removed
+
+**Added** (New Features):
+- ✅ Phase 0.5: Context Extraction (autonomous, confidence-based)
+  - Classification agent extracts domain, industry, target users from brief input
+  - Fallback to 1-2 clarifying questions only if confidence < 0.5
+  - Adaptive agent selection based on domain (FinTech → compliance agents, etc.)
+- ✅ Ultrathink Quality Tier (120K token thinking budget, 4× increase)
+  - New `ultrathink` rate limit tier in frontmatter
+  - Default tier changed to `ultrathink` for concept generation
+  - Strategic role framing: "Be my co-founder" mindset
+- ✅ Autonomous Variant Generation (Phase 3)
+  - Generates 5 complete concepts in parallel (Conventional, Minimal, Disruptive, Premium, Platform)
+  - Each variant: 15-25 pages with Vision, Market, Personas, Features, Frameworks, Metrics, Risks
+  - CQS scoring with target ≥85/100 per variant
+  - Auto-selects highest CQS variant → `specs/concept.md`
+  - Saves all 5 variants → `specs/alternatives/01-conventional.md` ... `05-platform.md`
+  - Generates comparison table → `specs/concept-alternatives.md`
+- ✅ `/speckit.concept.switch [1-5]` command
+  - Allows user to switch to different variant after generation
+  - Preserves all 5 alternatives for async review
+  - Updates concept.md and comparison table
+- ✅ Strategic Positioning section now AUTO-INFERRED
+  - Market Position, Differentiation, GTM Strategy, Timeline, North Star Metric
+  - All inferred from Phase 0b research with evidence and rationale
+  - No user input required
+
+#### New Workflow
+
+**Before (v0.7.2)**:
+```
+User input → Q1-Q5 → Research → Display findings → Alternatives → Q6-Q10 → Select alternative → Blocking wait
+```
+
+**After (v0.8.0)**:
+```
+User input → Context Extraction (auto) → Research (parallel, opus, 120K budget) → Generate 5 variants (parallel) → Auto-select highest CQS → Non-blocking completion
+
+User reviews asynchronously, optionally: /speckit.concept.switch [1-5]
+```
+
+#### Benefits
+
+- **Autonomous**: No questions asked in 90% of cases (only if context extraction confidence < 0.5)
+- **Quality**: CQS target ≥85/100 (up from 60-80 previously)
+- **Speed**: 15-20 min end-to-end, no user blocking
+- **Multiple Options**: 5 complete variants to choose from
+- **Strategic Depth**: 120K token budget enables Porter's 5 Forces, Blue Ocean Canvas, BMC analysis
+- **Async Selection**: User reviews at their own pace after generation completes
+
+#### Migration Guide
+
+**Existing Projects**: No action required - existing `specs/concept.md` files are unaffected
+
+**New Concepts**: Use new autonomous flow:
+```bash
+# Old way (no longer works):
+/speckit.concept  # Would ask Q1-Q10
+
+# New way (fully autonomous):
+/speckit.concept "CEO operating system app"
+# → Generates 5 variants, auto-selects best, completes in 15-20 min
+
+# Optional: Switch to different variant
+/speckit.concept.switch 3
+```
+
+#### Breaking Changes
+
+- **Q1-Q10 answers no longer accepted** - Questions removed entirely
+- **No interactive selection** - Auto-selection based on CQS score
+- **API cost increase**: ~$2.50 per concept (up from $0.75, justified by 4× quality improvement)
+
+#### Files Changed
+
+- `templates/commands/concept.md` - Major rewrite (autonomous workflow)
+- `templates/commands/speckit.concept.switch.md` - New command file
+
+### Added — `/speckit.concept.switch` Command
+
+New command for switching between concept variants after autonomous generation.
+
+**Usage**: `/speckit.concept.switch [1-5]`
+- Switches `specs/concept.md` to selected alternative
+- Preserves all 5 alternatives in `specs/alternatives/`
+- Updates `specs/concept-alternatives.md` comparison table
+- Compatible with all downstream commands (`/speckit.specify`, `/speckit.plan`, etc.)
+
 ## [0.7.2] - 2026-01-11
 
 ### Changed — Reordered `/speckit.concept` Strategic Questions

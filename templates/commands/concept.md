@@ -67,7 +67,7 @@ claude_code:
   reasoning_mode: extended
   # Rate limit tiers (default: max for Claude Code Max $20)
   rate_limits:
-    default_tier: max
+    default_tier: ultrathink  # Changed for autonomous concept generation with deep strategic thinking
     tiers:
       free:
         thinking_budget: 8000
@@ -84,6 +84,12 @@ claude_code:
         max_parallel: 8
         batch_delay: 1500
         wave_overlap_threshold: 0.65
+      ultrathink:  # NEW TIER for world-class strategic concepts
+        thinking_budget: 120000  # 4× deeper reasoning for strategic analysis
+        max_parallel: 4          # Lower parallelism for deeper serial reasoning
+        batch_delay: 3000
+        wave_overlap_threshold: 0.60
+        cost_multiplier: 3.5
   cache_control:
     system_prompt: ephemeral
     constitution: ephemeral
@@ -474,6 +480,31 @@ scripts:
   ps: scripts/powershell/create-concept.ps1 -Json "{ARGS}"
 ---
 
+## Your Role & Mindset
+
+You are a **Strategic Co-Founder and Product Architect**, not a template filler.
+
+**Your Mission**:
+- Think deeply about WHY this product should exist
+- Apply strategic frameworks naturally (tools in your toolbox)
+- Find evidence, not generic statements
+- Explain trade-offs and decisions
+- Design for insight, not completeness
+
+**Frameworks at Your Disposal**:
+- Blue Ocean Canvas (ERRC Grid) → Find uncontested market space
+- Porter's 5 Forces → Assess market dynamics
+- Business Model Canvas → Validate unit economics
+- Jobs-to-Be-Done → Understand customer motivation
+- PR/FAQ → Customer narrative
+- Pre-Mortem → Failure scenario planning
+
+**Quality Standards**:
+- ✅ "TAM $5.2B (Gartner 2025), growing 23% CAGR → SOM $50M = 500 customers × $100K ACV"
+- ❌ "Large addressable market" (generic, no source, no context)
+
+Think like a strategist conducting due diligence, not an AI filling a template.
+
 ## User Input
 
 ```text
@@ -603,124 +634,178 @@ This command captures the **complete vision and scope** of a service/product BEF
 
 3. **Phase 0: Discovery Mode** (if triggered):
 
-   ### Phase 0a-1: Problem Discovery — Basic Questions (Interactive)
+   ### Phase 0.5: Context Extraction (Autonomous)
 
-   **Goal**: Help user articulate the real problem before jumping to solutions.
+   **Goal**: Extract product context from brief user input without asking questions.
 
-   **Interactive questioning flow** (ask sequentially, adapt based on answers):
+   **Launch Classification Agent** (haiku, fast):
 
-   1. **Root Problem Question**:
-      "What specific frustration or inefficiency triggered this idea?"
-      - Listen for: pain points, workarounds, failed alternatives
-      - If answer is vague, probe deeper: "Can you describe a specific moment when this was frustrating?"
+   ```yaml
+   agent: context-classifier
+   model: haiku
+   thinking_budget: 4000
+   task: |
+     Analyze user input: "{user_description}"
 
-   2. **Scale Question**:
-      "How many people/companies face this problem? How often does it occur?"
-      - Listen for: market size signals, frequency, severity
+     Extract:
+     1. Domain: [SaaS, B2C App, Internal Tool, DevTool, E-commerce, FinTech, HealthTech, EdTech, Other]
+     2. Industry: [Technology, Healthcare, Finance, Education, Retail, etc.]
+     3. Target Users: [Developers, Executives, Consumers, Enterprise Teams, etc.]
+     4. Problem Space: [Productivity, Communication, Data, Security, etc.]
+     5. Confidence: [0.0-1.0]
 
-   3. **Current Solutions Question**:
-      "How do people solve this today? What's wrong with those approaches?"
-      - Listen for: competitor gaps, differentiation opportunities
+     If confidence ≥ 0.8: Return extraction
+     If confidence < 0.8: List 1-2 clarifying questions
+   ```
 
-   4. **Stakes Question**:
-      "What happens if this problem remains unsolved? What's the cost?"
-      - Listen for: urgency, willingness to pay, business impact
+   **Confidence Handling**:
+   ```
+   IF confidence ≥ 0.8:
+     → Proceed autonomously with extracted context
 
-   5. **Vision Question**:
-      "Describe the ideal outcome if this were perfectly solved."
-      - Listen for: success criteria, feature hints, user delight moments
+   ELSE IF confidence 0.5-0.8:
+     → Proceed with validation during research
+     → Flag as "medium_confidence" for research agents
 
-   **STOP HERE**: Do NOT ask Q6-Q10 yet. These strategic positioning questions will be asked AFTER:
-   - Market research is complete (Phase 0b)
-   - Product alternatives are generated (Phase 3c)
-   - User has reviewed alternatives
+   ELSE (confidence < 0.5):
+     → Ask 1-2 clarifying questions (fallback mode):
+       Q1: "What type of product? (B2B SaaS / B2C App / Internal Tool / Other)"
+       Q2: "Who are the primary users? (role or persona)"
+     → Re-run classification with answers
+   ```
 
-   Proceed directly to Phase 0b (Market & User Research).
+   **Adaptive Agent Selection**:
+   ```
+   Core agents (always): market-researcher, competitive-analyst, persona-designer,
+                         jtbd-analyst, value-prop-designer, metrics-designer, risk-assessor
 
-   **Output**: Document Q1-Q5 answers in "Problem Discovery" section of concept.md. Strategic positioning questions (Q6-Q10) will be asked later in Phase 0a-2 after research and alternatives are generated.
+   Domain-specific (conditional):
+   - IF domain = "FinTech" OR "HealthTech" → standards-researcher (compliance)
+   - IF domain = "DevTool" OR "B2B SaaS" → community-intelligence (Stack Overflow, GitHub)
+   - IF problem_space = "Novel Technology" → academic-researcher (papers)
+   - IF target_users = "Enterprise" → enterprise-analyst (procurement, security)
+   ```
+
+   **Output**: `{domain, industry, target_users, problem_space, selected_agents}`
+
+   Proceed to Phase 0b (Market & User Research).
 
    #### § Strategic Positioning Section Format
 
-   Add the following new section to concept.md after "§ Problem & Opportunity" (populated from Phase 0a-2 answers):
+   Add the following new section to concept.md after "§ Problem & Opportunity" (AUTO-INFERRED from research):
 
    ```markdown
-   ## § Strategic Positioning
+   ## § Strategic Positioning (AUTO-INFERRED)
 
-   **Purpose**: Define market strategy, competitive positioning, and success metrics to guide product decisions.
+   **Purpose**: Define market strategy, competitive positioning, and success metrics to guide product decisions. All items below are inferred from Phase 0b research findings.
 
    ### Market Position
-   [Answer from Phase 0a-2 Q6: Premium/Value/Budget/Niche/Disruptive]
+   **Position**: [Premium/Value/Budget/Niche/Disruptive]
 
-   **Rationale**: [Why this positioning? Reference research findings: {specific_evidence_from_phase_0b}]
+   **Rationale**: Based on competitive pricing analysis ($X-Y range), target persona WTP ($Z), and differentiation strategy, positioning as [X] maximizes [metric].
+
+   **Evidence**: [Cite specific research findings from Phase 0b]
+   - Competitor pricing: [Data from competitive-analyst]
+   - Target persona WTP: [Data from persona-designer]
+   - Market gap analysis: [Data from market-researcher]
 
    **Implications for Product**:
    - Quality expectations: [High/Medium/Low based on positioning]
-   - Price positioning: [Premium/Competitive/Budget]
-   - Target customer segment: [Enterprise/SMB/Consumer]
-   - Feature complexity: [Rich/Balanced/Minimal]
+   - Price positioning: [Premium/Competitive/Budget with specific $ range]
+   - Target customer segment: [Enterprise/SMB/Consumer with specifics]
+   - Feature complexity: [Rich/Balanced/Minimal - aligned with positioning]
 
    ### Primary Differentiation
-   [Answer from Phase 0a-2 Q7: Technology/UX/Price/Performance/Integration/Service]
+   **Approach**: [Technology/UX/Price/Performance/Integration/Service]
 
-   **How we'll win**: [Specific advantages over competitors]
+   **Rationale**: Competitive gap analysis shows competitors weak in [X]. Our strength in [Y] addresses this gap. [Blue Ocean ERRC Grid] supports this approach.
 
-   **Evidence**: [Market gaps from Phase 0b: {gaps}, Competitor weaknesses: {weaknesses}, Selected alternative strengths: {strengths}]
+   **Evidence**: [Competitor matrix from Phase 0b]
+   - **Market gaps**: [Specific unmet needs from Phase 0b]
+   - **Competitor weaknesses**: [Documented weaknesses]
+   - **Our strengths**: [How selected alternative addresses gaps]
 
    **Competitive Matrix** (from Phase 0b research):
-   | Feature/Aspect | Us | Competitor A | Competitor B |
-   |----------------|:--:|:------------:|:------------:|
-   | [Differentiator] | ✅ Best | ⚠️ Acceptable | ❌ Weak |
+   | Feature/Aspect | Us | Competitor A | Competitor B | Competitive Advantage |
+   |----------------|:--:|:------------:|:------------:|----------------------|
+   | [Differentiator 1] | ✅ Best | ⚠️ Acceptable | ❌ Weak | [How we win] |
+   | [Differentiator 2] | ✅ Best | ❌ Weak | ⚠️ Acceptable | [How we win] |
 
    ### Go-to-Market Strategy
-   [Answer from Phase 0a-2 Q8: PLG/Sales-Led/Marketing-Led/Partnership-Led/Hybrid]
+   **Strategy**: [PLG/Sales-Led/Marketing-Led/Partnership-Led/Hybrid]
+
+   **Rationale**: Target persona [X] buying behavior (research: {buying_pattern_evidence}) + market maturity [Y] → [strategy] optimal for customer acquisition.
+
+   **Evidence**: [Persona research, buying patterns from Phase 0b]
+   - Persona buying behavior: [How target personas prefer to buy]
+   - Market maturity: [Early/Growth/Mature - affects GTM approach]
+   - Channel effectiveness: [Which channels work for similar products]
 
    **Tactics** (Phase 1 - First 1000 customers):
    - **Channel 1**: [Primary acquisition channel with specific tactics]
+     - Rationale: [Why this channel for target persona]
+     - Expected CAC: $[X] (based on [benchmark/assumption])
    - **Channel 2**: [Secondary channel]
+     - Rationale: [Supporting channel reasoning]
    - **Channel 3**: [Tertiary channel]
+     - Rationale: [Experimental/long-term channel]
 
    **Success Metrics** (GTM-specific):
-   - CAC (Customer Acquisition Cost): [Target range]
-   - Conversion rates: [Funnel metrics by channel]
+   - CAC (Customer Acquisition Cost): [Target range based on LTV]
+   - Conversion rates: [Funnel metrics by channel with benchmarks]
    - Time to first value: [Target onboarding speed]
 
    **Sales Motion** (if applicable):
-   - Sales cycle length: [Target days]
-   - Deal size (ACV): [Target range]
-   - Sales team structure: [Inside/field/hybrid]
+   - Sales cycle length: [Target days based on deal size]
+   - Deal size (ACV): [Target range based on pricing model]
+   - Sales team structure: [Inside/field/hybrid based on deal size]
 
    ### Timeline to Market
-   [Answer from Phase 0a-2 Q9: 1-3 months / 3-6 months / 6-12 months / 12+ months]
+   **Target**: [1-3mo / 3-6mo / 6-12mo / 12+mo]
 
-   **MVP Scope** (based on timeline):
-   - [List P1a features aligned with timeline]
+   **Rationale**: Based on feature complexity [X], team size [Y], and market window [Z]. Feature analysis from variants suggests:
+   - **Minimal variant**: [X] weeks (fastest MVP)
+   - **Balanced variant**: [Y] weeks (recommended)
+   - **Ambitious variant**: [Z] weeks (full vision)
+
+   **Evidence**: [Feature effort estimates from Phase 3 variants]
+
+   **MVP Scope** (based on selected variant timeline):
+   - [List P1a features from selected alternative]
    - [Trade-offs made to hit timeline]
 
    **Milestones**:
-   | Milestone | Target Date | Exit Criteria |
-   |-----------|-------------|---------------|
-   | Alpha | [Date] | [Criteria] |
-   | Beta | [Date] | [Criteria] |
-   | Launch | [Date] | [Criteria] |
+   | Milestone | Target Date | Exit Criteria | Rationale |
+   |-----------|-------------|---------------|-----------|
+   | Alpha | Week [X] | [Criteria] | [Why this timing] |
+   | Beta | Week [Y] | [Criteria] | [Why this timing] |
+   | Launch | Week [Z] | [Criteria] | [Why this timing] |
 
    **Risks**:
-   - **Aggressive timeline (1-3m)**: Quality trade-offs, technical debt accumulation
-   - **Extended timeline (12m+)**: Market changes, competitor moves, funding runway
-   - **Mitigation**: [Specific strategies]
+   - **If aggressive timeline (1-3m)**: Quality trade-offs, technical debt accumulation
+   - **If extended timeline (12m+)**: Market changes, competitor moves, funding runway
+   - **Mitigation**: [Specific strategies based on selected timeline]
 
    ### North Star Metric
-   [Answer from Phase 0a-2 Q10: User Growth / Revenue / Engagement / Market Share / Quality / Learning]
+   **Metric**: [User Growth / Revenue / Engagement / Market Share / Quality / Learning]
+
+   **Rationale**: [Why this metric matters most for Stage 0 (validation/growth/maturity)]. Based on business model [X] and growth strategy [Y].
+
+   **Evidence**: [Metrics research from Phase 0b, comparable companies]
+   - Business model: [How we make money → metric alignment]
+   - Growth stage: [Validation/Growth/Scale → appropriate metric]
+   - Comparable companies: [What successful similar products track]
 
    **Definition**: [Precise metric definition, e.g., "Monthly Active Users who complete ≥1 core action"]
 
    **Target** (Year 1): [Specific number, e.g., "10K MAU", "$1M ARR", "40% DAU/MAU"]
-
-   **Why this metric**: [Alignment with business model, stage, and strategy]
+   - Reasoning: [How this target was determined]
+   - Benchmarks: [Industry standards for similar products]
 
    **Leading Indicators** (track weekly):
-   - [Metric 1 that predicts North Star]
-   - [Metric 2 that predicts North Star]
-   - [Metric 3 that predicts North Star]
+   - [Metric 1 that predicts North Star] → [Why it's leading]
+   - [Metric 2 that predicts North Star] → [Why it's leading]
+   - [Metric 3 that predicts North Star] → [Why it's leading]
 
    **Dashboard Integration**: [How this will be tracked and visualized]
    ```
@@ -1153,302 +1238,270 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    **Reference template**: `templates/shared/concept-sections/blue-ocean-canvas.md`
 
-3c. **Product Alternatives Generation** — NEW:
+3. **Phase 3: Generate 5 Complete Concept Variants (Parallel)**
 
-   **Goal**: Generate 3-5 fundamentally different product visions solving the same problem.
-   Ensures exploration of design space before committing to one approach.
+   **Goal**: Generate 5 fundamentally different product visions autonomously.
 
-   **When**: Always run in Discovery Mode. For Capture Mode, skip unless user requests alternatives.
+   **Strategy Lenses** (5 approaches):
+   1. **Conventional** - Industry standard approach (what competitors do)
+   2. **Minimal** - Simplest 80/20 solution (fastest to market, lowest risk)
+   3. **Disruptive** - Contrarian/differentiated approach (Blue Ocean strategy)
+   4. **Premium** - Best-in-class, unlimited budget (quality-first, high-touch)
+   5. **Platform** - Ecosystem/marketplace play (network effects, API-first)
 
-   **Five Generation Strategies**:
+   **For EACH Strategy** (run in parallel):
 
-   Apply these strategic lenses to generate alternatives:
+   ```yaml
+   agent: concept-generator-{strategy}
+   model: opus
+   thinking_budget: 120000
+   reasoning_mode: extended
+   timeout: 600s
 
-   1. **Conventional**: Industry standard approach (what competitors do)
-   2. **Minimal**: Simplest 80/20 solution (fastest to market)
-   3. **Disruptive**: Opposite/contrarian approach (differentiated)
-   4. **Premium**: Best-in-class, unlimited budget (quality-first)
-   5. **Platform**: Ecosystem/marketplace play (network effects)
+   task: |
+     Generate COMPLETE concept for {strategy} approach:
 
-   **For EACH strategy**:
-   - Formulate 1-2 sentence vision statement
-   - List 5-7 core epics/features
-   - Define value proposition
-   - Identify key differentiators vs competitors
-   - List 3 pros and 3 cons
-   - Estimate effort (S/M/L/XL) and risk (Low/Med/High)
-   - Calculate Time to MVP estimate
+     Strategic Lens: {strategy_description}
+     Research Context: {phase_0b_findings}
+     Domain: {extracted_domain}
 
-   **Scoring** (40 points total):
-   - Problem-Solution Fit (30%): 0-12 points
-   - Market Differentiation (25%): 0-10 points
-   - Feasibility (25%): 0-10 points
-   - Time to Market (20%): 0-8 points
+     Generate 15-25 page concept document with:
 
-   **Use Brainstorm-Curate Protocol**:
-   ```text
-   IMPORT: templates/shared/quality/brainstorm-curate.md
+     1. Vision Statement (strategy-specific)
+        - Reframe problem through {strategy} lens
+        - Unique value proposition
 
-   BRAINSTORM Phase (divergent):
-   - Suspend judgment during generation
-   - Use provocative prompts:
-     * "What would [Innovative Company] do?"
-     * "What if we had zero/unlimited budget?"
-     * "What's the opposite of best practices?"
-   - Make alternatives concretely different (not just scope variations)
+     2. Market Opportunity (same data, different positioning)
+        - TAM/SAM/SOM (cite research)
+        - Porter's 5 Forces analysis
+        - Blue Ocean Canvas (ERRC Grid)
+        - Timing factors (why now?)
 
-   CURATE Phase (convergent):
-   - Score each alternative on 4 criteria
-   - Identify potential hybrids
-   - Document trade-offs explicitly
+     3. Personas (2-4, prioritized by strategy)
+        - JTBD analysis per persona
+        - Willingness-to-pay (WTP) analysis
+        - If strategy=Premium → focus on high-WTP personas
+        - If strategy=Minimal → focus on price-sensitive personas
+
+     4. Feature Hierarchy (5-35 features depending on strategy)
+        - Conventional: 18-25 features (industry parity)
+        - Minimal: 5-8 features (MVP only)
+        - Disruptive: 12-15 features (differentiated set)
+        - Premium: 30-35 features (comprehensive)
+        - Platform: 15-20 features (extensibility focus)
+
+        Format: EPIC-NNN / EPIC-NNN.FNN / EPIC-NNN.FNN.SNN
+
+     5. Strategic Frameworks
+        - Blue Ocean Canvas (ERRC Grid) applied
+        - Business Model Canvas (revenue model)
+        - Metrics Hierarchy (North Star + operational)
+
+     6. Risk Assessment
+        - Pre-mortem analysis
+        - Failure scenarios with triggers
+        - Pivot criteria (numeric thresholds)
+
+     7. Technical Discovery Hints
+        - Domain entities (inferred from features)
+        - API surface (integration requirements)
+        - Architecture patterns
+
+     8. CQS Scoring (Self-Assessment)
+        - Target: ≥85/100
+        - If < 85 → Identify gaps and regenerate
+
+     Quality gates:
+     - Evidence coverage ≥80% (claims sourced)
+     - Strategic frameworks ≥3 applied
+     - Decision rationale documented
+     - Concrete data (not generic statements)
+
+   output:
+     file: "specs/alternatives/0{N}-{strategy-name}.md"
+     format: Full concept.md structure (compatible with downstream commands)
    ```
 
-   **Output**: Create `specs/concept-alternatives.md` with:
-   - All 5 alternatives documented
-   - Comparison matrix with scores
-   - Quick summary (highest score, fastest, lowest risk, most differentiated)
+   **Parallel Execution**:
+   ```yaml
+   parallel: true
+   max_parallel: 5  # All 5 variants simultaneously
+   timeout: 600s    # 10 minutes per variant
+   retry_on_low_cqs: true  # Regenerate if CQS < 80
+   max_retries: 2
+   ```
+
+   **Scoring Formula** (per variant):
+   ```
+   Alternative Score (0-40 points):
+   - Problem-Solution Fit: 0-12 (How well does this solve the problem?)
+   - Market Differentiation: 0-10 (How unique vs competitors?)
+   - Feasibility: 0-10 (Can we build this? Technical risk?)
+   - Time to Market: 0-8 (Speed to MVP?)
+
+   CQS Score (0-100 points):
+   - Use existing CQS calculation from templates/shared/quality/cqs-score.md
+   - Enhanced with "Strategic Depth" component (10% weight):
+     * Framework integration: ≥3 frameworks applied (40 pts)
+     * Trade-off transparency: ≥5 decisions explained (25 pts)
+     * Quantified triggers: Pre-mortem with numeric criteria (20 pts)
+     * Evidence quality: ≥80% claims sourced, tier ≥ STRONG (15 pts)
+   ```
+
+   **Quality Validation Agent** (runs after all 5 complete):
+
+   ```yaml
+   agent: concept-quality-validator
+   task: |
+     For EACH of 5 variants:
+     1. Calculate CQS score
+     2. Audit evidence coverage (% claims with sources)
+     3. Verify framework application (Blue Ocean, Porter's, BMC present?)
+     4. Check decision rationale (trade-offs explained?)
+
+     IF any variant CQS < 80:
+       → Flag for regeneration
+       → Identify specific gaps
+       → Retry (max 2 attempts)
+
+     Output: Quality report per variant
+   ```
+
+   Proceed to Phase 3-Final.
+
+3-Final. **Auto-Select Highest CQS Variant**
+
+   **Goal**: Non-blocking selection and file generation.
+
+   **Auto-Selection Logic**:
+   ```python
+   def auto_select(alternatives: list) -> int:
+       """Select variant with highest CQS score"""
+       sorted_alts = sorted(
+           enumerate(alternatives, start=1),
+           key=lambda x: x[1]['cqs_score'],
+           reverse=True
+       )
+       selected_idx = sorted_alts[0][0]
+       selected_cqs = sorted_alts[0][1]['cqs_score']
+       selected_name = sorted_alts[0][1]['name']
+
+       return selected_idx, selected_cqs, selected_name
+
+   SELECTED_IDX, SELECTED_CQS, SELECTED_NAME = auto_select(alternatives)
+   ```
+
+   **File Generation**:
+   ```
+   1. Copy selected variant → specs/concept.md
+      - Add "Auto-Selected" banner at top:
+        "This concept was auto-selected (Alternative {N}: {Name}, CQS: {score}/100)"
+
+   2. Save all 5 variants → specs/alternatives/
+      - 01-conventional.md
+      - 02-minimal.md
+      - 03-disruptive.md
+      - 04-premium.md
+      - 05-platform.md
+
+   3. Generate comparison table → specs/concept-alternatives.md
+      - Quick comparison matrix
+      - Selection rationale
+      - Instructions for switching
+   ```
+
+   **Comparison Table Format** (`specs/concept-alternatives.md`):
+
+   ```markdown
+   # Product Alternatives Analysis
+
+   ## Auto-Selected Concept
+
+   **Alternative {SELECTED_IDX}: {SELECTED_NAME}** (CQS: {SELECTED_CQS}/100)
+
+   **Selection Rationale**: Highest CQS score among 5 variants.
+   This concept demonstrates strongest strategic depth, evidence quality,
+   and framework application.
+
+   ---
 
-   **Quality Check**:
-   - At least 3 alternatives generated (5 preferred)
-   - Alternatives are meaningfully different (not just MINIMAL/BALANCED/AMBITIOUS scope variants)
-   - Each has concrete features, not vague descriptions
-   - Scores grounded in evidence from Phases 0a-0c
+   ## Quick Comparison
 
-   **Reference template**: `templates/shared/concept-sections/product-alternatives.md`
+   | # | Alternative | Strategy | Score | MVP Time | Risk | CQS | Key Differentiator |
+   |---|-------------|----------|:-----:|:--------:|:----:|:---:|-------------------|
+   | 1 | Conventional | Standard | 28/40 | 16 wks | Med | 78 | Industry parity |
+   | 2 | Minimal | 80/20 | 32/40 | 8 wks | Low | 72 | Fastest MVP |
+   | **3** | **Disruptive** | **Contrarian** | **36/40** | **20 wks** | **High** | **92** ← | **Blue Ocean positioning** |
+   | 4 | Premium | Best-in-class | 30/40 | 24 wks | Med | 88 | Comprehensive features |
+   | 5 | Platform | Ecosystem | 34/40 | 32 wks | High | 85 | Network effects |
 
-3c-review. **Guided Alternatives Review** — NEW:
+   ---
 
-   **Goal**: Help user understand each alternative before answering strategic positioning questions.
+   ## How to Switch to a Different Variant
 
-   **Interactive Flow**:
+   If you prefer a different alternative:
 
-   1. **Display Summary Table** (already generated in Phase 3c):
-      ```markdown
-      ## 🎯 5 Product Alternatives
+   ```bash
+   /speckit.concept.switch 5
+   ```
 
-      | # | Strategy | Score | MVP Time | Risk | Key Differentiator |
-      |:-:|----------|:-----:|:--------:|:----:|--------------------|
-      | 1 | Conventional | X/40 | X wks | [L/M/H] | [Industry standard] |
-      | 2 | Minimal | X/40 | X wks | [L/M/H] | [Fastest to market] |
-      | 3 | Disruptive | X/40 | X wks | [L/M/H] | [Contrarian approach] |
-      | 4 | Premium | X/40 | X wks | [L/M/H] | [Best-in-class] |
-      | 5 | Platform | X/40 | X wks | [L/M/H] | [Ecosystem play] |
-      ```
+   This will:
+   1. Replace `specs/concept.md` with selected variant
+   2. Update "Auto-Selected" banner
+   3. Preserve all 5 alternatives in `specs/alternatives/`
 
-   2. **Explain Each Alternative** (AI-guided):
+   ---
 
-      FOR EACH alternative (1-5):
-        ```
-        **Alternative {N}: {Name}** ({Strategy} approach)
+   ## Detailed Variant Summaries
 
-        **Vision**: {vision_statement}
+   ### Alternative 1: Conventional
+   **Strategy**: Industry standard approach
+   **Best For**: Low-risk market entry, competitive parity
+   **Vision**: [Summary...]
+   **Core Features**: [List 5-7 epics...]
+   **Pros**: Market validation, established patterns, lower learning curve
+   **Cons**: Limited differentiation, crowded space
 
-        **Core Features** (5-7 epics):
-        - {epic_1}
-        - {epic_2}
-        - ...
+   [Repeat for all 5 alternatives...]
+   ```
 
-        **Why Consider This**:
-        ✅ {pro_1}
-        ✅ {pro_2}
-        ✅ {pro_3}
+   **CLI Output** (display to user, non-blocking):
 
-        **Trade-offs**:
-        ⚠️ {con_1}
-        ⚠️ {con_2}
-        ⚠️ {con_3}
+   ```
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ✅ Concept Generation Complete (15 min 32s)
 
-        **Fits Best When**: {ideal_scenario}
+   Auto-selected: Alternative 3 - Disruptive (CQS: 92/100)
 
-        **Aligns With Research**: {how_it_addresses_market_gaps}
+   Quick Comparison:
+   | # | Alternative   | Strategy   | Score | MVP Time | Risk | CQS |
+   |---|---------------|------------|:-----:|:--------:|:----:|:---:|
+   | 1 | Conventional  | Standard   | 28/40 | 16 wks   | Med  | 78  |
+   | 2 | Minimal       | 80/20      | 32/40 |  8 wks   | Low  | 72  |
+   | 3 | **Disruptive**| Contrarian | 36/40 | 20 wks   | High | **92** ← SELECTED
+   | 4 | Premium       | Best       | 30/40 | 24 wks   | Med  | 88  |
+   | 5 | Platform      | Ecosystem  | 34/40 | 32 wks   | High | 85  |
 
-        ---
-        ```
+   📁 Files Generated:
+      - specs/concept.md (selected alternative)
+      - specs/alternatives/01-conventional.md
+      - specs/alternatives/02-minimal.md
+      - specs/alternatives/03-disruptive.md
+      - specs/alternatives/04-premium.md
+      - specs/alternatives/05-platform.md
+      - specs/concept-alternatives.md (comparison)
 
-   3. **Offer Questions**:
-      "Do you have any questions about this alternative before we continue?"
-      - Allow user to ask clarifications
-      - Answer specific questions about features, effort, risks
+   💡 To switch to a different variant: /speckit.concept.switch [1-5]
 
-   4. **Repeat** for all 5 alternatives
+   Next steps:
+      - Review: cat specs/concept.md
+      - Specify feature: /speckit.specify EPIC-001
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-   5. **Summary**:
-      ```
-      You've now seen all 5 alternatives with different strategic lenses:
-      - **Highest Score**: Alternative {N} ({score}/40) — Best problem-solution fit
-      - **Fastest**: Alternative {M} ({time} weeks) — Quickest to market
-      - **Lowest Risk**: Alternative {K} (Risk: {risk_level})
-      - **Most Differentiated**: Alternative {J} — Strongest competitive moat
+   Concept generation complete. Review at your convenience.
+   ```
 
-      📊 Full comparison: `specs/concept-alternatives.md`
-
-      ---
-
-      **Next**: I'll ask you 5 strategic positioning questions (market position, differentiation strategy, GTM approach, timeline, success metric).
-
-      These questions will help us select the right alternative and define your product strategy.
-
-      Press Enter when ready...
-      ```
-
-   6. **Wait for user input** (Enter keypress).
-
-   Proceed to Phase 0a-2 (Strategic Positioning Questions).
-
-   ### Phase 0a-2: Strategic Positioning — Context-Informed Questions (Interactive)
-
-   **Goal**: Ask strategic questions NOW that user has full context from research and alternatives.
-
-   **Context Available to User**:
-   - ✅ Research findings (TAM/SAM/SOM, competitors, personas, trends)
-   - ✅ 5 product alternatives reviewed with AI guidance
-   - ✅ Evidence-based insights from Phase 0b
-
-   **Interactive questioning flow** (ask sequentially with AskUserQuestion tool):
-
-   6. **Market Positioning Question** (with research context):
-
-      "Based on research findings:
-      - **Competitors**: {competitor_names} priced at {pricing_range}
-      - **Target WTP**: {willingness_to_pay_range} ({persona_names})
-      - **Market maturity**: {market_stage} (growing at {growth_rate}%/year)
-
-      **How will your product be positioned in the market?**"
-
-      **Options** (use AskUserQuestion with header "Market Position"):
-      - **Premium/High-end**: Highest quality, best experience, premium pricing
-      - **Value/Mid-market**: Good quality/price balance, competitive pricing
-      - **Budget/Mass-market**: Lowest price, acceptable quality
-      - **Niche/Specialized**: Focused on specific segment, premium for expertise
-      - **Disruptive/Category-creating**: New market category, redefining solution space
-
-      Store in concept.md § Strategic Positioning → "Market Position: [answer]"
-
-   7. **Primary Differentiation Question** (with competitive context):
-
-      "Review the 5 alternatives above.
-
-      **Competitive Intel**:
-      - Competitors lead with: {competitor_strengths}
-      - Key market gaps: {top_differentiation_opportunities}
-      - Your unique strengths: {our_potential_advantages}
-
-      **What will be your primary competitive advantage?**"
-
-      **Options** (use AskUserQuestion with header "Differentiation"):
-      - **Technology/Innovation**: Better tech, faster algorithms, novel approach
-      - **User Experience**: Simpler, more intuitive, better design
-      - **Price**: Cheaper, better value, generous free tier
-      - **Performance**: Faster, more reliable, higher uptime
-      - **Integration/Ecosystem**: Better integrations, platform effects
-      - **Service/Support**: Better support, professional services, community
-
-      Store in concept.md § Strategic Positioning → "Differentiation: [answer]"
-
-   8. **Go-to-Market Strategy Question** (with persona context):
-
-      "**Target Personas**: {persona_names}
-      **Market Maturity**: {market_stage}
-      **Buying Behavior**: {persona_buying_patterns_from_research}
-
-      **What's your primary go-to-market strategy?**"
-
-      **Options** (use AskUserQuestion with header "GTM Strategy"):
-      - **Product-Led Growth (PLG)**: Free tier, viral, self-serve, low-touch
-      - **Sales-Led Growth**: Enterprise sales, demos, pilots, high-touch
-      - **Marketing-Led Growth**: Content, ads, SEO, community
-      - **Partnership-Led Growth**: Integrations, OEM, white-label, channels
-      - **Hybrid**: Combination (e.g., PLG for SMB, Sales for Enterprise)
-
-      Store in concept.md § Strategic Positioning → "GTM Strategy: [answer]"
-
-   9. **Target Timeline Question** (with effort context):
-
-      "**Effort estimates from alternatives**:
-      - Minimal (Alt 2): {minimal_effort} weeks
-      - Balanced: {balanced_effort} weeks
-      - Ambitious (Alt 4): {ambitious_effort} weeks
-
-      **Market window**: {market_timing_insight_from_trend_analysis}
-
-      **What's your target timeline to launch MVP?**"
-
-      **Options** (use AskUserQuestion with header "Timeline"):
-      - **1-3 months**: Rapid prototype, minimal features, accept tech debt
-      - **3-6 months**: Solid MVP, core features polished, production-grade
-      - **6-12 months**: Full product, polished UX, comprehensive feature set
-      - **12+ months**: Complex platform, enterprise-grade, high polish
-
-      Store in concept.md § Strategic Positioning → "Timeline: [answer]"
-
-   10. **Success Metric Priority Question**:
-
-       "**What's your most important success metric in first year?**"
-
-       **Options** (use AskUserQuestion with header "Success Metric"):
-       - **User Growth**: MAU, signups, viral coefficient, activation rate
-       - **Revenue/ARR**: MRR, ARPU, LTV, net revenue retention
-       - **Engagement**: DAU/MAU, retention curves, session time, feature adoption
-       - **Market Share**: Competitive displacement, category leadership, brand
-       - **Product Quality**: NPS, CSAT, low churn, bug resolution time
-       - **Learning/Validation**: Experiments run, hypotheses tested, pivot-ready
-
-       Store in concept.md § Strategic Positioning → "North Star Metric: [answer]"
-
-   **Output**: Document all 5 strategic answers in "§ Strategic Positioning" section of concept.md
-
-   Proceed to Phase 3d (User Selects Alternative).
-
-3d. **User Selects Preferred Alternative** — NEW:
-
-   **Goal**: User reviews alternatives and selects one to expand into full concept.
-
-   **Context**: User now has:
-   - Research findings (Phase 0b-summary)
-   - 5 alternatives reviewed (Phase 3c-review)
-   - Strategic positioning defined (Phase 0a-2, Q6-Q10)
-
-   **Interactive Flow**:
-
-   1. **Display Summary**:
-      ```markdown
-      ## Product Alternatives Summary
-
-      | Alternative | Strategy | Score | MVP Time | Risk | Highlights |
-      |-------------|----------|:-----:|:--------:|:----:|------------|
-      | 1. [Name] | [Type] | X/40 | X weeks | [L/M/H] | [Key differentiator] |
-      | 2. [Name] | [Type] | X/40 | X weeks | [L/M/H] | [Key differentiator] |
-      | 3. [Name] | [Type] | X/40 | X weeks | [L/M/H] | [Key differentiator] |
-      | 4. [Name] | [Type] | X/40 | X weeks | [L/M/H] | [Key differentiator] |
-      | 5. [Name] | [Type] | X/40 | X weeks | [L/M/H] | [Key differentiator] |
-      ```
-
-   2. **ASK USER** (with strategic context):
-      "Based on your strategic positioning:
-      - **Market Position**: {q6_answer}
-      - **Differentiation**: {q7_answer}
-      - **GTM Strategy**: {q8_answer}
-      - **Timeline**: {q9_answer}
-      - **Success Metric**: {q10_answer}
-
-      **Which alternative aligns best with your strategy? (1-5, or ask questions)**
-
-      💡 **Tip**: Consider which alternative best delivers your chosen differentiation within your timeline."
-
-   3. **Allow Questions**: User can ask for clarification about any alternative before deciding
-
-   4. **WAIT** for user selection
-
-   5. **Store Selection**: `SELECTED_ALT = [N]` for use in step 5 (Vision Extraction)
-
-   6. **Confirm**: "I'll expand Alternative [N]: [Name] ([Strategy] approach) into the full concept"
-
-   **Document in Concept**:
-   - Add "Product Alternatives" section with selected alternative highlighted
-   - Document selection rationale (why this alternative over others)
-   - Reference full analysis in `specs/concept-alternatives.md`
-
-   **Output**: Selected alternative index stored for Vision and Feature Hierarchy generation.
+   **No user interaction required** - Generation complete, proceed to done state.
 
 4. **Transition: Discovery → Structure** (if Discovery Mode was used):
 
