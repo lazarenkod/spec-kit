@@ -116,67 +116,131 @@ claude_code:
       parallel: true
       depends_on: []
       priority: 10
-      model_override: sonnet
+      model_override: opus
+      thinking_budget: 120000
+      reasoning_mode: extended
+      role_description: "Strategic Market Analyst & Co-Founder"
       prompt: |
         ## Context
         Project: {{PROJECT_ROOT}}
         User Input: {{ARGUMENTS}}
 
-        ## Task
-        Conduct market research:
-        1. Analyze TAM/SAM/SOM for the product category
-        2. Research industry trends and growth projections
-        3. Identify market entry barriers and opportunities
-        4. Document regulatory considerations if applicable
+        ## Your Role
+        You are a Strategic Market Analyst conducting due diligence for a product investment.
 
-        ## Output
-        - Market size estimates with sources
-        - Industry trend analysis
-        - Entry barrier assessment
+        ## Task
+        Answer the critical question: "Why does this market exist, and why NOW?"
+
+        Apply frameworks naturally:
+        1. **Porter's 5 Forces** → Assess market dynamics
+           - Rivalry intensity: High/Med/Low (why?)
+           - Buyer power: (switching costs, alternatives)
+           - Supplier power: (dependencies, lock-in)
+           - Entry barriers: (capital, regulation, network effects)
+           - Substitute threat: (adjacent solutions, inertia)
+
+        2. **Market Sizing** (Triangulate):
+           - Top-down: Industry reports (Gartner, Forrester, IDC)
+           - Bottom-up: # buyers × price × adoption % × penetration %
+           - Validate: Do both approaches converge? If not, why?
+
+        3. **Blue Ocean Reconnaissance**:
+           - What do all competitors ASSUME? (conventional wisdom)
+           - Where is demand UNADDRESSED? (gaps in value curve)
+           - What macro trends enable NEW approach? (timing factors)
+
+        ## Output Requirements
+        - ≥3 independent sources per claim (cite with URLs)
+        - Concrete data: "$5.2B (Gartner 2025)" NOT "large market"
+        - Context: "TAM $5B → SOM $50M = 500 customers × $100K ACV" (show math)
+        - Trade-offs: "Top-down says $8B, bottom-up says $5B. Using $5B (conservative)"
+        - Timing triggers: "Why now? Remote work adoption 2020-2025 (+300%) creates demand"
     - role: competitive-analyst
       role_group: RESEARCH
       parallel: true
       depends_on: []
       priority: 10
-      model_override: sonnet
+      model_override: opus
+      thinking_budget: 120000
+      reasoning_mode: extended
+      role_description: "Strategic Competitive Intelligence Analyst"
       prompt: |
         ## Context
         Project: {{PROJECT_ROOT}}
         User Input: {{ARGUMENTS}}
 
-        ## Task
-        Analyze competitive landscape:
-        1. Identify direct and indirect competitors
-        2. Map competitor features and positioning
-        3. Find gaps and differentiation opportunities
-        4. Analyze competitor pricing and business models
+        ## Your Role
+        You are a Competitive Intelligence Analyst conducting strategic market positioning research.
 
-        ## Output
-        - Competitor matrix with features
-        - Gap analysis
-        - Differentiation opportunities
+        ## Task
+        Answer: "Where can we WIN, and how do competitors create friction for users?"
+
+        Apply frameworks:
+        1. **Blue Ocean Strategy Canvas (ERRC Grid)**:
+           - ELIMINATE: What can we remove that industry takes for granted?
+           - REDUCE: What can we reduce well below industry standard?
+           - RAISE: What can we raise well above industry standard?
+           - CREATE: What can we create that industry has never offered?
+
+        2. **Competitor Feature Matrix**:
+           - Map 5-10 key features across 3-5 competitors
+           - Rate each: Best-in-class / Acceptable / Weak / Missing
+           - Identify TABLE STAKES (everyone has) vs DIFFERENTIATORS (few have)
+
+        3. **Pricing & Business Model Analysis**:
+           - Pricing tiers: Free/Paid/Enterprise with $ amounts
+           - Revenue model: Subscription/Usage/License/Freemium/Ad-supported
+           - Unit economics: CAC, LTV, payback period (if available)
+
+        ## Output Requirements
+        - ≥5 competitors analyzed with evidence (URLs, screenshots, pricing pages)
+        - Concrete gaps: "All competitors charge $50-200/mo. Gap: No $10-20 tier for SMBs"
+        - ERRC Grid populated with specific examples
+        - Competitor strengths AND weaknesses (balanced view)
     - role: persona-designer
       role_group: RESEARCH
       parallel: true
       depends_on: []
       priority: 10
-      model_override: sonnet
+      model_override: opus
+      thinking_budget: 120000
+      reasoning_mode: extended
+      role_description: "Strategic Persona & JTBD Researcher"
       prompt: |
         ## Context
         Project: {{PROJECT_ROOT}}
         User Input: {{ARGUMENTS}}
 
-        ## Task
-        Design user personas:
-        1. Identify primary and secondary user segments
-        2. Create detailed persona profiles with demographics
-        3. Document pain points and motivations
-        4. Estimate willingness-to-pay for each segment
+        ## Your Role
+        You are a Persona Researcher applying Jobs-to-Be-Done framework to understand customer motivation.
 
-        ## Output
-        - Persona cards (2-4 personas)
-        - Pain point inventory
-        - WTP analysis per segment
+        ## Task
+        Answer: "WHO will pay for this, WHY, and HOW MUCH?"
+
+        Apply frameworks:
+        1. **Jobs-to-Be-Done (JTBD)**:
+           - Functional jobs: What task are they trying to accomplish?
+           - Emotional jobs: How do they want to FEEL?
+           - Social jobs: How do they want to be PERCEIVED?
+           - For each job: Frequency (daily/weekly/monthly), Importance (critical/important/nice-to-have)
+
+        2. **Persona Segmentation** (create 2-4 personas):
+           - Demographics: Title, company size, industry, budget authority
+           - Pain points: Current workflow, friction points, workarounds
+           - Goals & Motivations: What success looks like
+           - Decision criteria: How they evaluate solutions
+           - Buying behavior: Self-serve vs sales-assisted, evaluation period
+
+        3. **Willingness-to-Pay (WTP) Analysis**:
+           - Current spending: What they pay for alternatives/workarounds
+           - Value perception: $ value of time saved or revenue unlocked
+           - Price anchors: Comparable products in their mental model
+           - WTP range per persona: Min (won't pay less) to Max (won't pay more)
+
+        ## Output Requirements
+        - 2-4 detailed persona cards with demographics, JTBD, and WTP analysis
+        - Evidence: "B2B SaaS buyers spend $50-200/user/mo on tools (Gartner 2025)"
+        - Prioritization: Rank personas by market size × WTP × accessibility
 
     # NEW: Domain-specific research agents
     - role: standards-researcher
@@ -184,7 +248,9 @@ claude_code:
       parallel: true
       depends_on: []
       priority: 10
-      model_override: sonnet
+      model_override: opus
+      thinking_budget: 120000
+      reasoning_mode: extended
       prompt: |
         ## Context
         Project: {{PROJECT_ROOT}}
@@ -213,7 +279,9 @@ claude_code:
       parallel: true
       depends_on: []
       priority: 10
-      model_override: sonnet
+      model_override: opus
+      thinking_budget: 120000
+      reasoning_mode: extended
       prompt: |
         ## Context
         Project: {{PROJECT_ROOT}}
@@ -268,7 +336,9 @@ claude_code:
       parallel: true
       depends_on: [persona-designer]
       priority: 20
-      model_override: sonnet
+      model_override: opus
+      thinking_budget: 120000
+      reasoning_mode: extended
       prompt: |
         ## Context
         Personas: (from persona-designer)
@@ -290,6 +360,8 @@ claude_code:
       depends_on: [market-researcher, competitive-analyst]
       priority: 20
       model_override: opus
+      thinking_budget: 120000
+      reasoning_mode: extended
       prompt: |
         ## Context
         Market Research: (from market-researcher)
@@ -343,7 +415,9 @@ claude_code:
       parallel: true
       depends_on: [community-intelligence]
       priority: 20
-      model_override: sonnet
+      model_override: opus
+      thinking_budget: 120000
+      reasoning_mode: extended
       prompt: |
         ## Context
         Community Intelligence: (from community-intelligence)
@@ -449,6 +523,8 @@ claude_code:
       depends_on: [metrics-designer, risk-assessor, technical-hint-generator]
       priority: 50
       model_override: opus
+      thinking_budget: 120000
+      reasoning_mode: extended
       prompt: |
         ## Context
         All Concept Artifacts: (from previous agents)

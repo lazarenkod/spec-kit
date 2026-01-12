@@ -12,6 +12,7 @@
 
 - [1. /speckit.constitution](#speckitconstitution)
 - [2. /speckit.concept](#speckitconcept)
+- [2a. /speckit.concept.switch](#speckitconceptswitch)
 - [3. /speckit.validate-concept](#speckitvalidate-concept)
 - [4. /speckit.specify](#speckitspecify)
 - [5. /speckit.clarify](#speckitclarify)
@@ -95,54 +96,120 @@ graph LR
 
 ### 2. `/speckit.concept` {#speckitconcept}
 
-**Назначение:** Capture complete service concept before detailed specification. Creates hierarchical feature breakdown with full traceability. Use BEFORE /speckit.specify for large projects (50+ requirements).
+**Назначение:** Fully autonomous concept generation with 5 product variants. Generates ultrathink-quality strategic documents (CQS ≥85) without interactive questions. Use BEFORE /speckit.specify for large projects (50+ requirements).
 
-**Модель:** `opus` (thinking_budget: 16000)
+**Модель:** `opus` (thinking_budget: 120000, ultrathink tier)
 
-**Domain Immersion (v0.0.120):**
+**Autonomous Workflow (v0.8.0 - BREAKING CHANGE):**
 
-Автоматическое погружение в предметную область с помощью 9 research agents:
+**Removed:**
+- ❌ All Q1-Q10 interactive questions
+- ❌ Phase 0a-1 (problem discovery questions)
+- ❌ Phase 0a-2 (strategic positioning questions)
+- ❌ Manual alternative selection (blocking)
 
-- **Wave 1 (Research, 7 agents)**: market-researcher, competitive-analyst, persona-designer, standards-researcher (PCI-DSS, GDPR, HIPAA), academic-researcher (papers, whitepapers), community-intelligence (Stack Overflow, GitHub), trend-analyst
-- **Wave 2 (Synthesis, 2 agents)**: glossary-builder (авто-генерация терминологии), constraints-analyzer (технические ограничения)
+**New Flow:**
 
-**Knowledge Base Generation:**
-- `memory/knowledge/glossaries/{domain}.md` — автоматический глоссарий
-- `memory/knowledge/best-practices/by-domain/{domain}.md` — проверенные паттерны
-- `memory/knowledge/standards/compliance/{standard}.md` — чек-листы соответствия
-- `memory/knowledge/constraints/platforms/{tech}.md` — технические ограничения
+1. **Phase 0.5: Context Extraction (Autonomous)**
+   - Classification agent extracts: domain, industry, target users, problem space
+   - Confidence-based: ≥0.8 = fully autonomous, <0.5 = 1-2 clarifying questions only
+   - Adaptive agent selection (e.g., FinTech → compliance agents)
 
-**Evidence Tier Enhancement:**
-- **AUTHORITATIVE** (35 points) — RFC, ISO standards, PCI-DSS, GDPR, vendor API docs (<90 days)
+2. **Phase 0b: Deep Research (Parallel, 10-12 min)**
+   - **Wave 1 (Research, 10+ agents, opus/120K)**: market-researcher (Porter's 5 Forces, Blue Ocean), competitive-analyst (ERRC Grid), persona-designer (JTBD, WTP), standards-researcher, academic-researcher, community-intelligence, trend-analyst
+   - **Wave 2 (Synthesis)**: jtbd-analyst, value-prop-designer, glossary-builder, constraints-analyzer, metrics-designer, risk-assessor
+   - **Strategic Frameworks Applied**: Porter's 5 Forces, Blue Ocean Canvas (ERRC), Business Model Canvas, Jobs-to-Be-Done
 
-**Plan Mode Enhancement (v0.4.0):**
+3. **Phase 3: Generate 5 Complete Variants (Parallel, 3-5 min)**
+   - 5 strategic lenses: **Conventional**, **Minimal**, **Disruptive**, **Premium**, **Platform**
+   - Each variant: 15-25 pages (Vision, Market, Personas, Features, Frameworks, Metrics, Risks)
+   - CQS scoring: Target ≥85/100 per variant
+   - Auto-regenerate if CQS < 80 (max 2 retries)
 
-Опциональное улучшение (агрессивные настройки — concept выигрывает от глубокого исследования):
+4. **Auto-Select & Save (Non-blocking, 10s)**
+   - Selects highest CQS variant → `specs/concept.md`
+   - Saves all 5 → `specs/alternatives/01-conventional.md` ... `05-platform.md`
+   - Generates comparison → `specs/concept-alternatives.md`
+   - **No user blocking** - review asynchronously
 
-**Уровни глубины:**
+**Strategic Positioning (Auto-Inferred):**
+- Market Position, Differentiation, GTM Strategy, Timeline, North Star Metric
+- All inferred from research with rationale and evidence
 
-| Уровень | Авто-включение | Описание |
-|---------|----------------|----------|
-| L0 | TRIVIAL | Standard mode |
-| L1 | SIMPLE | Lite: 2 агента exploration (90s) |
-| L2 | MODERATE | Moderate: 4 агента + constitution review (210s) |
-| L3 | COMPLEX | Full: exploration + 4 review passes (300s) |
+**Output Files:**
+- `specs/concept.md` — Auto-selected highest CQS variant
+- `specs/alternatives/*.md` — All 5 variants preserved
+- `specs/concept-alternatives.md` — Comparison table with recommendation
+- `memory/knowledge/` — Domain glossaries, best practices, compliance checklists
 
-**Причина агрессивности:** Концептуальная проработка критична для успеха проекта
-**Exploration (L1+):** Расширенное исследование паттернов и альтернатив
-**Review (L2+):** Полная валидация constitution, completeness, edge cases
-**Выход:** `research.md` с глубоким анализом
+**Quality Metrics:**
+- CQS Target: 85-95/100 (up from 60-80 in v0.7.2)
+- Evidence Coverage: ≥80% claims sourced
+- Strategic Frameworks: ≥3 frameworks applied per variant
+- Generation Time: 15-20 min end-to-end
 
 **Флаги:**
 
-- `--depth-level <0-3>` — Явное указание уровня глубины
-- `--plan-mode` — Алиас для `--depth-level 3` (Full)
-- `--no-plan-mode` — Алиас для `--depth-level 0` (Standard)
+- `--depth <quick|standard|world-class>` — Thinking budget override (default: world-class/120K)
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 **Handoffs:**
 
-- → `/speckit.specify`
-- → `/speckit.analyze`
+- → `/speckit.specify` — Specify features from selected concept
+- → `/speckit.concept.switch [1-5]` — Switch to different variant
+- → `/speckit.analyze` — Quality validation
+
+---
+
+### 2a. `/speckit.concept.switch` {#speckitconceptswitch}
+
+**Назначение:** Switch to a different concept alternative after autonomous generation. Allows async review and selection of product variants.
+
+**Модель:** `haiku` (thinking_budget: 2000)
+
+**Usage:**
+
+```bash
+/speckit.concept.switch [1-5]
+```
+
+**Arguments:**
+- `[1-5]`: Alternative number (1=Conventional, 2=Minimal, 3=Disruptive, 4=Premium, 5=Platform)
+
+**What It Does:**
+
+1. **Validates Alternative Exists**: Checks `specs/alternatives/0{N}-*.md`
+2. **Reads Alternative Content**: Extracts CQS score and content
+3. **Updates concept.md**: Replaces `specs/concept.md` with selected variant
+4. **Updates Comparison**: Updates `specs/concept-alternatives.md` with new selection
+5. **Preserves All Variants**: All 5 alternatives remain in `specs/alternatives/`
+
+**Output:**
+
+```
+✅ Switched to Alternative 3: Disruptive
+
+📊 Previous: Alternative 1
+   Current: Alternative 3 - Disruptive (CQS: 92/100)
+
+📄 Updated Files:
+   - specs/concept.md
+   - specs/concept-alternatives.md
+
+💡 All alternatives preserved in specs/alternatives/
+```
+
+**Integration:**
+
+After switching, all downstream commands work normally:
+- `/speckit.specify` — Uses new `specs/concept.md`
+- `/speckit.plan` — Reads from `specs/concept.md`
+- `/speckit.tasks` — Reads from `specs/concept.md`
+
+**Handoffs:**
+
+- → `/speckit.specify` — Specify features from switched concept
+- → `/speckit.plan` — Plan implementation
 
 ---
 

@@ -108,7 +108,25 @@ For large projects with many features (50+ requirements), use **`/speckit.concep
 /speckit.concept Build a comprehensive photo management platform with albums, tags, sharing, search, and AI-powered organization...
 ```
 
-This creates a `concept.md` with feature hierarchy (Epics → Features → Stories), user journeys, and dependencies.
+**New in v0.8.0**: Fully autonomous generation with 5 product variants:
+- No interactive questions (90% of cases)
+- Generates 5 complete concepts (Conventional, Minimal, Disruptive, Premium, Platform)
+- Auto-selects highest CQS variant → `specs/concept.md`
+- All 5 saved to `specs/alternatives/` for async review
+- 15-20 min end-to-end, ultrathink quality (CQS ≥85)
+
+**Optional**: Switch to different variant after reviewing alternatives:
+
+```bash
+/speckit.concept.switch 3  # Switch to Disruptive variant
+```
+
+This creates:
+- `specs/concept.md` — Auto-selected best variant
+- `specs/alternatives/*.md` — All 5 variants preserved
+- `specs/concept-alternatives.md` — Comparison table
+
+Each concept includes: feature hierarchy (Epics → Features → Stories), JTBD-enhanced personas, market positioning, strategic frameworks (Porter's 5 Forces, Blue Ocean Canvas), and success metrics.
 
 ### 4. Create the spec
 
@@ -275,7 +293,8 @@ Essential commands for the Spec-Driven Development workflow:
 | Command                 | Description                                                              |
 | ----------------------- | ------------------------------------------------------------------------ |
 | `/speckit.constitution` | Create or update project governing principles and development guidelines |
-| `/speckit.concept`      | Capture full project vision and feature hierarchy before detailed specs (recommended for large projects with 50+ requirements) |
+| `/speckit.concept`      | Autonomous generation of 5 product variants with strategic analysis (CQS ≥85). Auto-selects best variant. For large projects (50+ requirements). |
+| `/speckit.concept.switch` | Switch to different concept variant after reviewing alternatives (1-5) |
 | `/speckit.specify`      | Define what you want to build (requirements and user stories with IDs)   |
 | `/speckit.plan`         | Create technical implementation plans with your chosen tech stack        |
 | `/speckit.tasks`        | Generate actionable task lists with dependency tracking and traceability |
