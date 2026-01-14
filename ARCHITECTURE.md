@@ -2124,6 +2124,17 @@ CQS-E = (
 | **QG-GAME-004** | Input Latency | < 80ms | Post-Implement | CRITICAL | Touch response time |
 | **QG-GAME-005** | Monetization Ethics | Checklist pass | Pre-Deploy | HIGH | Ethical monetization practices |
 
+**Game Art Pipeline Gates** (v0.5.0):
+
+| ID | Name | Threshold | Phase | Severity | Validates |
+|----|------|-----------|-------|----------|-----------|
+| **QG-ART-001** | Art Quality Score | AQS ≥ 90/120 | Post-Design | CRITICAL | World-class art pipeline quality |
+| **QG-ART-002** | Asset Catalog Completeness | ≥ 200 assets | Post-Design | HIGH | Comprehensive asset coverage |
+| **QG-ART-003** | Performance Budget Compliance | Textures ≤256MB, Audio ≤64MB, Particles ≤150 | Post-Design | CRITICAL | Mobile performance constraints |
+| **QG-ART-004** | Audio Latency Requirement | < 50ms (UI <20ms, Gameplay <30ms) | Post-Production | HIGH | ASMR responsiveness |
+| **QG-ART-005** | Visual Style Consistency | 100% style guide compliance | Post-Production | HIGH | Unified visual language |
+| **QG-ART-006** | Animation Frame Rate Compliance | UI 60fps, Gameplay 30fps, Background 15-20fps | Post-Production | MEDIUM | Smooth animation playback |
+
 #### 5.3.3. Quality Scoring: SQS & DQS
 
 **SQS (Specification Quality Score)** — 0-100:
@@ -4500,6 +4511,10 @@ def register(email: str):
 - **Agent Pool** — Пул для concurrent выполнения API вызовов к Claude. Pool size = 4, с retry logic и exponential backoff.
 
 - **Artifact Registry** — YAML-реестр для tracking состояния features (draft → in_progress → implemented → merged). См. `templates/shared/traceability/artifact-registry.md`.
+
+- **AQS (Art Quality Score)** — Оценка качества игровой арт-пайплайны (0-120). Threshold ≥90 для world-class tier. Проверяет Visual Style (25pts), Asset Completeness (25pts), Animation Polish (20pts), VFX Believability (20pts), Audio Fidelity (15pts), Performance Budget (15pts). 30 checkpoints через 6 dimensions. См. `templates/shared/quality/aqs-rubric.md`.
+
+- **ASMR Audio Design** — Autonomous Sensory Meridian Response — высококачественный дизайн звука с <50ms latency, material-specific sounds (дерево, металл, стекло), tactile quality. Критично для game feel. 5 принципов: Tactile, Proximity, Precision, Satisfaction, Subtlety. Target ASMR rating ≥4/5 для feedback sounds.
 
 - **Batch Aggregator** — Модуль для cross-wave оптимизации задач. Строит dependency graph через все waves и оптимизирует batching для максимального параллелизма. См. `src/specify_cli/batch_aggregator.py`.
 

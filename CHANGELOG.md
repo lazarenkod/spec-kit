@@ -7,6 +7,57 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.4] - 2026-01-14
+
+### Added
+
+- **Game Art Pipeline Mode** for `/speckit.design --game-art-pipeline` — Generate world-class mobile game art pipeline with 5 specialized agents, AQS scoring system, and comprehensive asset specifications
+  - **5 specialized agents** across 3-wave orchestration:
+    - Wave 1: `visual-style-agent` (foundation, no dependencies)
+    - Wave 2: `asset-cataloger-agent` + `animation-designer-agent` (parallel)
+    - Wave 3: `vfx-designer-agent` + `audio-designer-agent` (parallel)
+  - **Art Quality Score (AQS)**: 120-point system with 30 checkpoints across 6 dimensions
+    - Visual Style (25pts), Asset Completeness (25pts), Animation Polish (20pts), VFX Believability (20pts), Audio Fidelity (15pts), Performance Budget (15pts)
+    - Target threshold: ≥90/120 (75% of maximum, world-class tier)
+  - **6 Quality Gates**:
+    - QG-ART-001: AQS ≥ 90/120 (CRITICAL) — Art pipeline production readiness
+    - QG-ART-002: Asset catalog ≥ 200 items (HIGH) — Comprehensive coverage (CHAR≥20, UI≥100, ENV≥10, VFX≥20, SFX≥30)
+    - QG-ART-003: Performance budget compliance (CRITICAL) — Textures ≤256MB, Audio ≤64MB, Particles ≤150/frame
+    - QG-ART-004: Audio latency < 50ms (HIGH) — ASMR responsiveness (UI <20ms, Gameplay <30ms)
+    - QG-ART-005: Visual style consistency 100% (HIGH) — Unified visual language
+    - QG-ART-006: Animation frame rate compliance (MEDIUM) — UI 60fps, Gameplay 30fps, Background 15-20fps
+  - **4 comprehensive output templates**:
+    - `art-spec.md` — Visual style guide (mood board, color palette, typography, lighting, camera angles)
+    - `asset-catalog.md` — 200+ assets registry with unique IDs (CHAR-xxx, ENV-xxx, PROP-xxx, UI-xxx, VFX-xxx, SFX-xxx)
+    - `animation-library.md` — Animation specifications (state machines, easing curves, frame rate standards, squash & stretch)
+    - `audio-requirements.md` — ASMR audio design (material-specific sounds, <50ms latency, adaptive audio system)
+  - **Material-specific sound library**: 8 materials (wood, metal, glass, stone, fabric, liquid, organic, magical) with 4 sounds each (tap, place, break, combo), ASMR rating target ≥4/5
+  - **ASMR Audio Design principles**: Tactile, Proximity, Precision, Satisfaction, Subtlety with <50ms latency requirement (UI <20ms CRITICAL, Gameplay <30ms HIGH)
+  - **Performance budgets**: Mobile-optimized constraints (256MB textures, 64MB audio, 150 particles max on-screen)
+  - **Frame rate standards**: UI 60fps (always), Gameplay 30fps, Background 15-20fps with battery mode variants
+  - **Asset naming convention**: `[prefix]_[category]_[name]_[variant]_[resolution].[extension]`
+  - **CLI integration**: Works with `/speckit.games.concept` for context, feeds into `/speckit.tasks` and `/speckit.preview`
+  - **Handoffs**: → `/speckit.tasks` (asset production tasks), → `/speckit.preview` (visual style preview)
+  - **Cost estimation**: ~$3.60 per execution (5 agents, opus model, 120K thinking budget)
+  - **AQS rubric file**: `templates/shared/quality/aqs-rubric.md` with detailed scoring guidance and anti-patterns
+  - **Self-review criteria**: 10 game art pipeline-specific checkpoints (SR-ART-01 through SR-ART-10)
+
+### Technical Details
+
+**Files Modified**:
+- `templates/commands/design.md` — Added 5 game art pipeline agents (~1500 lines), 6 quality gates, 2 handoffs, 10 self-review criteria
+- `memory/domains/quality-gates.md` — Added QG-ART-001 through QG-ART-006 definitions
+- `docs/COMMANDS_GUIDE.md` — Added comprehensive game art pipeline mode documentation
+- `ARCHITECTURE.md` — Added AQS and ASMR definitions to glossary, added Game Art Pipeline Gates table
+- `pyproject.toml` — Version bump to 0.9.4
+
+**Files Created**:
+- `templates/shared/quality/aqs-rubric.md` — AQS scoring rubric (~450 lines)
+- `templates/shared/game-art/art-spec-template.md` — Visual style guide template (~500 lines)
+- `templates/shared/game-art/asset-catalog-template.md` — Asset registry template (~350 lines)
+- `templates/shared/game-art/animation-library-template.md` — Animation specifications template (~700 lines)
+- `templates/shared/game-art/audio-requirements-template.md` — ASMR audio design template (~800 lines)
+
 ## [0.9.3] - 2026-01-13
 
 ### Added

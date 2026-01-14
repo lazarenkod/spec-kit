@@ -43,6 +43,14 @@ modes:
     output_dir: ".preview/stitch-mockups/"
     requires: ["playwright", "chromium"]
     automation: true
+  game_art_pipeline:
+    trigger: "--game-art-pipeline flag"
+    purpose: "Generate world-class mobile game art pipeline: visual style, assets, animations, VFX, ASMR audio"
+    output_dir: "specs/games/"
+    phases: 5
+    agents: 5
+    thinking_budget: 120000
+    cost_estimate: "$3.60"
 orchestration:
   agents:
     - ux-designer-agent       # User flows, wireframes, interactions
@@ -136,6 +144,19 @@ handoffs:
     condition:
       - "MODE == mockup_generation"
       - "MOCKUP_SCOPE == feature"
+  # Game Art Pipeline Mode handoffs
+  - label: Generate Asset Production Tasks
+    agent: speckit.tasks
+    prompt: Generate production tasks from asset catalog for art team (200+ assets, priority-based)
+    condition:
+      - "MODE == game_art_pipeline"
+      - "AQS >= 90"
+  - label: Preview Visual Style
+    agent: speckit.preview
+    prompt: Generate visual preview of color palette and typography from art-spec.md
+    send: true
+    condition:
+      - "MODE == game_art_pipeline"
 claude_code:
   model: opus
   reasoning_mode: extended
@@ -220,6 +241,43 @@ gates:
     severity: CRITICAL
     phase: POST
     description: "Ensure all colors meet contrast requirements and use design tokens"
+  # Game Art Pipeline Quality Gates (game_art_pipeline mode only)
+  - gate: QG-ART-001
+    name: Minimum Art Quality Score
+    check: "AQS >= 90/120"
+    severity: CRITICAL
+    phase: POST
+    description: "Ensure art pipeline is production-ready before asset creation (world-class tier)"
+  - gate: QG-ART-002
+    name: Asset Catalog Completeness
+    check: "Asset count >= 200"
+    severity: HIGH
+    phase: POST
+    description: "Verify comprehensive asset coverage across all categories (CHAR>=20, UI>=100, ENV>=10, VFX>=20, SFX>=30)"
+  - gate: QG-ART-003
+    name: Performance Budget Compliance
+    check: "Textures <= 256MB, Audio <= 64MB, Particles <= 150/frame"
+    severity: CRITICAL
+    phase: POST
+    description: "Ensure mobile performance constraints are met for target platforms"
+  - gate: QG-ART-004
+    name: Audio Latency Requirement
+    check: "Audio latency < 50ms (UI < 20ms, Gameplay < 30ms)"
+    severity: HIGH
+    phase: POST
+    description: "Verify ASMR responsiveness critical for game feel (manual validation with high-speed camera)"
+  - gate: QG-ART-005
+    name: Visual Style Consistency
+    check: "100% style guide compliance"
+    severity: HIGH
+    phase: POST
+    description: "Ensure unified visual language across all assets (colors, typography, icons)"
+  - gate: QG-ART-006
+    name: Animation Frame Rate Compliance
+    check: "UI 60fps, Gameplay 30fps, Background 15-20fps"
+    severity: MEDIUM
+    phase: POST
+    description: "Verify smooth animation playback across frame rate tiers (SHOULD level)"
   subagents:
     # Wave 1: Research & Analysis (parallel)
     - role: design-researcher
@@ -856,6 +914,306 @@ gates:
         - Issue list with severity (CRITICAL if DQS < 70)
         - UX/brand alignment validation
         - Recommendations for improvement
+
+    # === GAME ART PIPELINE AGENTS ===
+    # Wave 1: Visual Style Foundation (game_art_pipeline mode only)
+    - role: visual-style-agent
+      role_group: CREATIVE
+      parallel: false
+      depends_on: []
+      priority: 10
+      model_override: opus
+      prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze Game Context
+        - What is the game genre and core gameplay loop?
+        - What emotional experience should the visuals create?
+        - What are the technical constraints for mobile platforms?
+        - What makes the visual style distinctive from competitors?
+
+        Step 2: Consider Visual Trade-offs
+        - How do we balance artistic vision vs. performance constraints?
+        - Should we prioritize realism, stylization, or abstraction?
+        - How do we maintain visual clarity across small screen sizes?
+        - What art style scales best across different mobile devices?
+
+        Step 3: Apply Visual Design Principles
+        - How does color psychology support gameplay emotions?
+        - Where should we apply visual hierarchy for gameplay clarity?
+        - How do we ensure 60fps UI animations on mid-range devices?
+        - What lighting model best supports the emotional tone?
+
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Game Concept: specs/games/game-concept.md (if exists) OR memory/constitution.md game domain
+        Target Genre: {{GENRE}} (sorting, match-3, idle, arcade, puzzle)
+        Art Direction Keywords: {{ART_KEYWORDS}} (optional user input)
+
+        ## Task
+        Design comprehensive visual style guide for mobile game art pipeline:
+        1. Create mood board with 3-5 reference games (avoid generic mobile aesthetics)
+        2. Design color palette: primary (5 colors), semantic (success/warning/error), environment-specific (3-5 zones)
+        3. Specify typography system: title fonts (36-72pt), UI fonts (12-18pt), numeric fonts (16-48pt), mobile-optimized scales
+        4. Define art style: 2D/3D/2.5D, rendering style (flat/gradient/textured), character style, environment style
+        5. Document lighting guidelines: setup (3-point/single/ambient), direction, environment-specific lighting
+        6. Specify camera angles: gameplay camera, menu camera, cutscene camera
+        7. Set technical constraints: memory budget (256MB textures), asset size limits, draw call budget (≤100/frame)
+        8. Define visual language: shapes (angular/rounded/organic), proportions, silhouettes
+        9. Specify material properties: metallic/roughness, emission, transparency
+
+        ## Output Requirements
+        File: specs/games/art-spec.md
+        Template: templates/shared/game-art/art-spec-template.md
+
+        Must include:
+        - Mood board: 3-5 references with rationale (avoid "Candy Crush clone" aesthetics)
+        - Color palette: WCAG AA contrast (4.5:1 for text), mobile-optimized brightness
+        - Typography: Minimum 12pt for mobile readability, fallback fonts for cross-platform
+        - Art style: Distinctive visual language, competitor differentiation
+        - Lighting: Environment-specific setups with performance budgets
+        - Camera: FOV, clipping planes, mobile aspect ratio support (16:9, 18:9, 19.5:9)
+        - Technical constraints: Achievable on target platforms (iOS 12+, Android 8.0+)
+        - Validation checklist: 10 checkpoints for style guide completeness
+
+    # Wave 2: Asset Production Planning (parallel after visual style)
+    - role: asset-cataloger-agent
+      role_group: PRODUCTION
+      parallel: true
+      depends_on: [visual-style-agent]
+      priority: 20
+      model_override: opus
+      prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze Asset Requirements
+        - What gameplay mechanics require visual assets?
+        - What UI screens and elements are needed?
+        - What environmental zones need unique assets?
+        - What priority tiers ensure MVP vs. full launch coverage?
+
+        Step 2: Consider Production Trade-offs
+        - How do we balance asset count vs. memory budget?
+        - Should we use asset variants or runtime recoloring?
+        - How do we organize assets for efficient atlasing?
+        - What level of detail is appropriate for mobile screens?
+
+        Step 3: Apply Asset Production Principles
+        - How do we ensure consistent naming conventions?
+        - What resolution tiers support @1x/@2x/@3x devices?
+        - How do we minimize draw calls through batching?
+        - What asset reuse patterns reduce production workload?
+
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Art Spec: specs/games/art-spec.md (visual style, color palette, art direction)
+        Game Concept: specs/games/game-concept.md (features, mechanics, content scope)
+        Genre: {{GENRE}}
+
+        ## Task
+        Create comprehensive asset catalog for game art production (200+ assets minimum):
+        1. Inventory all required assets across 6 categories
+        2. Assign unique asset IDs: CHAR-xxx (characters), ENV-xxx (environments), PROP-xxx (props), UI-xxx (UI elements), VFX-xxx (effects), SFX-xxx (audio)
+        3. Define priority tiers: P0 (MVP, must-have), P1 (Soft Launch, nice-to-have), P2 (Full Launch, polish)
+        4. Specify technical requirements: poly count (mobile: ≤5K tris per character), texture resolution (@1x/@2x/@3x), file formats (PNG/ASTC/ETC2)
+        5. Document naming conventions: [prefix]_[category]_[name]_[variant]_[resolution].[extension]
+        6. Organize folder structure: /characters, /environments, /props, /ui, /vfx, /audio
+        7. Plan atlas grouping: UI atlas (1024x1024), character atlas (2048x2048), environment tileset
+        8. Track memory budget: Total textures ≤256MB, Total audio ≤64MB
+
+        ## Output Requirements
+        File: specs/games/asset-catalog.md
+        Template: templates/shared/game-art/asset-catalog-template.md
+
+        Must include:
+        - Asset registry: ≥200 assets with unique IDs (CHAR ≥20, ENV ≥10, PROP ≥20, UI ≥100, VFX ≥20, SFX ≥30)
+        - Technical specs per asset: dimensions, format, compression, memory estimate
+        - Priority tiers: P0/P1/P2 with clear MVP cutoff
+        - Naming convention examples: char_hero_warrior_idle@2x.png
+        - Folder structure: Organized by category, atlas grouping documented
+        - Memory budget tracking: Running totals, budget alerts if exceeded
+        - Production status: TODO/IN_PROGRESS/DONE for each asset
+        - Summary statistics: Count by category, priority, status
+
+    - role: animation-designer-agent
+      role_group: CREATIVE
+      parallel: true
+      depends_on: [visual-style-agent]
+      priority: 20
+      model_override: opus
+      prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze Animation Requirements
+        - What gameplay actions need animation feedback?
+        - What character states require unique animations?
+        - What UI transitions enhance perceived responsiveness?
+        - What animation timing creates "juicy" game feel?
+
+        Step 2: Consider Animation Trade-offs
+        - How do we balance frame count vs. animation smoothness?
+        - Should we use sprite sheets or skeletal animation?
+        - How do we optimize for battery life on mobile?
+        - What level of squash & stretch maintains style consistency?
+
+        Step 3: Apply Animation Principles
+        - How does anticipation improve action readability?
+        - Where should we apply follow-through for weight illusion?
+        - How do we ensure <100ms input-to-animation response?
+        - What easing curves create satisfying motion?
+
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Art Spec: specs/games/art-spec.md (visual style, emotional tone)
+        Asset Catalog: specs/games/asset-catalog.md (animated assets list)
+        Genre: {{GENRE}} (core loop, session length)
+
+        ## Task
+        Design comprehensive animation system for mobile game:
+        1. Define animation principles: squash & stretch (character: 1.2x, object: 1.1x), anticipation (0.1-0.2s windup), timing (fast: <0.3s, slow: >1s)
+        2. Create easing curves library: ease-out-game (0, 0.5, 0.5, 1), spring (overshoot 1.1x), bounce (2-3 bounces)
+        3. Set frame rate standards: UI 60fps (always), gameplay 30fps, background 15-20fps (with battery mode variants)
+        4. Build animation catalog: Map to asset IDs, specify duration, easing, frame count, loop type
+        5. Design state machines: Player FSM (idle → move → attack → hit → death), Enemy FSM (patrol → chase → attack → retreat)
+        6. Specify interaction feedback: Tap response <100ms, hold animation after 0.5s, release animation <0.2s
+        7. Define blend trees: 1D blend (walk speed 0-1), 2D freeform (movement x/y)
+        8. Set performance budgets: ≤10MB animation memory, ≤50 bones per character mobile, blend time ≤0.1s
+
+        ## Output Requirements
+        File: specs/games/animation-library.md
+        Template: templates/shared/game-art/animation-library-template.md
+
+        Must include:
+        - Animation principles: Squash & stretch parameters, anticipation timing, arc specifications
+        - Easing curves: Standard curves (ease-out-game, spring, bounce) with cubic-bezier values
+        - Frame rate standards: Per animation type with battery mode variants
+        - Animation catalog: Per asset (CHAR-xxx, UI-xxx): duration, easing, frames, loop, triggers
+        - State machines: ASCII diagrams for player/enemy FSM with transition conditions
+        - Interaction feedback: Input-to-animation latency targets (<100ms), visual feedback specs
+        - Blend trees: 1D/2D blend configurations with parameter ranges
+        - Performance budgets: Animation memory ≤10MB, bones ≤50 mobile, blend time ≤0.1s
+        - Validation checklist: Animation completeness, timing consistency, ASMR integration
+
+    # Wave 3: Effects & Audio (parallel after style + animation)
+    - role: vfx-designer-agent
+      role_group: CREATIVE
+      parallel: true
+      depends_on: [visual-style-agent, animation-designer-agent]
+      priority: 30
+      model_override: opus
+      prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze VFX Requirements
+        - What gameplay moments need visual emphasis?
+        - What feedback mechanisms enhance player understanding?
+        - What effects communicate combo escalation?
+        - What screen effects enhance emotional impact?
+
+        Step 2: Consider VFX Trade-offs
+        - How do we balance particle density vs. performance?
+        - Should we prioritize gameplay clarity or visual spectacle?
+        - How do we optimize particle systems for mobile GPUs?
+        - What effect duration maintains fast gameplay pacing?
+
+        Step 3: Apply VFX Design Principles
+        - How does visual hierarchy guide player attention?
+        - Where should we apply additive blending for glow effects?
+        - How do we ensure effects don't obscure gameplay?
+        - What layering system prevents z-fighting?
+
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Art Spec: specs/games/art-spec.md (color palette, style guide)
+        Animation Library: specs/games/animation-library.md (timing, easing curves)
+        Core Gameplay: {{GAME_CONCEPT_PATH}} (combos, clears, explosions)
+
+        ## Task
+        Design VFX system for mobile game:
+        1. Design particle systems: Combo effects (2x/3x/4x/MEGA escalation), Clear effects (line/match/special), Explosion effects (small/medium/large/mega), Ambient effects (sparkle/dust/glow), UI effects (button glow/notification/achievement)
+        2. Specify effect parameters: Particle count (combo: 80, clear: 60, UI: 20, ambient: 30), duration (0.3-1.5s), colors (from art-spec palette), blend modes (additive/alpha/multiply)
+        3. Define screen effects: Shake (intensity 0.1-0.5, duration 0.1-0.3s), Flash (color overlay 0.1-0.2s), Vignette (darken edges for focus)
+        4. Set performance budget: Max 150 particles on-screen total (combo 80 + clear 60 + UI 20 + ambient 30 = 190 with priority culling)
+        5. Document visual hierarchy: Gameplay > Feedback > Ambient (cull ambient first under load)
+        6. Create layering system: Z-index layers (background -100, objects 0, effects +100, UI +200, overlay +300)
+        7. Specify effect lifecycle: Spawn → Active → Fadeout (use pooling, pre-warm 20 particles per type)
+        8. Define trigger conditions: Score thresholds, combo counts, level events, user actions
+
+        ## Output Requirements
+        File: specs/games/vfx-requirements.md
+        Template: templates/shared/game-art/vfx-requirements-template.md
+
+        Must include:
+        - Particle systems: 5 categories (combo, clear, explosion, ambient, UI) with parameter specs
+        - Effect parameters: Particle count, duration, colors (from palette), blend modes, textures
+        - Screen effects: Shake/flash/vignette with intensity curves and trigger conditions
+        - Performance budget: ≤150 particles total with priority culling strategy
+        - Visual hierarchy: Gameplay clarity > Feedback > Polish (what gets culled first)
+        - Layering system: Z-index specification, render order, depth sorting
+        - Effect lifecycle: Spawn/active/fadeout phases, pooling strategy, pre-warming
+        - Trigger map: VFX-xxx ID → gameplay event → animation sync
+        - Validation checklist: Particle budget compliance, color consistency, performance impact
+
+    - role: audio-designer-agent
+      role_group: CREATIVE
+      parallel: true
+      depends_on: [visual-style-agent, animation-designer-agent]
+      priority: 30
+      model_override: opus
+      prompt: |
+        ## Reasoning Process (Think step-by-step):
+
+        Step 1: Analyze Audio Requirements
+        - What game objects have material-specific sounds?
+        - What gameplay actions need audio feedback?
+        - What emotional tone should the music convey?
+        - What audio cues enhance gameplay understanding?
+
+        Step 2: Consider Audio Trade-offs
+        - How do we balance audio fidelity vs. file size?
+        - Should we prioritize latency or compression ratio?
+        - How do we optimize for mobile speaker quality?
+        - What audio layering maintains clarity without mud?
+
+        Step 3: Apply ASMR Audio Principles
+        - How does tactile sound design enhance satisfaction?
+        - Where should we apply proximity-based volume scaling?
+        - How do we ensure <50ms latency for critical feedback?
+        - What material-specific sounds create believable interactions?
+
+        ## Context
+        Feature: {{FEATURE_DIR}}
+        Art Spec: specs/games/art-spec.md (emotional tone)
+        Animation Library: specs/games/animation-library.md (timing for audio sync)
+        VFX Requirements: specs/games/vfx-requirements.md (effect triggers for audio pairing)
+        Game Objects: {{ASSET_CATALOG}} (materials: glass, wood, metal, soft objects)
+
+        ## Task
+        Design ASMR-quality audio system for mobile game:
+        1. Create material-specific sound library: Wood (knock light/heavy, creak, snap), Metal (coin clink/collect, sword unsheathe, impact), Glass (crystal ting, potion clink, shatter), Stone (thud, grind, crack), Fabric (rustle, flap, tear), Liquid (pour, bubble pop, slime squish), Organic (leaf rustle, flower bloom, creature chirp), Magical (sparkle, portal, energy hum)
+        2. Enforce <50ms latency: UI tap <20ms (CRITICAL, preload uncompressed), Gameplay action <30ms (preload compressed), Feedback <50ms (streaming OK if buffer <50ms)
+        3. Design audio layers: Master → Music (-6dB) / SFX (-3dB) / UI (0dB) / Ambience (-12dB) with ducking rules
+        4. Create adaptive audio system: Music layers (drums/bass/melody/harmony) crossfade by intensity, Dynamic mixing (combat: +3dB SFX, -6dB music), Spatial audio (pan left/right, distance attenuation)
+        5. Specify ASMR quality: Tactile (crisp transients, <5ms attack), Proximity (volume 1/distance²), Precision (pitch variation ±2 semitones), Satisfaction (resonance, decay >0.3s), Subtlety (ambient <-12dB)
+        6. Document sound categories: UI (tap, swipe, error, success), Gameplay (match, combo, clear, power-up), Combat (hit, dodge, special, defeat), Environment (wind, water, birds, footsteps)
+        7. Set audio format specs: iOS (AAC 128kbps, 44.1kHz), Android (Vorbis 96kbps, 44.1kHz), Source (WAV 48kHz 24-bit)
+        8. Define memory budget: Total audio ≤64MB (music 20MB, SFX 30MB, UI 10MB, ambience 4MB)
+
+        ## Output Requirements
+        File: specs/games/audio-requirements.md
+        Template: templates/shared/game-art/audio-requirements-template.md
+
+        Must include:
+        - Material sound library: 8 materials minimum with 4 sounds each (tap/place/break/combo), ASMR rating 1-5 (target ≥4 for feedback)
+        - Latency requirements: Per category with optimization strategies (preload, uncompressed, pooling)
+        - Audio layers: Hierarchy diagram, mixing levels, ducking rules (music ducks -6dB during SFX)
+        - Adaptive audio: Music layer system, dynamic mixing by game state, spatial audio specs
+        - ASMR principles: Tactile/Proximity/Precision/Satisfaction/Subtlety definitions with measurable criteria
+        - Sound categories: UI (10 sounds), Gameplay (20 sounds), Combat (15 sounds), Environment (10 sounds)
+        - Format specifications: iOS/Android/Source formats with compression settings
+        - Memory budget: ≤64MB total with breakdown by category
+        - Validation checklist: Latency compliance (<50ms), ASMR rating (≥4), memory budget, format consistency
+
 skills:
   - name: interaction-design
     trigger: "When defining component states and behaviors"
@@ -3768,6 +4126,21 @@ Read the design file you created:
 | SR-DESIGN-08 | Interactions Specified | Animation timing/easing documented | MEDIUM |
 | SR-DESIGN-09 | Traceability Present | Components linked to FR/AS from spec.md | MEDIUM |
 | SR-DESIGN-10 | Accessibility Checklist | WCAG checklist completed for target level | HIGH |
+
+**Game Art Pipeline Mode Additional Criteria** (if `MODE == game_art_pipeline`):
+
+| ID | Criterion | Check | Severity |
+|----|-----------|-------|----------|
+| SR-ART-01 | AQS Calculation Complete | AQS worksheet filled out with all 6 dimensions scored | CRITICAL |
+| SR-ART-02 | Asset Catalog Minimum | Asset catalog has ≥200 items with unique IDs | CRITICAL |
+| SR-ART-03 | Audio Latency Documented | Audio requirements specify <50ms latency (UI <20ms, Gameplay <30ms) | CRITICAL |
+| SR-ART-04 | Material Sound Library | Audio includes 8+ materials with 4 sounds each, ASMR rating ≥4 | HIGH |
+| SR-ART-05 | VFX Performance Budget | VFX specs enforce ≤150 particles on-screen with culling strategy | HIGH |
+| SR-ART-06 | Visual Style Complete | Art spec has mood board (3-5 refs) + color palette + typography system | HIGH |
+| SR-ART-07 | Animation State Machines | Animation library includes player/enemy FSM with ASCII diagrams | HIGH |
+| SR-ART-08 | Performance Budgets | Technical constraints documented: 256MB textures, 64MB audio | CRITICAL |
+| SR-ART-09 | Frame Rate Standards | Animation frame rates specified: UI 60fps, Gameplay 30fps, Background 15-20fps | MEDIUM |
+| SR-ART-10 | Quality Checklists | All 4 output files have validation checklists completed | MEDIUM |
 
 ### Step 3: Accessibility Validation
 

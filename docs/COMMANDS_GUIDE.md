@@ -985,6 +985,57 @@ DQS expanded from 5 to 12 dimensions (100 points total, threshold ≥ 70):
 - `metadata.json`
 - ... и ещё 1
 
+**Game Art Pipeline Mode** (NEW v0.5.0):
+
+#### `/speckit.design --game-art-pipeline`
+
+**Назначение:** Generate world-class mobile game art pipeline with 5 specialized agents: Visual Style, Asset Cataloger, Animation Designer, VFX Designer, Audio Designer. Produces comprehensive art specifications for 200+ assets with ASMR-quality audio design.
+
+**Модель:** `opus` (thinking_budget: 120000, cost: ~$3.60)
+
+**Флаги:**
+- `--game-art-pipeline` — Trigger game art pipeline mode
+
+**Входы:**
+- `specs/games/game-concept.md` (optional, for context)
+- Art direction keywords (optional CLI input)
+- Target genre (sorting, match-3, idle, arcade, puzzle)
+
+**Выходы:**
+- `specs/games/art-spec.md` — Visual style guide (mood board, color palette, typography, lighting, camera)
+- `specs/games/asset-catalog.md` — 200+ assets registry (CHAR-xxx, ENV-xxx, PROP-xxx, UI-xxx, VFX-xxx, SFX-xxx)
+- `specs/games/animation-library.md` — Animation specifications (state machines, easing curves, frame rate standards)
+- `specs/games/audio-requirements.md` — ASMR audio design (material-specific sounds, <50ms latency, adaptive audio)
+
+**Quality Gates:**
+- QG-ART-001: AQS ≥ 90/120 (CRITICAL) — Art Quality Score threshold for world-class tier
+- QG-ART-002: Asset catalog ≥ 200 items (HIGH) — Minimum comprehensive coverage
+- QG-ART-003: Performance budget compliance (CRITICAL) — Textures ≤256MB, Audio ≤64MB, Particles ≤150/frame
+- QG-ART-004: Audio latency <50ms (HIGH) — ASMR responsiveness (UI <20ms, Gameplay <30ms)
+- QG-ART-005: Visual style consistency 100% (HIGH) — Unified visual language
+- QG-ART-006: Animation frame rate compliance (MEDIUM) — UI 60fps, Gameplay 30fps, Background 15-20fps
+
+**Art Quality Score (AQS):**
+- 120-point scoring system with 30 checkpoints across 6 dimensions
+- Visual Style (25pts), Asset Completeness (25pts), Animation Polish (20pts), VFX Believability (20pts), Audio Fidelity (15pts), Performance Budget (15pts)
+- Target: ≥90/120 (75% of maximum, world-class tier)
+
+**Handoffs:**
+- → `/speckit.tasks` — Generate asset production tasks (200+ assets, priority-based)
+- → `/speckit.preview` — Preview visual style (color palette, typography)
+
+**Agent Orchestration:**
+- Wave 1: visual-style-agent (foundation, no dependencies)
+- Wave 2: asset-cataloger-agent + animation-designer-agent (parallel)
+- Wave 3: vfx-designer-agent + audio-designer-agent (parallel)
+
+**Key Features:**
+- Material-Specific Sound Library: 8 materials (wood, metal, glass, stone, fabric, liquid, organic, magical) with 4 sounds each
+- ASMR Quality: Tactile, Proximity, Precision, Satisfaction, Subtlety (rating target ≥4/5)
+- Performance Budgets: Mobile-optimized constraints (256MB textures, 64MB audio, 150 particles max)
+- Frame Rate Standards: UI 60fps (always), Gameplay 30fps, Background 15-20fps with battery mode variants
+- Asset Naming Convention: `[prefix]_[category]_[name]_[variant]_[resolution].[extension]`
+
 ---
 
 ### 7. `/speckit.plan` {#speckitplan}

@@ -17,6 +17,7 @@
 | **Pre-Deploy Gate** | Validates production readiness before deployment |
 | **SQS** | Spec Quality Score (0-100) measuring specification quality via 25-checkpoint rubric across 5 dimensions (Clarity, Completeness, Testability, Traceability, No Ambiguity). See [sqs-rubric.md](../../templates/shared/quality/sqs-rubric.md) |
 | **DQS** | Design Quality Score (0-100) measuring design specification quality via 25-checkpoint rubric across 5 dimensions (Visual Hierarchy, Consistency, Accessibility, Responsiveness, Interaction Design). See [dqs-rubric.md](../../templates/shared/quality/dqs-rubric.md) |
+| **AQS** | Art Quality Score (0-120) measuring game art pipeline quality via 30-checkpoint rubric across 6 dimensions (Visual Style, Asset Completeness, Animation Polish, VFX Believability, Audio Fidelity, Performance Budget). Threshold: ≥90 for world-class. See [aqs-rubric.md](../../templates/shared/quality/aqs-rubric.md) |
 | **Coverage** | Percentage of code exercised by tests (line, branch, path) |
 | **Type Coverage** | Percentage of code with static type annotations |
 
@@ -3088,6 +3089,330 @@ FEATURE_NEW_UI=false
 
 ---
 
+## Game Art Pipeline Quality Gates (QG-ART-xxx)
+
+> **Art Quality Score (AQS)** gates ensure game art specifications meet world-class standards before asset production begins.
+> See `templates/shared/quality/aqs-rubric.md` for full 120-point rubric.
+> **Active**: Only when `/speckit.design --game-art-pipeline` is executed
+
+### QG-ART-001: Minimum Art Quality Score
+
+**Level**: CRITICAL
+**Threshold**: AQS ≥ 90/120 (75% of maximum, world-class tier)
+**Phase**: Pre-Production (before asset creation begins)
+
+Art pipeline MUST NOT begin asset production until Art Quality Score (AQS) reaches minimum threshold.
+
+**AQS Rubric v1.0** (30 checkpoints across 6 dimensions):
+
+| Dimension | Max Points | Key Checkpoints |
+|-----------|------------|-----------------|
+| **Visual Style** | 25 | Style guide, visual language, benchmarks, emotional tone, mobile adaptation |
+| **Asset Completeness** | 25 | Catalog size (≥200), character coverage (≥20), environment coverage (≥10), UI library (≥100), variants/priority |
+| **Animation Polish** | 20 | Frame rates, timing/easing, state machines, juiciness, ASMR integration |
+| **VFX Believability** | 20 | Particle specs, screen effects, feedback hierarchy, performance budget (≤150), blend modes |
+| **Audio Fidelity** | 15 | Material sounds (≥8), latency (<50ms), music integration, ASMR quality, spatial audio |
+| **Performance Budget** | 15 | Texture memory (≤256MB), audio memory (≤64MB), polygon budget, draw calls (≤100), resolution tiers |
+
+**Validation**:
+```bash
+# Calculate AQS from art pipeline output files
+/speckit.analyze --profile aqs
+
+# Check AQS score
+aqs_score=$(jq '.aqs.total' reports/aqs-score.json)
+if [ "$aqs_score" -ge 90 ]; then
+    echo "QG-ART-001: PASS (AQS=$aqs_score/120)"
+    exit 0
+else
+    echo "QG-ART-001: FAIL (AQS=$aqs_score/120 < 90 threshold)"
+    jq '.aqs.dimensions' reports/aqs-score.json
+    exit 1
+fi
+```
+
+**Thresholds**:
+- **≥95**: World-Class (AAA-quality production ready)
+- **90-94**: Excellent (production ready with minor polish) ✅
+- **80-89**: Good (address flagged dimensions)
+- **70-79**: Needs Improvement (substantial rework required)
+- **<70**: Not Ready (block production, major revision needed)
+
+**Violations**: CRITICAL - Art production begins with subpar specifications
+
+**Integration**:
+- **Command**: `/speckit.design --game-art-pipeline`
+- **Output Files**: `specs/games/art-spec.md`, `asset-catalog.md`, `animation-library.md`, `audio-requirements.md`
+- **Handoff**: → `/speckit.tasks` (generate asset production tasks)
+
+**Reference**: See `templates/shared/quality/aqs-rubric.md` for complete 30-checkpoint scoring system
+
+---
+
+### QG-ART-002: Asset Catalog Completeness
+
+**Level**: HIGH
+**Threshold**: ≥200 assets cataloged with unique IDs and technical specifications
+**Phase**: Pre-Production
+
+Asset catalog MUST contain minimum 200 assets across 6 categories with complete technical specs.
+
+**Category Minimums**:
+- **CHAR-xxx**: ≥20 character assets (player, enemies, NPCs)
+- **ENV-xxx**: ≥10 environment assets (zones, tilesets, props)
+- **PROP-xxx**: ≥20 prop assets (interactive, collectibles)
+- **UI-xxx**: ≥100 UI elements (buttons, icons, panels)
+- **VFX-xxx**: ≥20 VFX assets (combo, clear, explosion, ambient)
+- **SFX-xxx**: ≥30 audio assets (UI sounds, gameplay, ambience)
+
+**Validation**:
+```bash
+# Count assets in catalog
+asset_count=$(grep -c "^[A-Z]+-[0-9]+" specs/games/asset-catalog.md)
+if [ "$asset_count" -ge 200 ]; then
+    echo "QG-ART-002: PASS ($asset_count assets ≥ 200)"
+    exit 0
+else
+    echo "QG-ART-002: FAIL ($asset_count assets < 200 threshold)"
+    exit 1
+fi
+
+# Verify category minimums
+grep "^CHAR-" specs/games/asset-catalog.md | wc -l  # ≥20
+grep "^UI-" specs/games/asset-catalog.md | wc -l    # ≥100
+```
+
+**Each Asset Must Include**:
+- Unique ID (e.g., CHAR-001, UI-042)
+- Name and description
+- Type/category
+- Technical specs (poly count, texture resolution, format)
+- Priority (P0=MVP, P1=Soft Launch, P2=Full Launch)
+- Status (pending, in-progress, complete)
+
+**Violations**: HIGH - Incomplete asset planning leads to scope creep
+
+**Integration**:
+- **Agent**: asset-cataloger-agent
+- **Output**: `specs/games/asset-catalog.md`
+
+---
+
+### QG-ART-003: Performance Budget Compliance
+
+**Level**: CRITICAL
+**Threshold**: Texture ≤256MB, Audio ≤64MB, Particles ≤150/frame
+**Phase**: Pre-Production (budgets documented) + Post-Production (actual validation)
+
+Art specifications MUST document performance budgets and final assets MUST comply with mobile platform constraints.
+
+**Performance Budgets**:
+| Resource | Mobile Target | Validation Method |
+|----------|---------------|-------------------|
+| Texture Memory | ≤256MB total | `find . -name "*.png" -o -name "*.jpg" \| xargs du -ch` |
+| Audio Memory | ≤64MB total | `find . -name "*.ogg" -o -name "*.mp3" \| xargs du -ch` |
+| Particles On-Screen | ≤150 simultaneous | Profiler measurement (combo 80, clear 60, UI 20, ambient 30) |
+| Polygon Count | Characters ≤5K, Props ≤2K, Envs ≤10K/zone | Unity Asset Post-Processor |
+| Draw Calls | ≤100 per frame | Frame Debugger |
+| Resolution Tiers | @1x (512px), @2x (1024px), @3x (2048px) | Asset variants documented |
+
+**Validation**:
+```bash
+# Check texture memory budget
+texture_mb=$(find specs/games -name "*.png" -o -name "*.jpg" | xargs du -ch | tail -1 | awk '{print $1}')
+if [ "$texture_mb" -le 256 ]; then
+    echo "QG-ART-003: Texture memory PASS ($texture_mb MB ≤ 256MB)"
+else
+    echo "QG-ART-003: Texture memory FAIL ($texture_mb MB > 256MB)"
+    exit 1
+fi
+
+# Check audio memory budget
+audio_mb=$(find specs/games -name "*.ogg" -o -name "*.mp3" | xargs du -ch | tail -1 | awk '{print $1}')
+if [ "$audio_mb" -le 64 ]; then
+    echo "QG-ART-003: Audio memory PASS ($audio_mb MB ≤ 64MB)"
+else
+    echo "QG-ART-003: Audio memory FAIL ($audio_mb MB > 64MB)"
+    exit 1
+fi
+```
+
+**Platform Targets**:
+- **High-end** (iPhone 14+): @3x textures, 150 particles, 60fps
+- **Mid-tier** (iPhone 11-13): @2x textures, 100 particles, 60fps
+- **Low-end** (iPhone X): @1x textures, 50 particles, 30fps
+
+**Violations**: CRITICAL - Performance issues on target devices, negative reviews
+
+**Integration**:
+- **Agents**: visual-style-agent, vfx-designer-agent
+- **Output**: Performance budgets in all art specification files
+
+---
+
+### QG-ART-004: Audio Latency Requirement
+
+**Level**: HIGH
+**Threshold**: <50ms from input to sound (UI: <20ms, Gameplay: <30ms)
+**Phase**: Post-Production (manual validation with high-speed camera)
+
+Audio latency MUST be <50ms total for ASMR-quality game feel. Critical for player satisfaction.
+
+**Latency Targets by Category**:
+| Sound Category | Max Latency | Priority | Test Method |
+|----------------|-------------|----------|-------------|
+| UI Tap | <20ms | CRITICAL | High-speed camera (240fps) |
+| Gameplay Action | <30ms | HIGH | High-speed camera (240fps) |
+| Feedback | <50ms | HIGH | Audio profiler |
+| Music/Ambience | <100-200ms | MEDIUM | Acceptable streaming latency |
+
+**Validation**:
+```bash
+# Manual validation with high-speed camera
+# 1. Record UI button tap at 240fps
+# 2. Count frames from touch to sound waveform visible
+# 3. Calculate: Latency (ms) = (Frame Count / 240) * 1000
+
+# Example: 4 frames = (4/240)*1000 = 16.7ms ✅ PASS (UI <20ms)
+# Example: 8 frames = (8/240)*1000 = 33.3ms ❌ FAIL (UI >20ms)
+
+# Automated profiler check (approximate)
+/speckit.analyze --profile audio-latency
+```
+
+**ASMR Quality Requirements**:
+- **Tactile**: Material-specific sounds (wood, metal, glass, stone, fabric, liquid, organic, magical)
+- **Proximity**: High-fidelity recordings, binaural if possible
+- **Precision**: Timing synchronized with animations (<50ms budget)
+- **Satisfaction**: ASMR rating ≥4/5 for feedback sounds
+
+**Optimization Strategies**:
+- Preload critical sounds (UI, gameplay actions)
+- Use uncompressed formats for UI sounds (<20ms)
+- Streaming for music/ambience (acceptable latency)
+- Low-latency audio codec for gameplay
+
+**Violations**: HIGH - Poor game feel, "laggy" audio, dissatisfying interactions
+
+**Integration**:
+- **Agent**: audio-designer-agent
+- **Output**: `specs/games/audio-requirements.md` with latency specs
+
+**Reference**: Similar to QG-GAME-004 (Input Latency), but focused on audio feedback
+
+---
+
+### QG-ART-005: Visual Style Consistency
+
+**Level**: HIGH
+**Threshold**: 100% style guide compliance (colors, typography, icons)
+**Phase**: Post-Production (visual audit after asset creation)
+
+All assets MUST adhere to visual style guide specifications (color palette, typography, icon system).
+
+**Consistency Checklist**:
+- [ ] **Color Palette**: All assets use defined colors (no custom hex values)
+- [ ] **Typography**: Font stack consistent across UI (title, body, numeric fonts)
+- [ ] **Icon System**: Single icon library, consistent sizing (24px, 32px, 48px)
+- [ ] **Art Style**: Unified visual language (no mixing realistic + cartoony)
+- [ ] **Rendering Style**: Consistent shading model, outline style, shadows
+
+**Validation**:
+```bash
+# Manual visual audit
+# 1. Review all assets against art-spec.md color palette
+# 2. Check typography consistency (no rogue fonts)
+# 3. Verify icon system (single library, no mixed styles)
+
+# Automated color palette check (if CSS/design tokens available)
+grep -r "#[0-9a-fA-F]\{6\}" src/ | grep -v "design-tokens.css"
+# Expected: 0 matches (all colors use tokens)
+
+# Consistency score from analyze command
+/speckit.analyze --profile aqs | jq '.aqs.dimensions.visual_style.consistency'
+```
+
+**Anti-Patterns** (AUTO-FAIL):
+- ❌ Custom hex colors outside style guide
+- ❌ Multiple icon libraries mixed (Material + FontAwesome)
+- ❌ Inconsistent visual style (realistic characters, cartoony UI)
+- ❌ Typography chaos (5+ different fonts)
+
+**Violations**: HIGH - Unprofessional appearance, lack of visual cohesion
+
+**Integration**:
+- **Agent**: visual-style-agent
+- **Output**: `specs/games/art-spec.md` with style guide
+
+---
+
+### QG-ART-006: Animation Frame Rate Compliance
+
+**Level**: MEDIUM (SHOULD level)
+**Threshold**: UI 60fps, Gameplay 30fps, Background 15-20fps
+**Phase**: Post-Production (animation profiler)
+
+Animations SHOULD meet frame rate targets for smooth playback and performance optimization.
+
+**Frame Rate Standards**:
+| Animation Category | Target FPS | Use Case | Battery Mode |
+|-------------------|------------|----------|--------------|
+| UI Animations | 60fps | Buttons, transitions, HUD | 60fps (no reduction) |
+| Gameplay Animations | 30fps | Characters, enemies, actions | 30fps → 20fps |
+| Background Animations | 15-20fps | Ambient effects, parallax | 15-20fps → 10fps |
+| VFX (Particles) | 30-60fps | Explosions, combos, clears | 60fps → 30fps |
+
+**Validation**:
+```bash
+# Unity Animation Profiler
+# 1. Select animated asset
+# 2. Check Animation Clip properties
+# 3. Verify Sample Rate (FPS)
+
+# Expected: UI animations at 60 samples/second
+#           Gameplay animations at 30 samples/second
+
+# Automated check (if animation metadata accessible)
+/speckit.analyze --profile aqs | jq '.aqs.dimensions.animation_polish.frame_rate'
+```
+
+**Performance Benefits**:
+- UI at 60fps: Smooth, responsive (required for good UX)
+- Gameplay at 30fps: 50% less animation data, battery savings
+- Background at 15-20fps: Minimal performance impact
+
+**Violations**: MEDIUM (SHOULD level) - Not blocking, but degrades polish
+
+**Integration**:
+- **Agent**: animation-designer-agent
+- **Output**: `specs/games/animation-library.md` with frame rate specs
+
+---
+
+## Quality Gate Summary (Game Art Pipeline)
+
+| Gate ID | Threshold | Severity | Phase | Validation Method |
+|---------|-----------|----------|-------|-------------------|
+| QG-ART-001 | AQS ≥ 90/120 | CRITICAL | Pre-Production | `/speckit.analyze --profile aqs` |
+| QG-ART-002 | ≥200 assets | HIGH | Pre-Production | `grep -c "^[A-Z]+-[0-9]+"` |
+| QG-ART-003 | Texture ≤256MB, Audio ≤64MB, Particles ≤150 | CRITICAL | Pre-Production + Post-Production | `du -ch`, profiler |
+| QG-ART-004 | Audio <50ms | HIGH | Post-Production | High-speed camera (240fps) |
+| QG-ART-005 | 100% style consistency | HIGH | Post-Production | Manual visual audit |
+| QG-ART-006 | UI 60fps, Gameplay 30fps | MEDIUM | Post-Production | Animation profiler |
+
+**When Active**: Only when `/speckit.design --game-art-pipeline` is executed
+
+**Enforcement**: Pre-production gates (QG-ART-001, 002, 003) MUST pass before `/speckit.tasks` handoff
+
+**Skip**: `--skip-gates` flag bypasses (not recommended for production)
+
+**Integration with Other Gates**:
+- QG-ART-003 (Performance) ← relates to QG-GAME-001 (Frame Rate), QG-GAME-002 (Battery)
+- QG-ART-004 (Audio Latency) ← relates to QG-GAME-004 (Input Latency)
+- AQS ← complements CQS-Game (concept quality) and DQS (design quality)
+
+---
+
 ## Security Gates (QG-SEC-xxx)
 
 > **Security by Design** gates ensure security is embedded throughout the development lifecycle.
@@ -3516,13 +3841,14 @@ PQS = (
 | Verification Gates | 6 |
 | Pre-Deploy Gates | 5 |
 | Mobile Game Quality Gates | 5 |
+| Game Art Pipeline Quality Gates | 6 |
 | Security Gates | 5 |
 | Migration Gates | 3 |
 | Drift Detection Gates | 4 |
 | Property-Based Testing Gates | 7 |
-| **Total QG Principles** | **57** |
-| MUST level | 41 |
-| SHOULD level | 7 |
+| **Total QG Principles** | **63** |
+| MUST level | 46 |
+| SHOULD level | 8 |
 
 ---
 
