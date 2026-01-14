@@ -500,7 +500,108 @@ Target: ≥90/120 (world-class tier, up from 85/120)
 
 ---
 
-### 2d. `/speckit.games.virality` {#speckitgamesvirality}
+### 2d. `/speckit.games.progression` {#speckitgamesprogression}
+
+**Назначение:** Design comprehensive game progression with 200+ levels, difficulty curves, unlock gates, meta-progression systems (prestige, skill trees, account leveling, ascension), and Flow Channel validation. Ensures smooth difficulty scaling, optimal player engagement, and long-term retention through mathematically validated progression design.
+
+**Модель:** `opus` (thinking_budget: 120000)
+
+**Флаги:**
+- `--genre <match3|idle|shooter|arcade|puzzle|runner|platformer>` — Game genre (REQUIRED)
+- `--level-count <50|100|200|500|infinite>` — Target level count (default: 200)
+- `--difficulty-model <linear|exponential|logarithmic|s-curve>` — Difficulty scaling model (default: exponential)
+- `--meta-depth <basic|standard|deep>` — Meta-progression depth (default: deep)
+  - `basic`: Core progression only, no meta-systems
+  - `standard`: Prestige system + basic skill tree
+  - `deep`: Prestige + skill tree + account leveling + ascension
+- `--flow-validation <true|false>` — Enable Flow Channel validation (default: true)
+- `--skip-gates` — Skip quality gates validation (not recommended)
+
+**Quality Gates:**
+- **QG-PROGRESSION-001** (CRITICAL): Difficulty Slope Compliance — 100% of slopes within 0.8-1.2 range (no sudden spikes/drops)
+- **QG-PROGRESSION-002** (HIGH): Flow Channel Compliance — ≥95% of levels within Flow Channel (Challenge ≈ Skill ± 20%)
+- **QG-PROGRESSION-003** (HIGH): Level Count Minimum — ≥ target level count specified in --level-count flag
+- **QG-PROGRESSION-004** (MEDIUM): Unlock Gate Pacing — ≤5% of gaps exceed 15 levels between unlocks
+- **QG-PROGRESSION-005** (HIGH): Meta-Progression Depth — Match --meta-depth flag requirements (prestige + skill tree + account leveling)
+
+**Workflow (5 фаз, 7 агентов):**
+
+**Phase 1: Context Analysis (1 agent)**
+- context-analyzer-agent (sonnet, 8K) — Load mechanics.md + concept.md, extract genre, identify progression requirements
+
+**Phase 2: Difficulty Formula Design (2 agents, parallel)**
+- difficulty-formula-agent (opus, 24K) — Design mathematical model for difficulty scaling (exponential/logarithmic/s-curve), formulas for enemy HP, damage, spawn rate, speed, AI complexity
+- flow-channel-agent (opus, 16K) — Define Flow Channel boundaries (boredom threshold, anxiety threshold), player skill growth model, challenge-skill balance over time
+
+**Phase 3: Level Design (2 agents, parallel)**
+- level-designer-agent (opus, 32K) — Design 200+ levels in 5 tiers (Tutorial 1-10, Easy 11-50, Medium 51-100, Hard 101-150, Expert 151-200+), per-level specs with objectives, difficulty multiplier, unlock requirements
+- unlock-scheduler-agent (sonnet, 16K) — Design unlock timeline (when mechanics/power-ups/features appear), generate unlock-schedule.md with unlock gates per level tier
+
+**Phase 4: Meta-Progression Design (1 agent)**
+- meta-progression-agent (opus, 24K) — Design prestige systems (soft reset, permanent bonuses), skill tree architecture (nodes, costs, effects), account leveling (XP curve, rewards), ascension mechanics
+
+**Phase 5: Validation & Export (1 agent)**
+- validator-exporter-agent (sonnet, 16K) — Validate difficulty slope (0.8-1.2 between adjacent levels), validate Flow Channel compliance (all levels within channel), export difficulty-curve.csv (200+ rows), run quality gates QG-PROGRESSION-001..005
+
+**Output Files (4 files в specs/games/):**
+- `progression.md` — Master progression specification (~30 pages) with difficulty formulas, level tiers, Flow Channel validation, unlock timeline, meta-progression systems
+- `difficulty-curve.csv` — Level-by-level data (200+ rows) with difficulty, enemy stats, skill required, flow status, unlocks
+- `unlock-schedule.md` — Mechanic/power-up unlock timeline organized in 5 waves (Core Mechanics, Advanced Mechanics, Power-Ups, Meta-Progression, Endgame)
+- `meta-progression.md` — Meta-progression systems specification (prestige formulas, skill tree architecture, account leveling, ascension mechanics)
+
+**Handoffs:**
+- → `/speckit.implement` (auto) — Handoff progression specs for implementation
+- → `/speckit.games.virality` (manual) — Use progression data for K-factor optimization
+- → `/speckit.balance` (manual) — Validate balancing formulas (if balance command exists)
+
+**Пример использования:**
+```bash
+# Standard 200-level progression for match-3 with deep meta-progression
+/speckit.games.progression --genre match3 --level-count 200 --meta-depth deep
+
+# Idle game with infinite progression and exponential scaling
+/speckit.games.progression --genre idle --level-count infinite --difficulty-model exponential
+
+# Quick 50-level arcade game with basic progression
+/speckit.games.progression --genre arcade --level-count 50 --meta-depth basic
+
+# Shooter campaign with logarithmic difficulty curve
+/speckit.games.progression --genre shooter --level-count 50 --difficulty-model logarithmic
+```
+
+**Стоимость выполнения:**
+- Match-3/Puzzle (200 levels, standard): ~$4.80 (7 agents, 120K thinking budget)
+- Idle/Runner (infinite, complex formulas): ~$5.40 (7 agents, higher complexity)
+- Shooter/Arcade (fewer levels): ~$3.60 (7 agents, simpler progression)
+
+**Success Metrics:**
+- **Flow Channel Compliance**: ≥95% of levels within optimal challenge-skill balance
+- **Difficulty Smoothness**: 100% slopes within 0.8-1.2 range (no frustration spikes)
+- **Unlock Cadence**: New mechanics/power-ups every 5-15 levels (prevents monotony)
+- **Meta-Depth**: Prestige + Skill Tree + Account Leveling systems fully specified
+- **Retention Targets**: D1 ≥40%, D7 ≥20%, D30 ≥10% (based on progression design)
+
+**Flow Channel Theory:**
+Based on Mihaly Csikszentmihalyi's Flow Theory, progression design maintains optimal challenge-skill balance:
+- **Flow Zone**: Challenge ≈ Skill ± 20% (optimal engagement, "in the zone" feeling)
+- **Boredom Zone**: Challenge < Skill - 20% (too easy, player disengages)
+- **Anxiety Zone**: Challenge > Skill + 20% (too hard, player frustrated)
+
+**Genre-Specific Templates:**
+
+| Genre | Levels | Difficulty Growth | Unlock Cadence | Meta Focus |
+|-------|--------|-------------------|----------------|------------|
+| **Match-3** | 200 | 5%/level (moderate) | Every 10 levels | Prestige + skill tree |
+| **Idle** | Infinite | 8%/level (fast) | Every 5 levels | Prestige + ascension |
+| **Shooter** | 50 campaign | 3%/level (slow) | Every 5 levels | Skill tree + account level |
+| **Arcade** | 100 | 6%/level (fast) | Every 8 levels | Account level + leaderboard |
+| **Puzzle** | 150 | 4%/level (moderate) | Every 12 levels | Prestige + brain training |
+| **Runner** | Infinite | N/A (endless) | Every 500m | Prestige + character upgrades |
+| **Platformer** | 60 | 4%/level (moderate) | Every 6 levels | Skill tree + collectibles |
+
+---
+
+### 2e. `/speckit.games.virality` {#speckitgamesvirality}
 
 **Назначение:** Engineer built-in viral mechanics, shareability, TikTok content hooks, and K-factor optimization for mobile games. Use AFTER `/speckit.games.mechanics` and BEFORE `/speckit.games.aso` in the game development workflow.
 

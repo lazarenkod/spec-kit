@@ -3089,6 +3089,274 @@ FEATURE_NEW_UI=false
 
 ---
 
+## Game Progression Quality Gates (QG-PROGRESSION-xxx)
+
+> **Progression Design Quality** gates ensure game progression specifications (levels, difficulty curves, unlock gates, meta-progression) meet player engagement and retention standards.
+> **Active**: Only when `/speckit.games.progression` command is executed
+> **Applied by**: validator-exporter-agent (Phase 5) during progression design
+
+These gates validate that game progression design follows best practices from Flow Theory (Csikszentmihalyi) and game economy principles.
+
+### QG-PROGRESSION-001: Difficulty Slope Compliance
+
+**Level**: CRITICAL
+**Threshold**: 0.8 ≤ slope ≤ 1.2 between all adjacent levels
+**Phase**: POST (during progression design validation)
+**Severity**: CRITICAL
+
+All adjacent level difficulty ratios MUST fall within valid range to ensure smooth player progression without frustration spikes or boredom drops.
+
+**Formula**:
+```python
+slope = difficulty(level + 1) / difficulty(level)
+valid_slope = 0.8 <= slope <= 1.2
+```
+
+**Interpretation**:
+- **slope < 0.8**: Difficulty drops (regression, bad UX)
+- **slope 0.8-1.0**: Plateau (acceptable for resting phases)
+- **slope = 1.0**: Perfect continuity (ideal)
+- **slope 1.0-1.2**: Smooth increase (optimal challenge growth)
+- **slope > 1.2**: Sudden spike (frustration risk)
+
+**Validation**:
+```bash
+# validator-exporter-agent calculates slopes during Phase 5
+# Check all 199 slopes (for 200 levels)
+slopes_in_range=$(jq '.validation.difficulty_slope.in_range_count' specs/games/progression.md)
+total_slopes=$(jq '.validation.difficulty_slope.total_slopes' specs/games/progression.md)
+
+if [ "$slopes_in_range" -eq "$total_slopes" ]; then
+    echo "QG-PROGRESSION-001: PASS (100% slopes within 0.8-1.2)"
+else
+    violations=$((total_slopes - slopes_in_range))
+    echo "QG-PROGRESSION-001: FAIL ($violations slopes outside range)"
+    exit 1
+fi
+```
+
+**Fixing Violations**:
+1. Identify problematic levels (slopes > 1.2 or < 0.8)
+2. Adjust difficulty formula parameters (base_difficulty, growth_rate)
+3. Re-run `/speckit.games.progression` with adjusted parameters
+4. Validate again until 100% compliance
+
+**Related Gates**: QG-PROGRESSION-002 (Flow Channel must also be satisfied)
+
+---
+
+### QG-PROGRESSION-002: Flow Channel Compliance
+
+**Level**: HIGH
+**Threshold**: ≥95% of levels within Flow Channel (Challenge ≈ Skill ± 20%)
+**Phase**: POST (during progression design validation)
+**Severity**: HIGH
+
+Player challenge MUST match player skill growth to maintain optimal engagement (Flow state). Levels outside the Flow Channel cause boredom (too easy) or anxiety (too hard).
+
+**Flow Theory (Mihaly Csikszentmihalyi)**:
+- **Flow Zone**: Challenge ≈ Skill ± 20% (optimal engagement)
+- **Boredom Zone**: Challenge < Skill - 20% (disengagement)
+- **Anxiety Zone**: Challenge > Skill + 20% (frustration)
+
+**Formula**:
+```python
+skill = base_skill + (level * skill_growth_rate)
+boredom_threshold = skill - (skill * 0.20)
+anxiety_threshold = skill + (skill * 0.20)
+
+in_flow = boredom_threshold <= difficulty <= anxiety_threshold
+```
+
+**Validation**:
+```bash
+# validator-exporter-agent calculates Flow Channel status for each level
+flow_count=$(jq '.validation.flow_channel.in_flow_count' specs/games/progression.md)
+total_levels=$(jq '.metadata.level_count' specs/games/progression.md)
+flow_percentage=$(echo "scale=1; $flow_count * 100 / $total_levels" | bc)
+
+if (( $(echo "$flow_percentage >= 95" | bc -l) )); then
+    echo "QG-PROGRESSION-002: PASS ($flow_percentage% in Flow)"
+else
+    echo "QG-PROGRESSION-002: FAIL ($flow_percentage% < 95% threshold)"
+    exit 1
+fi
+```
+
+**Fixing Violations**:
+1. **Boredom Zone levels**: Increase difficulty (adjust growth rate upward)
+2. **Anxiety Zone levels**: Decrease difficulty (adjust growth rate downward)
+3. **Skill growth model**: Adjust player skill growth rate to match challenge curve
+4. Re-run `/speckit.games.progression` with adjusted parameters
+
+**Related Gates**: QG-PROGRESSION-001 (Slope must also be smooth)
+
+---
+
+### QG-PROGRESSION-003: Level Count Minimum
+
+**Level**: HIGH
+**Threshold**: ≥ target level count (default: 200 for mid-core, 50 for hyper-casual)
+**Phase**: POST (during progression design validation)
+**Severity**: HIGH
+
+Game MUST have sufficient content to meet genre expectations and retention targets.
+
+**Genre Targets**:
+| Genre | Minimum Levels | Rationale |
+|-------|----------------|-----------|
+| **Hyper-casual** | 50 | Short session, quick progression |
+| **Casual** | 100 | Medium session, moderate progression |
+| **Mid-core** | 200 | Long session, deep progression |
+| **Hardcore** | 500+ | Very long session, competitive progression |
+| **Idle** | Infinite | Endless progression with prestige |
+
+**Validation**:
+```bash
+# Check level count matches target
+actual_levels=$(jq '.metadata.level_count' specs/games/progression.md)
+target_levels=$(jq '.metadata.target_level_count' specs/games/progression.md)
+
+if [ "$actual_levels" -ge "$target_levels" ]; then
+    echo "QG-PROGRESSION-003: PASS ($actual_levels ≥ $target_levels)"
+else
+    echo "QG-PROGRESSION-003: FAIL ($actual_levels < $target_levels)"
+    exit 1
+fi
+```
+
+**Fixing Violations**:
+- Re-run `/speckit.games.progression` with increased `--level-count` flag
+
+**Related Gates**: QG-PROGRESSION-004 (Unlock pacing must match level count)
+
+---
+
+### QG-PROGRESSION-004: Unlock Gate Pacing
+
+**Level**: MEDIUM
+**Threshold**: New mechanic/power-up/feature every 5-15 levels (≤5% gaps exceed 15)
+**Phase**: POST (during progression design validation)
+**Severity**: MEDIUM
+
+New content MUST unlock at regular intervals to maintain player interest and prevent monotony.
+
+**Pacing Guidelines**:
+- **Wave 1 (Tutorial)**: Dense unlocks (every 2-3 levels) — rapid learning
+- **Wave 2 (Core)**: Moderate unlocks (every 5-10 levels) — complexity introduction
+- **Wave 3 (Mid)**: Slower unlocks (every 10-15 levels) — mastery phase
+- **Wave 4 (Meta)**: Sparse unlocks (every 15-20 levels) — long-term systems
+- **Wave 5 (Endgame)**: Very sparse unlocks (every 20-25 levels) — mastery rewards
+
+**Validation**:
+```bash
+# Check gap distribution (unlock-schedule.md)
+gaps_too_large=$(jq '.validation.unlock_gaps.gaps_exceeding_15' specs/games/unlock-schedule.md)
+total_gaps=$(jq '.validation.unlock_gaps.total_gaps' specs/games/unlock-schedule.md)
+gap_percentage=$(echo "scale=1; $gaps_too_large * 100 / $total_gaps" | bc)
+
+if (( $(echo "$gap_percentage <= 5" | bc -l) )); then
+    echo "QG-PROGRESSION-004: PASS ($gap_percentage% large gaps < 5% threshold)"
+else
+    echo "QG-PROGRESSION-004: FAIL ($gap_percentage% ≥ 5% threshold)"
+    echo "Gaps exceeding 15 levels: $gaps_too_large/$total_gaps"
+    exit 1
+fi
+```
+
+**Fixing Violations**:
+1. Identify gaps > 15 levels in unlock-schedule.md
+2. Add intermediate unlocks at recommended levels
+3. Re-run `/speckit.games.progression` with updated unlock schedule
+
+**Related Gates**: QG-PROGRESSION-003 (Level count must be sufficient for pacing)
+
+---
+
+### QG-PROGRESSION-005: Meta-Progression Depth
+
+**Level**: HIGH (if `--meta-depth` flag ≥ standard)
+**Threshold**: Systems implemented match `--meta-depth` flag setting
+**Phase**: POST (during progression design validation)
+**Severity**: HIGH
+
+Meta-progression systems MUST meet the specified depth level to ensure long-term retention and engagement.
+
+**Depth Levels**:
+| Level | Required Systems | Min Spec Lines | Retention Target |
+|-------|------------------|----------------|------------------|
+| **basic** | Prestige only | ~500 lines | D30: 10-15% |
+| **standard** | Prestige + (Skill Tree OR Account Leveling) | ~1000 lines | D30: 20-30% |
+| **deep** | Prestige + Skill Tree + Account Leveling + Ascension | ~1500 lines | D30: 30-40% |
+
+**Validation**:
+```bash
+# Check meta-progression.md for required systems
+target_depth=$(jq -r '.metadata.meta_depth' specs/games/progression.md)
+has_prestige=$(grep -q "## 1. Prestige System" specs/games/meta-progression.md && echo "true" || echo "false")
+has_skill_tree=$(grep -q "## 2. Skill Tree" specs/games/meta-progression.md && echo "true" || echo "false")
+has_account_leveling=$(grep -q "## 3. Account Leveling" specs/games/meta-progression.md && echo "true" || echo "false")
+has_ascension=$(grep -q "## 4. Ascension Mechanics" specs/games/meta-progression.md && echo "true" || echo "false")
+
+case "$target_depth" in
+    "basic")
+        if [ "$has_prestige" = "true" ]; then
+            echo "QG-PROGRESSION-005: PASS (basic: prestige present)"
+        else
+            echo "QG-PROGRESSION-005: FAIL (basic: prestige missing)"
+            exit 1
+        fi
+        ;;
+    "standard")
+        if [ "$has_prestige" = "true" ] && ([ "$has_skill_tree" = "true" ] || [ "$has_account_leveling" = "true" ]); then
+            echo "QG-PROGRESSION-005: PASS (standard: prestige + skill/account)"
+        else
+            echo "QG-PROGRESSION-005: FAIL (standard: missing systems)"
+            exit 1
+        fi
+        ;;
+    "deep")
+        if [ "$has_prestige" = "true" ] && [ "$has_skill_tree" = "true" ] && [ "$has_account_leveling" = "true" ] && [ "$has_ascension" = "true" ]; then
+            echo "QG-PROGRESSION-005: PASS (deep: all systems present)"
+        else
+            echo "QG-PROGRESSION-005: FAIL (deep: missing systems)"
+            exit 1
+        fi
+        ;;
+esac
+```
+
+**Fixing Violations**:
+- Re-run `/speckit.games.progression` with correct `--meta-depth` flag
+- Ensure meta-progression-agent completes all required sections
+
+**Related Gates**: QG-PROGRESSION-003 (Sufficient levels for meta-progression unlocks)
+
+---
+
+### Summary: Game Progression Quality Gates Registry
+
+| Gate ID | Threshold | Severity | Phase | Validation Method |
+|---------|-----------|----------|-------|-------------------|
+| QG-PROGRESSION-001 | 0.8-1.2 slope | CRITICAL | POST | Slope calculation |
+| QG-PROGRESSION-002 | ≥95% in Flow | HIGH | POST | Flow Channel check |
+| QG-PROGRESSION-003 | ≥ target count | HIGH | POST | Level count check |
+| QG-PROGRESSION-004 | ≤5% gaps >15 | MEDIUM | POST | Unlock gap analysis |
+| QG-PROGRESSION-005 | Match depth | HIGH | POST | Meta-system presence |
+
+**When Active**: Only when `/speckit.games.progression` command is executed
+
+**Enforcement**: All gates run automatically in Phase 5 by validator-exporter-agent
+
+**Skip**: `--skip-gates` flag bypasses (not recommended for production)
+
+**Integration with Other Gates**:
+- QG-GAME-001 (Frame Rate) ← progression affects performance (more levels = more assets)
+- QG-ART-001 (Art Quality) ← progression unlocks require art assets
+- CQS (Concept Quality) ← progression design follows from concept requirements
+
+---
+
 ## Game Art Pipeline Quality Gates (QG-ART-xxx)
 
 > **Art Quality Score (AQS)** gates ensure game art specifications meet world-class standards before asset production begins.
@@ -3581,6 +3849,11 @@ pytest -k "security or auth"
 | QG-GAME-003 | Pre-Deploy | MUST | <150MB | Build report / ls -lh | MEDIUM |
 | QG-GAME-004 | Post-Implement | MUST | <80ms | High-speed camera (240fps) | HIGH |
 | QG-GAME-005 | Pre-Deploy | MUST | All ✅ | Policy review checklist | CRITICAL |
+| QG-PROGRESSION-001 | POST | MUST | 0.8-1.2 slope | Slope calculation | CRITICAL |
+| QG-PROGRESSION-002 | POST | MUST | ≥95% in Flow | Flow Channel check | HIGH |
+| QG-PROGRESSION-003 | POST | MUST | ≥ target count | Level count check | HIGH |
+| QG-PROGRESSION-004 | POST | MUST | ≤5% gaps >15 | Unlock gap analysis | MEDIUM |
+| QG-PROGRESSION-005 | POST | MUST | Match depth | Meta-system presence | HIGH |
 | QG-SEC-001 | Pre-Implement | MUST | threat-model.md | STRIDE coverage check | CRITICAL |
 | QG-SEC-002 | Pre-Implement | MUST | 100% checklist | OWASP checklist | CRITICAL |
 | QG-SEC-003 | Pre-Deploy | MUST | 0 critical/high | `npm audit` / `pip-audit` | CRITICAL |

@@ -7,6 +7,88 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.5] - 2026-01-14
+
+### Added
+
+- **Game Progression Command** `/speckit.games.progression` — Comprehensive game progression design with 200+ levels, difficulty curves, unlock gates, and meta-progression systems
+  - **7 specialized agents** across 5-phase orchestration:
+    - Phase 1: `context-analyzer-agent` (sonnet, 8K) — Genre and requirements extraction
+    - Phase 2: `difficulty-formula-agent` (opus, 24K) + `flow-channel-agent` (opus, 16K) — Parallel difficulty modeling and Flow Channel boundaries
+    - Phase 3: `level-designer-agent` (opus, 32K) + `unlock-scheduler-agent` (sonnet, 16K) — Parallel level design and unlock timeline
+    - Phase 4: `meta-progression-agent` (opus, 24K) — Prestige, skill trees, account leveling, ascension
+    - Phase 5: `validator-exporter-agent` (sonnet, 16K) — Difficulty slope validation, Flow Channel compliance, CSV export
+  - **5 Quality Gates (QG-PROGRESSION-001..005)**:
+    - QG-PROGRESSION-001: Difficulty Slope Compliance (CRITICAL) — 100% slopes within 0.8-1.2 range
+    - QG-PROGRESSION-002: Flow Channel Compliance (HIGH) — ≥95% of levels within Flow Channel
+    - QG-PROGRESSION-003: Level Count Minimum (HIGH) — ≥ target level count
+    - QG-PROGRESSION-004: Unlock Gate Pacing (MEDIUM) — ≤5% gaps exceed 15 levels
+    - QG-PROGRESSION-005: Meta-Progression Depth (HIGH) — Match --meta-depth flag requirements
+  - **Flow Channel Theory**: Based on Mihaly Csikszentmihalyi's psychological model
+    - Flow Zone: Challenge ≈ Skill ± 20% (optimal engagement)
+    - Boredom Zone: Challenge < Skill - 20% (too easy)
+    - Anxiety Zone: Challenge > Skill + 20% (too hard)
+    - Player skill growth model: `skill(level) = base_skill + (level × skill_growth_rate)`
+  - **Difficulty Models**: 4 mathematical progression curves
+    - Linear: `base + (level × constant)` — uniform growth for casual games
+    - Exponential: `base × (1 + growth_rate)^(level - 1)` — compound growth (default)
+    - Logarithmic: `base × (1 + log(level) × growth_rate)` — slowing growth for infinite
+    - S-Curve: `base × (1 / (1 + e^(-steepness × (level - midpoint))))` — slow/fast/plateau
+  - **Meta-Progression Systems**:
+    - Prestige: Soft reset with 10% permanent bonuses per level, star currency for upgrades
+    - Skill Tree: 3 branches (Offense/Defense/Utility), 60 nodes, 10 tiers, 12,000 stars total cost
+    - Account Leveling: XP formula `100 × (level^1.5)`, rewards every 5/10/25/50 levels
+    - Ascension: Endgame exponential scaling `base × (2^ascension_level)`, 2x coin multiplier
+  - **5 Progression Tiers**:
+    - Tier 1: Tutorial (1-10) — Onboarding, teach mechanics
+    - Tier 2: Easy (11-50) — Core loop mastery
+    - Tier 3: Medium (51-100) — Strategic thinking
+    - Tier 4: Hard (101-150) — Expert gameplay
+    - Tier 5: Expert (151-200+) — Endgame challenge
+  - **Genre-Specific Templates**: 7 genres with optimized parameters
+    - Match-3: 200 levels, 5%/level growth, every 10 levels unlock, prestige + skill tree
+    - Idle: Infinite levels, 8%/level growth, every 5 levels unlock, prestige + ascension
+    - Shooter: 50 campaign, 3%/level growth, every 5 levels unlock, skill tree + account
+    - Arcade: 100 levels, 6%/level growth, every 8 levels unlock, account + leaderboard
+    - Puzzle: 150 levels, 4%/level growth, every 12 levels unlock, prestige + brain training
+    - Runner: Infinite, N/A growth, every 500m unlock, prestige + character upgrades
+    - Platformer: 60 levels, 4%/level growth, every 6 levels unlock, skill tree + collectibles
+  - **4 output files** in `specs/games/`:
+    - `progression.md` — Master progression spec (~30 pages) with difficulty formulas, level tiers, Flow validation, unlock timeline, meta-progression systems
+    - `difficulty-curve.csv` — Level-by-level data (200+ rows) with difficulty, enemy stats, skill required, flow status, unlocks
+    - `unlock-schedule.md` — Mechanic/power-up unlock timeline in 5 waves (Core→Advanced→Power-Ups→Meta→Endgame)
+    - `meta-progression.md` — Meta-progression systems specification (prestige formulas, skill tree architecture, account leveling, ascension)
+  - **CLI Flags**:
+    - `--genre <match3|idle|shooter|arcade|puzzle|runner|platformer>` (REQUIRED)
+    - `--level-count <50|100|200|500|infinite>` (default: 200)
+    - `--difficulty-model <linear|exponential|logarithmic|s-curve>` (default: exponential)
+    - `--meta-depth <basic|standard|deep>` (default: deep)
+    - `--flow-validation <true|false>` (default: true)
+  - **Handoffs**: → `/speckit.implement` (auto), → `/speckit.games.virality` (manual), → `/speckit.balance` (manual)
+  - **Cost estimation**: ~$4.80 per execution (7 agents, 120K thinking budget)
+  - **Success Metrics**:
+    - Flow Channel Compliance: ≥95% of levels within optimal balance
+    - Difficulty Smoothness: 100% slopes within 0.8-1.2 range
+    - Unlock Cadence: New mechanics every 5-15 levels
+    - Meta-Depth: Prestige + Skill Tree + Account Leveling systems specified
+    - Retention Targets: D1 ≥40%, D7 ≥20%, D30 ≥10%
+
+### Technical Details
+
+**Files Added**:
+- `templates/commands/games-progression.md` — Main progression command template (~10,000 lines)
+- `templates/shared/game-progression/progression-template.md` — Master progression spec output (~2,000 lines)
+- `templates/shared/game-progression/meta-progression-template.md` — Meta-progression systems template (~1,500 lines)
+- `templates/shared/game-progression/unlock-schedule-template.md` — Unlock timeline template (~800 lines)
+- `templates/shared/game-progression/difficulty-curve-template.csv` — CSV export template (201 lines)
+
+**Files Modified**:
+- `memory/domains/quality-gates.md` — Added QG-PROGRESSION-001 through QG-PROGRESSION-005 definitions (~260 lines)
+- `docs/COMMANDS_GUIDE.md` — Added comprehensive game progression command documentation (~150 lines)
+- `ARCHITECTURE.md` — Added game design glossary terms and file path references (~100 lines)
+
+**Total New Lines**: ~14,800 lines
+
 ## [0.9.4] - 2026-01-14
 
 ### Added

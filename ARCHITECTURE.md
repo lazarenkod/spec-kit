@@ -4604,6 +4604,48 @@ def register(email: str):
 
 - **Memory System** — Persistent domain knowledge (domains/, platforms/, test-framework-registry). Reusable across projects.
 
+**Термины Game Design:**
+
+- **Ascension** — Endgame meta-progression система с exponential difficulty scaling. Формула: `difficulty × (2^ascension_level)`. Unlock condition: account level 50+, prestige 5+, level 200 complete. Даёт permanent 2x coin multiplier, exclusive power-ups, infinite level generator, leaderboard access.
+
+- **Difficulty Slope** — Математический constraint для smooth progression. Формула: `slope = difficulty(level+1) / difficulty(level)`. Valid range: 0.8-1.2. Prevents sudden spikes (>1.2 = frustration) или drops (<0.8 = regression). Проверяется QG-PROGRESSION-001 (CRITICAL gate).
+
+- **Difficulty Models** — Четыре mathematical progression curves для level scaling:
+  - **Linear**: `base + (level × constant)` — равномерный рост, для tutorial/casual games
+  - **Exponential**: `base × (1 + growth_rate)^(level - 1)` — compound growth, стандарт для mid-core/hardcore games
+  - **Logarithmic**: `base × (1 + log(level) × growth_rate)` — замедление роста, для infinite progressions
+  - **S-Curve**: `base × (1 / (1 + e^(-steepness × (level - midpoint))))` — slow start → rapid middle → plateau end
+
+- **Flow Channel** — Mihaly Csikszentmihalyi's теория optimal challenge-skill balance. Три зоны:
+  - **Flow Zone**: Challenge ≈ Skill ± 20% (optimal engagement, "in the zone")
+  - **Boredom Zone**: Challenge < Skill - 20% (too easy, disengagement)
+  - **Anxiety Zone**: Challenge > Skill + 20% (too hard, frustration)
+  Проверяется QG-PROGRESSION-002 (HIGH) с threshold ≥95% levels in Flow.
+
+- **Meta-Progression** — Long-term progression systems beyond core levels. Четыре типа:
+  - **Prestige**: Soft reset с permanent bonuses (10%/prestige level). Star currency для permanent upgrades.
+  - **Skill Tree**: 3 branches (Offense/Defense/Utility), 60 nodes, 10 tiers. Total cost: 12,000 stars (~30 prestiges).
+  - **Account Leveling**: XP formula `100 × (level^1.5)`. Rewards every 5/10/25/50 levels.
+  - **Ascension**: Endgame exponential scaling (см. выше).
+
+- **Player Skill Growth Model** — Формула для player improvement: `skill(level) = base_skill + (level × skill_growth_rate)`. Используется для Flow Channel validation. Base skill = 10 (starting competency), growth rate = 0.6 per level (60% improvement).
+
+- **Progression Tiers** — Пять уровней сложности в level design:
+  - **Tier 1: Tutorial (1-10)** — Onboarding, teach mechanics, growth factor ~1.8x
+  - **Tier 2: Easy (11-50)** — Core loop mastery, growth factor ~6x
+  - **Tier 3: Medium (51-100)** — Complexity increase, strategic thinking
+  - **Tier 4: Hard (101-150)** — Expert gameplay, test mastery
+  - **Tier 5: Expert (151-200+)** — Endgame challenge, prestige incentive
+
+- **QG-PROGRESSION-xxx** — Quality gates для progression design:
+  - **QG-PROGRESSION-001** (CRITICAL): Difficulty Slope 0.8-1.2 между всеми adjacent levels
+  - **QG-PROGRESSION-002** (HIGH): Flow Channel Compliance ≥95%
+  - **QG-PROGRESSION-003** (HIGH): Level Count ≥ target level count
+  - **QG-PROGRESSION-004** (MEDIUM): Unlock Gate Pacing ≤5% gaps exceed 15 levels
+  - **QG-PROGRESSION-005** (HIGH): Meta-Progression Depth match --meta-depth flag
+
+- **Unlock Gates** — Mechanic/power-up/feature появления по levels. Target cadence: every 5-15 levels (prevent monotony). Пять unlock waves: Core Mechanics (1-20), Advanced Mechanics (21-50), Power-Ups (51-100), Meta-Progression (101-150), Endgame (151-200+).
+
 ### 11.2. File Path Reference
 
 **Core CLI:**
@@ -4648,6 +4690,16 @@ def register(email: str):
 | `templates/shared/design/mobile-game-presets.yaml` | ~220 | Design presets для mobile games (UI patterns, components) |
 | `templates/shared/design/mobile-game-ui-patterns.md` | ~190 | Mobile game UI patterns (HUD, menus, feedback systems) |
 
+**Templates - Game Progression:**
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `templates/commands/games-progression.md` | ~10000 | Game progression design (7 agents, 5 phases, 200+ levels, difficulty curves) |
+| `templates/shared/game-progression/progression-template.md` | ~2000 | Master progression spec output (difficulty formulas, level tiers, Flow validation) |
+| `templates/shared/game-progression/meta-progression-template.md` | ~1500 | Meta-progression systems (prestige, skill tree, account leveling, ascension) |
+| `templates/shared/game-progression/unlock-schedule-template.md` | ~800 | Unlock timeline (5 waves: Core→Advanced→Power-Ups→Meta→Endgame) |
+| `templates/shared/game-progression/difficulty-curve-template.csv` | 201 | CSV export (200+ levels with difficulty, stats, flow status, unlocks) |
+
 **Templates - Stack Configurations:**
 
 | File | Lines | Purpose |
@@ -4678,7 +4730,7 @@ def register(email: str):
 | File | Lines | Purpose |
 |------|-------|---------|
 | `pyproject.toml` | 30 | Project metadata (version 0.5.0, dependencies, entry point) |
-| `memory/domains/quality-gates.md` | ~2100 | Quality Gate definitions (QG-001..012, QG-TEST-001..004, QG-DRIFT-001..004, QG-GAME-001..005) |
+| `memory/domains/quality-gates.md` | ~2360 | Quality Gate definitions (QG-001..012, QG-TEST-001..004, QG-DRIFT-001..004, QG-GAME-001..005, QG-PROGRESSION-001..005) |
 | `memory/constitution.base.md` | ~320 | Layer 0 constitution (security, quality, performance principles) |
 | `.github/workflows/release.yml` | ~180 | CI/CD pipeline (create 20 release packages, generate notes) |
 | `CLAUDE.md` | ~450 | Project context для Claude Code |
