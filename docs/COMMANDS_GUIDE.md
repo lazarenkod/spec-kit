@@ -68,6 +68,20 @@ graph LR
 
 **Модель:** `opus` (thinking_budget: 16000)
 
+**New in v0.8.2 — Table of Contents:**
+
+Generated constitution.md files now include automatic Table of Contents after the "Project Settings" section for easier navigation:
+
+- **Hierarchical structure**: Core Sections, Domain Principles (73 total), Supporting Sections
+- **Clickable anchors**: One-click navigation to any of 19+ sections
+- **Principle counts**: Shows principle count per domain (e.g., SEC: 8, PERF: 1)
+- **Static approach**: Reflects Layer 0 base.md v1.1 (73 principles, 14 domains)
+
+**TOC Sections:**
+- Core: How It Works, Quick Start, Project Settings, Strengthened Principles, Project-Specific Principles
+- Domain: SEC, OBS, ERR, QUA, REL, API, DOC, TFA, TST, PRF, PERF, CMP, A11Y, DSS
+- Supporting: Technology Constraints, Compliance, Security, Approval Matrix, Tech Radar, SLA Targets, Design System, Exceptions, Governance
+
 #### Вопрос 5: Поддержка аналитики
 
 **Когда задается**: Всегда (после вопросов о платформе)
@@ -277,6 +291,147 @@ After switching, all downstream commands work normally:
 
 - → `/speckit.specify` — Specify features from switched concept
 - → `/speckit.plan` — Plan implementation
+
+---
+
+### 2b. `/speckit.games.concept` {#speckitgamesconcept}
+
+**Назначение:** Autonomous mobile game concept generation with 5 genre-based variants (Sorting, Match-3, Idle, Arcade, Puzzle). Adapts `/speckit.concept` architecture for game development with game-specific research agents and CQS-Game scoring.
+
+**Модель:** `opus` (thinking_budget: 120000, ultrathink tier)
+
+**Когда использовать:**
+- Creating a new mobile game from scratch
+- Exploring different genre approaches for one game idea
+- Need CEO-focused game design document with market research
+- Pre-production phase before starting GDD
+
+**Флаги:**
+- `--depth <quick|standard|world-class>` — Research depth (3/5/12 agents, default: standard)
+  - `quick`: 3 agents, 60s timeout (prototyping)
+  - `standard`: 5 agents, 180s timeout (typical projects)
+  - `world-class`: 12 agents, 300s timeout (AAA quality, ~$6.92 per concept)
+- `--genre <sorting|match3|idle|arcade|puzzle|all>` — Generate specific genre or all 5 (default: all)
+
+**Autonomous Workflow:**
+
+1. **Phase 0: Context Extraction**
+   - Extracts game parameters: core mechanics hints, theme/setting, target audience, monetization preference
+
+2. **Phase 1: Game Research (12 parallel agents in world-class mode, Priority 10)**
+   - `game-market-benchmarker` (opus, 120K) — D1/D7/D30, CPI, LTV, ARPDAU benchmarks from Sensor Tower, GameRefinery
+   - `game-competitive-analyst` (opus, 120K) — Top Grossing teardowns, feature matrix, ERRC Grid
+   - `game-monetization-researcher` (opus, 120K) — IAP/IAA strategy, LTV/CAC, ethics (GAM-004)
+   - `game-viral-mechanics-researcher` (opus, 120K) — K-factor formula validation, organic UA, social features
+   - `game-retention-researcher` (opus, 120K) — D1/D7/D30 loops, psychological triggers, churn prevention
+   - `game-genre-researcher` (sonnet, 32K) — Genre best practices, core loop patterns
+   - `game-platform-constraints-researcher` (sonnet, 32K) — iOS/Android policies, ASO
+   - `game-player-psychology-researcher` (opus, 120K) — Bartle types, SDT, Flow Theory
+   - `game-economy-simulator` (opus, 120K) — Economy balance simulation (sink/source, inflation)
+   - `game-player-archetype-researcher` (opus, 120K) — Quantic Foundry 12-motivation framework
+   - `game-platform-roadmap-researcher` (sonnet, 32K) — Multi-platform launch strategy
+   - `game-liveops-feasibility-researcher` (sonnet, 32K) — Live ops sustainability assessment
+   - `game-cultural-localization-researcher` (sonnet, 32K) — APAC/EU/LATAM localization requirements
+
+3. **Phase 2: Synthesis (2 agents, Priority 20)**
+   - `game-economy-synthesizer` (sonnet, 32K) — Economy parameters for simulation
+   - `game-liveops-synthesizer` (sonnet, 32K) — 90-day event calendar, A/B test plan
+
+4. **Phase 3: Generate 5 Genre Variants (Parallel)**
+   - **Sorting** — Organize items by attribute (color, shape, size)
+     - Examples: Sort It 3D, Water Sort Puzzle
+     - D1: 35-45%, D7: 15-25%, ARPDAU: $0.05-0.20
+   - **Match-3** — Match 3+ items to clear board
+     - Examples: Candy Crush, Homescapes
+     - D1: 40-50%, D7: 20-30%, ARPDAU: $0.20-0.50
+   - **Idle** — Automated progression with strategic upgrades
+     - Examples: AFK Arena, Idle Heroes
+     - D1: 45-55%, D7: 25-35%, ARPDAU: $0.30-0.80
+   - **Arcade** — Fast-paced reflex action
+     - Examples: Subway Surfers, Crossy Road
+     - D1: 30-40%, D7: 12-20%, ARPDAU: $0.08-0.25
+   - **Puzzle** — Logic and spatial reasoning
+     - Examples: Monument Valley, The Room
+     - D1: 35-45%, D7: 18-28%, ARPDAU: $0.05-0.15
+
+5. **Auto-Select & Save**
+   - Selects highest CQS-Game variant → `specs/game-concept.md`
+   - Saves all 5 → `specs/alternatives/01-sorting.md` ... `05-puzzle.md`
+
+**CQS-Game v2.0 Formula (10 Components, 0-120 scale):**
+```
+CQS-Game v2.0 = (
+  Market × 0.15 +              # Market opportunity
+  Mechanics × 0.13 +           # Core mechanics depth
+  Monetization × 0.13 +        # Monetization strategy
+  Viral_Potential × 0.11 +     # K-factor validation, social mechanics
+  Retention × 0.11 +           # D1/D7/D30 targets with psychological triggers
+  Strategic_Depth × 0.10 +     # Three Pillars + ERRC Grid + Positioning
+  Tech_Feasibility × 0.09 +    # Engine, platform, timeline
+  Competition × 0.08 +         # Competitive positioning
+  Innovation × 0.08 +          # Unique differentiators
+  Risk × 0.02                  # Risk/mitigation matrix
+) × 100 × Evidence_Multiplier
+
+Target: ≥90/120 (world-class tier, up from 85/120)
+```
+
+**Key Differences from `/speckit.concept`:**
+- **Variants**: 5 mobile game genres instead of 5 business strategies
+- **Scoring**: CQS-Game v2.0 (10 components) vs CQS-E (11 components)
+- **Research**: 12 game-specific agents in world-class mode (market, competitive, monetization, viral, retention, genre, platform, psychology, economy, player-archetype, platform-roadmap, liveops, localization)
+- **Threshold**: 90/120 (world-class tier for games industry)
+
+**Output Files:**
+- `specs/game-concept.md` — Auto-selected highest CQS-Game variant
+- `specs/alternatives/01-sorting.md` through `05-puzzle.md` — All genre variants
+- `specs/game-alternatives.md` — Comparison table with genre fit scores
+- `specs/quality-report.md` — CQS-Game breakdown per variant
+- `specs/concept-research.md` — Market research findings (benchmarks, competitors)
+
+**Quality Gates:**
+- **QG-GCONCEPT-001**: CQS-Game v2.0 score ≥ 90/120
+- **QG-GCONCEPT-002**: Genre fit validation ≥ 80% (core mechanics align with genre best practices, validated via genre template compliance checklists)
+- **QG-GCONCEPT-003**: No predatory patterns (GAM-004 compliance — no dark patterns, loot box ethics, COPPA)
+
+**Integration with Existing Components:**
+- Uses `game-economy-design.md` for economy parameters schema
+- Uses `retention-strategy.md` for D1/D7/D30 benchmarks
+- Uses `monetization-strategy.md` for LTV targets and GAM-004 ethics
+- Uses `player-psychology.md` for Bartle types and SDT validation
+
+**Handoffs:**
+- → `/speckit.games.mechanics` — Detail mechanics after genre selection
+- → `/speckit.gdd` — Create full Game Design Document
+- → `/speckit.concept.switch [1-5]` — Switch between genre variants
+
+**Пример использования:**
+```bash
+# Generate all 5 genre variants with world-class research
+/speckit.games.concept --depth=world-class --genre=all
+
+# Quick prototyping for specific genre
+/speckit.games.concept --depth=quick --genre=match3
+
+# Standard research for casual game
+/speckit.games.concept --depth=standard
+```
+
+**Quality Metrics:**
+- CQS-Game v2.0 Target: 90-115/120 (world-class tier)
+- Evidence Coverage: ≥80% claims sourced (Sensor Tower, App Annie, GameRefinery)
+- Genre Fit: ≥80% alignment with genre best practices (automated checklist validation)
+- Generation Time: 10-20 min end-to-end (12 research agents in world-class mode)
+
+**v2.0 World-Class Enhancements** (2026-01):
+- **Strategic Depth** component added (10% weight) — Three Pillars framework + ERRC Grid + Positioning Map
+- 5 new specialized agents (economy simulator, player archetypes, platform roadmap, live ops, cultural localization)
+- Upgraded evidence standards (Viral: STRONG tier with K-factor validation, Retention: STRONG tier with psychological triggers)
+- Comparative validation phase (cross-variant consistency checking, bias detection)
+- Genre template compliance checking (automated 80% threshold validation via checklists)
+- Multi-pass validation with regeneration (max 3 passes, component-level debugging)
+- Framework operationalization (explicit ERRC, Bartle, SDT, Flow, K-factor templates in agent prompts)
+- CQS-Game v2.0 threshold raised to 90/120 (from 85/120) for world-class tier
 
 ---
 

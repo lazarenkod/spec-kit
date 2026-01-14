@@ -1057,6 +1057,87 @@ specify workspace link backend:FEA-001 frontend:FEA-002 --type REQUIRES
 | Integration | merge, extend | System specs updates |
 | Deployment | ship, monitor, launch | Infra + observability |
 
+#### 4.1.1. `/speckit.games.concept` — Game Concept Generation
+
+**File**: `templates/commands/games-concept.md`
+
+**Purpose**: Autonomous mobile game concept generation with 5 genre-based variants (Sorting, Match-3, Idle, Arcade, Puzzle). Adapts `/speckit.concept` architecture for game development.
+
+**Key Differences from `/speckit.concept`**:
+- **Variants**: 5 mobile game genres instead of 5 business strategies (Conventional/Minimal/Disruptive/Premium/Platform)
+- **Scoring**: CQS-Game v2.0 (10 components, 0-120 scale) instead of CQS-E (11 components)
+- **Agents**: 12 game-specific research agents in world-class mode (13 in Wave 1, 2 in Wave 2, world-class depth)
+- **Target**: CQS-Game v2.0 ≥90/120 (world-class tier, up from 85/120)
+
+**Research Agents** (12 total in world-class mode):
+
+**Wave 1 (13 parallel agents in world-class, Priority 10):**
+1. `game-market-benchmarker` (opus, 120K) — D1/D7/D30 retention, CPI, LTV, ARPDAU benchmarks from Sensor Tower, GameRefinery
+2. `game-competitive-analyst` (opus, 120K) — Top Grossing teardowns, feature matrix, ERRC Grid
+3. `game-monetization-researcher` (opus, 120K) — IAP/IAA strategy, LTV/CAC optimization, GAM-004 ethics
+4. `game-viral-mechanics-researcher` (opus, 120K) — K-factor formula validation, organic UA, social features
+5. `game-retention-researcher` (opus, 120K) — Retention loops (D1/D7/D30), psychological triggers, churn prevention
+6. `game-genre-researcher` (sonnet, 32K) — Genre best practices, core loop patterns
+7. `game-platform-constraints-researcher` (sonnet, 32K) — iOS/Android policies, ASO optimization
+8. `game-player-psychology-researcher` (opus, 120K) — Bartle types, Self-Determination Theory, Flow Theory
+9. `game-economy-simulator` (opus, 120K) — Economy balance simulation (sink/source ratio, inflation)
+10. `game-player-archetype-researcher` (opus, 120K) — Quantic Foundry 12-motivation framework
+11. `game-platform-roadmap-researcher` (sonnet, 32K) — Multi-platform launch strategy (iOS, Android, Steam, Switch)
+12. `game-liveops-feasibility-researcher` (sonnet, 32K) — Live ops sustainability assessment (90-day calendar)
+13. `game-cultural-localization-researcher` (sonnet, 32K) — APAC/EU/LATAM localization requirements
+
+**Wave 2 (2 synthesis agents, Priority 20):**
+9. `game-economy-synthesizer` (sonnet, 32K) — Economy parameters for simulation
+10. `game-liveops-synthesizer` (sonnet, 32K) — 90-day event calendar, A/B test plan
+
+**CQS-Game v2.0 Formula** (10 components vs CQS-E's 11):
+```
+CQS-Game v2.0 = (
+  Market × 0.15 +              # Market opportunity (down from 0.16)
+  Mechanics × 0.13 +           # Core mechanics depth (down from 0.14)
+  Monetization × 0.13 +        # Monetization strategy (down from 0.14)
+  Viral_Potential × 0.11 +     # K-factor validation, social mechanics (down from 0.12)
+  Retention × 0.11 +           # D1/D7/D30 targets with psychological triggers (down from 0.12)
+  Strategic_Depth × 0.10 +     # Three Pillars + ERRC Grid + Positioning Map (NEW)
+  Tech_Feasibility × 0.09 +    # Engine, platform, timeline (down from 0.10)
+  Competition × 0.08 +         # Competitive positioning (unchanged)
+  Innovation × 0.08 +          # Unique differentiators (unchanged)
+  Risk × 0.02                  # Risk/mitigation matrix (down from 0.06)
+) × 100 × Evidence_Multiplier
+
+Target: ≥90/120 (world-class tier, up from 85/120)
+```
+
+**v2.0 Architecture** (World-Class Upgrade):
+- 4-wave agent execution (13 research + 5 generators + 1 validator + 1 comparative validator + 1 file generator = 21 total agent invocations)
+- Strategic Depth component (10% weight) with Three Pillars framework
+- Multi-pass validation with component-level regeneration (max 3 passes)
+- Genre template compliance validation (80% threshold via automated checklists)
+- Comparative cross-variant validation (bias detection, consistency checking)
+- Framework operationalization (ERRC, Bartle, SDT, Flow, K-factor templates in agent prompts)
+
+**Integration**: Uses existing game-specific components from `templates/shared/concept-sections/`:
+- `game-economy-design.md` — Economy parameters schema (currency types, balance metrics)
+- `retention-strategy.md` — D1/D7/D30 benchmarks by genre
+- `monetization-strategy.md` — LTV targets, GAM-004 ethics (no dark patterns)
+- `player-psychology.md` — Bartle types (Achiever, Explorer, Socializer, Killer), SDT validation
+
+**Genre Templates** (5 new templates in `templates/shared/game-genres/`):
+- `sorting-template.md` — D1: 35-45%, ARPDAU: $0.05-0.20 (hyper-casual)
+- `match3-template.md` — D1: 40-50%, ARPDAU: $0.20-0.50 (casual)
+- `idle-template.md` — D1: 45-55%, ARPDAU: $0.30-0.80 (mid-core)
+- `arcade-template.md` — D1: 30-40%, ARPDAU: $0.08-0.25 (hyper-casual)
+- `puzzle-template.md` — D1: 35-45%, ARPDAU: $0.05-0.15 (premium/F2P)
+
+**Quality Gates**:
+- **QG-GCONCEPT-001**: CQS-Game ≥ 85/120
+- **QG-GCONCEPT-002**: Genre fit ≥ 80% (mechanics align with genre best practices)
+- **QG-GCONCEPT-003**: No predatory patterns (GAM-004 compliance — COPPA, loot box ethics)
+
+**Handoffs**:
+- → `/speckit.games.mechanics` — Detailed mechanics design (not yet implemented)
+- → `/speckit.gdd` — Game Design Document generation (existing command)
+
 ### 4.2. Slash Command Architecture
 
 #### 4.2.1. YAML Frontmatter Schema
