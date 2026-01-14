@@ -2433,9 +2433,14 @@ This command captures the **complete vision and scope** of a service/product BEF
       - specs/alternatives/04-premium.md
       - specs/alternatives/05-platform.md
       - specs/concept-alternatives.md (comparison)
-      - specs/next-steps.md (ready-to-execute commands) ← NEW
-      - specs/quality-report.md (CQS breakdown) ← NEW
-      - specs/generation-summary.md (generation summary) ← NEW
+      - specs/next-steps.md (ready-to-execute commands) ← MANDATORY FILE
+      - specs/quality-report.md (CQS breakdown)
+      - specs/generation-summary.md (generation summary)
+
+   ✅ VALIDATION PASSED:
+      - specs/next-steps.md created and validated ({file_size_kb} KB)
+      - {foundation_count} foundation stories generated (Wave 1: {wave1_count}, Wave 2: {wave2_count})
+      - {total_stories} total stories across {epic_count} epics
 
    💡 Quick Start:
       cat specs/next-steps.md  # View execution strategies
@@ -2861,6 +2866,31 @@ This command captures the **complete vision and scope** of a service/product BEF
 
    Generate foundation features based on detected project type.
 
+   **CRITICAL PRE-CHECK**:
+
+   Before loading foundation scenarios, verify catalog file exists:
+
+   ```bash
+   # Check file existence
+   FILE_PATH=".specify/memory/knowledge/frameworks/ux-foundations.md"
+
+   if [ ! -f "$FILE_PATH" ]; then
+     echo "❌ CRITICAL ERROR: Foundation catalog missing"
+     echo "   Expected: $FILE_PATH"
+     echo "   This file is required for foundation layer generation."
+     echo ""
+     echo "   Resolution:"
+     echo "   1. Ensure you initialized project with: specify init <project>"
+     echo "   2. Verify .specify/memory/knowledge/frameworks/ directory exists"
+     echo "   3. Re-run /speckit.concept after restoring catalog"
+     exit 1
+   fi
+   ```
+
+   **IF file missing**: HALT execution, show error to user, request re-initialization
+
+   **IF file exists**: Continue with foundation extraction as documented
+
    ```text
    # Load foundation scenarios from catalog
    READ memory/knowledge/frameworks/ux-foundations.md
@@ -2887,6 +2917,46 @@ This command captures the **complete vision and scope** of a service/product BEF
 
      5. Mark in "UX Foundation Layer" section of concept.md
    ```
+
+   **POST-GENERATION VALIDATION**:
+
+   After generating foundation Epic/Features/Stories, validate output:
+
+   ```text
+   VALIDATE Foundation Generation:
+   1. Count generated foundations
+   2. Verify minimum set present (AUTH, ERROR, LAYOUT for Web/Mobile/Desktop)
+   3. Verify each foundation has Epic-XXX.FXX.SXX story IDs
+   4. Verify Wave assignments (Wave 1: AUTH/ERROR/LAYOUT, Wave 2: NAV/FEEDBACK/ADMIN/INTEGRATION)
+   5. Verify Priority assignments (Wave 1 → P1a, Wave 2 → P1b)
+
+   MINIMUM_FOUNDATIONS = {
+     "Web SPA": ["AUTH", "ERROR", "LAYOUT"],
+     "Web SSR": ["AUTH", "ERROR", "LAYOUT"],
+     "Mobile": ["AUTH", "ERROR", "LAYOUT"],
+     "Desktop": ["AUTH", "ERROR", "LAYOUT"],
+     "CLI": ["ERROR", "HELP"],
+     "API": ["AUTH", "ERROR"],
+     "Service": ["ERROR", "HEALTH"]
+   }
+
+   IF generated_count < MINIMUM_FOUNDATIONS[project_type]:
+     HALT with error:
+     "❌ Foundation generation incomplete. Expected {MINIMUM_FOUNDATIONS[project_type]} but got {generated_list}"
+     "   Check ux-foundations.md for project type '{project_type}'"
+
+   IF any foundation missing story IDs:
+     HALT with error:
+     "❌ Foundation {name} has no story IDs. Generation failed at Epic/Feature/Story creation step."
+   ```
+
+   **Success criteria**:
+   - ✅ Minimum foundations generated
+   - ✅ Each foundation has ≥1 story ID
+   - ✅ Wave assignments correct
+   - ✅ Priority assignments correct
+
+   **On failure**: HALT, show diagnostic info, request retry
 
    **Output**:
    - Populate "UX Foundation Layer" section with detected foundations
@@ -4051,6 +4121,9 @@ Parse to extract hierarchy and validate structure.
 | SR-CONCEPT-24 | Per-Feature Rationale | Every feature has JTBD link and selection rationale | HIGH |
 | SR-CONCEPT-25 | Wave Rationale | Each wave has grouping explanation and dependencies | MEDIUM |
 | SR-CONCEPT-26 | Reasoning Trace | At least 3 traces (Problem → Feature) documented | MEDIUM |
+| SR-CONCEPT-27 | Next Steps File Created | File `specs/next-steps.md` exists with ≥500 bytes and 4 command variants | CRITICAL |
+| SR-CONCEPT-28 | Foundation Commands Included | Wave 1/2 commands include foundation story IDs (AUTH, ERROR, LAYOUT, NAV, ADMIN, INTEGRATION if applicable) | HIGH |
+| SR-CONCEPT-29 | Story IDs Valid | All story IDs follow EPIC-###.F##.S##, no duplicates, epics match hierarchy | CRITICAL |
 
 ### Step 3: Hierarchy Validation
 
@@ -4653,96 +4726,129 @@ These tasks typically come from `/speckit.plan` Phase 0 (Foundation) and should 
 
 ---
 
-### Step 7c: Save Ready-to-Execute Commands to Dedicated File
+### Step 7c: Create specs/next-steps.md (MANDATORY)
 
-**Purpose**: Create `specs/next-steps.md` with copy-paste ready commands for quick access.
+**CRITICAL**: This step is MANDATORY and BLOCKING. Do not proceed without creating this file.
 
-**Rationale**: While Ready-to-Execute Commands are included in `specs/concept.md` (lines above), a dedicated file makes it easier to:
-- Quickly access commands without scrolling through full concept
-- Share execution strategy with team members
-- Reference from CI/CD documentation
-- Copy-paste commands without risk of editing concept.md
+**Purpose**: Create `specs/next-steps.md` with copy-paste ready commands for immediate use.
+
+**Why mandatory**:
+- Primary output for developer workflow
+- Contains ALL execution strategies (by waves, epics, priorities, all-at-once)
+- Users depend on this file for next steps
+- Without it, concept is incomplete
 
 **Process:**
 
-1. **Extract Ready-to-Execute Commands section**:
-   - Copy entire "Ready-to-Execute Commands" section from above (Option 1-4 + Next Steps)
+1. **Extract Ready-to-Execute Commands**:
+   - Copy entire "Ready-to-Execute Commands" section from Step 7b output
    - Include infrastructure prerequisites warnings
-   - Include all 4 command variants
+   - Include all 4 command variants (waves, epics, priorities, all-at-once)
+   - Include Next Commands After Specify section
 
 2. **Build next-steps.md content**:
 
-   ```markdown
-   # Ready-to-Execute Commands
+```markdown
+# Ready-to-Execute Commands
 
-   **Generated**: {current_timestamp}
-   **Source**: specs/concept.md Feature Hierarchy
-   **Concept Version**: {concept_version}
+**Generated**: {current_timestamp}
+**Source**: specs/concept.md Feature Hierarchy
+**Concept Version**: {concept_version}
+**Project Type**: {detected_project_type}
 
-   This file contains pre-generated `/speckit.specify` commands to streamline feature specification workflow.
+This file contains pre-generated `/speckit.specify` commands to streamline feature specification workflow.
 
-   ---
+---
 
-   ## Infrastructure Prerequisites
+## Infrastructure Prerequisites
 
-   ⚠️ **Complete these BEFORE running specify commands:**
+⚠️ **Complete these BEFORE running specify commands:**
 
-   - **INFRA-AUTH**: Authentication and authorization infrastructure
-   - **INFRA-LAYOUT**: Base application layout and shell components
-   - **INFRA-ERROR**: Global error handling and logging
-   - **INFRA-STATE**: State management setup (if applicable)
+Before executing any `/speckit.specify` commands, ensure infrastructure prerequisites from Phase 0 are completed:
 
-   Infrastructure must be implemented first as all features depend on it.
+- **INFRA-AUTH**: Authentication infrastructure (session management, JWT, OAuth providers)
+- **INFRA-LAYOUT**: Base layout/shell components (header, footer, navigation, error boundaries)
+- **INFRA-ERROR**: Error handling infrastructure (logging, monitoring, error pages)
+- **INFRA-STATE**: State management setup (Redux, Context, or equivalent)
 
-   ---
+These tasks typically come from `/speckit.plan` Phase 0 (Foundation) and must be implemented **BEFORE** feature stories.
 
-   {paste Ready-to-Execute Commands section content here}
+---
 
-   ---
+{PASTE_4_COMMAND_VARIANTS_FROM_STEP_7b}
 
-   ## Recommended Workflow
+---
 
-   1. **Choose strategy**: Option 1 (By Waves) recommended for most teams
-   2. **Complete infrastructure**: Implement INFRA-* prerequisites first
-   3. **Execute commands**: Copy/paste commands from chosen option
-   4. **Review specs**: Check generated `specs/NNN-feature/spec.md` files
-   5. **Plan implementation**: Run `/speckit.plan` for each feature
-   6. **Generate tasks**: Run `/speckit.tasks` for each feature
+## Next Commands After Specify
 
-   **Time-to-Value**: First feature can be specified in < 5 minutes after infrastructure is ready.
+```bash
+# After /speckit.specify completes:
+/speckit.plan {feature-id}      # Generate implementation plan
+/speckit.tasks {feature-id}     # Break down into tasks
+/speckit.staging                # Provision test environment
+/speckit.implement {feature-id} # Execute TDD implementation
+```
 
-   ---
+---
 
-   ## Next Commands After Specify
+**Generated by**: `/speckit.concept` v0.8.2+
+**Reference**: `templates/commands/concept.md` Step 7c
+```
 
-   ```bash
-   # After /speckit.specify completes:
-   /speckit.plan {feature-id}      # Generate implementation plan
-   /speckit.tasks {feature-id}     # Break down into tasks
-   /speckit.staging                # Provision test environment
-   /speckit.implement {feature-id} # Execute TDD implementation
-   ```
+3. **Write file (MANDATORY ACTION)**:
 
-   ---
+```python
+# This is NOT optional - file MUST be created
+import os
 
-   **Generated by**: `/speckit.concept` v0.8.1
-   **Reference**: `templates/commands/concept.md` Step 7c
-   ```
+next_steps_path = "specs/next-steps.md"
+os.makedirs("specs", exist_ok=True)  # Ensure directory exists
 
-3. **Write file**:
-   ```python
-   write_file("specs/next-steps.md", next_steps_content)
-   ```
+with open(next_steps_path, "w", encoding="utf-8") as f:
+    f.write(next_steps_content)
 
-4. **Console output**:
-   ```
-   📄 Ready-to-Execute Commands saved: specs/next-steps.md
-   ```
+print(f"✅ Created: {next_steps_path}")
+```
+
+4. **Validate file creation (BLOCKING)**:
+
+```python
+# Verify file was actually created
+if not os.path.exists("specs/next-steps.md"):
+    raise FileNotFoundError(
+        "❌ CRITICAL: specs/next-steps.md was not created. "
+        "This is a mandatory output file. Retry Step 7c."
+    )
+
+# Verify file has content
+file_size = os.path.getsize("specs/next-steps.md")
+if file_size < 500:  # Minimum reasonable size
+    raise ValueError(
+        f"❌ CRITICAL: specs/next-steps.md is too small ({file_size} bytes). "
+        "File may be empty or incomplete. Retry Step 7c."
+    )
+
+print(f"✅ Validated: specs/next-steps.md ({file_size} bytes)")
+```
 
 **Error Handling**:
-- If file write fails: WARN but continue (non-blocking, convenience feature)
-- If no stories found: Skip file generation, WARN "No stories in Feature Hierarchy"
+- **If directory creation fails**: HALT with error "Cannot create specs/ directory"
+- **If file write fails**: HALT with error "Cannot write specs/next-steps.md"
+- **If file empty**: HALT with error "File created but empty, retry"
+- **Do NOT skip this step** - it is mandatory for concept completion
 
-**Quality Gate**: None (convenience feature, not blocking)
+**Quality Gate**: **QG-CONCEPT-NEXTSTEPS** (NEW)
+- **Severity**: CRITICAL
+- **Check**: File exists AND size >= 500 bytes AND contains all 4 command variants
+- **On failure**: HALT concept generation, show error, request retry
 
-**Output**: File created at `specs/next-steps.md`, continue to next phase.
+**Console output**:
+```
+✅ Ready-to-Execute Commands saved: specs/next-steps.md (1.2 KB)
+   - Option 1: By Waves (recommended)
+   - Option 2: By Epics
+   - Option 3: By Priorities
+   - Option 4: Entire Concept
+```
+
+**Output**: File created at `specs/next-steps.md`, validated, continue to next phase.

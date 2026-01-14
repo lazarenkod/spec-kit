@@ -7,6 +7,47 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2026-01-13
+
+### Fixed
+
+- **`/speckit.concept` foundation generation**: Now enforces creation of `specs/next-steps.md` (was optional, now mandatory with CRITICAL quality gate)
+- **Foundation catalog validation**: Added pre-check for `ux-foundations.md` catalog file existence before foundation generation - halts with clear error message if missing
+- **Foundation generation completeness**: Added post-generation validation to ensure minimum foundation requirements are met (AUTH, ERROR, LAYOUT for Web/Mobile/Desktop)
+- **Missing foundation components**: All foundation components (AUTH, ERROR, LAYOUT, NAV, FEEDBACK, ADMIN, INTEGRATION) now properly included in ready-to-execute commands
+
+### Added
+
+- **INTEGRATION foundation** to `ux-foundations.md` (Wave 2) for third-party service integrations
+  - 6 scenarios: UXF-INTEG-001 through UXF-INTEG-006
+  - Covers: API connections, error handling, rate limits, webhooks, OAuth flows, sync status
+  - Auto-included when: API keys, webhooks, or OAuth mentioned in requirements
+- **New quality gate QG-CONCEPT-NEXTSTEPS** (CRITICAL) to validate `next-steps.md` creation
+  - Checks: File exists AND size ≥ 500 bytes AND contains all 4 command variants
+  - On failure: Halts concept generation with actionable error message
+- **Self-review checklist items** for output validation:
+  - SR-CONCEPT-27: Next Steps File Created (file exists with ≥500 bytes and 4 variants)
+  - SR-CONCEPT-28: Foundation Commands Included (Wave 1/2 commands include foundation story IDs)
+  - SR-CONCEPT-29: Story IDs Valid (format validation, no duplicates, epic consistency)
+- **Enhanced console output**: Validation status now shows foundation story counts by wave and total stories across epics
+
+### Changed
+
+- **Step 7c in concept.md** is now BLOCKING (CRITICAL) instead of optional
+  - Includes explicit file write and validation Python code blocks
+  - Error handling changed from WARN to HALT with detailed resolution steps
+  - File creation is mandatory for concept completion
+- **Foundation generation errors**: Now provide actionable resolution steps (e.g., "Run specify init", "Check .specify/memory/knowledge/frameworks/")
+- **Version reference**: Updated from v0.8.1 to v0.9.1+ in concept.md template
+
+### Technical Details
+
+**Files Modified**:
+- `memory/knowledge/frameworks/ux-foundations.md` - Added INTEGRATION foundation, updated WAVE_RULES and FOUNDATION_PATTERNS
+- `templates/commands/concept.md` - Step 5b validation, Step 7c mandatory enforcement, Step 7a self-review items, console output
+
+**Breaking Changes**: None - changes enforce existing expected behavior (next-steps.md was always intended to be created)
+
 ## [0.9.0] - 2026-01-13
 
 ### Added — `/speckit.games.concept` v2.0 World-Class Upgrade

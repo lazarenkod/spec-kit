@@ -147,6 +147,23 @@ Required for any system that needs admin management capabilities.
 - F03: Role Management (UXF-ADMIN-004)
 - F04: Audit Log (UXF-ADMIN-005)
 
+#### INTEGRATION: Third-Party Integrations
+
+Required for systems that connect with external services.
+
+| ID | Scenario | Given-When-Then | Blocks |
+|----|----------|-----------------|--------|
+| UXF-INTEG-001 | Connect to external service | Given API credentials → When establishing connection → Then connection verified | All integration features |
+| UXF-INTEG-002 | Handle API errors | Given API failure → When request fails → Then logs error and retries | Integration reliability |
+| UXF-INTEG-003 | Rate limit handling | Given API rate limit → When limit reached → Then queues requests | Integration stability |
+| UXF-INTEG-004 | Webhook handling | Given external event → When webhook received → Then processes event | Real-time integrations |
+| UXF-INTEG-005 | OAuth flow | Given OAuth provider → When user authorizes → Then receives token | Secure integrations |
+| UXF-INTEG-006 | Sync status | Given integration active → When syncing → Then shows sync progress | Integration transparency |
+
+**Default mapping**: Infrastructure layer or EPIC for Integrations
+**Wave assignment**: Wave 2 (enables business features)
+**Auto-included when**: API keys, webhooks, or OAuth mentioned in requirements
+
 ---
 
 ### Wave 3+: Business Features
@@ -206,7 +223,7 @@ After Waves 1-2, business features can be built in priority order (P1a, P1b, P2,
 ```text
 WAVE_RULES = {
   "Wave 1": ["AUTH", "ERROR", "LAYOUT", "CONFIG", "HEALTH"],
-  "Wave 2": ["NAV", "FTUE", "FEEDBACK", "HELP", "ADMIN"],
+  "Wave 2": ["NAV", "FTUE", "FEEDBACK", "HELP", "ADMIN", "INTEGRATION"],
   "Wave 3+": All business features
 }
 
@@ -240,7 +257,8 @@ FOUNDATION_PATTERNS = {
   "CONFIG": ["config*", "setting*", "preference*", "option*"],
   "OFFLINE": ["offline*", "sync*", "cache*", "queue*"],
   "HEALTH": ["health*", "status*", "ping*", "ready*", "live*"],
-  "ADMIN": ["admin*", "dashboard*", "backoffice*", "management*", "panel*", "console*"]
+  "ADMIN": ["admin*", "dashboard*", "backoffice*", "management*", "panel*", "console*"],
+  "INTEGRATION": ["integrat*", "webhook*", "api*client*", "connector*", "sync*", "oauth*", "provider*"]
 }
 
 # Usage in /speckit.concept step 8b
@@ -300,3 +318,4 @@ STATUS: Golden Path testable when ALL steps have implementing features.
 |---------|------|---------|
 | 1.0 | 2025-12-27 | Initial catalog with Wave-based ordering |
 | 1.1 | 2025-12-27 | Added ADMIN foundation (Wave 2) for projects with AUTH |
+| 1.2 | 2026-01-13 | Added INTEGRATION foundation (Wave 2) for third-party services |
