@@ -7,6 +7,34 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2026-01-13
+
+### Added
+
+- **`/speckit.games.virality` command** — Engineer built-in viral mechanics, shareability, and TikTok hooks for mobile games
+  - K-factor calculation and benchmarking (genre-specific targets: hyper-casual 0.1-0.3, social casual 0.4-0.8, multiplayer 0.6-1.2)
+  - Built-in viral mechanics (perfect run recording, challenge creator, satisfying moments, streak badges, transformations)
+  - Share features design (one-tap share UX, custom thumbnail generation, social media templates, share triggers)
+  - Challenge modes (friend challenges, asymmetric challenges, tournament brackets, leaderboard gamification)
+  - TikTok/Instagram/YouTube Shorts content strategy with 4-week content calendar
+  - Platform-specific hooks (ASMR moments, impossible→possible transitions, skill showcases, before/after transformations)
+  - Influencer seeding kit generation (press kit, creator codes, early access program, partnership tiers)
+  - Social proof design (leaderboards, clans/guilds, friend gifting, status symbols)
+  - **10-agent workflow** across 4 phases: Context Analysis → Viral Research (4 agents) → Mechanics Design (3 agents) → Content Strategy (2 agents)
+  - **4 quality gates**: K-Factor Feasibility (QG-VIRALITY-001), Platform Guidelines Compliance (QG-VIRALITY-002), Organic Share Authenticity (QG-VIRALITY-003), Content Hook Specificity (QG-VIRALITY-004)
+  - **CLI flags**: `--platform <tiktok|instagram|youtube-shorts|multi-platform>`, `--k-factor-target <0.8|1.0|1.2|1.5>`
+  - **Handoffs**: → `/speckit.games.aso` (App Store Optimization), → `/speckit.games.analytics` (Analytics tracking)
+  - **Output files**: 6 files (virality.md master blueprint + 5 detailed specs in virality/ subdirectory)
+  - **Cost estimation**: ~$1.42 per execution (10 agents, mix of opus/sonnet, 32K/16K/8K budgets)
+  - **Workflow position**: AFTER `/speckit.games.mechanics`, BEFORE `/speckit.games.aso`
+
+### Technical Details
+
+**Files Modified**:
+- `templates/commands/games-virality.md` - New command template with complete YAML frontmatter and agent architecture
+- `docs/COMMANDS_GUIDE.md` - Added games.virality documentation as section 2c
+- `pyproject.toml` - Version bump to 0.9.2
+
 ## [0.9.1] - 2026-01-13
 
 ### Fixed

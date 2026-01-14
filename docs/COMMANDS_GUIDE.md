@@ -420,6 +420,100 @@ Target: ≥90/120 (world-class tier, up from 85/120)
 **Quality Metrics:**
 - CQS-Game v2.0 Target: 90-115/120 (world-class tier)
 - Evidence Coverage: ≥80% claims sourced (Sensor Tower, App Annie, GameRefinery)
+
+---
+
+### 2c. `/speckit.games.virality` {#speckitgamesvirality}
+
+**Назначение:** Engineer built-in viral mechanics, shareability, TikTok content hooks, and K-factor optimization for mobile games. Use AFTER `/speckit.games.mechanics` and BEFORE `/speckit.games.aso` in the game development workflow.
+
+**Модель:** `opus` (thinking_budget: 32000)
+
+**Флаги:**
+- `--platform <tiktok|instagram|youtube-shorts|multi-platform>` — Primary platform for viral content optimization (default: multi-platform)
+- `--k-factor-target <0.8|1.0|1.2|1.5>` — Target viral coefficient where 1.0 = each user brings 1 new user (default: 1.0)
+- `--skip-gates` — Skip quality gates validation (not recommended)
+
+**Agent Architecture (10 agents, 4 phases):**
+
+**Phase 0: Context Analysis (1 agent)**
+- context-analyzer (sonnet, 8K) — Extracts game genre, core loop, target audience, existing social features
+
+**Phase 1: Viral Research (4 agents in parallel)**
+- k-factor-benchmarker (opus, 32K) — K-factor benchmarks by genre with formula validation: K = i × c × t (invites × conversion × time-factor)
+- platform-trends-researcher (opus, 32K) — TikTok/Instagram/YouTube algorithm priorities, platform-specific content formats
+- competitor-viral-analyzer (opus, 32K) — Teardown of top 10 viral games in genre (Stumble Guys, Among Us, Brawl Stars patterns)
+- share-psychology-researcher (sonnet, 16K) — Jonah Berger's STEPPS framework, psychological triggers for organic sharing
+
+**Phase 2: Mechanics Design (3 agents in parallel)**
+- built-in-viral-designer (opus, 32K) — Perfect run recording, challenge creator, satisfying moments, streak badges, transformations
+- share-ux-designer (opus, 32K) — One-tap share flows, custom thumbnail generation, social media templates, share triggers
+- challenge-mode-designer (sonnet, 16K) — Friend challenges, asymmetric challenges, tournament brackets, leaderboard gamification
+
+**Phase 3: Content Strategy (2 agents in parallel)**
+- tiktok-content-strategist (opus, 32K) — 4-week content calendar with ASMR hooks, impossible→possible transitions, skill showcases, hashtag strategy
+- influencer-kit-designer (sonnet, 16K) — Press kit materials, creator codes, early access program, partnership tiers
+
+**Phase 4: Validation & File Generation (1 agent)**
+- file-generator (sonnet, 16K) — Quality gates validation, 6 output files generation
+
+**Output Files (6 files):**
+- `specs/virality.md` — Viral mechanics blueprint (master document)
+- `specs/virality/share-features.md` — Share UX flows, thumbnail generation, templates, triggers
+- `specs/virality/challenge-modes.md` — Challenge types, flows, tournaments, leaderboards
+- `specs/virality/tiktok-hooks.md` — Content calendar, TikTok hooks, ASMR moments, hashtag strategy
+- `specs/virality/influencer-kit.md` — Press kit, creator codes, early access, partnership tiers
+- `specs/virality/social-proof.md` — Leaderboards, clans, social features, status symbols
+
+**Quality Gates:**
+- **QG-VIRALITY-001** (HIGH): K-Factor Feasibility — Target within ±20% of genre benchmarks
+- **QG-VIRALITY-002** (CRITICAL): Platform Guidelines Compliance — 0 policy violations (TikTok/Instagram/YouTube Terms)
+- **QG-VIRALITY-003** (CRITICAL): Organic Share Authenticity — No forced/fake sharing incentives (references GAM-004)
+- **QG-VIRALITY-004** (HIGH): Content Hook Specificity — ≥5 specific hooks with concrete examples
+
+**K-Factor Benchmarks by Genre:**
+| Genre | K-Factor Range | Evidence |
+|-------|----------------|----------|
+| Hyper-casual | 0.1-0.3 | Sensor Tower viral mechanics reports |
+| Social casual | 0.4-0.8 | GameRefinery social feature analysis |
+| Multiplayer | 0.6-1.2 | App Annie growth curve data |
+
+**TikTok Hook Types:**
+- **ASMR moments** — Satisfying taps, smooth animations, visual feedback
+- **Impossible → possible transitions** — Fail compilation → success showcase
+- **Skill showcases** — Top 1% player runs, speedruns, no-hit challenges
+- **Before/after transformations** — Level 1 → Level 100 progression
+
+**Handoffs:**
+- → `/speckit.games.aso` — Optimize App Store Presence with viral hooks
+- → `/speckit.games.analytics` — Track viral metrics and referral funnels
+- → `/speckit.gdd` — Add social/viral section to Game Design Document
+
+**Cost Estimation:**
+~$1.42 per execution
+- Phase 1: 4 opus agents @ 32K ($0.96) + 1 sonnet @ 16K ($0.08)
+- Phase 2: 2 opus @ 32K ($0.48) + 1 sonnet @ 16K ($0.08)
+- Phase 3: 1 opus @ 32K ($0.24) + 1 sonnet @ 16K ($0.08)
+- Phases 0+4: 2 sonnet @ 8-16K ($0.12)
+
+**Пример использования:**
+```bash
+# Generate viral mechanics for TikTok with high K-factor target
+/speckit.games.virality --platform=tiktok --k-factor-target=1.2
+
+# Multi-platform viral strategy with standard K-factor
+/speckit.games.virality --platform=multi-platform --k-factor-target=1.0
+
+# Instagram Reels optimization with low K-factor (realistic for new game)
+/speckit.games.virality --platform=instagram --k-factor-target=0.8
+```
+
+**Success Metrics:**
+- K-factor tracking: Monitor actual viral coefficient vs target
+- Share rate: % of users who share content
+- Challenge completion rate: % of accepted challenges
+- Influencer reach: Total impressions from creator partnerships
+- Platform compliance: 0 policy violations over 90 days
 - Genre Fit: ≥80% alignment with genre best practices (automated checklist validation)
 - Generation Time: 10-20 min end-to-end (12 research agents in world-class mode)
 
