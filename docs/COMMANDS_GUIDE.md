@@ -423,7 +423,84 @@ Target: ≥90/120 (world-class tier, up from 85/120)
 
 ---
 
-### 2c. `/speckit.games.virality` {#speckitgamesvirality}
+### 2c. `/speckit.games.mechanics` {#speckitgamesmechanics}
+
+**Назначение:** Detailed specification of core gameplay loop including controls, physics, collision detection, game states, edge cases, and balancing parameters. Transforms high-level game concept into executable game design spec.
+
+**Модель:** `opus` (thinking_budget: 40000)
+
+**Флаги:**
+- `--genre <choice>` — Game genre (match3, sorting, idle, arcade, puzzle, runner, shooter, platformer). Auto-detected if omitted.
+- `--platform <choice>` — Target platform (mobile, desktop, console, web). Default: mobile
+- `--physics-engine <choice>` — Physics engine (unity, unreal, godot, custom). Default: unity
+- `--depth <choice>` — Detail level (quick/standard/detailed). Default: standard
+
+**Depth Levels:**
+- `quick` — Basic mechanics spec (5 agents, 30 min, 5-7 pages)
+- `standard` — Complete mechanics spec (10 agents, 45 min, 10-15 pages)
+- `detailed` — World-class mechanics spec (15 agents, 60 min, 15-20 pages)
+
+**Выходные файлы:**
+- `specs/games/mechanics.md` — Master mechanics specification (10-15 pages)
+- `specs/games/mechanics-examples.md` — Code snippets (Unity C#, Unreal C++, Godot GDScript)
+- `specs/games/edge-cases.md` — Edge case catalog (32 edge cases across 4 categories)
+
+**Quality Gates:**
+- QG-MECHANICS-001: Core Loop Completeness (CRITICAL) — All 4 core loop phases specified (Action, Reward, Progression, Engagement)
+- QG-MECHANICS-002: Physics Parameters Coverage (HIGH) — Gravity, friction, bounce coefficients, collision detection all specified with numeric values
+- QG-MECHANICS-003: Edge Case Coverage ≥20 (HIGH) — At least 20 edge cases cataloged across 4 categories (NUM, STATE, INPUT, PROG)
+- QG-MECHANICS-004: Code Example Quality ≥5 (MEDIUM) — At least 5 code examples provided with platform-specific implementations
+
+**Workflow (5 фаз, 10 агентов):**
+
+**Phase 0: Context Analysis (1 agent)**
+- context-analyzer (opus, 16K) — Extract core loop, genre patterns, platform constraints, physics requirements from concept file
+
+**Phase 1: Core Loop Decomposition (3 agents, parallel)**
+- action-phase-agent (opus, 32K) — Player input, controls, gestures, touch targets
+- reward-phase-agent (opus, 32K) — Immediate feedback, VFX, SFX, haptics, screen shake
+- progression-engagement-agent (opus, 32K) — Long-term goals, retention hooks, meta-progression
+
+**Phase 2: Physics & Controls Design (3 agents, parallel)**
+- physics-parameters-agent (opus, 40K) — Gravity, friction, bounce coefficients, collision detection (AABB, SAT, raycasting)
+- controls-specification-agent (opus, 40K) — Input mapping, touch targets, gestures, keyboard/gamepad bindings
+- fsm-design-agent (opus, 40K) — Game states, FSM transitions, state persistence, save/load mechanics
+
+**Phase 3: Edge Case Analysis (2 agents, parallel)**
+- numeric-edge-cases-agent (sonnet, 32K) — Overflow, underflow, division by zero, simultaneous events
+- state-edge-cases-agent (sonnet, 32K) — Invalid transitions, container overflow, off-screen objects
+
+**Phase 4: Balancing Formulas (1 agent)**
+- balancing-formulas-agent (opus, 40K) — Difficulty scaling (level 1→100), spawn rates, combo multipliers, progression curves
+
+**Phase 5: File Generation (1 agent)**
+- file-generator-agent (sonnet, 16K) — Generate mechanics.md, mechanics-examples.md, edge-cases.md
+
+**Handoffs:**
+- → `/speckit.gdd` (auto) — Generate full Game Design Document incorporating mechanics
+- → `/speckit.balance` (manual) — Validate balancing formulas and progression curves
+- → `/speckit.implement` (manual) — Implement mechanics specification in chosen engine
+
+**Пример использования:**
+```bash
+# Standard mechanics spec for match-3 mobile game with Unity
+/speckit.games.mechanics --genre match3 --platform mobile --physics-engine unity
+
+# Quick mechanics spec for desktop puzzle game
+/speckit.games.mechanics --genre puzzle --platform desktop --depth quick
+
+# Detailed mechanics spec for console shooter
+/speckit.games.mechanics --genre shooter --platform console --physics-engine unreal --depth detailed
+```
+
+**Стоимость выполнения:**
+- Quick: ~$0.60 (5 agents, 16K-32K thinking budgets)
+- Standard: ~$1.40 (10 agents, 16K-40K thinking budgets)
+- Detailed: ~$2.80 (15 agents, 16K-60K thinking budgets)
+
+---
+
+### 2d. `/speckit.games.virality` {#speckitgamesvirality}
 
 **Назначение:** Engineer built-in viral mechanics, shareability, TikTok content hooks, and K-factor optimization for mobile games. Use AFTER `/speckit.games.mechanics` and BEFORE `/speckit.games.aso` in the game development workflow.
 

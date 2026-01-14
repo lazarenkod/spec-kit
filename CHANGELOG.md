@@ -7,6 +7,36 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.3] - 2026-01-13
+
+### Added
+
+- **`/speckit.games.mechanics` command** — Detailed specification of core gameplay loop: controls, physics, collision detection, game states, edge cases, balancing parameters
+  - **10-agent workflow** across 6 phases: Context Analysis → Core Loop Decomposition (3 agents) → Physics & Controls Design (3 agents) → Edge Case Analysis (2 agents) → Balancing Formulas → File Generation
+  - **Core loop decomposition** — Break 60-sec gameplay loop into atomic actions across 4 phases (Action, Reward, Progression, Engagement)
+  - **Controls specification** — Input mapping, touch targets, gestures, keyboard/gamepad bindings, platform-specific control schemes
+  - **Physics parameters** — Gravity, friction, bounce coefficients, collision detection with numeric values for Unity/Unreal/Godot
+  - **Game states (FSM)** — Finite state machine transitions, state persistence, save/load mechanics
+  - **Edge case catalog** — 32 edge cases across 4 categories (NUM: numeric edge cases, STATE: state transitions, INPUT: input handling, PROG: progression anomalies)
+  - **Balancing formulas** — Difficulty scaling (level 1 → 100), spawn rates, combo multipliers, progression curves
+  - **4 quality gates**: Core Loop Completeness (QG-MECHANICS-001 CRITICAL), Physics Parameters Coverage (QG-MECHANICS-002 HIGH), Edge Case Coverage ≥20 (QG-MECHANICS-003 HIGH), Code Example Quality ≥5 (QG-MECHANICS-004 MEDIUM)
+  - **Platform support** — Mobile, desktop, console, web with platform-specific control schemes
+  - **Physics engine integration** — Unity C#, Unreal C++, Godot GDScript code examples
+  - **Genre templates** — Integration with match3, sorting, idle, arcade, puzzle, runner, shooter, platformer templates
+  - **CLI flags**: `--genre <match3|sorting|idle|...>`, `--platform <mobile|desktop|console|web>`, `--physics-engine <unity|unreal|godot|custom>`, `--depth <quick|standard|detailed>`
+  - **3 depth levels**: Quick (5 agents, 30 min, 5-7 pages), Standard (10 agents, 45 min, 10-15 pages, default), Detailed (15 agents, 60 min, 15-20 pages with FSM diagrams)
+  - **Handoffs**: → `/speckit.gdd` (auto) for full GDD generation, → `/speckit.balance` (manual) for formula validation, → `/speckit.implement` (manual) for engine implementation
+  - **Output files**: 3 files (mechanics.md master spec, mechanics-examples.md code snippets, edge-cases.md catalog)
+  - **Cost estimation**: ~$1.40 per execution (10 agents, mix of opus 16K-40K / sonnet 32K budgets)
+  - **Workflow position**: AFTER `/speckit.games.concept`, BEFORE `/speckit.games.virality`
+
+### Technical Details
+
+**Files Modified**:
+- `templates/commands/games-mechanics.md` - New command template with complete YAML frontmatter and agent architecture (~8000 lines)
+- `docs/COMMANDS_GUIDE.md` - Added games.mechanics documentation as section 3
+- `pyproject.toml` - Version bump to 0.9.3
+
 ## [0.9.2] - 2026-01-13
 
 ### Added
