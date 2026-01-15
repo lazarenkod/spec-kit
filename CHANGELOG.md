@@ -7,6 +7,21 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.6] - 2026-01-15
+
+### Changed
+
+- **Documentation Enhancement** — Comprehensive flag documentation for all 42 CLI commands in COMMANDS_GUIDE.md
+  - Added complete flag descriptions for commands with undocumented flags: `/speckit.gdd`, `/speckit.playtest`, `/speckit.balance`
+  - Added missing flag sections for commands: `/speckit.help`, `/speckit.concept.switch`, `/speckit.taskstoissues`, `/speckit.merge`
+  - Enhanced `/speckit.design` flags with 6 new flags: `--concept`, `--alternative`, `--all-alternatives`, `--variant`, `--all-variants`, `--mockup`, `--game-art-pipeline`
+  - Reorganized `/speckit.design` flags into categories: Input Mode Selection, Framework & Aesthetic, Design Generation, Viewport & Format, Execution Control, Quality & Debugging, Gallery & Extras
+  - Enhanced `/speckit.specify` flags with planning depth levels and quality gate controls
+  - Added comprehensive flag documentation for game-related commands: `/speckit.games.mechanics`, `/speckit.games.virality`, `/speckit.balance`, `/speckit.softlaunch`
+  - Improved `/speckit.liveops` and `/speckit.analytics` sections with input/output specifications
+  - All 42 commands now have either Флаги, Входы, or both sections (100% coverage)
+  - Verified: No flags without descriptions, consistent em-dash formatting throughout
+
 ## [0.9.5] - 2026-01-14
 
 ### Added

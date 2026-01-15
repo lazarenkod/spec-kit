@@ -10,6 +10,7 @@
 
 ## Содержание
 
+- [0. /speckit.help](#speckithelp)
 - [1. /speckit.constitution](#speckitconstitution)
 - [2. /speckit.concept](#speckitconcept)
 - [2a. /speckit.concept.switch](#speckitconceptswitch)
@@ -62,6 +63,59 @@ graph LR
 
 ## Детальное описание команд
 
+### 0. `/speckit.help` {#speckithelp}
+
+**Назначение:** Display help documentation for any speckit command, including command description, required and optional flags with descriptions, usage examples, handoffs to next commands, and model information.
+
+**Модель:** `haiku` (thinking_budget: 4000)
+
+**Флаги:**
+
+**Command Selection:**
+- `<command>` — Command name to get help for (required). Can use short form (e.g., "concept") or full form (e.g., "speckit.concept")
+
+**Options:**
+- `--json` — Output help in JSON format (machine-readable)
+- `--verbose` — Include extended documentation and examples
+- `--list` — List all available commands
+
+**Примеры использования:**
+```bash
+# Get help for concept command
+/speckit.help concept
+
+# Get help for game progression command (with prefix)
+/speckit.help speckit.games.progression
+
+# Get help for implementation command
+/speckit.help implement
+
+# Get help for specify command (short form)
+/speckit.help specify
+```
+
+**Output Format:**
+- Command name and description
+- Model and thinking budget
+- Usage pattern with required flags
+- Required flags section (with REQUIRED marker)
+- Optional flags section (with defaults)
+- Usage examples from documentation
+- Handoff commands (next steps in workflow)
+
+**Notes:**
+- Fast response time (haiku model, <5 seconds typical)
+- Cost: ~$0.01 per help invocation
+- Help content is always up-to-date (reads from COMMANDS_GUIDE.md)
+- If command not found, displays list of available commands
+- Handles both "concept" and "speckit.concept" formats
+- Output width: 80 characters max for readability
+
+**Handoffs:**
+- None (help is informational only, doesn't modify state)
+
+---
+
 ### 1. `/speckit.constitution` {#speckitconstitution}
 
 **Назначение:** Create or update the project constitution with layered architecture support (base → domain → project layers).
@@ -81,6 +135,10 @@ Generated constitution.md files now include automatic Table of Contents after th
 - Core: How It Works, Quick Start, Project Settings, Strengthened Principles, Project-Specific Principles
 - Domain: SEC, OBS, ERR, QUA, REL, API, DOC, TFA, TST, PRF, PERF, CMP, A11Y, DSS
 - Supporting: Technology Constraints, Compliance, Security, Approval Matrix, Tech Radar, SLA Targets, Design System, Exceptions, Governance
+
+
+**Флаги:**
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 #### Вопрос 5: Поддержка аналитики
 
@@ -230,9 +288,8 @@ CQS-E = (
 - Generation Time: 15-25 min end-to-end (increased due to synthesis waves)
 
 **Флаги:**
-
-- `--depth <quick|standard|world-class>` — Thinking budget override (default: world-class/120K)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
+
 
 **Handoffs:**
 
@@ -248,14 +305,21 @@ CQS-E = (
 
 **Модель:** `haiku` (thinking_budget: 2000)
 
-**Usage:**
+**Флаги:**
+
+**Alternative Selection:**
+- `<N>` — Alternative number to switch to (1-5, required)
+  - 1 = Conventional (conservative, proven approach)
+  - 2 = Minimal (MVP, stripped-down version)
+  - 3 = Disruptive (innovative, high-risk/high-reward)
+  - 4 = Premium (feature-rich, premium market)
+  - 5 = Platform (extensible, ecosystem approach)
+
+**Execution:**
 
 ```bash
 /speckit.concept.switch [1-5]
 ```
-
-**Arguments:**
-- `[1-5]`: Alternative number (1=Conventional, 2=Minimal, 3=Disruptive, 4=Premium, 5=Platform)
 
 **What It Does:**
 
@@ -707,15 +771,152 @@ Based on Mihaly Csikszentmihalyi's Flow Theory, progression design maintains opt
 
 ---
 
-### 3. `/speckit.validate-concept` {#speckitvalidate-concept}
+### 2f. `/speckit.gdd` {#speckitgdd}
 
-**Назначение:** Re-validate an existing concept against current market conditions. Runs research agents to detect changes in market, competitors, and trends. Generates diff report and CQS delta. Use periodically (monthly/quarterly) to keep concept fresh.
+**Назначение:** Generate a Game Design Document.
 
-**Модель:** `sonnet` (thinking_budget: 12000)
+**Модель:** `opus` (thinking_budget: 120000)
 
-**Persona:** `concept-validator`
+**Флаги:**
 
-**Handoffs:**
+**Quality & Validation:**
+- `--skip-validation` — Skip quality gate validation (not recommended for production)
+- `--strict` — Treat HIGH severity gates as CRITICAL (blocking)
+
+**Content Selection:**
+- `--section <name>` — Generate or update specific section only (vision, core-loop, economy, etc.)
+
+**Updating Existing GDD:**
+- `--update` — Update existing GDD, preserving unchanged sections
+
+**Export Formats:**
+- `--export-unity` — Export to Unity ScriptableObjects format
+- `--export-unreal` — Export to Unreal Data Assets format
+
+**Model Control:**
+- `--max-model <opus|sonnet|haiku>` — Override model cap for cost control
+
+---
+
+### 2g. `/speckit.playtest` {#speckitplaytest}
+
+**Назначение:** Plan and execute playtests with automated session recording, metric tracking, and comparative analysis.
+
+**Модель:** `opus` (thinking_budget: 120000)
+
+**Флаги:**
+
+**Playtest Mode:**
+- `--plan-only` — Generate playtest plan without executing sessions
+
+**Analysis & Reporting:**
+- `--analyze <session-dir>` — Analyze existing playtest session data
+- `--compare <previous-report>` — Compare against previous playtest report
+
+**Data Export:**
+- `--export-jira` — Export findings and issues to Jira
+- `--export-linear` — Export findings and issues to Linear
+
+**Recording:**
+- `--skip-recording` — Skip automatic session recording
+
+**Model Control:**
+- `--max-model <opus|sonnet|haiku>` — Override model cap for cost control
+
+---
+
+### 2h. `/speckit.balance` {#speckitbalance}
+
+**Назначение:** Balance game economy and difficulty through simulation and analysis.
+
+**Модель:** `opus` (thinking_budget: 120000)
+
+**Флаги:**
+
+**Scope Selection:**
+- `--economy-only` — Balance economy systems only (skip difficulty tuning)
+- `--difficulty-only` — Balance difficulty only (skip economy analysis)
+- `--meta-only` — Balance metagame/progression only
+
+**Simulation Parameters:**
+- `--runs <N>` — Number of simulation runs (default: 100)
+- `--days <N>` — Number of days to simulate (default: 30)
+
+**Quality Gates:**
+- `--threshold <gate>=<value>` — Override specific quality gate threshold (e.g., `--threshold retention=0.5`)
+
+**Reporting:**
+- `--export-csv` — Export simulation data to CSV format
+- `--compare <previous-report>` — Compare against previous balance report
+
+**Model Control:**
+- `--max-model <opus|sonnet|haiku>` — Override model cap for cost control
+
+---
+
+### 2i. `/speckit.softlaunch` {#speckitsoftlaunch}
+
+**Назначение:** Plan and execute a soft launch.
+
+**Модель:** `opus` (thinking_budget: 120000)
+
+**Флаги:**
+
+**Phase & Market Selection:**
+- `--phase <1|2|3>` — Focus on specific soft launch phase (1=Test Market, 2=Scale Test, 3=Global Prep)
+- `--markets <PH,AU,CA>` — Override test markets (comma-separated country codes)
+
+**Benchmarking & Analysis:**
+- `--benchmark-tier <minimum|target|top>` — Comparison tier for KPI evaluation
+- `--analyze <metrics-file>` — Analyze existing metrics data
+
+**Decision & Export:**
+- `--decision <go|iterate|pivot|kill>` — Log a go/no-go decision with reasoning
+- `--export <pdf|notion|confluence>` — Export launch reports to external platforms
+
+**Model Control:**
+- `--max-model <opus|sonnet|haiku>` — Override model cap for cost control
+
+---
+
+### 2j. `/speckit.liveops` {#speckitliveops}
+
+**Назначение:** Live Operations Planning for mobile games. Generates content calendars, seasonal event schedules, remote config strategies, and LiveOps playbooks. Integrates with Firebase Remote Config, PlayFab, and Unity Gaming Services.
+
+**Модель:** `opus` (thinking_budget: 80000)
+
+**Входы:**
+- `memory/gdd.md` — Game Design Document (REQUIRED)
+- `memory/analytics.md` — Analytics KPI definitions (REQUIRED)
+- `memory/softlaunch-report.md` — Post-softlaunch metrics (optional)
+- `memory/balance-report.md` — Economy simulation results (optional)
+
+**Выходы:**
+- `memory/liveops-calendar.md` — 12-week content calendar
+- `memory/liveops-playbook.md` — Standard operating procedures
+- `memory/event-templates.md` — Reusable event blueprints
+- `memory/remote-config.json` — Config schema export
+- `memory/ab-test-plan.md` — A/B testing roadmap
+
+---
+
+### 2k. `/speckit.analytics` {#speckitanalytics}
+
+**Назначение:** Plan and execute analytics infrastructure. Sets up KPI tracking, analytics dashboards, data pipelines, and experiment frameworks for mobile games.
+
+**Модель:** `opus` (thinking_budget: 80000)
+
+**Входы:**
+- `memory/gdd.md` — Game Design Document (REQUIRED)
+- `memory/softlaunch-report.md` — Soft launch performance data (optional)
+
+**Выходы:**
+- `memory/analytics.md` — Analytics specification and KPI registry
+- `memory/dashboard-spec.md` — Dashboard layout and metrics
+- `memory/event-tracking.md` — Event taxonomy and tracking plan
+- `memory/cohort-analysis.md` — Cohort definitions and analysis strategy
+
+---
 
 - → `/speckit.concept`
 - → `/none`
@@ -815,14 +1016,29 @@ Based on Mihaly Csikszentmihalyi's Flow Theory, progression design maintains opt
 
 **Флаги:**
 
-- `--depth-level <0-3>` — Явное указание уровня глубины
-- `--plan-mode` — Алиас для `--depth-level 3` (Full)
-- `--no-plan-mode` — Алиас для `--depth-level 0` (Standard)
-- `--model` — Override model selection
-- `--skip-gates` — Bypass inline quality gates
-- `--strict-gates` — Treat HIGH severity as blocking
-- `--full-gates` — Run full validation passes
-- `--sequential` — Disable operation batching (execute operations sequentially)
+**Input & Mode:**
+- `--file <path>` — Use a file as input for the specification
+- `--continue` — Continue editing the last generated specification
+- `--no-ai` — Create a boilerplate spec file without AI assistance
+- `--init` — Initialize a new feature directory and spec without generating content
+- `--no-branch` — Do not create a new git branch for the feature
+
+**Planning Depth** (v0.4.0):
+- `--depth-level <0-3>` — Set planning depth: 0=Standard (default), 1=Lite, 2=Moderate, 3=Full
+- `--plan-mode` — Alias for `--depth-level 3` (full exploration and review)
+- `--no-plan-mode` — Alias for `--depth-level 0` (standard mode)
+
+**Quality Gates:**
+- `--skip-gates` — Skip all inline quality gates (not recommended)
+- `--strict-gates` — Treat HIGH severity gates as CRITICAL (blocking)
+- `--full-gates` — Run full validation pass instead of simplified check
+
+**Output & Control:**
+- `--json` — Output summary in JSON format
+- `--max-model <opus|sonnet|haiku>` — Override model cap for cost control
+- `--model <model>` — Override model selection
+- `--full-context` — Load complete context (skip selective loading)
+- `--sequential` — Disable operation batching, execute sequentially
 
 **Inline Quality Gates:**
 
@@ -857,7 +1073,7 @@ Based on Mihaly Csikszentmihalyi's Flow Theory, progression design maintains opt
 **Модель:** `sonnet` (thinking_budget: 16000)
 
 **Флаги:**
-
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 - `--sequential` — Disable operation batching (execute gap searches sequentially)
 
 **Handoffs:**
@@ -876,39 +1092,56 @@ Based on Mihaly Csikszentmihalyi's Flow Theory, progression design maintains opt
 
 **Флаги:**
 
-- `--quick` — or `--defaults` flag passed
-- `--alternative` — — Generate design for specific alternative (1-5)
-- `--all-alternatives` — — Generate designs for ALL alternatives from concept.md
-- `--variant` — — Generate design for variant (MINIMAL/BALANCED/AMBITIOUS)
-- `--all-variants` — — Generate designs for all 3 scope variants
-- `--compare` — — Generate visual comparison matrix alongside designs
-- `--viewports` — `"desktop,tablet,mobile"`
-- `--no-webp` — `false`
-- `--no-optimize` — `false`
-- `--interactive` — `true`
-- `--parallel` — `true`
-- `--max-parallel` — `3`
-- `--batch-delay` — `5000`
-- `--no-parallel` — -
-- `--incremental` — `true`
-- `--force` — `false`
-- `--reuse-session` — `true`
-- `--no-reuse-session` — -
-- `--audit-selectors` — `false`
-- `--dry-run` — `false`
-- `--debug` — `false`
-- `--log-level` — `info`
-- `--retry-max` — `2`
-- `--retry-backoff` — `exponential`
-- `--allow-manual-intervention` — `false`
-- `--gallery-mode` — `basic`
-- `--no-gallery` — `false`
-- `--all` — `false`
-- `--screens` — -
-- `--manual` — `false`
-- `--reauth` — `false`
-- `--no-figma` — `false`
-- `--sequential` — Disable operation batching (execute context reads sequentially)
+**Input Mode Selection:**
+- `--concept` — Use concept.md as the primary input for design generation (generates app-wide design from alternatives)
+- `--alternative <N>` — Generate design for specific alternative (1-5) from concept.md
+- `--all-alternatives` — Generate designs for ALL alternatives from concept.md
+- `--variant <name>` — Generate design for scope variant (MINIMAL, BALANCED, or AMBITIOUS)
+- `--all-variants` — Generate designs for all 3 scope variants
+
+**Framework & Aesthetic:**
+- `--library <name>` — Specify component framework/library (shadcn/ui, MUI, Tailwind, etc.)
+- `--aesthetic <name>` — Apply brand aesthetic preset (linear, stripe, vercel, notion, apple, airbnb, github, slack, figma)
+
+**Design Generation:**
+- `--quick` or `--defaults` — Use default design preferences, skip questionnaire
+- `--compare` — Generate visual comparison matrix alongside designs
+- `--mockup` — Generate high-fidelity visual mockups via Google Stitch
+- `--game-art-pipeline` — Generate mobile game art pipeline (5 phases: visual style, assets, animations, VFX, audio)
+
+**Viewport & Format:**
+- `--viewports <list>` — Specify viewports to generate (default: "desktop,tablet,mobile")
+- `--no-webp` — Disable WebP format optimization
+- `--no-optimize` — Disable image optimization
+- `--no-figma` — Disable Figma token export
+
+**Execution Control:**
+- `--parallel` — Enable parallel operation execution (default: true)
+- `--max-parallel <N>` — Maximum parallel operations (default: 3)
+- `--batch-delay <ms>` — Delay between batches in milliseconds (default: 5000)
+- `--incremental` — Generate incrementally, reuse existing parts
+- `--sequential` — Disable operation batching, execute context reads sequentially
+- `--force` — Force regeneration even if design exists
+- `--reuse-session` — Reuse browser session (default: true)
+- `--interactive` — Enable interactive mode (default: true)
+
+**Quality & Debugging:**
+- `--dry-run` — Preview changes without generating files
+- `--debug` — Enable debug logging
+- `--log-level <level>` — Set logging level (default: info)
+- `--retry-max <N>` — Maximum retry attempts (default: 2)
+- `--retry-backoff <strategy>` — Retry backoff strategy (exponential)
+- `--audit-selectors` — Audit CSS selectors for validity
+- `--allow-manual-intervention` — Allow manual intervention on errors
+
+**Gallery & Extras:**
+- `--gallery-mode <mode>` — Gallery display mode (default: basic)
+- `--no-gallery` — Disable gallery generation
+- `--screens <list>` — Specific screens to design
+- `--manual` — Manual mode (requires user interaction)
+
+**Model Control:**
+- `--max-model <opus|sonnet|haiku>` — Override model cap for cost control
 
 **Aesthetic Presets** (v0.1.2):
 
@@ -1149,6 +1382,12 @@ DQS expanded from 5 to 12 dimensions (100 points total, threshold ≥ 70):
 
 **Требует:** handoffs/specify-to-plan.md
 
+**Флаги:**
+- `--style <style>` — Choose planning style: detailed, standard, agile (default: standard)
+- `--full` — Include all optional sections (pre-mortem, security, etc.)
+- `--json` — Output summary in JSON format
+- `--no-ai` — Create a boilerplate plan file without AI assistance
+
 **Domain-Aware Planning (v0.0.120):**
 
 Автоматическая загрузка знаний предметной области перед принятием архитектурных решений:
@@ -1269,6 +1508,12 @@ DQS expanded from 5 to 12 dimensions (100 points total, threshold ≥ 70):
 
 **Требует:** handoffs/plan-to-tasks.md
 
+**Флаги:**
+- `--style <style>` — Choose task generation style: detailed, standard, agile (default: standard)
+- `--full` — Include all optional tasks (docs, analytics, etc.)
+- `--json` — Output summary in JSON format
+- `--no-ai` — Create a boilerplate tasks file without AI assistance
+
 **Plan Mode Enhancement (v0.4.0):**
 
 Опциональное улучшение (консервативные настройки):
@@ -1336,6 +1581,31 @@ The `/speckit.tasks` command now enforces strict clarity requirements to ensure 
 
 **Модель:** `haiku` (thinking_budget: 8000)
 
+**Флаги:**
+
+**Issue Creation:**
+- `--repo <owner/repo>` — Target GitHub repository (required if not configured in constitution)
+- `--milestone <name>` — Assign issues to milestone
+- `--labels <label1,label2>` — Add labels to all created issues
+
+**Content Generation:**
+- `--include-estimates` — Include time estimate for each issue
+- `--include-acceptance` — Include acceptance criteria in issue body
+- `--include-deps` — Include dependency information as issue links
+
+**Filtering:**
+- `--only-phase <N>` — Only convert tasks from specific phase
+- `--exclude-phase <N>` — Skip tasks from specific phase
+- `--only-type <type>` — Only convert specific task type (feature, fix, test, doc)
+
+**Execution:**
+- `--dry-run` — Preview issues without creating them
+- `--open-pr` — Open a PR with issue links
+- `--json` — Output issue data in JSON format
+
+**Model Control:**
+- `--max-model <opus|sonnet|haiku>` — Override model cap for cost control
+
 ---
 
 ### 10. `/speckit.staging` {#speckitstaging}
@@ -1349,12 +1619,16 @@ The `/speckit.tasks` command now enforces strict clarity requirements to ensure 
 **Требует:** tasks.md
 
 **Флаги:**
-
-- `--services` — Override default services (postgres,redis,playwright). Comma-separated.
+- `--services <list>` — Override default services (postgres,redis,playwright). Comma-separated.
 - `--skip-playwright` — Skip Playwright container (useful for unit-test-only features)
 - `--reset` — Tear down and recreate all services
 - `--status` — Show current staging status without changes
 - `--down` — Stop all staging services
+- `--mobile` — Enable Android emulator for mobile app testing
+- `--android-only` — Only provision Android emulator (skip iOS simulator)
+- `--ios-only` — Only provision iOS simulator (macOS only, skip Android)
+- `--appium` — Include Appium server for native automation
+- `--emulator-device <name>` — Android device type (default: pixel_6). Options: pixel_6, pixel_8, galaxy_s24
 
 **Pre-Gates:**
 
@@ -1387,11 +1661,11 @@ The `/speckit.tasks` command now enforces strict clarity requirements to ensure 
 **Persona:** `qa-agent`
 
 **Флаги:**
-
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 - `--profile` — Select validation profile: `full` (all passes), `qa` (post-implementation), `drift` (spec-code alignment), `quick` (critical only)
 - `--quiet` — Suppress non-essential output (only gates + result)
 - `--strict` — Lower thresholds (e.g., ambiguity < 3 instead of 5)
-- `--json` — Output as JSON for programmatic consumption
+- `--json` — Output audit report in JSON format
 
 **Pass AA: Drift Detection (v0.4.0):**
 
@@ -1442,13 +1716,11 @@ Bidirectional spec-code alignment analysis:
 **Persona:** `documentation-agent`
 
 **Флаги:**
-
-- `--scope` — Scan scope patterns (required): `"src/**/*.ts"`, `"api/**/*.py"`, etc.
-- `--exclude` — Exclude patterns (default: `node_modules/`, `dist/`, `build/`)
-- `--min-confidence` — Minimum confidence threshold for extraction (0.0-1.0, default: 0.70)
-- `--language` — Force language detection (typescript, python, go, java, kotlin)
-- `--output-dir` — Override output directory (default: `reverse-engineered/`)
-- `--merge-mode` — Auto-merge verified FRs into canonical spec (requires confirmation)
+- `--scope` — Scan scope patterns (required)
+- `--exclude` — Additional exclusions (optional)
+- `--language` — Override language detection (optional)
+- `--force` — Overwrite existing reverse-engineered/ directory
+- `--confidence-threshold` — Minimum confidence for inclusion (default: 0.50)
 
 **4-Wave Extraction Algorithm:**
 
@@ -1543,20 +1815,14 @@ cat reverse-engineered/.extraction-manifest.yaml
 **Решение:** `/speckit.fix` обнаруживает дрейф, генерирует предложения по обновлению и применяет изменения с полной трассируемостью.
 
 **Флаги:**
-
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 - `--scope <pattern>` — Паттерн файлов/директорий (default: текущая feature dir)
-  - Примеры: `src/auth/`, `**/*.py`, `.` (все файлы)
-- `--mode <interactive|auto|preview>` — Режим работы (default: `interactive`)
-  - `interactive` — Запрос подтверждения для каждого изменения
-  - `auto` — Автоматическое применение (требует `--force`)
-  - `preview` — Генерация отчета без применения изменений
-- `--artifact <spec|plan|tasks|all>` — Какие артефакты обновлять (default: `all`)
-- `--strategy <incremental|regenerate>` — Стратегия обновления (default: `incremental`)
-  - `incremental` — Добавить недостающие FR/AS, сохранить структуру (2-3 мин)
-  - `regenerate` — Полная перегенерация с трехсторонним слиянием (5-10 мин)
-- `--git-diff` — Анализировать только измененные файлы через `git diff HEAD` (default: `true`)
-- `--force` — Пропустить подтверждения (только для `--mode auto`)
-- `--dry-run` — Показать предложения без применения
+- `--mode <incremental|regenerate>` — `incremental` (default) / `regenerate`
+- `--artifact <spec|plan|tasks|all>` — `spec` (default), `plan`, `tasks`, `all`
+- `--strategy <auto|manual>` — `auto` (default) / `manual`
+- `--git-diff` — Анализировать только измененные файлы (default: true)
+- `--force` — Применить изменения без подтверждения
+- `--dry-run` — Показать изменения без применения
 
 **6-Wave Orchestration:**
 
@@ -1809,14 +2075,11 @@ Apply this change? [Y/n/e/skip/quit]
 **Следующий шаг:** `/speckit.merge` сгенерирует migration guides при breaking changes.
 
 **Флаги:**
-
-- `--skip-gates` — Bypass all inline quality gates
-- `--skip-pre-gates` — Skip only pre-implementation gates
-- `--strict-gates` — Treat HIGH severity as blocking
-- `--fast` — Fast mode - run only Tier 1-2 validation
-- `--sequential-tasks` — Disable task batching (execute tasks one-by-one)
-- `--sequential-waves` — Disable wave overlap optimization
-- `--no-auto-framework` — Disable automatic test framework installation (skip auto-remediation)
+- `--tdd` — Enable Test-Driven Development mode (write tests first)
+- `--auto-fix` — Automatically apply fixes for failing tests
+- `--full-suite` — Run full test suite instead of just affected tests
+- `--skip-tests` — Skip running tests (not recommended)
+- `--json` — Output summary in JSON format
 
 **Task Batching (v0.0.110):**
 
@@ -1871,16 +2134,15 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 **Persona:** `qa-agent`
 
 **Флаги:**
-
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 - `--no-auto-fix` — Disable automatic fix application (report only)
 - `--threshold N` — Override pass threshold (0-100, default: 90)
 - `--skip-visual` — Skip visual regression testing
-- `--skip-nfr` — Skip NFR verification (performance, accessibility)
-- `--baseline` — Update visual baselines instead of comparing
-- `--json` — Output JSON summary only (no markdown report)
-- `--ci` — CI mode: no interactive prompts, fail on threshold
-- `--fix-and-verify` — Apply fixes and re-run verification automatically
-- `--skip-gates` — Skip all inline quality gates
+- `--skip-nfr` — Skip non-functional requirement validation
+- `--baseline <hash>` — Compare against a specific baseline hash
+- `--json` — Output verification report in JSON format
+- `--ci` — CI mode: fail on errors, exit with code
+- `--fix-and-verify` — Run `/speckit.fix` before verification
 
 **Pre-Implementation Inline Gates:**
 
@@ -1927,14 +2189,9 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 **Persona:** `product-designer-agent`
 
 **Флаги:**
-
-- `--all-alternatives` — Generate preview gallery for ALL alternatives
-- `--all-variants` — Generate previews for all scope variants
-- `--compare` — Generate side-by-side comparison view
-- `--quick` — `--skip quality,gallery,deploy,frames`
-- `--ci` — `--no-open --baseline check --gate 80 --skip deploy`
-- `--review` — `--deploy --device all --gate 80`
-- `--preview-mode` — Override model selection
+- `--output <path>` — Specify output path for the preview file (default: preview.md)
+- `--format <format>` — Specify output format: markdown, html, pdf (default: markdown)
+- `--style <style>` — Choose preview style: standard, compact, full (default: standard)
 
 **Screenshot Quality (NEW v0.2.0):**
 
@@ -1976,9 +2233,11 @@ await page.screenshot({
 **Модель:** `haiku` (thinking_budget: 4000)
 
 **Флаги:**
-
+- `--verbose, -v` — Include file details per feature
 - `--json` — Output in JSON format
+- `--status <status>` — Filter by status (e.g., `--status IN_PROGRESS`)
 - `--tree` — Show feature evolution tree (parent-child relationships)
+- `--evolution <id>` — Show full lineage for a specific feature
 
 **Handoffs:**
 
@@ -1994,7 +2253,9 @@ await page.screenshot({
 **Модель:** `haiku` (thinking_budget: 4000)
 
 **Флаги:**
-
+- `<id>` — Switch by feature ID (e.g., `001`)
+- `<name>` — Switch by feature name (e.g., `user-auth`)
+- `<full>` — Switch by full name (e.g., `001-user-auth`)
 - `--json` — Output in JSON format
 - `--repair` — Regenerate manifest from directory structure
 - `--no-git` — Skip git branch checkout
@@ -2013,6 +2274,9 @@ await page.screenshot({
 **Назначение:** Extend a merged feature with new capabilities. Creates a new feature branch with Feature Lineage pre-populated, loading context from the parent feature and its system specs.
 
 **Модель:** `sonnet` (thinking_budget: 8000)
+
+**Флаги:**
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 **Quality Gates:**
 
@@ -2035,6 +2299,29 @@ await page.screenshot({
 **Назначение:** Finalize feature and update system specs after PR merge. Converts feature requirements into living system documentation.
 
 **Модель:** `sonnet` (thinking_budget: 16000)
+
+**Флаги:**
+
+**Merge Configuration:**
+- `--pr <number>` — Specify PR number to merge (if not using command line argument)
+- `--branch <name>` — Feature branch name (default: current branch)
+- `--target <branch>` — Target branch for merge (default: main)
+
+**System Documentation:**
+- `--update-system-spec` — Update system spec with new feature documentation
+- `--generate-migration` — Generate migration guide if breaking changes detected
+- `--update-api` — Update API reference from contracts if present
+
+**Cleanup:**
+- `--archive` — Archive feature branch after merge
+- `--cleanup-specs` — Remove feature specs (but keep in docs)
+
+**Output:**
+- `--json` — Output merge summary in JSON format
+- `--dry-run` — Preview changes without applying them
+
+**Model Control:**
+- `--max-model <opus|sonnet|haiku>` — Override model cap for cost control
 
 **Documentation Generation (v0.6.0):**
 
@@ -2090,6 +2377,9 @@ await page.screenshot({
 
 **Модель:** `sonnet` (thinking_budget: 16000)
 
+**Флаги:**
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
+
 **Pre-Gates:**
 
 - Feature Directory Gate
@@ -2118,6 +2408,9 @@ await page.screenshot({
 
 **Модель:** `sonnet` (thinking_budget: 8000)
 
+**Флаги:**
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
+
 ---
 
 ### 23. `/speckit.discover` {#speckitdiscover}
@@ -2125,6 +2418,9 @@ await page.screenshot({
 **Назначение:** Validate problem-solution fit before building through customer discovery
 
 **Модель:** `opus` (thinking_budget: 16000)
+
+**Флаги:**
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 **Persona:** `product-agent`
 
@@ -2146,9 +2442,12 @@ await page.screenshot({
 
 ### 24. `/speckit.integrate` {#speckitintegrate}
 
-**Назначение:** Выбор провайдера продуктовой аналитики и настройка зависимостей SDK. Quick integration with common third-party services.
+**Назначение:** Quick integration with common third-party services
 
-**Модель:** `haiku` (thinking_budget: 8000)
+**Модель:** `sonnet` (thinking_budget: 16000)
+
+**Флаги:**
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 **Persona:** `developer-agent`
 
@@ -2183,6 +2482,9 @@ await page.screenshot({
 
 **Модель:** `sonnet` (thinking_budget: 16000)
 
+**Флаги:**
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
+
 **Persona:** `devops-agent`
 
 **Handoffs:**
@@ -2202,6 +2504,9 @@ await page.screenshot({
 **Назначение:** Automate product launch and go-to-market activities
 
 **Модель:** `sonnet` (thinking_budget: 16000)
+
+**Флаги:**
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 **Persona:** `marketing-agent`
 
@@ -2227,6 +2532,9 @@ await page.screenshot({
 **Назначение:** Provision infrastructure, deploy application, and verify running system in one command
 
 **Модель:** `sonnet` (thinking_budget: 16000)
+
+**Флаги:**
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 **Persona:** `devops-agent`
 
@@ -2281,6 +2589,9 @@ await page.screenshot({
 
 **Модель:** `sonnet` (thinking_budget: 8000)
 
+**Флаги:**
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
+
 ---
 
 ### 29. `/speckit.migrate` {#speckitmigrate}
@@ -2324,6 +2635,21 @@ await page.screenshot({
 
 ### 30. `/speckit.properties` {#speckitproperties}
 
+**Назначение:** Extract properties from specification and generate property-based tests.
+
+**Модель:** `opus` (thinking_budget: 16000)
+
+**Флаги:**
+- `--language <lang>` — Target language(s): python|typescript|go|java|kotlin|all
+- `--profile <name>` — Execution profile: quick, full, pgs
+- `--iterations <n>` — Max PGS iterations for counterexample resolution
+- `--coverage <n>` — Minimum property coverage percentage
+- `--output <path>` — Output directory for generated tests
+- `--dry-run` — Show extracted properties without generating code
+- `--verbose` — Include EARS transformation details in output
+
+---
+
 **Назначение:** Extract properties from spec artifacts and generate property-based tests with EARS transformation. Creates PROP-xxx traced to AS/EC/FR/NFR for comprehensive edge case discovery via PGS (Property-Generated Solver) methodology.
 
 **Модель:** `sonnet` (thinking_budget: 16000)
@@ -2350,6 +2676,9 @@ await page.screenshot({
 **Назначение:** Orchestrate mobile development with specialized agents. Activates platform-specific expertise (KMP/Flutter/React Native), calculates Mobile Quality Score (MQS), and ensures production-ready mobile applications.
 
 **Модель:** `sonnet` (thinking_budget: high)
+
+**Флаги:**
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 **Persona:** `mobile-developer-agent`
 
