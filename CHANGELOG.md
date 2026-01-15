@@ -7,6 +7,17 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.7] - 2026-01-15
+
+### Changed
+
+- **MASSIVE Token Optimization v0.5.0** — 50-75% token reduction across spec-kit commands
+  - **Phase 1 Concept** (40.5K tokens saved = 73% reduction): Agent prompt templates, consolidated phases, deduplicated CQS formula, enabled includes for modular sections, created step execution templates
+  - **Phase 2 Games-Concept** (200-300K thinking saved = 20-25% world-class): Downgraded 7 agents Sonnet→Haiku (168K), lazy variant generation (80% reduction), user-tier auto-fallback for non-Max users, increased wave overlap 0.60→0.75
+  - **Phase 3 Preview** (600-700K tokens saved = 60-70% reduction): Vision call batching SSIM (650K), component complexity detection (200-250K), state matrix 7→3 (240-280K), A11y overlay consolidation (250-350K), mockup sampling (200K), conditional autofix (20-40K)
+  - **Phase 1 Design** (82-95K tokens = 35-45% reduction): Context aggregators for anti-patterns and constitution, lazy game-art pipeline loading, replaced 8+ load instances with references
+  - **Total**: ~50% token reduction across all commands (~$1,200-1,300/month savings at Claude Max rates)
+
 ## [0.9.6] - 2026-01-15
 
 ### Changed

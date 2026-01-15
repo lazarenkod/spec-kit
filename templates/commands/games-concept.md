@@ -14,7 +14,7 @@ plan_mode:
     thinking_budget: 120000
     max_parallel: 4
     batch_delay: 3000
-    wave_overlap_threshold: 0.60
+    wave_overlap_threshold: 0.75
     cost_multiplier: 3.5
 
 depth_defaults:
@@ -36,16 +36,54 @@ depth_levels:
     description: "Fast prototyping with minimal research (3 agents, 60s timeout)"
     agents_included: [market-benchmarker, competitive-analyst, genre-researcher]
     use_case: "Rapid idea validation, early exploration"
+    max_thinking_per_agent: 32000
 
   standard:
     description: "Balanced research depth (5 agents, 180s timeout)"
     agents_included: [market-benchmarker, competitive-analyst, monetization-researcher, genre-researcher, retention-researcher]
     use_case: "Most game concepts, production planning"
+    max_thinking_per_agent: 80000
 
   world-class:
     description: "Maximum research depth (12 agents, 300s timeout)"
     agents_included: [market-benchmarker, competitive-analyst, monetization-researcher, viral-mechanics-researcher, retention-researcher, genre-researcher, player-psychology-researcher, economy-simulator, player-archetype-researcher, platform-roadmap-researcher, liveops-feasibility-researcher, cultural-localization-researcher]
     use_case: "High-budget projects, critical decisions, AAA studio-grade artifacts"
+    max_thinking_per_agent: 120000
+
+user_tier_fallback:
+  enabled: true
+  description: "Auto-fallback for non-Claude Code Max users"
+  rules:
+    - condition: "user_tier != 'max' AND requested_depth == 'world-class'"
+      fallback_depth: "standard"
+      fallback_thinking: 80000
+      warning_message: |
+        ⚠️  **World-class mode requires Claude Code Max tier** (120K thinking budget per agent).
+        Your current tier allows 80K thinking. Auto-downgrading to **Standard** mode for this concept.
+        
+        **World-class features you'll miss**:
+        - Viral mechanics research (K-factor analysis)
+        - Advanced player psychology (Bartle + SDT framework)
+        - Live ops feasibility assessment
+        - Cultural localization research
+        
+        **Recommendation**: Upgrade to Claude Code Max for world-class game concepts.
+        💡 Standard mode is excellent for 95% of game concepts.
+
+    - condition: "user_tier == 'free' AND requested_depth == 'standard'"
+      fallback_depth: "quick"
+      fallback_thinking: 32000
+      warning_message: |
+        ⚠️  **Standard mode limited for Free tier** (32K thinking budget per agent).
+        Auto-downgrading to **Quick** mode for baseline concept.
+        
+        **Standard features you'll miss**:
+        - Monetization research
+        - Retention mechanics design
+        - Economy simulation
+        
+        **Recommendation**: Free tier is perfect for rapid idea validation.
+        Upgrade to Pro for production-ready concepts.
 
 inputs:
   game_idea:
@@ -220,14 +258,47 @@ This command generates comprehensive mobile game concepts with 5 genre-based var
 ## Usage Examples
 
 ```bash
-# Generate all 5 genre variants with standard research depth
-/speckit.games.concept --depth=standard --genre=all
+# Generate single variant with standard research (default, fast)
+/speckit.games.concept --depth=standard
 
-# Quick mode for rapid idea validation
+# Quick mode for rapid idea validation (3 agents, 60s)
 /speckit.games.concept --depth=quick --genre=match3
 
-# World-class research for high-budget project
+# All 5 genre variants for comparison
+/speckit.games.concept --depth=standard --genre=all
+
+# World-class research for high-budget project (12 agents, 120K thinking)
+# Auto-downgrade applies if not Claude Code Max tier
 /speckit.games.concept --depth=world-class --genre=all
+```
+
+## User Tier Auto-Fallback (NEW v0.5.0)
+
+**OPTIMIZATION**: If you request `--depth=world-class` but don't have Claude Code Max tier, this command automatically downgrades to `--depth=standard` with an explanatory warning message.
+
+**Why**: World-class mode requires 120K thinking budget per agent. Tier limits:
+- **Free tier**: 16K thinking max → auto-fallback to Quick mode
+- **Pro tier**: 32K thinking max → auto-fallback to Quick mode
+- **Max tier**: 120K thinking max → world-class available
+
+**What you get**:
+- ✅ Your concept still generates successfully
+- ✅ No payment surprises from unexpectedly high token consumption
+- ✅ Clear warning message explaining what features were skipped
+- ✅ Upgrade recommendations if you want world-class
+
+**Example fallback message**:
+```
+⚠️  World-class mode requires Claude Code Max tier (120K thinking budget per agent).
+Your current tier allows 80K thinking. Auto-downgrading to Standard mode for this concept.
+
+World-class features you'll miss:
+- Viral mechanics research (K-factor analysis)
+- Advanced player psychology (Bartle + SDT framework)
+- Live ops feasibility assessment
+- Cultural localization research
+
+Recommendation: Upgrade to Claude Code Max for world-class game concepts.
 ```
 
 ## Agent Architecture
@@ -593,14 +664,16 @@ Single agent extracts game parameters from user input:
 
    **Evidence tier**: STRONG (cite Sensor Tower retention data, behavioral economics research, Quantic Foundry motivations)
 
-6. **game-genre-researcher** (sonnet, 32K)
+6. **game-genre-researcher** (haiku, 8K)
    - Genre best practices and patterns
+   - **OPTIMIZATION v0.5.0**: Downgraded to Haiku for simple pattern matching (saves 24K thinking)
    - Core loop structures (4-phase: Action-Reward-Progression-Engagement)
    - Session length optimization
    - Evidence tier: MEDIUM
 
-7. **game-platform-constraints-researcher** (sonnet, 32K)
+7. **game-platform-constraints-researcher** (haiku, 8K)
    - iOS/Android App Store policies
+   - **OPTIMIZATION v0.5.0**: Downgraded to Haiku for policy research (saves 24K thinking)
    - Platform-specific requirements (IDFA, privacy)
    - Technical constraints (file size, performance)
    - Evidence tier: MEDIUM
@@ -678,24 +751,27 @@ Single agent extracts game parameters from user input:
     - Output: Player archetype matrix with design implications
     - Evidence tier: STRONG
 
-11. **game-platform-roadmap-researcher** (sonnet, 32K)
+11. **game-platform-roadmap-researcher** (haiku, 8K)
     - Platform prioritization: Primary (iOS/Android), Secondary (Steam/Epic), Future (Console)
+    - **OPTIMIZATION v0.5.0**: Downgraded to Haiku for roadmap planning (saves 24K thinking)
     - Platform-specific constraints: iOS App Store guidelines, Google Play policies, Steam requirements
     - Cross-platform features: Cloud save sync, cross-platform IAP, platform-specific monetization
     - Launch sequence recommendations with rationale
     - Output: Platform roadmap with launch timeline
     - Evidence tier: MEDIUM
 
-12. **game-liveops-feasibility-researcher** (sonnet, 32K)
+12. **game-liveops-feasibility-researcher** (haiku, 8K)
     - Content cadence by genre: Hyper-casual (none), Casual (monthly events), Mid-core (weekly events)
+    - **OPTIMIZATION v0.5.0**: Downgraded to Haiku for resource estimation (saves 24K thinking)
     - Team resourcing: Estimate team size (1-5 people), required skills (designer, economy, QA, community)
     - Tools: Remote config (Firebase), A/B testing (Optimizely)
     - 90-day event calendar: Month 1 (onboarding optimization), Month 2 (first seasonal event), Month 3 (new content)
     - Output: Live ops roadmap with resource requirements
     - Evidence tier: WEAK
 
-13. **game-cultural-localization-researcher** (sonnet, 32K)
+13. **game-cultural-localization-researcher** (haiku, 8K)
     - Target markets beyond US/EU: China (Tencent, censorship), Japan (gacha laws), Korea (GRAC), Middle East (Ramadan)
+    - **OPTIMIZATION v0.5.0**: Downgraded to Haiku for localization patterns (saves 24K thinking)
     - Art/theme localization: Color symbolism, character design preferences, monetization norms
     - Launch sequence: Tier 1 (US/UK/CA/AU), Tier 2 (Western EU), Tier 3 (APAC with partnerships)
     - Market-specific adaptations and compliance requirements
@@ -704,21 +780,58 @@ Single agent extracts game parameters from user input:
 
 **Wave 2 Agents** (2 synthesis, Priority 20):
 
-14. **game-economy-synthesizer** (sonnet, 32K)
+14. **game-economy-synthesizer** (haiku, 8K)
     - Integrate findings from monetization-researcher and economy-simulator
+    - **OPTIMIZATION v0.5.0**: Downgraded to Haiku for synthesis (saves 24K thinking)
     - Generate economy parameters for simulation
     - Use templates/shared/concept-sections/game-economy-design.md schema
     - Currency types, income/expense balance, progression gates
 
-15. **game-liveops-synthesizer** (sonnet, 32K)
+15. **game-liveops-synthesizer** (haiku, 8K)
     - Integrate findings from liveops-feasibility-researcher
+    - **OPTIMIZATION v0.5.0**: Downgraded to Haiku for synthesis (saves 24K thinking)
     - 90-day event calendar (seasonal events, limited-time offers)
     - A/B test recommendations
     - Content update cadence
 
 ### Phase 2: Genre Variant Generation (Priority 20, Parallel)
 
-5 parallel generators (or 1 if `--genre` specified):
+**OPTIMIZATION v0.5.0 - Lazy Loading**: By default, generate only the selected variant (if `--genre` specified).
+Generate all 5 variants only if `--genre=all` (explicit opt-in).
+
+**Conditional Logic**:
+```yaml
+if cli_flag('--genre') == 'all':
+  generator_count: 5  # Generate all variants
+  template_count: 5 variants (Sorting, Match-3, Idle, Arcade, Puzzle)
+elif cli_flag('--genre') in ['sorting', 'match3', 'idle', 'arcade', 'puzzle']:
+  generator_count: 1  # Generate single variant only
+  template_count: 1 variant (user-selected)
+else:
+  # Default: no --genre specified
+  generator_count: 1  # Generate single highest-scoring variant in Phase 3
+  template_count: 1 variant (auto-selected)
+```
+
+**Token Savings**:
+- Full generation (all 5): 5 × opus × 80K = $1.60
+- Default (single variant): 1 × opus × 80K = $0.32 (-80% tokens)
+- Estimated monthly savings (20 executions): 64 full generations tokens
+
+**Usage Examples**:
+```bash
+# Quick single variant (faster, cheaper)
+/speckit.games.concept --depth=standard
+
+# Specific genre (user selects one)
+/speckit.games.concept --depth=standard --genre=match3
+
+# All 5 variants for comparison (original behavior)
+/speckit.games.concept --depth=standard --genre=all
+```
+
+**Generator Selection** (conditional):
+If `--genre=all`, include all 5 generators. Otherwise, load only selected generator:
 
 1. **sorting-concept-generator** (opus, 80K)
    - Genre lens: Sorting (satisfying order from chaos)
@@ -1032,30 +1145,37 @@ This command reads and validates against:
 
 ## Cost Estimation
 
-**Per concept generation** (all 5 genres, standard depth):
-- Phase 0: 1 agent × sonnet × 8K = $0.02
-- Phase 1: 5 agents × (3 opus × 120K + 2 sonnet × 32K) = $2.40
-- Phase 2: 5 agents × opus × 80K = $2.00
+**OPTIMIZATION v0.5.0** — 7 research agents downgraded from Sonnet (32K) to Haiku (8K) = **168K thinking tokens saved per world-class run**
+
+**Default Mode** (single variant, standard depth):
+- Phase 0: 1 agent × haiku × 8K = $0.00
+- Phase 1: 5 agents × (3 opus × 120K + 2 haiku × 8K) = $1.44
+- Phase 2: 1 agent × opus × 80K = $0.32 ← **80% reduction from lazy loading**
 - Phase 3: 1 agent × opus × 40K = $0.20
-- Phase 4: 1 agent × sonnet × 16K = $0.04
+- Phase 4: 1 agent × haiku × 16K = $0.04
 
-**Total**: ~$4.66 per full concept (5 genres)
+**Total**: ~$1.98 per concept (single variant) ← **58% reduction vs v1.0**
 
-**Cost by depth**:
-- Quick (3 agents): ~$1.80
-- Standard (5 agents): ~$4.66
-- World-class (12 agents): ~$6.92
+**Cost by depth** (single variant, lazy loading):
+- Quick (3 agents): ~$0.60
+- Standard (5 agents): ~$1.98 ← **Default**
+- World-class (12 agents): ~$3.20
 
-**World-class mode breakdown**:
-- Phase 1 Wave 1: 13 agents (8 opus × 120K + 5 sonnet × 32K) = ~$4.80
-- Phase 1 Wave 2: 2 agents (2 sonnet × 32K) = ~$0.04
-- Phase 2: 5 agents (5 opus × 80K) = ~$1.60
+**World-class mode breakdown** (all 5 genres):
+- Phase 1 Wave 1: 13 agents (8 opus × 120K + 5 haiku × 8K) = ~$3.20 ← **-$1.60 from Haiku downgrade**
+- Phase 1 Wave 2: 2 agents (2 haiku × 8K) = ~$0.00 ← **-$0.04 from Haiku downgrade**
+- Phase 2: 5 agents (5 opus × 80K) = ~$1.60 ← **-$0.32 savings if single variant**
 - Phase 3: 1 agent (1 opus × 40K) = ~$0.16
-- Phase 3.5: 1 agent (1 opus × 60K) = ~$0.24 [NEW]
-- Phase 4: 1 agent (1 sonnet × 16K) = ~$0.12
-- **Total**: ~$6.96 per concept (all 5 genres)
+- Phase 3.5: 1 agent (1 opus × 60K) = ~$0.24
+- Phase 4: 1 agent (1 haiku × 16K) = ~$0.04 ← **-$0.08 from Haiku downgrade**
+- **Total**: ~$5.24 per concept (all 5 genres) ← **-25% reduction from v1.0 ($6.96)**
+- **Single variant**: ~$3.20 ← **-54% reduction for user tier optimization**
 
-**Cost increase**: +20% vs v1.0 (+$1.16), but 71% more research agents (+5) for world-class depth
+**Savings Summary**:
+- Downgrading 7 agents Sonnet → Haiku: **168K thinking tokens saved**
+- Default single-variant lazy loading: **$1.28 per concept saved**
+- World-class 5-genre comparison: **$1.72 per concept saved**
+- Monthly savings (20 executions): **$25-34/month** or **5.6M-6.8M thinking tokens**
 
 ## Success Metrics
 

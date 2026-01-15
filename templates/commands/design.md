@@ -194,6 +194,27 @@ claude_code:
     ttl: 3600
   cache_hierarchy: full
   plan_mode_trigger: true
+  # OPTIMIZATION v0.5.0: Command-level context aggregator to avoid duplication
+  context_aggregators:
+    enabled: true
+    resources:
+      - id: "anti-patterns"
+        path: "templates/shared/design-anti-patterns.md"
+        load_once: true
+        cache_ttl: "session"
+        description: "Design anti-patterns (AP-VIS, AP-COMP, AP-LAY, AP-A11Y, AP-PERF) for all agents"
+        size: "292 lines, ~1.5-2K tokens per load"
+        usage_count: 10  # Loaded by 10+ agents without optimization
+        estimated_savings: "6-8K tokens"
+      - id: "constitution-design-system"
+        path: "memory/constitution.md"
+        extract: "design_system"
+        load_once: true
+        cache_ttl: "session"
+        description: "Design system block from constitution (reusable across agents)"
+        size: "~2-3K tokens per extraction"
+        usage_count: 15
+        estimated_savings: "4K tokens"
   orchestration:
     max_parallel: 8
     wave_overlap:
@@ -308,28 +329,25 @@ gates:
         - How do we ensure brand consistency?
 
         ## Anti-Patterns to Avoid
-        READ templates/shared/design-anti-patterns.md
+        Reference: {{ANTI_PATTERNS}} (loaded at command level, ID: anti-patterns)
+        
+        **OPTIMIZATION**: Anti-patterns loaded once at command init, referenced by ID across all agents.
+        Saves 1.5-2K tokens per agent × 10 agents = 6-8K total tokens.
+        
         Apply as DO NOT constraints in all outputs.
         When researching patterns, explicitly flag any anti-patterns found in competitors.
 
         ## Context
         Feature: {{FEATURE_DIR}}
         Spec: {{FEATURE_DIR}}/spec.md
-        Constitution: memory/constitution.md
-
-        **UX Quality Settings** (from constitution.md design_system.ux_quality):
-        - usability_target: {{UX_QUALITY.usability_target}}
-        - flow_complexity: {{UX_QUALITY.flow_complexity}}
-        - design_a11y_level: {{UX_QUALITY.design_a11y_level}}
-        - error_prevention: {{UX_QUALITY.error_prevention}}
-        - responsive_strategy: {{UX_QUALITY.responsive_strategy}}
-
-        **Brand & Audience Settings** (from constitution.md design_system.brand_audience):
-        - brand_archetype: {{BRAND_AUDIENCE.brand_archetype}}
-        - tone_of_voice: {{BRAND_AUDIENCE.tone_of_voice}}
-        - audience_sophistication: {{BRAND_AUDIENCE.audience_sophistication}}
-        - emotional_goal: {{BRAND_AUDIENCE.emotional_goal}}
-        - demographics_priority: {{BRAND_AUDIENCE.demographics_priority}}
+        
+        **OPTIMIZATION v0.5.0**: Constitution context loaded at command level (ID: constitution-design-system)
+        instead of individual agent extraction. Saves ~4K tokens across 15+ agent references.
+        
+        Design System (from {{CONSTITUTION_DESIGN_SYSTEM}}):
+        - UX Quality Settings: {{UX_QUALITY}}
+        - Brand & Audience: {{BRAND_AUDIENCE}}
+        - Reference: constitution.md design_system block (preloaded)
 
         ## Task
         Research design context and gather inputs:
@@ -374,7 +392,9 @@ gates:
         - How do we measure pattern effectiveness?
 
         ## Anti-Patterns to Avoid
-        READ templates/shared/design-anti-patterns.md
+        Reference: {{ANTI_PATTERNS}} (loaded at command level, ID: anti-patterns)
+        
+        **OPTIMIZATION**: Anti-patterns loaded once at command init, referenced by ID across all agents.
         Apply as DO NOT constraints in all outputs.
         When analyzing existing patterns, flag violations of AP-VIS, AP-COMP, AP-LAY categories.
 
@@ -423,7 +443,7 @@ gates:
         - What feedback mechanisms are needed for user confidence?
 
         ## Anti-Patterns to Avoid
-        READ templates/shared/design-anti-patterns.md
+        Reference: {{ANTI_PATTERNS}} (loaded at command level, ID: anti-patterns)
         Apply as DO NOT constraints in all outputs.
         Focus on AP-A11Y (accessibility) and AP-COMP (component) violations in wireframes.
 
@@ -493,7 +513,7 @@ gates:
         - What makes components instantly recognizable and predictable?
 
         ## Anti-Patterns to Avoid
-        READ templates/shared/design-anti-patterns.md
+        Reference: {{ANTI_PATTERNS}} (loaded at command level, ID: anti-patterns)
         Apply as DO NOT constraints in all outputs.
         Focus on AP-VIS (visual), AP-TYPE (typography), AP-A11Y-001 (color contrast) violations.
 
@@ -610,7 +630,7 @@ gates:
         - What makes micro-interactions feel responsive and polished?
 
         ## Anti-Patterns to Avoid
-        READ templates/shared/design-anti-patterns.md
+        Reference: {{ANTI_PATTERNS}} (loaded at command level, ID: anti-patterns)
         Apply as DO NOT constraints in all outputs.
         Focus on AP-ANIM (animation) and AP-A11Y-007 (motion preferences) violations.
 
@@ -665,7 +685,7 @@ gates:
         - What governance prevents token proliferation?
 
         ## Anti-Patterns to Avoid
-        READ templates/shared/design-anti-patterns.md
+        Reference: {{ANTI_PATTERNS}} (loaded at command level, ID: anti-patterns)
         Apply as DO NOT constraints in all outputs.
         Focus on AP-VIS-001 (hardcoded colors), AP-VIS-002 (inconsistent spacing), AP-PERF violations.
 
@@ -713,7 +733,7 @@ gates:
         - What validation ensures components meet accessibility standards?
 
         ## Anti-Patterns to Avoid
-        READ templates/shared/design-anti-patterns.md
+        Reference: {{ANTI_PATTERNS}} (loaded at command level, ID: anti-patterns)
         Apply as DO NOT constraints in all outputs.
         Focus on AP-COMP (component), AP-A11Y (accessibility), AP-PERF-004 (bundle size) violations.
 
@@ -763,7 +783,7 @@ gates:
         - What makes documentation actionable, not just informative?
 
         ## Anti-Patterns to Avoid
-        READ templates/shared/design-anti-patterns.md
+        Reference: {{ANTI_PATTERNS}} (loaded at command level, ID: anti-patterns)
         Apply as DO NOT constraints in all outputs.
         Include anti-pattern examples in stories to show what NOT to do (AP-COMP violations).
 
@@ -811,7 +831,7 @@ gates:
         - What validation prevents import errors?
 
         ## Anti-Patterns to Avoid
-        READ templates/shared/design-anti-patterns.md
+        Reference: {{ANTI_PATTERNS}} (loaded at command level, ID: anti-patterns)
         Apply as DO NOT constraints in all outputs.
         Ensure exported tokens prevent AP-VIS-001 (hardcoded colors) in Figma.
 
@@ -859,7 +879,7 @@ gates:
         - What validation ensures design is implementable?
 
         ## Anti-Patterns to Avoid
-        READ templates/shared/design-anti-patterns.md
+        Reference: {{ANTI_PATTERNS}} (loaded at command level, ID: anti-patterns)
         Apply as DO NOT constraints in all outputs.
         Cross-check ALL design artifacts against full anti-pattern list (47 patterns across 7 categories).
 

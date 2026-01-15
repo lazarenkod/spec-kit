@@ -84,8 +84,8 @@
         "@modelcontextprotocol/server-memory"
       ],
       "env": {},
-      "disabled": false,
-      "comment": "Official MCP Memory Server - Knowledge graph for persistent context (v2025.11.25)"
+      "disabled": true,
+      "comment": "Official MCP Memory Server - Knowledge graph for persistent context (v2025.11.25) [DISABLED: using claude-mem instead]"
     },
     "memory-sqlite": {
       "command": "npx",
@@ -94,8 +94,8 @@
         "@pepk/mcp-memory-sqlite"
       ],
       "env": {},
-      "disabled": false,
-      "comment": "Production-ready Memory with SQLite WAL - Thread-safe concurrent access, ACID-compliant (v1.1.0)"
+      "disabled": true,
+      "comment": "Production-ready Memory with SQLite WAL - Thread-safe concurrent access, ACID-compliant (v1.1.0) [DISABLED: using claude-mem instead]"
     },
     "optimizer": {
       "command": "/tmp/mcp-optimizer/mcp-optimizer-wrapper.sh",

@@ -120,41 +120,9 @@ claude_code:
       thinking_budget: 120000
       reasoning_mode: extended
       role_description: "Strategic Market Analyst & Co-Founder"
-      prompt: |
-        ## Context
-        Project: {{PROJECT_ROOT}}
-        User Input: {{ARGUMENTS}}
-
-        ## Your Role
-        You are a Strategic Market Analyst conducting due diligence for a product investment.
-
-        ## Task
-        Answer the critical question: "Why does this market exist, and why NOW?"
-
-        Apply frameworks naturally:
-        1. **Porter's 5 Forces** → Assess market dynamics
-           - Rivalry intensity: High/Med/Low (why?)
-           - Buyer power: (switching costs, alternatives)
-           - Supplier power: (dependencies, lock-in)
-           - Entry barriers: (capital, regulation, network effects)
-           - Substitute threat: (adjacent solutions, inertia)
-
-        2. **Market Sizing** (Triangulate):
-           - Top-down: Industry reports (Gartner, Forrester, IDC)
-           - Bottom-up: # buyers × price × adoption % × penetration %
-           - Validate: Do both approaches converge? If not, why?
-
-        3. **Blue Ocean Reconnaissance**:
-           - What do all competitors ASSUME? (conventional wisdom)
-           - Where is demand UNADDRESSED? (gaps in value curve)
-           - What macro trends enable NEW approach? (timing factors)
-
-        ## Output Requirements
-        - ≥3 independent sources per claim (cite with URLs)
-        - Concrete data: "$5.2B (Gartner 2025)" NOT "large market"
-        - Context: "TAM $5B → SOM $50M = 500 customers × $100K ACV" (show math)
-        - Trade-offs: "Top-down says $8B, bottom-up says $5B. Using $5B (conservative)"
-        - Timing triggers: "Why now? Remote work adoption 2020-2025 (+300%) creates demand"
+      # OPTIMIZATION v0.5.0: Prompt extracted to templates/shared/agent-prompt-template.md
+      # Load market-researcher section from agent prompt template
+      prompt_ref: market-researcher
     - role: competitive-analyst
       role_group: RESEARCH
       parallel: true
@@ -164,39 +132,8 @@ claude_code:
       thinking_budget: 120000
       reasoning_mode: extended
       role_description: "Strategic Competitive Intelligence Analyst"
-      prompt: |
-        ## Context
-        Project: {{PROJECT_ROOT}}
-        User Input: {{ARGUMENTS}}
-
-        ## Your Role
-        You are a Competitive Intelligence Analyst conducting strategic market positioning research.
-
-        ## Task
-        Answer: "Where can we WIN, and how do competitors create friction for users?"
-
-        Apply frameworks:
-        1. **Blue Ocean Strategy Canvas (ERRC Grid)**:
-           - ELIMINATE: What can we remove that industry takes for granted?
-           - REDUCE: What can we reduce well below industry standard?
-           - RAISE: What can we raise well above industry standard?
-           - CREATE: What can we create that industry has never offered?
-
-        2. **Competitor Feature Matrix**:
-           - Map 5-10 key features across 3-5 competitors
-           - Rate each: Best-in-class / Acceptable / Weak / Missing
-           - Identify TABLE STAKES (everyone has) vs DIFFERENTIATORS (few have)
-
-        3. **Pricing & Business Model Analysis**:
-           - Pricing tiers: Free/Paid/Enterprise with $ amounts
-           - Revenue model: Subscription/Usage/License/Freemium/Ad-supported
-           - Unit economics: CAC, LTV, payback period (if available)
-
-        ## Output Requirements
-        - ≥5 competitors analyzed with evidence (URLs, screenshots, pricing pages)
-        - Concrete gaps: "All competitors charge $50-200/mo. Gap: No $10-20 tier for SMBs"
-        - ERRC Grid populated with specific examples
-        - Competitor strengths AND weaknesses (balanced view)
+      # OPTIMIZATION v0.5.0: Prompt extracted to templates/shared/agent-prompt-template.md
+      prompt_ref: competitive-analyst
     - role: persona-designer
       role_group: RESEARCH
       parallel: true
@@ -206,41 +143,8 @@ claude_code:
       thinking_budget: 120000
       reasoning_mode: extended
       role_description: "Strategic Persona & JTBD Researcher"
-      prompt: |
-        ## Context
-        Project: {{PROJECT_ROOT}}
-        User Input: {{ARGUMENTS}}
-
-        ## Your Role
-        You are a Persona Researcher applying Jobs-to-Be-Done framework to understand customer motivation.
-
-        ## Task
-        Answer: "WHO will pay for this, WHY, and HOW MUCH?"
-
-        Apply frameworks:
-        1. **Jobs-to-Be-Done (JTBD)**:
-           - Functional jobs: What task are they trying to accomplish?
-           - Emotional jobs: How do they want to FEEL?
-           - Social jobs: How do they want to be PERCEIVED?
-           - For each job: Frequency (daily/weekly/monthly), Importance (critical/important/nice-to-have)
-
-        2. **Persona Segmentation** (create 2-4 personas):
-           - Demographics: Title, company size, industry, budget authority
-           - Pain points: Current workflow, friction points, workarounds
-           - Goals & Motivations: What success looks like
-           - Decision criteria: How they evaluate solutions
-           - Buying behavior: Self-serve vs sales-assisted, evaluation period
-
-        3. **Willingness-to-Pay (WTP) Analysis**:
-           - Current spending: What they pay for alternatives/workarounds
-           - Value perception: $ value of time saved or revenue unlocked
-           - Price anchors: Comparable products in their mental model
-           - WTP range per persona: Min (won't pay less) to Max (won't pay more)
-
-        ## Output Requirements
-        - 2-4 detailed persona cards with demographics, JTBD, and WTP analysis
-        - Evidence: "B2B SaaS buyers spend $50-200/user/mo on tools (Gartner 2025)"
-        - Prioritization: Rank personas by market size × WTP × accessibility
+      # OPTIMIZATION v0.5.0: Prompt extracted to templates/shared/agent-prompt-template.md
+      prompt_ref: persona-designer
 
     # NEW: Domain-specific research agents
     - role: standards-researcher
@@ -251,28 +155,8 @@ claude_code:
       model_override: opus
       thinking_budget: 120000
       reasoning_mode: extended
-      prompt: |
-        ## Context
-        Project: {{PROJECT_ROOT}}
-        User Input: {{ARGUMENTS}}
-
-        ## Task
-        Research compliance standards and regulations for the domain:
-        1. Load domain from memory/constitution.md (Domain Layer)
-        2. For fintech → PCI-DSS, SOX, AML/KYC
-        3. For healthcare → HIPAA, FHIR, HL7, 21 CFR Part 11
-        4. For e-commerce → PCI-DSS, CCPA, GDPR
-
-        Use WebSearch for official sources:
-        - "PCI-DSS requirements 2025 official"
-        - "GDPR compliance checklist"
-        - "HIPAA technical safeguards"
-        - "{DOMAIN} regulatory requirements 2025"
-
-        ## Output
-        - Compliance requirements list
-        - Regulatory checklists
-        - Evidence tier: AUTHORITATIVE
+      # OPTIMIZATION v0.5.0: Prompt extracted to templates/shared/agent-prompt-template.md
+      prompt_ref: standards-researcher
 
     - role: academic-researcher
       role_group: RESEARCH
@@ -282,25 +166,8 @@ claude_code:
       model_override: opus
       thinking_budget: 120000
       reasoning_mode: extended
-      prompt: |
-        ## Context
-        Project: {{PROJECT_ROOT}}
-        User Input: {{ARGUMENTS}}
-
-        ## Task
-        Research academic papers and whitepapers for best practices:
-        1. Search Google Scholar, arXiv, IEEE Xplore
-        2. Focus on peer-reviewed papers and industry whitepapers
-        3. Extract validated best practices with evidence
-
-        Use WebSearch queries:
-        - "{DOMAIN} best practices research paper"
-        - "{TECHNOLOGY} architecture patterns whitepaper"
-        - "{PROBLEM} academic research"
-
-        ## Output
-        - Best practices catalog with citations
-        - Evidence tier: STRONG
+      # OPTIMIZATION v0.5.0: Prompt extracted to templates/shared/agent-prompt-template.md
+      prompt_ref: academic-researcher
 
     - role: community-intelligence
       role_group: RESEARCH
