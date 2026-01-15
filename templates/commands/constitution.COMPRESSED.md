@@ -151,6 +151,62 @@ Templates Checked:
 
 **User Summary**: Version bump rationale, domain status, files for follow-up, commit message.
 
+**Generated Constitution Structure**:
+
+1. Header (title, layers, effective date)
+2. How Layered Constitution Works
+3. Quick Start
+4. Project Settings
+5. **📋 Table of Contents** ← NEW SECTION
+6. Strengthened Principles
+7. Project-Specific Principles
+8. [domain sections...]
+9. Effective Principles Summary
+
+**TOC Format**:
+After "## Project Settings", output:
+
+---
+
+## 📋 Table of Contents
+
+### Core Sections
+- [How Layered Constitution Works](#how-layered-constitution-works)
+- [Quick Start](#quick-start)
+- [Project Settings](#project-settings)
+- [Strengthened Principles](#strengthened-principles)
+- [Project-Specific Principles](#project-specific-principles)
+
+### Domain Principles (73 total from Layer 0)
+- [SEC: Security](#sec-security) — 8 principles
+- [OBS: Observability](#obs-observability) — 4 principles
+- [ERR: Error Exposure](#err-error-exposure) — 3 principles
+- [QUA: Quality](#qua-quality) — 7 principles
+- [REL: Reliability](#rel-reliability) — 8 principles
+- [API: API Design](#api-api-design) — 6 principles
+- [DOC: API Documentation](#doc-api-documentation) — 6 principles
+- [TFA: Twelve-Factor App](#tfa-twelve-factor-app) — 9 principles
+- [TST: Test-Spec Traceability](#tst-test-spec-traceability) — 5 principles
+- [PRF: Performance](#prf-performance) — 4 principles
+- [PERF: Performance - Quality Targets](#perf-performance---quality-targets) — 1 principle
+- [CMP: Compliance](#cmp-compliance) — 4 principles
+- [A11Y: Accessibility - Quality Targets](#a11y-accessibility---quality-targets) — 5 principles
+- [DSS: Design System](#dss-design-system) — 3 principles
+
+### Supporting Sections
+- [Technology Constraints](#technology-constraints)
+- [Compliance Requirements](#compliance-requirements)
+- [Security Standards](#security-standards)
+- [Approval Matrix](#approval-matrix)
+- [Technology Radar](#technology-radar)
+- [SLA Targets](#sla-targets)
+- [Design System Configuration](#design-system-configuration)
+- [Exceptions](#exceptions)
+- [Governance](#governance)
+- [Effective Principles Summary](#effective-principles-summary)
+
+---
+
 ---
 
 ## Examples
@@ -170,6 +226,12 @@ Templates Checked:
 - Lines < 100 chars
 - Single blank line between sections
 - Principle IDs: [DOMAIN]-[NNN] (e.g., SEC-001, PRJ-002)
+
+**Anchor Generation Rules** (for TOC links):
+- Lowercase all letters
+- Replace spaces with hyphens
+- Keep colons and hyphens: "SEC: Security" → `#sec-security`
+- Multi-word: "Quick Start" → `#quick-start`
 
 ---
 
