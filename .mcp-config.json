@@ -1,0 +1,130 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/specification/main/schema/mcp.schema.json",
+  "mcpServers": {
+    "lsp-mcp-pyright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "--silent",
+        "git+https://github.com/jonrad/lsp-mcp",
+        "--lsp",
+        "pyright-langserver --stdio"
+      ],
+      "env": {},
+      "disabled": false,
+      "comment": "LSP Bridge for Python - Diagnostics, go-to-definition, type info (jonrad/lsp-mcp + pyright)"
+    },
+    "tree-sitter": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-tree-sitter"
+      ],
+      "env": {},
+      "disabled": false,
+      "comment": "Tree-sitter AST parsing and structural queries (wrale/mcp-server-tree-sitter)"
+    },
+    "ast-grep": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@notprolands/ast-grep-mcp"
+      ],
+      "env": {},
+      "disabled": false,
+      "comment": "Syntax-aware code search and transformations (@notprolands/ast-grep-mcp)"
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_TOKEN": "your_github_token_here"
+      },
+      "disabled": true,
+      "comment": "GitHub integration - PRs, issues, code review. Set GITHUB_TOKEN to enable."
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://user:pass@localhost:5432/dbname"
+      },
+      "disabled": true,
+      "comment": "PostgreSQL integration. Set DATABASE_URL to enable."
+    },
+    "meta-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@justanothermldude/meta-mcp-server"
+      ],
+      "env": {},
+      "disabled": false,
+      "comment": "Meta MCP Server - Two-tier lazy loading for 87-91% token savings (@justanothermldude/meta-mcp-server)"
+    },
+    "modular-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@kimuson/modular-mcp"
+      ],
+      "env": {},
+      "disabled": false,
+      "comment": "Modular MCP Server - Dynamic tool loading to reduce context overhead (@kimuson/modular-mcp)"
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "env": {},
+      "disabled": false,
+      "comment": "Official MCP Memory Server - Knowledge graph for persistent context (v2025.11.25)"
+    },
+    "memory-sqlite": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@pepk/mcp-memory-sqlite"
+      ],
+      "env": {},
+      "disabled": false,
+      "comment": "Production-ready Memory with SQLite WAL - Thread-safe concurrent access, ACID-compliant (v1.1.0)"
+    },
+    "optimizer": {
+      "command": "/tmp/mcp-optimizer/mcp-optimizer-wrapper.sh",
+      "args": [],
+      "env": {},
+      "disabled": false,
+      "comment": "MCP Optimizer - Automatic config optimization, token usage analysis (StacklokLabs, Python 3.13)"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp"
+      ],
+      "env": {},
+      "disabled": false,
+      "comment": "Official Playwright MCP - Browser automation, E2E testing, web scraping (v0.0.55)"
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp",
+        "--api-key",
+        "YOUR_CONTEXT7_API_KEY_HERE"
+      ],
+      "env": {},
+      "disabled": true,
+      "comment": "Context7 MCP - Up-to-date library documentation and code examples (v2.1.0, requires API key from console.upstash.com)"
+    }
+  }
+}
