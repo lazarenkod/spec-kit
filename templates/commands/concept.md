@@ -3395,8 +3395,8 @@ This command captures the **complete vision and scope** of a service/product BEF
    # Generate completeness table
    | Story ID | Entry Point | Auth | Error | Exit | Complete? |
    |----------|-------------|------|-------|------|-----------|
-   | EPIC-002.F01.S01 | Nav menu | AUTH | Shows error toast | Returns to list | ✓ |
-   | EPIC-002.F01.S02 | Direct link | AUTH | ? | ? | ⚠ INCOMPLETE |
+   | {EPIC}.{F}.{S01} | Nav menu | AUTH | Shows error toast | Returns to list | ✓ |
+   | {EPIC}.{F}.{S02} | Direct link | AUTH | ? | ? | ⚠ INCOMPLETE |
    ```
 
    **Output**:
@@ -4496,17 +4496,17 @@ These tasks typically come from `/speckit.plan` Phase 0 (Foundation) and should 
 
 **Wave 1: Foundation Layer** ({N} stories)
 ```bash
-/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02, EPIC-001.F02.S01
+/speckit.specify {WAVE_1_STORY_IDS_COMMA_SEPARATED}
 ```
 
 **Wave 2: Experience Layer** ({N} stories)
 ```bash
-/speckit.specify EPIC-001.F03.S01, EPIC-002.F01.S01, EPIC-002.F01.S02
+/speckit.specify {WAVE_2_STORY_IDS_COMMA_SEPARATED}
 ```
 
 **Wave 3+: Business Features** ({N} stories)
 ```bash
-/speckit.specify EPIC-003.F01.S01, EPIC-003.F02.S01
+/speckit.specify {WAVE_3_STORY_IDS_COMMA_SEPARATED}
 ```
 
 **Sequential execution:**
@@ -4520,19 +4520,19 @@ These tasks typically come from `/speckit.plan` Phase 0 (Foundation) and should 
 
 **When to use:** Execute one epic at a time for focused domain work.
 
-**EPIC-001: [Epic Name]** ({N} stories)
+**{EPIC_ID_1}: {Epic Name}** ({N} stories)
 ```bash
-/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02, EPIC-001.F02.S01
+/speckit.specify {EPIC_1_STORY_IDS_COMMA_SEPARATED}
 ```
 
-**EPIC-002: [Epic Name]** ({N} stories)
+**{EPIC_ID_2}: {Epic Name}** ({N} stories)
 ```bash
-/speckit.specify EPIC-002.F01.S01, EPIC-002.F01.S02
+/speckit.specify {EPIC_2_STORY_IDS_COMMA_SEPARATED}
 ```
 
-**EPIC-003: [Epic Name]** ({N} stories)
+**{EPIC_ID_3}: {Epic Name}** ({N} stories)
 ```bash
-/speckit.specify EPIC-003.F01.S01, EPIC-003.F02.S01
+/speckit.specify {EPIC_3_STORY_IDS_COMMA_SEPARATED}
 ```
 
 ---
@@ -4543,22 +4543,22 @@ These tasks typically come from `/speckit.plan` Phase 0 (Foundation) and should 
 
 **P1a: Critical Path** ({N} stories)
 ```bash
-/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02, EPIC-002.F01.S01
+/speckit.specify {P1A_STORY_IDS_COMMA_SEPARATED}
 ```
 
 **P1b: MVP Must-Haves** ({N} stories)
 ```bash
-/speckit.specify EPIC-001.F02.S01, EPIC-002.F01.S02
+/speckit.specify {P1B_STORY_IDS_COMMA_SEPARATED}
 ```
 
 **P2a: Post-MVP Important** ({N} stories)
 ```bash
-/speckit.specify EPIC-003.F01.S01, EPIC-003.F02.S01
+/speckit.specify {P2A_STORY_IDS_COMMA_SEPARATED}
 ```
 
 **P3: Future Enhancements** ({N} stories)
 ```bash
-/speckit.specify EPIC-004.F01.S01
+/speckit.specify {P3_STORY_IDS_COMMA_SEPARATED}
 ```
 
 ---
@@ -4569,7 +4569,7 @@ These tasks typically come from `/speckit.plan` Phase 0 (Foundation) and should 
 
 **All Stories** ({N} total)
 ```bash
-/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02, EPIC-001.F02.S01, EPIC-001.F03.S01, EPIC-002.F01.S01, EPIC-002.F01.S02, EPIC-003.F01.S01, EPIC-003.F02.S01, EPIC-004.F01.S01
+/speckit.specify {ALL_STORY_IDS_COMMA_SEPARATED}
 ```
 
 ---
