@@ -67,9 +67,10 @@ graph LR
 
 **Назначение:** Display help documentation for any speckit command, including command description, required and optional flags with descriptions, usage examples, handoffs to next commands, and model information.
 
-**Модель:** `haiku` (thinking_budget: 4000)
+**Модель:** `haiku` (thinking_budget: 2000)
 
 **Флаги:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (2K, $0.03, default), ultrathink (8K, $0.12)
 
 **Command Selection:**
 - `<command>` — Command name to get help for (required). Can use short form (e.g., "concept") or full form (e.g., "speckit.concept")
@@ -120,7 +121,7 @@ graph LR
 
 **Назначение:** Create or update the project constitution with layered architecture support (base → domain → project layers).
 
-**Модель:** `opus` (thinking_budget: 16000)
+**Модель:** `opus` (thinking_budget: 32000)
 
 **New in v0.8.2 — Table of Contents:**
 
@@ -138,6 +139,7 @@ Generated constitution.md files now include automatic Table of Contents after th
 
 
 **Флаги:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (16K, $0.32), standard (32K, $1.15, default), ultrathink (120K, $4.32)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 #### Вопрос 5: Поддержка аналитики
@@ -170,7 +172,7 @@ Generated constitution.md files now include automatic Table of Contents after th
 
 **Назначение:** Fully autonomous concept generation with 5 product variants. Generates CEO-focused strategic blueprints (CQS ≥85) with Problem→Market→Vision→Solution→Execution narrative flow. Use BEFORE /speckit.specify for large projects (50+ requirements).
 
-**Модель:** `opus` (thinking_budget: 120000, ultrathink tier)
+**Модель:** `opus` (thinking_budget: 32000, standard default)
 
 **Token Optimization (v0.5.0):**
 
@@ -181,7 +183,7 @@ Phase 1 optimizations reduce token consumption by 40.5K tokens (73% reduction):
 - ✅ **Modular Sections Guide** (~6K tokens potential) — 46 reusable concept sections documented in `templates/shared/modular-sections-guide.md` for future include directives
 - ✅ **Command Parameterization** (~1.5K tokens saved) — All hardcoded story IDs in next-steps.md templates replaced with template variables (`{WAVE_1_STORY_IDS_COMMA_SEPARATED}`, etc.)
 
-**NEW: --depth Flag (v0.9.8)** — Cost Optimization & User Control
+**NEW: --thinking-depth Flag (v0.9.8)** — Cost Optimization & User Control
 
 Phase 5 optimizations make ultrathink (120K thinking budget) **opt-in instead of default**, reducing typical usage cost by 73%.
 
@@ -199,17 +201,17 @@ Phase 5 optimizations make ultrathink (120K thinking budget) **opt-in instead of
 
 ```bash
 # Quick concept for MVP validation (5 agents, $0.32)
-/speckit.concept --depth=quick "B2B SaaS for sales teams"
+/speckit.concept --thinking-depth=quick "B2B SaaS for sales teams"
 
 # Standard concept with solid research (9 agents, $1.15) [DEFAULT]
 /speckit.concept "B2B SaaS for sales teams"
 # or explicitly: --depth=standard
 
 # Ultrathink for regulatory/compliance-heavy projects ($4.32)
-/speckit.concept --depth=ultrathink "HealthTech HIPAA-compliant platform"
+/speckit.concept --thinking-depth=ultrathink "HealthTech HIPAA-compliant platform"
 
 # Preview cost without executing
-/speckit.concept --depth=ultrathink --dry-run
+/speckit.concept --thinking-depth=ultrathink --dry-run
 ```
 
 **What's included in each tier:**
@@ -372,6 +374,7 @@ CQS-E = (
 - Generation Time: 15-25 min end-to-end (increased due to synthesis waves)
 
 **Флаги:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget control: quick (16K, $0.32), standard (32K, $1.15, default), ultrathink (120K, $4.32)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 
@@ -390,6 +393,7 @@ CQS-E = (
 **Модель:** `haiku` (thinking_budget: 2000)
 
 **Флаги:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (2K, $0.03, default), ultrathink (8K, $0.12)
 
 **Alternative Selection:**
 - `<N>` — Alternative number to switch to (1-5, required)
@@ -446,7 +450,7 @@ After switching, all downstream commands work normally:
 
 **Назначение:** Autonomous mobile game concept generation with 5 genre-based variants (Sorting, Match-3, Idle, Arcade, Puzzle). Adapts `/speckit.concept` architecture for game development with game-specific research agents and CQS-Game scoring.
 
-**Модель:** `opus` (thinking_budget: 120000, ultrathink tier)
+**Модель:** `opus` (thinking_budget: 32000)
 
 **Token Optimization (v0.5.0):**
 
@@ -464,10 +468,7 @@ Phase 2 optimizations reduce thinking token consumption by 200-300K tokens (20-2
 - Pre-production phase before starting GDD
 
 **Флаги:**
-- `--depth <quick|standard|world-class>` — Research depth (3/5/12 agents, default: standard)
-  - `quick`: 3 agents, 60s timeout (prototyping)
-  - `standard`: 5 agents, 180s timeout (typical projects)
-  - `world-class`: 12 agents, 300s timeout (AAA quality, ~$6.92 per concept)
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (16K, $0.32), standard (32K, $1.15, default), ultrathink (120K, $4.32)
 - `--genre <sorting|match3|idle|arcade|puzzle|all>` — Generate specific genre or all 5 (default: all)
 
 **Autonomous Workflow:**
@@ -584,9 +585,10 @@ Target: ≥90/120 (world-class tier, up from 85/120)
 
 **Назначение:** Detailed specification of core gameplay loop including controls, physics, collision detection, game states, edge cases, and balancing parameters. Transforms high-level game concept into executable game design spec.
 
-**Модель:** `opus` (thinking_budget: 40000)
+**Модель:** `opus` (thinking_budget: 32000)
 
 **Флаги:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (16K, $0.32), standard (32K, $1.15, default), ultrathink (120K, $4.32)
 - `--genre <choice>` — Game genre (match3, sorting, idle, arcade, puzzle, runner, shooter, platformer). Auto-detected if omitted.
 - `--platform <choice>` — Target platform (mobile, desktop, console, web). Default: mobile
 - `--physics-engine <choice>` — Physics engine (unity, unreal, godot, custom). Default: unity
@@ -661,9 +663,10 @@ Target: ≥90/120 (world-class tier, up from 85/120)
 
 **Назначение:** Design comprehensive game progression with 200+ levels, difficulty curves, unlock gates, meta-progression systems (prestige, skill trees, account leveling, ascension), and Flow Channel validation. Ensures smooth difficulty scaling, optimal player engagement, and long-term retention through mathematically validated progression design.
 
-**Модель:** `opus` (thinking_budget: 120000)
+**Модель:** `opus` (thinking_budget: 32000)
 
 **Флаги:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (16K, $0.32), standard (32K, $1.15, default), ultrathink (120K, $4.32)
 - `--genre <match3|idle|shooter|arcade|puzzle|runner|platformer>` — Game genre (REQUIRED)
 - `--level-count <50|100|200|500|infinite>` — Target level count (default: 200)
 - `--difficulty-model <linear|exponential|logarithmic|s-curve>` — Difficulty scaling model (default: exponential)
@@ -765,6 +768,7 @@ Based on Mihaly Csikszentmihalyi's Flow Theory, progression design maintains opt
 **Модель:** `opus` (thinking_budget: 32000)
 
 **Флаги:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (16K, $0.32), standard (32K, $1.15, default), ultrathink (120K, $4.32)
 - `--platform <tiktok|instagram|youtube-shorts|multi-platform>` — Primary platform for viral content optimization (default: multi-platform)
 - `--k-factor-target <0.8|1.0|1.2|1.5>` — Target viral coefficient where 1.0 = each user brings 1 new user (default: 1.0)
 - `--skip-gates` — Skip quality gates validation (not recommended)
@@ -1109,6 +1113,10 @@ Based on Mihaly Csikszentmihalyi's Flow Theory, progression design maintains opt
 
 **Флаги:**
 
+**Thinking Budget Control:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (8K, $0.12), standard (16K, $0.24, default), ultrathink (48K, $0.72)
+  - **Note**: Independent from `--depth-level` (which controls plan mode exploration depth)
+
 **Input & Mode:**
 - `--file <path>` — Use a file as input for the specification
 - `--continue` — Continue editing the last generated specification
@@ -1166,6 +1174,7 @@ Based on Mihaly Csikszentmihalyi's Flow Theory, progression design maintains opt
 **Модель:** `sonnet` (thinking_budget: 16000)
 
 **Флаги:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (8K, $0.12), standard (16K, $0.24, default), ultrathink (48K, $0.72)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 - `--sequential` — Disable operation batching (execute gap searches sequentially)
 
@@ -1179,7 +1188,7 @@ Based on Mihaly Csikszentmihalyi's Flow Theory, progression design maintains opt
 
 **Назначение:** Create visual specifications and complete design systems from brand inputs. Orchestrates UX, Product, and Motion Designer agents. Supports design system generation, component library presets, Storybook auto-generation, and Figma token export. Use AFTER /speckit.specify for UI-heavy features OR standalone for design system bootstrapping.
 
-**Модель:** `opus` (thinking_budget: 16000)
+**Модель:** `opus` (thinking_budget: 24000)
 
 **Persona:** `ux-designer-agent`
 
@@ -1194,6 +1203,9 @@ Phase 3 optimizations reduce context overhead by 82-95K tokens (35-45% reduction
 - ✅ **Preset Filtering** (~40-50K potential) — Design-system-presets.md (962 lines) and aesthetic-presets.md (2,145 lines) can be filtered to relevant presets based on project type
 
 **Флаги:**
+
+**Thinking Budget Control:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (24K, $0.72, default), ultrathink (96K, $2.88)
 
 **Input Mode Selection:**
 - `--concept` — Use concept.md as the primary input for design generation (generates app-wide design from alternatives)
@@ -1486,6 +1498,12 @@ DQS expanded from 5 to 12 dimensions (100 points total, threshold ≥ 70):
 **Требует:** handoffs/specify-to-plan.md
 
 **Флаги:**
+
+**Thinking Budget Control:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (8K, $0.12), standard (16K, $0.24, default), ultrathink (48K, $0.72)
+  - **Note**: Independent from `--depth-level` (which controls plan mode exploration depth)
+
+**Basic Flags:**
 - `--style <style>` — Choose planning style: detailed, standard, agile (default: standard)
 - `--full` — Include all optional sections (pre-mortem, security, etc.)
 - `--json` — Output summary in JSON format
@@ -1612,6 +1630,12 @@ DQS expanded from 5 to 12 dimensions (100 points total, threshold ≥ 70):
 **Требует:** handoffs/plan-to-tasks.md
 
 **Флаги:**
+
+**Thinking Budget Control:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (8K, $0.12), standard (16K, $0.24, default), ultrathink (48K, $0.72)
+  - **Note**: Independent from `--depth-level` (which controls plan mode exploration depth)
+
+**Basic Flags:**
 - `--style <style>` — Choose task generation style: detailed, standard, agile (default: standard)
 - `--full` — Include all optional tasks (docs, analytics, etc.)
 - `--json` — Output summary in JSON format
@@ -1682,9 +1706,10 @@ The `/speckit.tasks` command now enforces strict clarity requirements to ensure 
 
 **Назначение:** Convert existing tasks into actionable, dependency-ordered GitHub issues for the feature based on available design artifacts.
 
-**Модель:** `haiku` (thinking_budget: 8000)
+**Модель:** `haiku` (thinking_budget: 2000)
 
 **Флаги:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (2K, $0.03, default), ultrathink (8K, $0.12)
 
 **Issue Creation:**
 - `--repo <owner/repo>` — Target GitHub repository (required if not configured in constitution)
@@ -1715,13 +1740,14 @@ The `/speckit.tasks` command now enforces strict clarity requirements to ensure 
 
 **Назначение:** Provision Docker Compose staging environment before implementation
 
-**Модель:** `haiku` (thinking_budget: 4000)
+**Модель:** `haiku` (thinking_budget: 2000)
 
 **Persona:** `devops-agent`
 
 **Требует:** tasks.md
 
 **Флаги:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (2K, $0.03, default), ultrathink (8K, $0.12)
 - `--services <list>` — Override default services (postgres,redis,playwright). Comma-separated.
 - `--skip-playwright` — Skip Playwright container (useful for unit-test-only features)
 - `--reset` — Tear down and recreate all services
@@ -1759,11 +1785,12 @@ The `/speckit.tasks` command now enforces strict clarity requirements to ensure 
 
 > **Note:** Since v0.0.109, inline quality gates are embedded in `/speckit.specify`, `/speckit.plan`, `/speckit.tasks`, and `/speckit.implement`. Use `/speckit.analyze` for full audits only. Profiles `spec_validate`, `plan_validate`, `tasks_validate` are deprecated for inline use.
 
-**Модель:** `sonnet` (thinking_budget: 16000)
+**Модель:** `sonnet` (thinking_budget: 24000)
 
 **Persona:** `qa-agent`
 
 **Флаги:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (24K, $0.72, default), ultrathink (96K, $2.88)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 - `--profile` — Select validation profile: `full` (all passes), `qa` (post-implementation), `drift` (spec-code alignment), `quick` (critical only)
 - `--quiet` — Suppress non-essential output (only gates + result)
@@ -1814,11 +1841,12 @@ Bidirectional spec-code alignment analysis:
 
 **Назначение:** Extract specifications from existing codebase using LLM-powered analysis. Creates `reverse-engineered/` directory with extracted-spec.md for review and merging into canonical spec.
 
-**Модель:** `sonnet` (thinking_budget: 16000)
+**Модель:** `haiku` (thinking_budget: 2000)
 
 **Persona:** `documentation-agent`
 
 **Флаги:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (2K, $0.03, default), ultrathink (8K, $0.12)
 - `--scope` — Scan scope patterns (required)
 - `--exclude` — Additional exclusions (optional)
 - `--language` — Override language detection (optional)
@@ -1905,7 +1933,7 @@ cat reverse-engineered/.extraction-manifest.yaml
 
 **Назначение:** Синхронизация спецификаций с вручную измененным кодом. Обнаруживает дрейф (drift) между spec.md/plan.md/tasks.md и реальной реализацией, генерирует предложения по обновлению и применяет изменения с сохранением полной трассируемости.
 
-**Модель:** `sonnet` (thinking_budget: 12000)
+**Модель:** `sonnet` (thinking_budget: 24000, tiered: free 12K / pro 18K / max 24K / ultrathink 72K)
 
 **Persona:** `drift-repair-agent`
 
@@ -2110,7 +2138,7 @@ Apply this change? [Y/n/e/skip/quit]
 
 **Назначение:** Execute the implementation plan, generate documentation (RUNNING.md, README.md), and validate with self-review. Enforces inline quality gates for pre-implementation checks and post-implementation validation.
 
-**Модель:** `opus` (thinking_budget: 16000)
+**Модель:** `opus` (thinking_budget: 24000)
 
 **Persona:** `developer-agent`
 
@@ -2178,6 +2206,7 @@ Apply this change? [Y/n/e/skip/quit]
 **Следующий шаг:** `/speckit.merge` сгенерирует migration guides при breaking changes.
 
 **Флаги:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (24K, $0.72, default), ultrathink (96K, $2.88)
 - `--tdd` — Enable Test-Driven Development mode (write tests first)
 - `--auto-fix` — Automatically apply fixes for failing tests
 - `--full-suite` — Run full test suite instead of just affected tests
@@ -2232,11 +2261,12 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 **Назначение:** Verify implementation against specification after /speckit.implement. Comprehensive post-implementation verification covering 5 layers: acceptance criteria (AS-xxx scenarios), API contracts, visual verification (screenshots + pixelmatch), E2E behaviors, and NFR compliance. Generates detailed report with auto-fix suggestions for common issues. Requires 90% overall pass rate to proceed.
 
-**Модель:** `sonnet` (thinking_budget: 8000)
+**Модель:** `sonnet` (thinking_budget: 16000)
 
 **Persona:** `qa-agent`
 
 **Флаги:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (8K, $0.12), standard (16K, $0.24, default), ultrathink (48K, $0.72)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 - `--no-auto-fix` — Disable automatic fix application (report only)
 - `--threshold N` — Override pass threshold (0-100, default: 90)
@@ -2287,7 +2317,7 @@ Tasks are grouped by dependency level and executed as parallel Task tool calls:
 
 **Назначение:** Generate interactive previews from design specifications. Converts wireframes to visual HTML, generates component previews, captures screenshots, and runs design quality validation.
 
-**Модель:** `opus` (thinking_budget: 16000)
+**Модель:** `opus` (thinking_budget: 24000)
 
 **Persona:** `product-designer-agent`
 
@@ -2303,6 +2333,7 @@ Phase 3 optimizations reduce execution overhead by 600-700K tokens (60-70% reduc
 - ✅ **Conditional Autofix** (~20-40K saved) — Wave 0 streaming autofix only runs when `--autofix` flag present
 
 **Флаги:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (24K, $0.72, default), ultrathink (96K, $2.88)
 - `--output <path>` — Specify output path for the preview file (default: preview.md)
 - `--format <format>` — Specify output format: markdown, html, pdf (default: markdown)
 - `--style <style>` — Choose preview style: standard, compact, full (default: standard)
@@ -2344,9 +2375,10 @@ await page.screenshot({
 
 **Назначение:** List all features in the project with their current status. Shows feature registry from manifest and indicates which feature is currently active.
 
-**Модель:** `haiku` (thinking_budget: 4000)
+**Модель:** `haiku` (thinking_budget: 2000)
 
 **Флаги:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (2K, $0.03, default), ultrathink (8K, $0.12)
 - `--verbose, -v` — Include file details per feature
 - `--json` — Output in JSON format
 - `--status <status>` — Filter by status (e.g., `--status IN_PROGRESS`)
@@ -2364,9 +2396,10 @@ await page.screenshot({
 
 **Назначение:** Switch to a different feature to continue working on it. Updates the active feature state and optionally checks out the corresponding git branch.
 
-**Модель:** `haiku` (thinking_budget: 4000)
+**Модель:** `haiku` (thinking_budget: 2000)
 
 **Флаги:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (2K, $0.03, default), ultrathink (8K, $0.12)
 - `<id>` — Switch by feature ID (e.g., `001`)
 - `<name>` — Switch by feature name (e.g., `user-auth`)
 - `<full>` — Switch by full name (e.g., `001-user-auth`)
@@ -2387,9 +2420,10 @@ await page.screenshot({
 
 **Назначение:** Extend a merged feature with new capabilities. Creates a new feature branch with Feature Lineage pre-populated, loading context from the parent feature and its system specs.
 
-**Модель:** `sonnet` (thinking_budget: 8000)
+**Модель:** `sonnet` (thinking_budget: 16000)
 
 **Флаги:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (8K, $0.12), standard (16K, $0.24, default), ultrathink (48K, $0.72)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 **Quality Gates:**
@@ -2412,9 +2446,14 @@ await page.screenshot({
 
 **Назначение:** Finalize feature and update system specs after PR merge. Converts feature requirements into living system documentation.
 
-**Модель:** `sonnet` (thinking_budget: 16000)
+**Модель:** `sonnet` (thinking_budget: 16000, tiered: free 4K / pro 8K / max 16K / ultrathink 48K)
 
 **Флаги:**
+
+**Thinking Budget Control:**
+- Tiered structure: free (4K), pro (8K), max (16K, default), ultrathink (48K, ~$1.44)
+
+
 
 **Merge Configuration:**
 - `--pr <number>` — Specify PR number to merge (if not using command line argument)
@@ -2492,6 +2531,7 @@ await page.screenshot({
 **Модель:** `sonnet` (thinking_budget: 16000)
 
 **Флаги:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (8K, $0.12), standard (16K, $0.24, default), ultrathink (48K, $0.72)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 **Pre-Gates:**
@@ -2520,9 +2560,10 @@ await page.screenshot({
 
 **Назначение:** Generate a custom checklist for the current feature based on user requirements.
 
-**Модель:** `sonnet` (thinking_budget: 8000)
+**Модель:** `sonnet` (thinking_budget: 16000)
 
 **Флаги:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (8K, $0.12), standard (16K, $0.24, default), ultrathink (48K, $0.72)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 ---
@@ -2531,9 +2572,10 @@ await page.screenshot({
 
 **Назначение:** Validate problem-solution fit before building through customer discovery
 
-**Модель:** `opus` (thinking_budget: 16000)
+**Модель:** `opus` (thinking_budget: 24000)
 
 **Флаги:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (24K, $0.72, default), ultrathink (96K, $2.88)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 **Persona:** `product-agent`
@@ -2558,9 +2600,10 @@ await page.screenshot({
 
 **Назначение:** Quick integration with common third-party services
 
-**Модель:** `sonnet` (thinking_budget: 16000)
+**Модель:** `opus` (thinking_budget: 16000)
 
 **Флаги:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (16K, $0.24, default), ultrathink (48K, $0.72)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 **Persona:** `developer-agent`
@@ -2594,9 +2637,10 @@ await page.screenshot({
 
 **Назначение:** Set up production observability with OpenTelemetry, dashboards, and alerting
 
-**Модель:** `sonnet` (thinking_budget: 16000)
+**Модель:** `sonnet` (thinking_budget: 24000)
 
 **Флаги:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (24K, $0.72, default), ultrathink (96K, $2.88)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 **Persona:** `devops-agent`
@@ -2617,9 +2661,10 @@ await page.screenshot({
 
 **Назначение:** Automate product launch and go-to-market activities
 
-**Модель:** `sonnet` (thinking_budget: 16000)
+**Модель:** `opus` (thinking_budget: 16000)
 
 **Флаги:**
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (16K, $0.24, default), ultrathink (48K, $0.72)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 **Persona:** `marketing-agent`
@@ -2645,15 +2690,13 @@ await page.screenshot({
 
 **Назначение:** Provision infrastructure, deploy application, and verify running system in one command
 
-**Модель:** `sonnet` (thinking_budget: 16000)
-
-**Флаги:**
-- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
+**Модель:** `sonnet` (thinking_budget: 24000)
 
 **Persona:** `devops-agent`
 
 **Флаги:**
-
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (24K, $0.72, default), ultrathink (96K, $2.88)
+- `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 - `--env` — Target environment (local, staging, production). Default: staging
 - `--only` — Run only specific stage (infra, deploy, verify). Default: all
 - `--destroy` — Tear down infrastructure and deployment
@@ -2701,9 +2744,10 @@ await page.screenshot({
 
 **Назначение:** Generate MINIMAL/BALANCED/AMBITIOUS scope variants for existing concept
 
-**Модель:** `sonnet` (thinking_budget: 8000)
+**Модель:** `sonnet` (thinking_budget: 32000)
 
 **Флаги:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (16K, $0.32), standard (32K, $1.15, default), ultrathink (120K, $4.32)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 ---
@@ -2712,12 +2756,12 @@ await page.screenshot({
 
 **Назначение:** Plan and execute spec-driven modernization between architectures, versions, and cloud providers
 
-**Модель:** `opus` (thinking_budget: 32000)
+**Модель:** `haiku` (thinking_budget: 2000)
 
 **Persona:** `architect-agent`
 
 **Флаги:**
-
+- `--thinking-depth <standard|ultrathink>` — Thinking budget: standard (2K, $0.03, default), ultrathink (8K, $0.12)
 - `--from` — Source architecture to migrate from (monolith, legacy, etc.)
 - `--upgrade` — Target version/runtime to upgrade to (node18, postgres16, python312, etc.)
 - `--to-cloud` — Target cloud provider (aws, gcp, azure, vk-cloud)
@@ -2754,6 +2798,7 @@ await page.screenshot({
 **Модель:** `opus` (thinking_budget: 16000)
 
 **Флаги:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (8K, $0.12), standard (16K, $0.24, default), ultrathink (48K, $0.72)
 - `--language <lang>` — Target language(s): python|typescript|go|java|kotlin|all
 - `--profile <name>` — Execution profile: quick, full, pgs
 - `--iterations <n>` — Max PGS iterations for counterexample resolution
@@ -2789,9 +2834,10 @@ await page.screenshot({
 
 **Назначение:** Orchestrate mobile development with specialized agents. Activates platform-specific expertise (KMP/Flutter/React Native), calculates Mobile Quality Score (MQS), and ensures production-ready mobile applications.
 
-**Модель:** `sonnet` (thinking_budget: high)
+**Модель:** `opus` (thinking_budget: 32000)
 
 **Флаги:**
+- `--thinking-depth <quick|standard|ultrathink>` — Thinking budget: quick (16K, $0.12), standard (32K, $0.24, default), ultrathink (96K, $0.72)
 - `--max-model <opus|sonnet|haiku>` — Model cap for cost control
 
 **Persona:** `mobile-developer-agent`

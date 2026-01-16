@@ -21,8 +21,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - User-tier fallback: Graceful degradation with clear messaging for non-Max users
   - Depth-based agent selection: Quick mode runs 5 core agents (market, competitive, persona, synthesis, scorer)
 
+- **Phase 5 Expansion: Ultrathink Optional Across ALL 43 Commands**
+  - Extended `--thinking-depth` flag to ALL 43 speckit commands (previously only `/speckit.concept`)
+  - **Category A** (8 simple/operational commands): 2-level pattern (standard 2K / ultrathink 8K)
+    - `list`, `switch`, `staging`, `help`, `taskstoissues`, `speckit.concept.switch`, `migrate`, `reverse-engineer`
+  - **Category B** (10 standard workflow commands): 3-level pattern (quick 8K / standard 16K / ultrathink 48K)
+    - `specify`, `plan`, `tasks`, `clarify`, `baseline`, `extend`, `validate-concept`, `checklist`, `properties`, `verify`
+    - **Special**: `specify`, `plan`, `tasks` now have TWO independent flags:
+      - `--depth-level` (plan_mode exploration depth: 0-3)
+      - `--thinking-depth` (thinking budget allocation: quick/standard/ultrathink)
+  - **Category C** (7 complex analysis commands): 2-level pattern (standard 24K / ultrathink 96K)
+    - `analyze`, `implement`, `design`, `discover`, `preview`, `ship`, `monitor`
+  - **Category D** (10 strategic commands): 3-level pattern (quick 16K / standard 32K / ultrathink 120K)
+    - `constitution`, `balance`, `analytics`, `games-concept`, `games-mechanics`, `games-progression`, `games-virality`, `gdd`, `concept-variants`
+    - **Consistency fix**: Renamed `--depth` → `--thinking-depth` in `/speckit.concept` for consistency
+  - **Category E** (2 drift management commands): Added ultrathink tier to existing structure
+    - `speckit.fix`: ultrathink 72K (standard 24K)
+    - `speckit.merge`: ultrathink 48K (standard 16K)
+  - **Category F** (4 game/mobile commands): 3-level pattern (quick 16K / standard 32K / ultrathink 96K)
+    - `liveops`, `playtest`, `softlaunch`, `mobile`
+  - **Category G** (2 integration/launch commands): 2-level pattern (standard 16K / ultrathink 48K)
+    - `integrate`, `launch`
+  - All commands include:
+    - `depth_defaults` configuration with thinking budgets, timeouts, and agent selection
+    - `user_tier_fallback` with graceful degradation for non-Max tier users
+    - `cost_breakdown` with transparent pricing and execution time estimates
+
 ### Changed
 
+- **Flag consistency**: Renamed `--depth` → `--thinking-depth` in `/speckit.concept` for consistency with all other commands
 - **⚠️ BREAKING CHANGE**: `/speckit.concept` default changed from `ultrathink` → `standard` (73% cost reduction)
   - **Impact**: Existing workflows using default settings will now use 32K thinking budget instead of 120K
   - **Migration**: Explicitly use `--depth=ultrathink` to restore previous 120K budget behavior
@@ -37,7 +64,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `cost_breakdown` configuration shows estimated costs before execution
   - `cost_warning` configuration with $2 threshold and actionable reduction tips
   - Execution time estimates added to all depth tiers
-- Updated COMMANDS_GUIDE.md with comprehensive `--depth` flag documentation
+- Updated COMMANDS_GUIDE.md with comprehensive `--thinking-depth` flag documentation for all 43 commands
+  - Documented thinking budgets, cost estimates, and depth patterns for each category
+  - Added tiered structure notes for drift management commands (fix, merge)
+  - Clarified dual-flag system for specify/plan/tasks (--thinking-depth + --depth-level)
 
 ### Impact
 
