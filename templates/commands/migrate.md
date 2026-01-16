@@ -85,12 +85,44 @@ claude_code:
         timeout_per_agent: 600000
         retry_on_failure: 2
       max:
-        thinking_budget: 32000
+        thinking_budget: 2000
         max_parallel: 8
         batch_delay: 1500
         wave_overlap_threshold: 0.65
         timeout_per_agent: 900000
         retry_on_failure: 3
+      ultrathink:
+        thinking_budget: 8000
+        max_parallel: 4
+        batch_delay: 3000
+        wave_overlap_threshold: 0.60
+        timeout_per_agent: 1200000
+        retry_on_failure: 3
+        cost_multiplier: 4.0
+
+  depth_defaults:
+    standard:
+      thinking_budget: 2000
+      timeout: 30
+    ultrathink:
+      thinking_budget: 8000
+      additional_analysis: [migration-risk-analyzer, compatibility-checker]
+      timeout: 60
+
+  user_tier_fallback:
+    enabled: true
+    rules:
+      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+        fallback_depth: "standard"
+        fallback_thinking: 2000
+        warning_message: |
+          ⚠️ **Ultrathink mode requires Claude Code Max tier** (8K thinking budget).
+          Auto-downgrading to **Standard** mode (2K budget).
+
+  cost_breakdown:
+    standard: {cost: $0.03, time: "15-30s"}
+    ultrathink: {cost: $0.12, time: "30-60s"}
+
   cache_hierarchy: full
   orchestration:
     max_parallel: 8
@@ -292,6 +324,14 @@ skills:
     trigger: "When analyzing code structure or tracing dependencies"
     usage: "Read templates/skills/code-explore.md for thorough codebase analysis"
 flags:
+  - name: --thinking-depth
+    type: choice
+    choices: [standard, ultrathink]
+    default: standard
+    description: |
+      Thinking budget control:
+      - standard: 2K budget, fast analysis (~$0.03) [RECOMMENDED]
+      - ultrathink: 8K budget, deep migration analysis (~$0.12)
   max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 

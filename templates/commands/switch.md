@@ -28,6 +28,15 @@ handoffs:
 scripts:
   sh: mkdir -p .speckit && echo "{FEATURE_ID}" > .speckit/active
   ps: $null = New-Item -ItemType Directory -Force -Path .speckit; Set-Content -Path ".speckit/active" -Value "{FEATURE_ID}"
+flags:
+  - name: --thinking-depth
+    type: choice
+    choices: [standard, ultrathink]
+    default: standard
+    description: |
+      Thinking budget control:
+      - standard: 2K budget, fast switching (~$0.03) [RECOMMENDED]
+      - ultrathink: 8K budget, detailed validation (~$0.12)
 claude_code:
   model: haiku
   reasoning_mode: extended
@@ -46,10 +55,40 @@ claude_code:
         batch_delay: 4000
         wave_overlap_threshold: 0.80
       max:
-        thinking_budget: 8000
+        thinking_budget: 2000
         max_parallel: 6
         batch_delay: 1500
         wave_overlap_threshold: 0.65
+      ultrathink:
+        thinking_budget: 8000
+        max_parallel: 4
+        batch_delay: 3000
+        wave_overlap_threshold: 0.60
+        cost_multiplier: 4.0
+
+  depth_defaults:
+    standard:
+      thinking_budget: 2000
+      timeout: 30
+    ultrathink:
+      thinking_budget: 8000
+      additional_analysis: [git-branch-validator, feature-status-checker]
+      timeout: 60
+
+  user_tier_fallback:
+    enabled: true
+    rules:
+      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+        fallback_depth: "standard"
+        fallback_thinking: 2000
+        warning_message: |
+          ⚠️ **Ultrathink mode requires Claude Code Max tier** (8K thinking budget).
+          Auto-downgrading to **Standard** mode (2K budget).
+
+  cost_breakdown:
+    standard: {cost: $0.03, time: "15-30s"}
+    ultrathink: {cost: $0.12, time: "30-60s"}
+
   cache_hierarchy: full
   subagents:
     - role: feature-switcher

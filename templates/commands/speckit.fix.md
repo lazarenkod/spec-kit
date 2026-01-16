@@ -61,13 +61,48 @@ claude_code:
         thinking_budget: 24000
         max_parallel: 6
         batch_delay: 2000
+      ultrathink:
+        thinking_budget: 72000
+        max_parallel: 4
+        batch_delay: 3000
+        wave_overlap_threshold: 0.60
+        cost_multiplier: 3.0
 
   parallel_agents:
     wave_1_detection: 3
     wave_2_analysis: 3
     wave_6_validation: 3
+
+  depth_defaults:
+    standard:
+      thinking_budget: 24000
+      timeout: 120
+    ultrathink:
+      thinking_budget: 72000
+      additional_agents: [drift-deep-analyzer, conflict-resolver]
+      timeout: 240
+
+  user_tier_fallback:
+    enabled: true
+    rules:
+      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+        fallback_depth: "standard"
+        fallback_thinking: 24000
+        warning_message: |
+          ⚠️ **Ultrathink mode requires Claude Code Max tier** (72K thinking budget).
+          Auto-downgrading to **Standard** mode (24K budget).
+
+  cost_breakdown:
+    standard: {cost: $0.72, time: "120-180s"}
+    ultrathink: {cost: $2.16, time: "240-300s"}
+
 flags:
   max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
+  thinking_depth: |
+    --thinking-depth <standard|ultrathink>
+    Thinking budget control:
+    - standard: Max tier (24K budget) (~$0.72) [RECOMMENDED]
+    - ultrathink: 72K budget, deep analysis (~$2.16) [REQUIRES Max tier]
 ---
 
 # /speckit.fix — Synchronize Specifications with Code

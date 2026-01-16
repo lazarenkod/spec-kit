@@ -34,6 +34,17 @@ inputs:
     type: object
     description: Override default quality gate thresholds
 
+flags:
+  - name: --thinking-depth
+    type: choice
+    choices: [quick, standard, ultrathink]
+    default: standard
+    description: |
+      Research depth and thinking budget per agent:
+      - quick: 16K budget, 5 core agents, 90s timeout (~$0.32)
+      - standard: 32K budget, 9 agents, 180s timeout (~$1.15) [RECOMMENDED]
+      - ultrathink: 120K budget, 9 agents, 300s timeout (~$4.32) [EXPERT MODE]
+
 outputs:
   - reports/balance/balance-report.md              # Comprehensive report
   - reports/balance/economy-simulation.md          # Economy analysis
@@ -127,6 +138,49 @@ claude_code:
       max:
         thinking_budget: 32000
         max_parallel: 8
+      ultrathink:
+        thinking_budget: 120000
+        max_parallel: 4
+        batch_delay: 3000
+        wave_overlap_threshold: 0.60
+        cost_multiplier: 3.5
+
+  depth_defaults:
+    quick:
+      thinking_budget: 16000
+      agents: 5
+      timeout: 90
+      skip_agents:
+        - standards-researcher
+        - academic-researcher
+    standard:
+      thinking_budget: 32000
+      agents: 9
+      timeout: 180
+      skip_agents:
+        - standards-researcher
+        - academic-researcher
+    ultrathink:
+      thinking_budget: 120000
+      agents: 9
+      timeout: 300
+      agent_selection: all
+
+  user_tier_fallback:
+    enabled: true
+    rules:
+      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+        fallback_depth: "standard"
+        fallback_thinking: 32000
+        warning_message: |
+          ⚠️ **Ultrathink mode requires Claude Code Max tier** (120K thinking budget).
+          Auto-downgrading to **Standard** mode (32K budget).
+
+  cost_breakdown:
+    quick: {cost: $0.32, time: "90-120s"}
+    standard: {cost: $1.15, time: "180-240s"}
+    ultrathink: {cost: $4.32, time: "300-360s"}
+
   cache_hierarchy: full
   orchestration:
     max_parallel: 6

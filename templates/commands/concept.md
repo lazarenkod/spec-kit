@@ -9,7 +9,7 @@ handoffs:
     agent: speckit.analyze
     prompt: Check concept completeness and consistency
 flags:
-  - name: --depth
+  - name: --thinking-depth
     type: choice
     choices: [quick, standard, ultrathink]
     default: standard

@@ -24,6 +24,16 @@ auto_invocation:
 scripts:
    sh: scripts/bash/check-prerequisites.sh --json --paths-only
    ps: scripts/powershell/check-prerequisites.ps1 -Json -PathsOnly
+flags:
+  - name: --thinking-depth
+    type: choice
+    choices: [quick, standard, ultrathink]
+    default: standard
+    description: |
+      Thinking budget per agent:
+      - quick: 8K budget, core agents, 60s (~$0.12)
+      - standard: 16K budget, full workflow, 120s (~$0.24) [RECOMMENDED]
+      - ultrathink: 48K budget, validation agents, 240s (~$0.72)
 claude_code:
   model: sonnet
   reasoning_mode: extended
@@ -46,6 +56,38 @@ claude_code:
         max_parallel: 6
         batch_delay: 1500
         wave_overlap_threshold: 0.65
+      ultrathink:
+        thinking_budget: 48000
+        max_parallel: 4
+        batch_delay: 3000
+        wave_overlap_threshold: 0.60
+        cost_multiplier: 3.0
+  depth_defaults:
+    quick:
+      thinking_budget: 8000
+      skip_agents: [optional-validators]
+      timeout: 60
+    standard:
+      thinking_budget: 16000
+      skip_agents: []
+      timeout: 120
+    ultrathink:
+      thinking_budget: 48000
+      additional_agents: [deep-analyzers, security-auditor]
+      timeout: 240
+  user_tier_fallback:
+    enabled: true
+    rules:
+      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+        fallback_depth: "standard"
+        fallback_thinking: 16000
+        warning_message: |
+          ⚠️ **Ultrathink mode requires Claude Code Max tier** (48K thinking budget).
+          Auto-downgrading to **Standard** mode (16K budget).
+  cost_breakdown:
+    quick: {cost: $0.12, time: "60-90s"}
+    standard: {cost: $0.24, time: "120-180s"}
+    ultrathink: {cost: $0.72, time: "240-300s"}
   cache_hierarchy: full
   orchestration:
     max_parallel: 6

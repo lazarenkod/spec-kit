@@ -124,10 +124,32 @@ plan_mode:
     - data-intensive
 
   flags:
-    depth: "--depth-level <0-3>"
-    enable: "--plan-mode"
-    disable: "--no-plan-mode"
-    max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
+    - name: --thinking-depth
+      type: choice
+      choices: [quick, standard, ultrathink]
+      default: standard
+      description: |
+        Thinking budget per agent:
+        - quick: 8K budget, core agents, 60s (~$0.12)
+        - standard: 16K budget, full workflow, 120s (~$0.24) [RECOMMENDED]
+        - ultrathink: 48K budget, validation agents, 240s (~$0.72)
+    - name: --depth-level
+      type: choice
+      choices: [0, 1, 2, 3]
+      default: null
+      description: "--depth-level <0-3> - Plan mode exploration depth (independent from --thinking-depth)"
+    - name: --plan-mode
+      type: boolean
+      default: false
+      description: "Enable plan mode (equivalent to --depth-level 3)"
+    - name: --no-plan-mode
+      type: boolean
+      default: false
+      description: "Disable plan mode (equivalent to --depth-level 0)"
+    - name: --max-model
+      type: string
+      default: null
+      description: "--max-model <opus|sonnet|haiku> - Override model cap"
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json
   ps: scripts/powershell/check-prerequisites.ps1 -Json
@@ -139,20 +161,58 @@ claude_code:
     default_tier: max
     tiers:
       free:
-        thinking_budget: 6000
+        thinking_budget: 3000
         max_parallel: 2
         batch_delay: 8000
         wave_overlap_threshold: 0.90
+        timeout_per_agent: 180000
+        retry_on_failure: 1
       pro:
-        thinking_budget: 12000
+        thinking_budget: 6000
         max_parallel: 4
         batch_delay: 4000
         wave_overlap_threshold: 0.80
+        timeout_per_agent: 300000
+        retry_on_failure: 2
       max:
-        thinking_budget: 24000
+        thinking_budget: 12000
         max_parallel: 8
         batch_delay: 1500
         wave_overlap_threshold: 0.65
+        timeout_per_agent: 900000
+        retry_on_failure: 3
+      ultrathink:
+        thinking_budget: 48000
+        max_parallel: 4
+        batch_delay: 3000
+        wave_overlap_threshold: 0.60
+        cost_multiplier: 3.0
+  depth_defaults:
+    quick:
+      thinking_budget: 8000
+      skip_agents: [optional-task-validators]
+      timeout: 60
+    standard:
+      thinking_budget: 16000
+      skip_agents: []
+      timeout: 120
+    ultrathink:
+      thinking_budget: 48000
+      additional_agents: [task-deepdive, dependency-auditor]
+      timeout: 240
+  user_tier_fallback:
+    enabled: true
+    rules:
+      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+        fallback_depth: "standard"
+        fallback_thinking: 16000
+        warning_message: |
+          ⚠️ **Ultrathink mode requires Claude Code Max tier** (48K thinking budget).
+          Auto-downgrading to **Standard** mode (16K budget).
+  cost_breakdown:
+    quick: {cost: $0.12, time: "60-90s"}
+    standard: {cost: $0.24, time: "120-180s"}
+    ultrathink: {cost: $0.72, time: "240-300s"}
   cache_control:
     system_prompt: ephemeral
     constitution: ephemeral

@@ -16,6 +16,21 @@ skills:
   - metrics-collection
   - qualitative-synthesis
 
+flags:
+  - name: --thinking-depth
+    type: choice
+    choices: [quick, standard, ultrathink]
+    default: standard
+    description: |
+      Thinking budget per agent:
+      - quick: 16K budget, core analysis, 90s (~$0.12)
+      - standard: 32K budget, full analysis with insights, 180s (~$0.24) [RECOMMENDED]
+      - ultrathink: 96K budget, deep qualitative synthesis, 300s (~$0.72)
+  - name: --max-model
+    type: string
+    default: null
+    description: "--max-model <opus|sonnet|haiku> - Override model cap"
+
 inputs:
   playtest_type:
     type: enum
@@ -123,20 +138,74 @@ claude_code:
     default_tier: max
     tiers:
       free:
-        thinking_budget: 8000
+        thinking_budget: 4000
         max_parallel: 2
+        batch_delay: 8000
+        wave_overlap_threshold: 0.90
+        timeout_per_agent: 180000
+        retry_on_failure: 1
       pro:
-        thinking_budget: 16000
+        thinking_budget: 8000
         max_parallel: 4
+        batch_delay: 4000
+        wave_overlap_threshold: 0.80
+        timeout_per_agent: 300000
+        retry_on_failure: 2
       max:
-        thinking_budget: 24000
-        max_parallel: 6
+        thinking_budget: 32000
+        max_parallel: 8
+        batch_delay: 1500
+        wave_overlap_threshold: 0.65
+        timeout_per_agent: 900000
+        retry_on_failure: 3
+      ultrathink:
+        thinking_budget: 96000
+        max_parallel: 4
+        batch_delay: 3000
+        wave_overlap_threshold: 0.60
+        cost_multiplier: 6.0
+  depth_defaults:
+    quick:
+      thinking_budget: 16000
+      skip_agents: [optional-synthesizers]
+      timeout: 90
+    standard:
+      thinking_budget: 32000
+      skip_agents: []
+      timeout: 180
+    ultrathink:
+      thinking_budget: 96000
+      additional_agents: [deep-session-analyzer, pattern-detector]
+      timeout: 300
+  user_tier_fallback:
+    enabled: true
+    rules:
+      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+        fallback_depth: "standard"
+        fallback_thinking: 32000
+        warning_message: |
+          ⚠️ **Ultrathink mode requires Claude Code Max tier** (96K thinking budget).
+          Auto-downgrading to **Standard** mode (32K budget).
+  cost_breakdown:
+    quick: {cost: $0.12, time: "90-120s"}
+    standard: {cost: $0.24, time: "180-240s"}
+    ultrathink: {cost: $0.72, time: "300-360s"}
+  cache_control:
+    system_prompt: ephemeral
+    constitution: ephemeral
+    templates: ephemeral
+    artifacts: ephemeral
+    ttl: session
   cache_hierarchy: full
   orchestration:
     max_parallel: 5
     conflict_resolution: queue
     timeout_per_agent: 600000
     retry_on_failure: 2
+  operation_batching:
+    enabled: true
+    skip_flag: "--sequential"
+    framework: templates/shared/operation-batching.md
 
   subagents:
     # Wave 1: Planning (parallel)

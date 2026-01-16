@@ -184,15 +184,15 @@ inputs:
       mid-core: "20-30 min sessions, deep meta"
 
 flags:
-  depth:
+  thinking-depth:
     type: enum
-    options: [quick, standard, world-class]
+    options: [quick, standard, ultrathink]
     default: standard
     description: |
-      Research depth level:
-      - quick: 3 agents, 60s timeout (~$0.40)
-      - standard: 5 agents, 180s timeout (~$2.00)
-      - world-class: 12 agents, 300s timeout (~$7.20)
+      Research depth and thinking budget per agent:
+      - quick: 16K budget, 5 core agents, 90s timeout (~$0.32)
+      - standard: 32K budget, 9 agents, 180s timeout (~$1.15) [RECOMMENDED]
+      - ultrathink: 120K budget, 9 agents, 300s timeout (~$4.32) [EXPERT MODE]
 
   genre:
     type: enum

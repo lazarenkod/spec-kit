@@ -62,10 +62,36 @@ claude_code:
         batch_delay: 4000
         wave_overlap_threshold: 0.80
       max:
-        thinking_budget: 16000
+        thinking_budget: 24000
         max_parallel: 6
         batch_delay: 1500
         wave_overlap_threshold: 0.65
+      ultrathink:
+        thinking_budget: 96000
+        max_parallel: 4
+        batch_delay: 3000
+        wave_overlap_threshold: 0.60
+        cost_multiplier: 4.0
+  depth_defaults:
+    standard:
+      thinking_budget: 24000
+      timeout: 120
+    ultrathink:
+      thinking_budget: 96000
+      additional_agents: [deep-analyzers, security-auditor]
+      timeout: 240
+  user_tier_fallback:
+    enabled: true
+    rules:
+      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+        fallback_depth: "standard"
+        fallback_thinking: 24000
+        warning_message: |
+          ⚠️ **Ultrathink mode requires Claude Code Max tier** (96K thinking budget).
+          Auto-downgrading to **Standard** mode (24K budget).
+  cost_breakdown:
+    standard: {cost: $0.72, time: "120-180s"}
+    ultrathink: {cost: $2.88, time: "240-360s"}
   cache_hierarchy: full
   orchestration:
     max_parallel: 6
@@ -117,7 +143,18 @@ claude_code:
         Configure data sources for Prometheus, Loki, Jaeger.
         Output: infra/observability/grafana/dashboards/.
 flags:
-  max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
+  - name: --thinking-depth
+    type: choice
+    choices: [standard, ultrathink]
+    default: standard
+    description: |
+      Thinking budget control:
+      - standard: 24K budget, standard analysis (~$0.72) [RECOMMENDED]
+      - ultrathink: 96K budget, deep analysis (~$2.88)
+  - name: --max-model
+    type: choice
+    choices: [opus, sonnet, haiku]
+    description: Override model cap
 ---
 
 # /speckit.monitor

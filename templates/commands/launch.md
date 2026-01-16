@@ -3,10 +3,28 @@ name: launch
 description: Automate product launch and go-to-market activities
 version: 1.0.0
 persona: marketing-agent
+model: opus
+thinking_budget: 16000
+
 skills:
   - launch-prep
   - seo-optimizer
   - press-kit-generator
+
+flags:
+  - name: --thinking-depth
+    type: choice
+    choices: [standard, ultrathink]
+    default: standard
+    description: |
+      Thinking budget per agent:
+      - standard: 16K budget, launch prep, 120s (~$0.24) [RECOMMENDED]
+      - ultrathink: 48K budget, deep market analysis, 240s (~$0.72)
+  - name: --max-model
+    type: string
+    default: null
+    description: "--max-model <opus|sonnet|haiku> - Override model cap"
+
 inputs:
   product_name:
     type: string
@@ -63,7 +81,7 @@ handoffs:
     agent: speckit.implement
     condition: "readiness_score < 90%"
 claude_code:
-  model: sonnet
+  model: opus
   reasoning_mode: extended
   # Rate limit tiers (default: max for Claude Code Max $20)
   rate_limits:
@@ -74,19 +92,55 @@ claude_code:
         max_parallel: 2
         batch_delay: 8000
         wave_overlap_threshold: 0.90
-        timeout_minutes: 10
+        timeout_per_agent: 180000
+        retry_on_failure: 1
       pro:
         thinking_budget: 8000
-        max_parallel: 3
+        max_parallel: 4
         batch_delay: 4000
         wave_overlap_threshold: 0.80
-        timeout_minutes: 15
+        timeout_per_agent: 300000
+        retry_on_failure: 2
       max:
         thinking_budget: 16000
-        max_parallel: 6
+        max_parallel: 8
         batch_delay: 1500
         wave_overlap_threshold: 0.65
-        timeout_minutes: 30
+        timeout_per_agent: 900000
+        retry_on_failure: 3
+      ultrathink:
+        thinking_budget: 48000
+        max_parallel: 4
+        batch_delay: 3000
+        wave_overlap_threshold: 0.60
+        cost_multiplier: 3.0
+  depth_defaults:
+    standard:
+      thinking_budget: 8000
+      skip_agents: []
+      timeout: 120
+    ultrathink:
+      thinking_budget: 48000
+      additional_agents: [launch-deepdive, market-analyst]
+      timeout: 240
+  user_tier_fallback:
+    enabled: true
+    rules:
+      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+        fallback_depth: "standard"
+        fallback_thinking: 8000
+        warning_message: |
+          ⚠️ **Ultrathink mode requires Claude Code Max tier** (48K thinking budget).
+          Auto-downgrading to **Standard** mode (8K budget).
+  cost_breakdown:
+    standard: {cost: $0.24, time: "120-150s"}
+    ultrathink: {cost: $0.72, time: "240-280s"}
+  cache_control:
+    system_prompt: ephemeral
+    constitution: ephemeral
+    templates: ephemeral
+    artifacts: ephemeral
+    ttl: session
   cache_hierarchy: full
   orchestration:
     max_parallel: 6
@@ -97,6 +151,10 @@ claude_code:
     wave_overlap:
       enabled: true
       threshold: 0.65
+  operation_batching:
+    enabled: true
+    skip_flag: "--sequential"
+    framework: templates/shared/operation-batching.md
   subagents:
     # Wave 1: Content Generation (parallel)
     - role: release-notes-generator

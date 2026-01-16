@@ -68,6 +68,54 @@ claude_code:
   model: sonnet
   reasoning_mode: extended
 
+  rate_limits:
+    default_tier: max
+    tiers:
+      free:
+        thinking_budget: 2000
+        max_parallel: 2
+        batch_delay: 8000
+        wave_overlap_threshold: 0.90
+      pro:
+        thinking_budget: 4000
+        max_parallel: 3
+        batch_delay: 4000
+        wave_overlap_threshold: 0.80
+      max:
+        thinking_budget: 2000
+        max_parallel: 6
+        batch_delay: 1500
+        wave_overlap_threshold: 0.65
+      ultrathink:
+        thinking_budget: 8000
+        max_parallel: 4
+        batch_delay: 3000
+        wave_overlap_threshold: 0.60
+        cost_multiplier: 4.0
+
+  depth_defaults:
+    standard:
+      thinking_budget: 2000
+      timeout: 30
+    ultrathink:
+      thinking_budget: 8000
+      additional_analysis: [confidence-validator, hallucination-detector]
+      timeout: 60
+
+  user_tier_fallback:
+    enabled: true
+    rules:
+      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+        fallback_depth: "standard"
+        fallback_thinking: 2000
+        warning_message: |
+          ⚠️ **Ultrathink mode requires Claude Code Max tier** (8K thinking budget).
+          Auto-downgrading to **Standard** mode (2K budget).
+
+  cost_breakdown:
+    standard: {cost: $0.03, time: "15-30s"}
+    ultrathink: {cost: $0.12, time: "30-60s"}
+
   orchestration:
     max_parallel: 8
     wave_overlap:
@@ -639,6 +687,14 @@ claude_code:
         WRITE_YAML(reverse-engineered/.extraction-manifest.yaml, manifest)
 
 flags:
+  - name: --thinking-depth
+    type: choice
+    choices: [standard, ultrathink]
+    default: standard
+    description: |
+      Thinking budget control:
+      - standard: 2K budget, fast extraction (~$0.03) [RECOMMENDED]
+      - ultrathink: 8K budget, deep analysis (~$0.12)
   max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
 ---
 

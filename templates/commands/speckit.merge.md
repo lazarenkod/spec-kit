@@ -29,6 +29,36 @@ claude_code:
         max_parallel: 6
         batch_delay: 1500
         wave_overlap_threshold: 0.65
+      ultrathink:
+        thinking_budget: 48000
+        max_parallel: 4
+        batch_delay: 2500
+        wave_overlap_threshold: 0.60
+        cost_multiplier: 3.0
+
+  depth_defaults:
+    standard:
+      thinking_budget: 16000
+      timeout: 90
+    ultrathink:
+      thinking_budget: 48000
+      additional_agents: [spec-historian, dependency-analyzer]
+      timeout: 180
+
+  user_tier_fallback:
+    enabled: true
+    rules:
+      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+        fallback_depth: "standard"
+        fallback_thinking: 16000
+        warning_message: |
+          ⚠️ **Ultrathink mode requires Claude Code Max tier** (48K thinking budget).
+          Auto-downgrading to **Standard** mode (16K budget).
+
+  cost_breakdown:
+    standard: {cost: $0.48, time: "90-120s"}
+    ultrathink: {cost: $1.44, time: "180-220s"}
+
   cache_hierarchy: full
   subagents:
     - role: code-explorer
@@ -43,6 +73,11 @@ scripts:
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
 flags:
   max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
+  thinking_depth: |
+    --thinking-depth <standard|ultrathink>
+    Thinking budget control:
+    - standard: Max tier (16K budget) (~$0.48) [RECOMMENDED]
+    - ultrathink: 48K budget, deep analysis (~$1.44) [REQUIRES Max tier]
 ---
 
 ## User Input
