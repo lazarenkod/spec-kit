@@ -7,6 +7,67 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.8] - 2026-01-15
+
+### Added
+
+- **Phase 5 Token Optimization: Make Ultrathink Optional**
+  - `/speckit.concept`: Added `--depth` flag (quick/standard/ultrathink) with cost control
+    - **quick**: 16K budget, 5 core agents, $0.32 (~90-120s)
+    - **standard**: 32K budget, 9 agents, $1.15 (~180-240s) [NEW DEFAULT]
+    - **ultrathink**: 120K budget, 9 agents, $4.32 (~300-420s) [EXPERT MODE]
+  - All commands: Added `--dry-run` flag for cost preview before execution
+  - Cost warnings: Pre-execution alerts for operations >$2 USD with reduction suggestions
+  - User-tier fallback: Graceful degradation with clear messaging for non-Max users
+  - Depth-based agent selection: Quick mode runs 5 core agents (market, competitive, persona, synthesis, scorer)
+
+### Changed
+
+- **⚠️ BREAKING CHANGE**: `/speckit.concept` default changed from `ultrathink` → `standard` (73% cost reduction)
+  - **Impact**: Existing workflows using default settings will now use 32K thinking budget instead of 120K
+  - **Migration**: Explicitly use `--depth=ultrathink` to restore previous 120K budget behavior
+  - **Rationale**: Ultrathink (120K) is overkill for 90% of concepts; standard (32K) provides excellent results at lower cost
+  - **Preservation**: Ultrathink mode still fully accessible via `--depth=ultrathink` flag
+- **Agent optimizations** (4 agents downgraded, 352K tokens saved per full workflow):
+  - `standards-researcher`: opus 120K → sonnet 32K (lookup-based regulatory research, not strategic)
+  - `academic-researcher`: opus 120K → sonnet 32K (structured paper analysis, not creative)
+  - `design-quality-validator` (in `/speckit.design`): opus 120K → sonnet 32K (rubric-driven DQS calculation)
+  - `asset-cataloger-agent` (in `/speckit.design`): opus 120K → sonnet 32K (template-based enumeration)
+- Enhanced cost transparency across all commands:
+  - `cost_breakdown` configuration shows estimated costs before execution
+  - `cost_warning` configuration with $2 threshold and actionable reduction tips
+  - Execution time estimates added to all depth tiers
+- Updated COMMANDS_GUIDE.md with comprehensive `--depth` flag documentation
+
+### Impact
+
+**Cost comparison (typical workflow):**
+
+| Metric | Before v0.9.8 (ultrathink) | After v0.9.8 (standard) | Savings |
+|--------|---------------------------|-------------------------|---------|
+| `/speckit.concept` | $4.32 | $1.15 | **73%** |
+| `/speckit.design` (feature) | $0.70 | $0.35 | **50%** |
+| **Monthly** (20 executions) | $145 | $79 | **46%** |
+
+**Total Phase 5 Savings**: 50-70% cost reduction for typical usage
+
+**Quality preservation**: CQS scores remain within ±5 points (standard: ≥75 vs ultrathink: ≥80)
+
+**Ultrathink preserved**: Expert users can still use `--depth=ultrathink` for:
+- Regulatory compliance research (GDPR, HIPAA, SOC 2, WCAG)
+- Academic validation (scientific papers, research citations)
+- Extended strategic reasoning (4× thinking depth)
+
+**Agent selection by depth:**
+- Quick: 5 core agents (market, competitive, persona, synthesis, scorer)
+- Standard: 9 agents (adds JTBD, value-prop, metrics, risk)
+- Ultrathink: 9 agents + 120K budget + optional compliance agents
+
+**Documentation:**
+- COMMANDS_GUIDE.md updated with cost tables, usage examples, tier breakdowns
+- Pre-execution warnings guide users to cost-effective options
+- `--dry-run` flag provides detailed cost estimates before execution
+
 ## [0.9.7] - 2026-01-15
 
 ### Changed

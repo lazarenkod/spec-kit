@@ -3266,6 +3266,49 @@ preview_config:
   auto_open: true
 flags:
   max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
+  dry_run: "--dry-run"  # Phase 5 v0.9.8: Preview cost without execution
+
+# Phase 5 v0.9.8: Cost breakdown and transparency
+cost_breakdown:
+  enabled: true
+  show_before_execution: true
+  warning_threshold_usd: 2.00
+  calculation:
+    static_preview:
+      agents: 8
+      estimated_cost_usd: 1.80
+      execution_time: "120-180s"
+    interactive_preview:
+      agents: 12
+      estimated_cost_usd: 3.50
+      execution_time: "180-240s"
+    animated_preview:
+      agents: 15
+      estimated_cost_usd: 5.20
+      execution_time: "240-300s"
+      includes_vision: true
+      vision_calls: "18 screenshots × 50K tokens"
+
+cost_warning:
+  enabled: true
+  threshold_usd: 2.00
+  warning_message_template: |
+    ⚠️  **HIGH COST OPERATION DETECTED**
+
+    This execution will cost approximately **${COST} USD**.
+
+    **Details**:
+    - Preview type: {PREVIEW_TYPE}
+    - Agents: {AGENT_COUNT}
+    - Vision calls: {VISION_CALLS}
+    - Total tokens: {TOTAL_TOKENS}
+
+    💡 **To reduce cost**:
+    - Use static preview instead of animated (-70% cost)
+    - Skip full state matrix (use 3 states instead of 7)
+    - Reduce screenshot count (sample 5-7 instead of 18)
+
+    ❓ **Continue anyway?** [Y/n]
 ---
 
 ## User Input

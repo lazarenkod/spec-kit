@@ -181,6 +181,81 @@ Phase 1 optimizations reduce token consumption by 40.5K tokens (73% reduction):
 - ✅ **Modular Sections Guide** (~6K tokens potential) — 46 reusable concept sections documented in `templates/shared/modular-sections-guide.md` for future include directives
 - ✅ **Command Parameterization** (~1.5K tokens saved) — All hardcoded story IDs in next-steps.md templates replaced with template variables (`{WAVE_1_STORY_IDS_COMMA_SEPARATED}`, etc.)
 
+**NEW: --depth Flag (v0.9.8)** — Cost Optimization & User Control
+
+Phase 5 optimizations make ultrathink (120K thinking budget) **opt-in instead of default**, reducing typical usage cost by 73%.
+
+**Control thinking budget depth for cost optimization:**
+
+| Depth | Agents | Thinking Budget | Cost | Execution Time | Use For |
+|-------|--------|-----------------|------|----------------|---------|
+| `quick` | 5 core | 16K per agent | **$0.32** | 90-120s | Rapid idea validation, MVP concepts |
+| `standard` ✨ | 9 agents | 32K per agent | **$1.15** | 180-240s | **Production concepts (DEFAULT)** |
+| `ultrathink` | 9 agents | 120K per agent | **$4.32** | 300-420s | Regulatory compliance, deep research |
+
+✨ **Breaking Change**: Default changed from `ultrathink` → `standard` (73% cost reduction).
+
+**Usage Examples:**
+
+```bash
+# Quick concept for MVP validation (5 agents, $0.32)
+/speckit.concept --depth=quick "B2B SaaS for sales teams"
+
+# Standard concept with solid research (9 agents, $1.15) [DEFAULT]
+/speckit.concept "B2B SaaS for sales teams"
+# or explicitly: --depth=standard
+
+# Ultrathink for regulatory/compliance-heavy projects ($4.32)
+/speckit.concept --depth=ultrathink "HealthTech HIPAA-compliant platform"
+
+# Preview cost without executing
+/speckit.concept --depth=ultrathink --dry-run
+```
+
+**What's included in each tier:**
+
+**Quick mode** (5 core agents):
+- ✅ market-researcher (Porter's 5 Forces, Blue Ocean)
+- ✅ competitive-analyst (ERRC Grid)
+- ✅ persona-designer (JTBD, WTP)
+- ✅ strategic-synthesis-ai (Three Pillars)
+- ✅ concept-quality-scorer (CQS calculation)
+- ⊘ Standards research (GDPR, HIPAA, SOC 2) — skipped
+- ⊘ Academic research validation — skipped
+- ⊘ Detailed constraints analysis — skipped
+- ⊘ Community intelligence gathering — skipped
+
+**Standard mode** (9 agents) [RECOMMENDED]:
+- ✅ All quick mode agents
+- ✅ jtbd-analyst (Jobs-to-be-Done deep dive)
+- ✅ value-prop-designer (Value proposition canvas)
+- ✅ metrics-designer (North Star metric, SMART goals)
+- ✅ risk-assessor (Risk matrix, pivot criteria)
+- ⊘ Standards research — skipped (use ultrathink if needed)
+- ⊘ Academic research — skipped (use ultrathink if needed)
+
+**Ultrathink mode** (9 agents + extended reasoning):
+- ✅ All standard mode agents
+- ✅ 120K thinking budget (4× deeper strategic reasoning)
+- ✅ standards-researcher (GDPR, HIPAA, SOC 2, accessibility)
+- ✅ academic-researcher (Scientific validation, research papers)
+- ✅ Extended compliance & regulatory analysis
+
+**Recommendation**: Standard mode is excellent for 90% of concepts. Only use ultrathink if you need:
+- Regulatory compliance research (GDPR, HIPAA, SOC 2, WCAG)
+- Academic validation (scientific papers, research citations)
+- Extended strategic reasoning (4× thinking depth)
+
+**Cost transparency (v0.9.8):**
+- `--dry-run` flag shows cost estimate before execution
+- Pre-execution warnings for operations >$2
+- User-tier fallback with graceful degradation for non-Max users
+
+**Agent optimizations (v0.9.8):**
+- standards-researcher: opus 120K → sonnet 32K (lookup-based, not strategic)
+- academic-researcher: opus 120K → sonnet 32K (structured analysis)
+- Total savings: 176K tokens per concept execution
+
 **New in v0.7.0 — Strategic Restructuring:**
 
 **Added:**

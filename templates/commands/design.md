@@ -857,6 +857,10 @@ gates:
       depends_on: [design-system-generator, storybook-generator]
       priority: 50
       model_override: sonnet
+      thinking_budget: 32000  # Phase 5 v0.9.8: Explicit budget for cost optimization
+      rationale: |
+        DQS formula (0-100) is rubric-driven validation, not strategic.
+        Uses templates/shared/quality/dqs-rubric.md. Sonnet sufficient.
       prompt: |
         ## Reasoning Process (Think step-by-step):
 
@@ -1002,7 +1006,12 @@ gates:
       parallel: true
       depends_on: [visual-style-agent]
       priority: 20
-      model_override: opus
+      model_override: sonnet  # Phase 5 v0.9.8: Downgraded from opus for cost optimization
+      thinking_budget: 32000  # Phase 5 v0.9.8: Reduced from 120K (was 88K savings)
+      load_condition: "game_art_pipeline_enabled"
+      rationale: |
+        Asset enumeration (CHAR, UI, ENV, VFX, SFX) is template-based.
+        Not creative work, just structured categorization. Sonnet sufficient.
       prompt: |
         ## Reasoning Process (Think step-by-step):
 
@@ -1327,6 +1336,46 @@ preset_recommendation:
   component_registry: "templates/shared/shadcn-registry.md"
 flags:
   max_model: "--max-model <opus|sonnet|haiku>"  # Override model cap
+  dry_run: "--dry-run"  # Phase 5 v0.9.8: Preview cost without execution
+
+# Phase 5 v0.9.8: Cost breakdown and transparency
+cost_breakdown:
+  enabled: true
+  show_before_execution: true
+  warning_threshold_usd: 2.00
+  calculation:
+    feature_design:
+      agents: 3
+      estimated_cost_usd: 0.35
+      execution_time: "90-120s"
+    design_system:
+      agents: 5
+      estimated_cost_usd: 1.20
+      execution_time: "180-240s"
+    game_art_pipeline:
+      agents: 5
+      thinking_per_agent: 120000
+      estimated_cost_usd: 3.10
+      execution_time: "300-420s"
+
+cost_warning:
+  enabled: true
+  threshold_usd: 2.00
+  warning_message_template: |
+    ⚠️  **HIGH COST OPERATION DETECTED**
+
+    This execution will cost approximately **${COST} USD**.
+
+    **Details**:
+    - Mode: {MODE}
+    - Agents: {AGENT_COUNT}
+    - Total tokens: {TOTAL_TOKENS}
+
+    💡 **To reduce cost**:
+    - Skip game-art pipeline if not needed (--no-game-art-pipeline)
+    - Use feature_design mode instead of concept_design
+
+    ❓ **Continue anyway?** [Y/n]
 ---
 
 ## User Input

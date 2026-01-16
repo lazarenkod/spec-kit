@@ -8,6 +8,22 @@ handoffs:
   - label: Validate Concept
     agent: speckit.analyze
     prompt: Check concept completeness and consistency
+flags:
+  - name: --depth
+    type: choice
+    choices: [quick, standard, ultrathink]
+    default: standard
+    description: |
+      Research depth and thinking budget per agent:
+      - quick: 16K budget, 5 core agents, 90s timeout (~$0.32)
+      - standard: 32K budget, 9 agents, 180s timeout (~$1.15) [RECOMMENDED]
+      - ultrathink: 120K budget, 9 agents, 300s timeout (~$4.32) [EXPERT MODE]
+  - name: --dry-run
+    type: boolean
+    default: false
+    description: |
+      Show estimated token cost and execution plan without running.
+      Useful for budget planning and understanding what will execute.
 plan_mode:
   enabled: auto
 
@@ -67,7 +83,7 @@ claude_code:
   reasoning_mode: extended
   # Rate limit tiers (default: max for Claude Code Max $20)
   rate_limits:
-    default_tier: ultrathink  # Changed for autonomous concept generation with deep strategic thinking
+    default_tier: max  # Phase 5 v0.9.8: Changed from ultrathink to standard 32K budget (ultrathink now opt-in via --depth flag)
     tiers:
       free:
         thinking_budget: 8000
@@ -90,6 +106,134 @@ claude_code:
         batch_delay: 3000
         wave_overlap_threshold: 0.60
         cost_multiplier: 3.5
+
+  # Phase 5 v0.9.8: Depth tier configuration for --depth flag
+  depth_defaults:
+    quick:
+      thinking_budget: 16000
+      agents: 5  # Core strategic agents only
+      timeout: 90
+      agent_selection:
+        - market-researcher
+        - competitive-analyst
+        - persona-designer
+        - strategic-synthesis-ai
+        - concept-quality-scorer
+      skip_agents:
+        - standards-researcher
+        - academic-researcher
+        - constraints-analyzer
+        - community-intelligence
+
+    standard:
+      thinking_budget: 32000
+      agents: 9  # All except optional research
+      timeout: 180
+      agent_selection:
+        - market-researcher
+        - competitive-analyst
+        - persona-designer
+        - jtbd-analyst
+        - value-prop-designer
+        - metrics-designer
+        - risk-assessor
+        - strategic-synthesis-ai
+        - concept-quality-scorer
+      skip_agents:
+        - standards-researcher  # Downgraded to Sonnet 32K
+        - academic-researcher   # Downgraded to Sonnet 32K
+        - constraints-analyzer  # Optional for deep compliance
+        - community-intelligence
+
+    ultrathink:
+      thinking_budget: 120000
+      agents: 9  # All strategic agents with deep reasoning
+      timeout: 300
+      agent_selection: all  # No agents skipped
+
+  # User tier fallback for graceful degradation
+  user_tier_fallback:
+    enabled: true
+    description: "Graceful degradation for lower tiers"
+    rules:
+      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+        fallback_depth: "standard"
+        fallback_thinking: 32000
+        warning_message: |
+          ⚠️  **Ultrathink mode requires Claude Code Max tier** (120K thinking budget).
+          Auto-downgrading to **Standard** mode (32K budget).
+
+          **Ultrathink features you'll miss**:
+          - Extended strategic reasoning (4× deeper)
+          - Standards research (GDPR, HIPAA, SOC 2)
+          - Academic research validation
+
+          **Recommendation**: Standard mode is excellent for 90% of concepts.
+          💡 Upgrade to Max tier only if you need regulatory compliance research.
+
+      - condition: "user_tier == 'free' AND requested_depth == 'standard'"
+        fallback_depth: "quick"
+        fallback_thinking: 16000
+        warning_message: |
+          ⚠️  **Standard mode requires Pro tier** (32K thinking budget).
+          Auto-downgrading to **Quick** mode (16K budget).
+
+          **Recommendation**: Quick mode provides solid baseline concepts.
+          Upgrade to Pro for production-ready strategic analysis.
+
+  # Cost breakdown and transparency
+  cost_breakdown:
+    enabled: true
+    show_before_execution: true
+    calculation:
+      quick:
+        agents: 5
+        thinking_per_agent: 16000
+        total_thinking: 80000  # 5 × 16K
+        estimated_cost_usd: 0.32  # At opus pricing
+        execution_time: "90-120s"
+
+      standard:
+        agents: 9
+        thinking_per_agent: 32000
+        total_thinking: 288000  # 9 × 32K
+        estimated_cost_usd: 1.15
+        execution_time: "180-240s"
+
+      ultrathink:
+        agents: 9
+        thinking_per_agent: 120000
+        total_thinking: 1080000  # 9 × 120K
+        estimated_cost_usd: 4.32  # 3.5× cost multiplier
+        execution_time: "300-420s"
+
+    warning_threshold_usd: 2.00  # Warn if cost > $2
+
+  # Cost warning configuration
+  cost_warning:
+    enabled: true
+    threshold_usd: 2.00
+    warning_message_template: |
+      ⚠️  **HIGH COST OPERATION DETECTED**
+
+      This execution will cost approximately **${COST} USD**.
+
+      **Details**:
+      - Depth: {DEPTH}
+      - Agents: {AGENT_COUNT}
+      - Thinking budget: {THINKING_BUDGET}K per agent
+      - Total thinking tokens: {TOTAL_TOKENS}
+
+      **Cost breakdown**:
+      - Thinking: {THINKING_COST} USD
+      - Context: {CONTEXT_COST} USD
+      - Output: {OUTPUT_COST} USD
+
+      💡 **To reduce cost**:
+      - Use --depth=standard instead of ultrathink (-73% cost)
+
+      ❓ **Continue anyway?** [Y/n]
+
   cache_control:
     system_prompt: ephemeral
     constitution: ephemeral
@@ -152,9 +296,13 @@ claude_code:
       parallel: true
       depends_on: []
       priority: 10
-      model_override: opus
-      thinking_budget: 120000
+      model_override: sonnet  # Phase 5 v0.9.8: Downgraded from opus for cost optimization
+      thinking_budget: 32000  # Phase 5 v0.9.8: Reduced from 120K (was 88K savings)
       reasoning_mode: extended
+      load_condition: "depth == 'ultrathink'"  # Optional in quick/standard modes
+      rationale: |
+        Standards research (GDPR, HIPAA, SOC 2) is lookup-based, not strategic.
+        Sonnet 32K sufficient for regulatory framework synthesis.
       # OPTIMIZATION v0.5.0: Prompt extracted to templates/shared/agent-prompt-template.md
       prompt_ref: standards-researcher
 
@@ -163,9 +311,13 @@ claude_code:
       parallel: true
       depends_on: []
       priority: 10
-      model_override: opus
-      thinking_budget: 120000
+      model_override: sonnet  # Phase 5 v0.9.8: Downgraded from opus for cost optimization
+      thinking_budget: 32000  # Phase 5 v0.9.8: Reduced from 120K (was 88K savings)
       reasoning_mode: extended
+      load_condition: "depth == 'ultrathink'"  # Optional in quick/standard modes
+      rationale: |
+        Academic paper analysis is structured (abstract → methods → results).
+        Not strategic decision-making, just synthesis. Sonnet 32K sufficient.
       # OPTIMIZATION v0.5.0: Prompt extracted to templates/shared/agent-prompt-template.md
       prompt_ref: academic-researcher
 

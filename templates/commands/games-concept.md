@@ -85,6 +85,61 @@ user_tier_fallback:
         **Recommendation**: Free tier is perfect for rapid idea validation.
         Upgrade to Pro for production-ready concepts.
 
+# Phase 5 v0.9.8: Cost breakdown and transparency
+cost_breakdown:
+  enabled: true
+  show_before_execution: true
+  calculation:
+    quick:
+      agents: 3
+      thinking_per_agent: 32000
+      total_thinking: 96000  # 3 × 32K
+      estimated_cost_usd: 0.40
+      execution_time: "60-90s"
+
+    standard:
+      agents: 5
+      thinking_per_agent: 80000
+      total_thinking: 400000  # 5 × 80K
+      estimated_cost_usd: 2.00
+      execution_time: "180-240s"
+
+    world-class:
+      agents: 12
+      thinking_per_agent: 120000
+      total_thinking: 1440000  # 12 × 120K
+      estimated_cost_usd: 7.20  # 3.5× cost multiplier
+      execution_time: "300-420s"
+
+  warning_threshold_usd: 2.00  # Warn if cost > $2
+
+# Cost warning configuration
+cost_warning:
+  enabled: true
+  threshold_usd: 2.00
+  warning_message_template: |
+    ⚠️  **HIGH COST OPERATION DETECTED**
+
+    This execution will cost approximately **${COST} USD**.
+
+    **Details**:
+    - Depth: {DEPTH}
+    - Genre: {GENRE}
+    - Agents: {AGENT_COUNT}
+    - Thinking budget: {THINKING_BUDGET}K per agent
+    - Total thinking tokens: {TOTAL_TOKENS}
+
+    **Cost breakdown**:
+    - Thinking: {THINKING_COST} USD
+    - Context: {CONTEXT_COST} USD
+    - Output: {OUTPUT_COST} USD
+
+    💡 **To reduce cost**:
+    - Use --depth=standard instead of world-class (-72% cost)
+    - Use --genre=single instead of all 5 variants (-80% cost)
+
+    ❓ **Continue anyway?** [Y/n]
+
 inputs:
   game_idea:
     type: string
@@ -135,15 +190,22 @@ flags:
     default: standard
     description: |
       Research depth level:
-      - quick: 3 agents, 60s timeout
-      - standard: 5 agents, 180s timeout
-      - world-class: 7 agents, 300s timeout
+      - quick: 3 agents, 60s timeout (~$0.40)
+      - standard: 5 agents, 180s timeout (~$2.00)
+      - world-class: 12 agents, 300s timeout (~$7.20)
 
   genre:
     type: enum
     options: [sorting, match3, idle, arcade, puzzle, all]
     default: all
     description: Generate specific genre or all 5 variants
+
+  dry-run:
+    type: boolean
+    default: false
+    description: |
+      Show estimated token cost and execution plan without running.
+      Useful for budget planning and understanding what will execute.
 
 outputs:
   - specs/game-concept.md                    # Auto-selected highest CQS-Game
