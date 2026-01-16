@@ -764,26 +764,16 @@ claude_code:
         You are a Concept Quality Auditor applying CQS Formula v0.7.0 to validate strategic readiness.
 
         ## Task
-        Calculate Concept Quality Score (CQS-E) using formula v0.7.0:
+        Calculate Concept Quality Score (CQS-E) using formula v0.7.0.
 
-        **Formula** (11 Components, 0-120 scale):
-        ```
-        CQS-E = (
-          Market × 0.16 +            # Market Framework quality
-          Persona × 0.12 +           # Persona-JTBD depth
-          Metrics × 0.12 +           # Metrics SMART validation
-          Features × 0.12 +          # Feature completeness
-          Risk × 0.08 +              # Risk assessment quality
-          Technical × 0.08 +         # Technical architecture
-          Strategic_Clarity × 0.08 + # Vision clarity
-          Strategic_Depth × 0.10 +   # NEW: Pillars, differentiators, roadmap
-          Validation × 0.05 +        # Evidence backing
-          Transparency × 0.05 +      # Decision rationale
-          Quality_Intent × 0.04      # Rigor signals
-        ) × 100 × Evidence_Multiplier
-        ```
+        **OPTIMIZATION v0.5.0**: CQS formula extracted to templates/shared/cqs-formula.md
 
-        **Focus on NEW Strategic Depth Component** (100 pts max, 10% weight):
+        **Formula Reference** (11 Components, 0-120 scale):
+        - See templates/shared/cqs-formula.md for complete formula with component definitions
+        - Market (16%), Persona (12%), Metrics (12%), Features (12%), Risk (8%), Technical (8%)
+        - Strategic_Clarity (8%), Strategic_Depth (10%), Validation (5%), Transparency (5%), Quality_Intent (4%)
+
+        **Focus on Strategic Depth Component** (100 pts max, 10% weight):
         1. **Three Foundational Pillars** (25 pts):
            - Are 3 pillars defined with memorable names? (5 pts)
            - Do they address ≥2 pain points each with PP-XXX links? (5 pts)
@@ -2194,7 +2184,7 @@ This command captures the **complete vision and scope** of a service/product BEF
    5. **Generate Specifications**:
       ```bash
       # Copy command from next-steps.md
-      /speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02, ...
+      /speckit.specify {{EPIC_ID}}.F{{N}}.S{{N}}, {{EPIC_ID}}.F{{N}}.S{{N}}, ...
       ```
 
    6. **Plan Implementation**:
@@ -3859,7 +3849,7 @@ After completion:
    - Dependency graph validated: Yes/No
 3. Recommended next steps:
    - Stories ready for specification (P1a priority)
-   - Example: `/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02`
+   - Example: `/speckit.specify {{EPIC_ID}}.F{{N}}.S{{N}}, {{EPIC_ID}}.F{{N}}.S{{N}}`
 
 ## Example
 
@@ -4309,7 +4299,8 @@ After passing self-review, output:
 
 ### Concept Quality Score (CQS) — NEW
 
-**Formula**: CQS = (Market × 0.25 + Persona × 0.20 + Metrics × 0.15 + Features × 0.20 + Risk × 0.10 + Technical × 0.10) × 100
+**Formula**: See templates/shared/cqs-formula.md (v0.7.0 with 11 components, 0-120 scale)
+**Reporting Format**: Simplified 6-component view in self-review report (Market/Persona/Metrics/Features/Risk/Technical)
 
 | Component | Score | Weight | Weighted |
 |-----------|:-----:|:------:|:--------:|
@@ -4351,8 +4342,8 @@ Extracts structured data from generated concept.md:
 Stories of same feature always appear consecutively in output commands.
 
 **Example:**
-- ✓ Good: `/speckit.specify EPIC-001.F01.S01, EPIC-001.F01.S02, EPIC-001.F02.S01`
-- ✗ Bad: `/speckit.specify EPIC-001.F01.S01, EPIC-001.F02.S01, EPIC-001.F01.S02`
+- ✓ Good: `/speckit.specify {{EPIC}}.F{{1}}.S{{1}}, {{EPIC}}.F{{1}}.S{{2}}, {{EPIC}}.F{{2}}.S{{1}}`  (same feature grouped)
+- ✗ Bad: `/speckit.specify {{EPIC}}.F{{1}}.S{{1}}, {{EPIC}}.F{{2}}.S{{1}}, {{EPIC}}.F{{1}}.S{{2}}`  (features interleaved)
 
 ---
 
