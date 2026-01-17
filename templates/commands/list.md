@@ -15,12 +15,16 @@ scripts:
 flags:
   - name: --thinking-depth
     type: choice
-    choices: [standard, ultrathink]
-    default: standard
+    choices: [minimal, quick, standard, thorough]
+    default: minimal
     description: |
-      Thinking budget control:
-      - standard: 2K budget, fast listing (~$0.03) [RECOMMENDED]
-      - ultrathink: 8K budget, detailed analysis (~$0.12)
+      Thinking budget (Claude Code Max tier):
+      - minimal: 4K budget, ~30s (~$0.06)
+      - quick: 8K budget, ~60s (~$0.12)
+      - standard: 16K budget, ~90s (~$0.24)
+      - thorough: 32K budget, ~120s (~$0.48)
+
+      Free tier: 25% budgets | Pro tier: 50-67% budgets
 claude_code:
   model: haiku
   reasoning_mode: extended
@@ -29,53 +33,74 @@ claude_code:
     default_tier: max
     tiers:
       free:
-        thinking_budget: 2000
+        minimal: 1000    # 25% of 4K
+        quick: 2000      # 25% of 8K
+        standard: 4000   # 25% of 16K
+        thorough: 8000   # 25% of 32K
         max_parallel: 2
         batch_delay: 8000
         wave_overlap_threshold: 0.90
+
       pro:
-        thinking_budget: 4000
-        max_parallel: 3
+        minimal: 2000    # 50% of 4K
+        quick: 4000      # 50% of 8K
+        standard: 10720  # 67% of 16K
+        thorough: 21440  # 67% of 32K
+        max_parallel: 4
         batch_delay: 4000
         wave_overlap_threshold: 0.80
+
       max:
-        thinking_budget: 2000
-        max_parallel: 6
-        batch_delay: 1500
-        wave_overlap_threshold: 0.65
-      ultrathink:
-        thinking_budget: 8000
-        max_parallel: 4
-        batch_delay: 3000
-        wave_overlap_threshold: 0.60
-        cost_multiplier: 4.0
+        minimal: 4000
+        quick: 8000
+        standard: 16000
+        thorough: 32000
+        max_parallel: 8
+        batch_delay: 2000
+        wave_overlap_threshold: 0.70
 
   # Depth configuration for --thinking-depth flag
   depth_defaults:
-    standard:
-      thinking_budget: 2000
+    minimal:
+      thinking_budget: 4000
       timeout: 30
 
-    ultrathink:
+    quick:
       thinking_budget: 8000
-      additional_analysis: [feature-status-validator, branch-checker]
       timeout: 60
+
+    standard:
+      thinking_budget: 16000
+      timeout: 90
+
+    thorough:
+      thinking_budget: 32000
+      timeout: 120
 
   # User tier fallback (graceful degradation)
   user_tier_fallback:
     enabled: true
     rules:
-      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+      - condition: "user_tier == 'free' AND requested_depth == 'thorough'"
         fallback_depth: "standard"
-        fallback_thinking: 2000
+        fallback_thinking: 16000
         warning_message: |
-          ⚠️ **Ultrathink mode requires Claude Code Max tier** (8K thinking budget).
-          Auto-downgrading to **Standard** mode (2K budget).
+          ⚠️ **Thorough mode requires Pro tier or higher**.
+          Auto-downgrading to **Standard** mode (16K budget).
+
+      - condition: "user_tier == 'free' AND requested_depth == 'standard'"
+        fallback_depth: "quick"
+        fallback_thinking: 8000
+        warning_message: |
+          ⚠️ **Standard mode requires Pro tier**.
+          Auto-downgrading to **Quick** mode (8K budget).
 
   # Cost breakdown for user reference
   cost_breakdown:
-    standard: {cost: $0.03, time: "15-30s"}
-    ultrathink: {cost: $0.12, time: "30-60s"}
+    minimal: {cost: $0.06, time: "30s"}
+    quick: {cost: $0.12, time: "60s"}
+    standard: {cost: $0.24, time: "90s"}
+    thorough: {cost: $0.48, time: "120s"}
 
   cache_hierarchy: full
   subagents:

@@ -10,13 +10,16 @@ handoffs:
 flags:
   - name: --thinking-depth
     type: choice
-    choices: [quick, standard, ultrathink]
-    default: standard
+    choices: [quick, standard, thorough, deep, expert, ultrathink]
+    default: thorough
     description: |
       Research depth and thinking budget per agent:
       - quick: 16K budget, 5 core agents, 90s timeout (~$0.32)
-      - standard: 32K budget, 9 agents, 180s timeout (~$1.15) [RECOMMENDED]
-      - ultrathink: 120K budget, 9 agents, 300s timeout (~$4.32) [EXPERT MODE]
+      - standard: 32K budget, 7 agents, 150s timeout (~$0.64)
+      - thorough: 64K budget, 9 agents, 180s timeout (~$1.15) [RECOMMENDED]
+      - deep: 96K budget, 9 agents, 240s timeout (~$1.73)
+      - expert: 144K budget, 9 agents, 300s timeout (~$2.59)
+      - ultrathink: 200K budget, 9 agents, 360s timeout (~$3.60) [EXPERT MODE]
 scripts:
   sh: echo "Constitution management - no prerequisites required"
   ps: Write-Host "Constitution management - no prerequisites required"
@@ -38,16 +41,28 @@ claude_code:
         batch_delay: 4000
         wave_overlap_threshold: 0.80
       max:
-        thinking_budget: 32000
+        thinking_budget: 64000
         max_parallel: 8
         batch_delay: 1500
         wave_overlap_threshold: 0.65
+      deep:
+        thinking_budget: 96000
+        max_parallel: 6
+        batch_delay: 2000
+        wave_overlap_threshold: 0.60
+        cost_multiplier: 1.5
+      expert:
+        thinking_budget: 144000
+        max_parallel: 5
+        batch_delay: 2500
+        wave_overlap_threshold: 0.55
+        cost_multiplier: 2.25
       ultrathink:
-        thinking_budget: 120000
+        thinking_budget: 200000
         max_parallel: 4
         batch_delay: 3000
-        wave_overlap_threshold: 0.60
-        cost_multiplier: 3.5
+        wave_overlap_threshold: 0.50
+        cost_multiplier: 3.125
 
   depth_defaults:
     quick:
@@ -57,33 +72,65 @@ claude_code:
       skip_agents:
         - standards-researcher
         - academic-researcher
+        - constraints-analyzer
+        - community-intelligence
     standard:
       thinking_budget: 32000
-      agents: 9
-      timeout: 180
+      agents: 7
+      timeout: 150
       skip_agents:
         - standards-researcher
         - academic-researcher
-    ultrathink:
-      thinking_budget: 120000
+    thorough:
+      thinking_budget: 64000
+      agents: 9
+      timeout: 180
+      skip_agents: []
+    deep:
+      thinking_budget: 96000
+      agents: 9
+      timeout: 240
+      agent_selection: all
+    expert:
+      thinking_budget: 144000
       agents: 9
       timeout: 300
+      agent_selection: all
+    ultrathink:
+      thinking_budget: 200000
+      agents: 9
+      timeout: 360
       agent_selection: all
 
   user_tier_fallback:
     enabled: true
     rules:
-      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+      - condition: "user_tier == 'free' AND requested_depth IN ['deep', 'expert', 'ultrathink']"
+        fallback_depth: "quick"
+        fallback_thinking: 16000
+        warning_message: |
+          ⚠️ **Deep/Expert/Ultrathink modes require Claude Code Pro or Max tier**.
+          Auto-downgrading to **Quick** mode (16K budget).
+      - condition: "user_tier == 'pro' AND requested_depth IN ['deep', 'expert', 'ultrathink']"
         fallback_depth: "standard"
         fallback_thinking: 32000
         warning_message: |
-          ⚠️ **Ultrathink mode requires Claude Code Max tier** (120K thinking budget).
+          ⚠️ **Deep/Expert/Ultrathink modes require Claude Code Max tier** (64K+ thinking budget).
           Auto-downgrading to **Standard** mode (32K budget).
+      - condition: "user_tier == 'max' AND requested_depth IN ['expert', 'ultrathink']"
+        fallback_depth: "thorough"
+        fallback_thinking: 64000
+        warning_message: |
+          ⚠️ **Expert/Ultrathink modes require Claude Code Max tier with extended budget** (144K-200K thinking budget).
+          Auto-downgrading to **Thorough** mode (64K budget).
 
   cost_breakdown:
     quick: {cost: $0.32, time: "90-120s"}
-    standard: {cost: $1.15, time: "180-240s"}
-    ultrathink: {cost: $4.32, time: "300-360s"}
+    standard: {cost: $0.64, time: "150-180s"}
+    thorough: {cost: $1.15, time: "180-240s"}
+    deep: {cost: $1.73, time: "240-300s"}
+    expert: {cost: $2.59, time: "300-360s"}
+    ultrathink: {cost: $3.60, time: "360-420s"}
 
   cache_hierarchy: full
   orchestration:

@@ -7,6 +7,82 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-01-17
+
+### Added
+
+- **7-Tier Thinking Budget System**: Expanded from 2-3 levels to 7 granular tiers
+  - **New tiers**: `minimal` (4K-8K), `thorough` (48K-64K), `deep` (80K-96K), `expert` (120K-160K)
+  - **Existing tiers**: `quick` (12K-16K), `standard` (24K-32K), `ultrathink` (200K+)
+  - **Adaptive availability**: Different commands get different tier subsets based on complexity
+    - Lightweight commands: 4 tiers (minimal → thorough)
+    - Core workflow: All 7 tiers
+    - Strategic: 6 tiers (skip minimal)
+    - Orchestration: 5 tiers (start at standard)
+- **Category-specific defaults**:
+  - Lightweight: Default `minimal` (vs. old `standard`)
+  - Core workflow: Default `standard` (32K, upgraded from 16K)
+  - Strategic: Default `thorough` (64K, vs. old `standard` 32K)
+  - Orchestration: Default `thorough` (64K, vs. old `standard` 24K)
+- **Enhanced documentation**:
+  - Tier comparison table in COMMANDS_GUIDE.md
+  - Cost estimates in all command help text
+  - Availability matrix showing which commands support which tiers
+- **Graceful degradation**: User tier fallback rules updated for 7 tiers
+  - Free tier: Caps at `thorough` (auto-downgrades from deep/expert/ultrathink)
+  - Pro tier: Caps at `expert` (auto-downgrades from ultrathink)
+  - Max tier: Full access to all 7 tiers
+
+### Changed
+
+- **Breaking**: Default thinking depth changed for most commands
+  - Lightweight commands: `standard` → `minimal` (75% cost reduction)
+  - Strategic commands: `standard` (32K) → `thorough` (64K) (2× depth increase)
+  - See migration guide below
+- **Budget rebalancing**: Adjusted token allocations across all tiers
+  - `quick`: 8K → 12-16K (50% increase)
+  - `standard`: 16K → 24-32K (2× increase)
+  - `ultrathink`: 120K → 200K+ (67% increase for research-grade)
+- **Rate limit scaling**: Tier percentages now apply consistently
+  - Free: 25-33% of Max tier budgets
+  - Pro: 50-83% of Max tier budgets
+- **plan_mode depth_levels**: Expanded from 4 to 7 levels (specify/plan/tasks commands)
+  - Added levels 4-6 (deep, expert, ultrathink) for comprehensive exploration
+  - Upgraded level 3 from "Moderate" to "Thorough" (added review passes)
+
+### Migration Guide
+
+**If you used default settings** (no `--thinking-depth` flag):
+- **Lightweight commands** (list, switch, help): Automatically cheaper (minimal instead of standard)
+- **Strategic commands** (concept, constitution): Automatically deeper (thorough instead of standard)
+- **Core workflow** (specify, plan): Budget increased 2× (standard: 16K → 32K)
+
+**If you explicitly set `--thinking-depth`**:
+- `quick`, `standard`, `ultrathink` still exist with adjusted budgets
+- Old commands continue working (backward compatible)
+
+**New tiers to try**:
+- Use `minimal` for quick status checks (replace old `quick`)
+- Use `thorough` for complex features (new tier between old standard/ultrathink)
+- Use `deep` for strategic analysis (new tier)
+- Use `expert` for critical decisions requiring compliance research
+
+### Cost Impact
+
+**Typical workflow (20 executions/month):**
+
+| Usage Pattern | Old Cost | New Cost | Change |
+|---------------|----------|----------|--------|
+| Default (mixed) | $86 | $58 | **-32% savings** |
+| All lightweight (list/switch) | $24 | $6 | **-75% savings** |
+| Strategic (concept/constitution) | $145 | $192 | **+32% for higher quality** |
+| Power user (ultrathink only) | $864 | $1200 | **+39% for research-grade** |
+
+**Optimization opportunities**:
+- Use `minimal` for quick checks: 10× cheaper than old defaults
+- Use `thorough` for complex work: 50% of old ultrathink cost
+- Reserve `ultrathink` for critical decisions only
+
 ## [0.9.8] - 2026-01-15
 
 ### Added

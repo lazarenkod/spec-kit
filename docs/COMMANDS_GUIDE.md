@@ -46,6 +46,65 @@
 
 ---
 
+## Thinking Depth Tiers
+
+All commands support the `--thinking-depth` flag for cost optimization. The 7-tier system provides granular control over AI agent reasoning depth and execution cost.
+
+### Tier Overview
+
+| Tier | Budget | Model | Time | Cost (Max) | Best For |
+|------|--------|-------|------|------------|----------|
+| **minimal** | 4K-8K | haiku | ~30s | $0.05-0.10 | Quick lookups, status checks |
+| **quick** | 12K-16K | sonnet | ~60-90s | $0.18-0.24 | Fast exploration, prototypes |
+| **standard** ✨ | 24K-32K | sonnet | ~120s | $0.36-0.48 | Daily workflow (RECOMMENDED) |
+| **thorough** | 48K-64K | opus | ~180s | $0.72-0.96 | Complex features, validation |
+| **deep** | 80K-96K | opus | ~240s | $1.20-1.44 | Strategic analysis, quality audits |
+| **expert** | 120K-160K | opus | ~300s | $1.80-2.40 | Critical decisions, compliance |
+| **ultrathink** | 200K+ | opus | ~420s | $3.00+ | Research-grade, comprehensive review |
+
+**Note**: Cost estimates shown are for Claude Code Max tier. Free tier gets 25-33% of budgets. Pro tier gets 50-83% of budgets.
+
+### Tier Availability by Command Category
+
+Different command categories support different tier subsets based on complexity:
+
+| Category | Commands | Available Tiers | Default |
+|----------|----------|-----------------|---------|
+| **Lightweight** | list, switch, help, staging, taskstoissues, migrate, reverse-engineer, speckit.concept.switch | 4 tiers: minimal → thorough | minimal |
+| **Core Workflow** | specify, plan, tasks, clarify, baseline, extend, validate-concept, checklist, properties, verify | All 7 tiers | standard |
+| **Strategic** | concept, constitution, design, analytics, discover, concept-variants, balance | 6 tiers: skip minimal | thorough |
+| **Orchestration** | implement, analyze, preview, launch, monitor, ship | 5 tiers: start at standard | thorough |
+| **Drift Management** | speckit.fix, speckit.merge | 2 tiers: standard, ultrathink | standard |
+| **Game/Mobile** | liveops, playtest, softlaunch, mobile, games-concept, games-mechanics, games-progression, games-virality, gdd | 6 tiers: skip minimal | standard |
+| **Integration** | integrate | 5 tiers: quick → ultrathink | standard |
+
+### Usage Examples
+
+```bash
+# Minimal mode - fastest and cheapest
+/speckit.list --thinking-depth=minimal
+
+# Standard mode - balanced (recommended for daily work)
+/speckit.specify "Add user profile page" --thinking-depth=standard
+
+# Thorough mode - complex features
+/speckit.plan --thinking-depth=thorough
+
+# Deep mode - strategic analysis
+/speckit.concept "SaaS platform" --thinking-depth=deep
+
+# Expert mode - critical decisions with compliance research
+/speckit.constitution --thinking-depth=expert
+
+# Ultrathink mode - research-grade comprehensive review
+/speckit.analyze --thinking-depth=ultrathink
+
+# Dry run - preview cost without executing
+/speckit.implement --thinking-depth=deep --dry-run
+```
+
+---
+
 ## Основной Workflow
 
 ```mermaid
@@ -3024,8 +3083,8 @@ await page.screenshot({
 
 ## Версия документа
 
-**Версия:** 0.9.7
-**Дата генерации:** 2026-01-15
+**Версия:** 0.10.0
+**Дата генерации:** 2026-01-17
 **Автор:** Auto-generated from command templates
 
 **Token Optimization v0.5.0 Complete:** This guide now includes comprehensive optimization details for `/speckit.concept`, `/speckit.games.concept`, `/speckit.design`, and `/speckit.preview` — achieving ~50% total token reduction (~$1,200-1,300/month savings at Claude Max rates).

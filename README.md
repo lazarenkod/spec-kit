@@ -203,6 +203,29 @@ Want to see Spec Kit in action? Watch our [video overview](https://www.youtube.c
 | [SHAI (OVHcloud)](https://github.com/ovh/shai)                                       | ✅      |                                                                                                                                           |
 | [Windsurf](https://windsurf.com/)                                                    | ✅      |                                                                                                                                           |
 
+## Thinking Depth Control
+
+All commands support `--thinking-depth` to optimize cost vs. quality:
+
+```bash
+# Fast and cheap (great for quick checks)
+/speckit.list --thinking-depth=minimal
+
+# Balanced for daily work (RECOMMENDED)
+/speckit.specify "feature" --thinking-depth=standard
+
+# Deep analysis for complex features
+/speckit.plan --thinking-depth=thorough
+
+# Research-grade for critical decisions
+/speckit.concept "product" --thinking-depth=ultrathink
+
+# Preview cost before running
+/speckit.implement --thinking-depth=deep --dry-run
+```
+
+See [COMMANDS_GUIDE.md](docs/COMMANDS_GUIDE.md#thinking-depth-tiers) for tier details.
+
 ## 🔧 Specify CLI Reference
 
 The `specify` command supports the following options:

@@ -7,12 +7,14 @@ scripts:
 flags:
   - name: --thinking-depth
     type: choice
-    choices: [standard, ultrathink]
-    default: standard
+    choices: [minimal, quick, standard, thorough]
+    default: minimal
     description: |
-      Thinking budget control:
-      - standard: 2K budget, fast help display (~$0.03) [RECOMMENDED]
-      - ultrathink: 8K budget, detailed examples (~$0.12)
+      Thinking budget control (Category A - Lightweight):
+      - minimal: 4K budget, instant help (~$0.06) [RECOMMENDED]
+      - quick: 8K budget, fast with examples (~$0.12)
+      - standard: 16K budget, detailed analysis (~$0.24)
+      - thorough: 32K budget, comprehensive exploration (~$0.48)
 claude_code:
   model: haiku
   reasoning_mode: basic
@@ -21,49 +23,112 @@ claude_code:
     default_tier: max
     tiers:
       free:
-        thinking_budget: 2000
-        max_parallel: 2
-        batch_delay: 8000
-        wave_overlap_threshold: 0.90
+        minimal:
+          thinking_budget: 1000
+          max_parallel: 2
+          batch_delay: 8000
+          wave_overlap_threshold: 0.90
+        quick:
+          thinking_budget: 2000
+          max_parallel: 2
+          batch_delay: 8000
+          wave_overlap_threshold: 0.90
+        standard:
+          thinking_budget: 4000
+          max_parallel: 2
+          batch_delay: 8000
+          wave_overlap_threshold: 0.90
+        thorough:
+          thinking_budget: 8000
+          max_parallel: 2
+          batch_delay: 8000
+          wave_overlap_threshold: 0.90
       pro:
-        thinking_budget: 4000
-        max_parallel: 3
-        batch_delay: 4000
-        wave_overlap_threshold: 0.80
+        minimal:
+          thinking_budget: 2000
+          max_parallel: 3
+          batch_delay: 4000
+          wave_overlap_threshold: 0.80
+        quick:
+          thinking_budget: 4000
+          max_parallel: 3
+          batch_delay: 4000
+          wave_overlap_threshold: 0.80
+        standard:
+          thinking_budget: 10700
+          max_parallel: 3
+          batch_delay: 4000
+          wave_overlap_threshold: 0.80
+        thorough:
+          thinking_budget: 21400
+          max_parallel: 3
+          batch_delay: 4000
+          wave_overlap_threshold: 0.80
       max:
-        thinking_budget: 2000
-        max_parallel: 6
-        batch_delay: 1500
-        wave_overlap_threshold: 0.65
-      ultrathink:
-        thinking_budget: 8000
-        max_parallel: 4
-        batch_delay: 3000
-        wave_overlap_threshold: 0.60
-        cost_multiplier: 4.0
+        minimal:
+          thinking_budget: 4000
+          max_parallel: 6
+          batch_delay: 1500
+          wave_overlap_threshold: 0.65
+        quick:
+          thinking_budget: 8000
+          max_parallel: 6
+          batch_delay: 1500
+          wave_overlap_threshold: 0.65
+        standard:
+          thinking_budget: 16000
+          max_parallel: 6
+          batch_delay: 1500
+          wave_overlap_threshold: 0.65
+        thorough:
+          thinking_budget: 32000
+          max_parallel: 6
+          batch_delay: 1500
+          wave_overlap_threshold: 0.65
 
   depth_defaults:
-    standard:
-      thinking_budget: 2000
-      timeout: 30
-    ultrathink:
+    minimal:
+      thinking_budget: 4000
+      timeout: 20
+    quick:
       thinking_budget: 8000
-      additional_analysis: [example-generator, command-suggester]
+      timeout: 30
+    standard:
+      thinking_budget: 16000
+      additional_analysis: [example-generator]
+      timeout: 45
+    thorough:
+      thinking_budget: 32000
+      additional_analysis: [example-generator, command-suggester, context-expander]
       timeout: 60
 
   user_tier_fallback:
     enabled: true
     rules:
-      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
+      - condition: "user_tier == 'free' AND requested_depth == 'thorough'"
         fallback_depth: "standard"
+        fallback_thinking: 4000
+        warning_message: |
+          ⚠️ **Thorough mode requires Claude Code Pro tier** (8K thinking budget).
+          Auto-downgrading to **Standard** mode (4K budget).
+      - condition: "user_tier == 'free' AND requested_depth == 'standard'"
+        fallback_depth: "quick"
         fallback_thinking: 2000
         warning_message: |
-          ⚠️ **Ultrathink mode requires Claude Code Max tier** (8K thinking budget).
-          Auto-downgrading to **Standard** mode (2K budget).
+          ⚠️ **Standard mode requires Claude Code Pro tier** (4K thinking budget).
+          Auto-downgrading to **Quick** mode (2K budget).
+      - condition: "user_tier == 'pro' AND requested_depth == 'thorough'"
+        fallback_depth: "standard"
+        fallback_thinking: 10700
+        warning_message: |
+          ⚠️ **Thorough mode requires Claude Code Max tier** (21.4K thinking budget).
+          Auto-downgrading to **Standard** mode (10.7K budget).
 
   cost_breakdown:
-    standard: {cost: $0.03, time: "15-30s"}
-    ultrathink: {cost: $0.12, time: "30-60s"}
+    minimal: {cost: $0.06, time: "10-20s"}
+    quick: {cost: $0.12, time: "15-30s"}
+    standard: {cost: $0.24, time: "30-45s"}
+    thorough: {cost: $0.48, time: "45-60s"}
 ---
 
 ## Input

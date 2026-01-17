@@ -39,13 +39,16 @@ inputs:
 flags:
   - name: --thinking-depth
     type: choice
-    choices: [quick, standard, ultrathink]
+    choices: [quick, standard, thorough, deep, expert, ultrathink]
     default: standard
     description: |
       Research depth and thinking budget per agent:
       - quick: 16K budget, 5 core agents, 90s timeout (~$0.32)
       - standard: 32K budget, 9 agents, 180s timeout (~$1.15) [RECOMMENDED]
-      - ultrathink: 120K budget, 9 agents, 300s timeout (~$4.32) [EXPERT MODE]
+      - thorough: 64K budget, 12 agents, 240s timeout (~$2.30)
+      - deep: 96K budget, 15 agents, 300s timeout (~$3.46)
+      - expert: 120K budget, 18 agents, 360s timeout (~$4.32)
+      - ultrathink: 192K budget, 18 agents, 480s timeout (~$6.91) [EXPERT MODE]
 
 outputs:
   - docs/gdd/gdd.md                           # Master GDD document

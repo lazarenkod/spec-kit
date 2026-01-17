@@ -47,51 +47,166 @@ handoffs:
 claude_code:
   model: sonnet
   reasoning_mode: extended
-  # Rate limit tiers (default: max for Claude Code Max $20)
+  # Rate limit tiers (Category D - Orchestration: 5 tiers, default thorough)
   rate_limits:
-    default_tier: max
+    default_tier: thorough
     tiers:
+      # Standard tier (32K max)
       free:
-        thinking_budget: 4000
+        thinking_budget: 8000   # 25% of 32K
         max_parallel: 2
         batch_delay: 8000
         wave_overlap_threshold: 0.90
+        timeout_per_agent: 180000
+        retry_on_failure: 1
       pro:
-        thinking_budget: 8000
-        max_parallel: 3
+        thinking_budget: 25600  # 80% of 32K
+        max_parallel: 4
         batch_delay: 4000
         wave_overlap_threshold: 0.80
-      max:
-        thinking_budget: 24000
+        timeout_per_agent: 300000
+        retry_on_failure: 2
+      # Thorough tier (64K max) - RECOMMENDED
+      thorough_free:
+        thinking_budget: 16000  # 25% of 64K
+        max_parallel: 3
+        batch_delay: 6000
+        wave_overlap_threshold: 0.85
+        timeout_per_agent: 240000
+        retry_on_failure: 2
+      thorough:
+        thinking_budget: 51200  # 80% of 64K
         max_parallel: 6
+        batch_delay: 3000
+        wave_overlap_threshold: 0.75
+        timeout_per_agent: 450000
+        retry_on_failure: 3
+      # Deep tier (96K max)
+      deep_free:
+        thinking_budget: 24000  # 25% of 96K
+        max_parallel: 4
+        batch_delay: 5000
+        wave_overlap_threshold: 0.80
+        timeout_per_agent: 300000
+        retry_on_failure: 2
+      deep:
+        thinking_budget: 76800  # 80% of 96K
+        max_parallel: 8
+        batch_delay: 2000
+        wave_overlap_threshold: 0.70
+        timeout_per_agent: 600000
+        retry_on_failure: 3
+      # Expert tier (144K max)
+      expert_free:
+        thinking_budget: 36000  # 25% of 144K
+        max_parallel: 4
+        batch_delay: 4000
+        wave_overlap_threshold: 0.75
+        timeout_per_agent: 360000
+        retry_on_failure: 2
+      expert:
+        thinking_budget: 115200  # 80% of 144K
+        max_parallel: 10
         batch_delay: 1500
         wave_overlap_threshold: 0.65
-      ultrathink:
-        thinking_budget: 96000
+        timeout_per_agent: 720000
+        retry_on_failure: 4
+      # Ultrathink tier (200K max)
+      ultrathink_free:
+        thinking_budget: 50000  # 25% of 200K
         max_parallel: 4
         batch_delay: 3000
+        wave_overlap_threshold: 0.70
+        timeout_per_agent: 420000
+        retry_on_failure: 3
+      ultrathink:
+        thinking_budget: 160000  # 80% of 200K
+        max_parallel: 12
+        batch_delay: 1000
         wave_overlap_threshold: 0.60
-        cost_multiplier: 4.0
+        timeout_per_agent: 900000
+        retry_on_failure: 5
+        cost_multiplier: 6.25
   depth_defaults:
     standard:
-      thinking_budget: 24000
+      thinking_budget: 32000
       timeout: 120
-    ultrathink:
+      description: "Basic orchestration with standard depth"
+    thorough:
+      thinking_budget: 64000
+      timeout: 180
+      description: "Detailed orchestration with thorough analysis"
+    deep:
       thinking_budget: 96000
-      additional_agents: [deep-analyzers, security-auditor]
       timeout: 240
+      description: "Comprehensive orchestration with deep insights"
+    expert:
+      thinking_budget: 144000
+      additional_agents: [deep-analyzers]
+      timeout: 300
+      description: "Expert-level orchestration with specialized agents"
+    ultrathink:
+      thinking_budget: 200000
+      additional_agents: [deep-analyzers, security-auditor]
+      timeout: 360
+      description: "Maximum depth orchestration with full agent suite"
   user_tier_fallback:
     enabled: true
     rules:
-      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
-        fallback_depth: "standard"
+      - condition: "user_tier == 'free' AND requested_depth == 'ultrathink'"
+        fallback_depth: "thorough"
+        fallback_thinking: 16000
+        warning_message: |
+          ⚠️ **Ultrathink mode requires Pro/Max tier** (200K thinking budget).
+          Auto-downgrading to **Thorough** mode (16K budget for Free tier).
+      - condition: "user_tier == 'free' AND requested_depth == 'expert'"
+        fallback_depth: "deep"
         fallback_thinking: 24000
         warning_message: |
-          ⚠️ **Ultrathink mode requires Claude Code Max tier** (96K thinking budget).
-          Auto-downgrading to **Standard** mode (24K budget).
+          ⚠️ **Expert mode requires Pro/Max tier** (144K thinking budget).
+          Auto-downgrading to **Deep** mode (24K budget for Free tier).
+      - condition: "user_tier == 'free' AND requested_depth == 'deep'"
+        fallback_depth: "thorough"
+        fallback_thinking: 16000
+        warning_message: |
+          ⚠️ **Deep mode limited on Free tier** (96K thinking budget).
+          Using Free tier allocation: **16K budget**.
+      - condition: "user_tier == 'pro' AND requested_depth == 'ultrathink'"
+        fallback_depth: "ultrathink"
+        fallback_thinking: 160000
+        warning_message: |
+          ✓ **Ultrathink mode enabled for Pro tier** (160K thinking budget, 80% of max).
+      - condition: "user_tier == 'pro' AND requested_depth == 'expert'"
+        fallback_depth: "expert"
+        fallback_thinking: 115200
+        warning_message: |
+          ✓ **Expert mode enabled for Pro tier** (115K thinking budget, 80% of max).
   cost_breakdown:
-    standard: {cost: $0.72, time: "120-180s"}
-    ultrathink: {cost: $2.88, time: "240-360s"}
+    standard:
+      cost: "$0.96"
+      time: "120-180s"
+      budget: "32K"
+      description: "Basic orchestration"
+    thorough:
+      cost: "$1.92"
+      time: "180-240s"
+      budget: "64K"
+      description: "Detailed orchestration [RECOMMENDED]"
+    deep:
+      cost: "$2.88"
+      time: "240-300s"
+      budget: "96K"
+      description: "Comprehensive orchestration"
+    expert:
+      cost: "$4.32"
+      time: "300-360s"
+      budget: "144K"
+      description: "Expert-level orchestration"
+    ultrathink:
+      cost: "$6.00"
+      time: "360-480s"
+      budget: "200K"
+      description: "Maximum depth orchestration"
   cache_hierarchy: full
   orchestration:
     max_parallel: 6
@@ -145,12 +260,15 @@ claude_code:
 flags:
   - name: --thinking-depth
     type: choice
-    choices: [standard, ultrathink]
-    default: standard
+    choices: [standard, thorough, deep, expert, ultrathink]
+    default: thorough
     description: |
-      Thinking budget control:
-      - standard: 24K budget, standard analysis (~$0.72) [RECOMMENDED]
-      - ultrathink: 96K budget, deep analysis (~$2.88)
+      Thinking budget control (Category D - Orchestration):
+      - standard: 32K budget, basic orchestration (~$0.96)
+      - thorough: 64K budget, detailed orchestration (~$1.92) [RECOMMENDED]
+      - deep: 96K budget, comprehensive orchestration (~$2.88)
+      - expert: 144K budget, expert-level orchestration (~$4.32)
+      - ultrathink: 200K budget, maximum depth orchestration (~$6.00)
   - name: --max-model
     type: choice
     choices: [opus, sonnet, haiku]

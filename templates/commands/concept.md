@@ -11,13 +11,16 @@ handoffs:
 flags:
   - name: --thinking-depth
     type: choice
-    choices: [quick, standard, ultrathink]
-    default: standard
+    choices: [quick, standard, thorough, deep, expert, ultrathink]
+    default: thorough
     description: |
-      Research depth and thinking budget per agent:
+      Research depth and thinking budget per agent (Category C - Strategic, 6 tiers):
       - quick: 16K budget, 5 core agents, 90s timeout (~$0.32)
-      - standard: 32K budget, 9 agents, 180s timeout (~$1.15) [RECOMMENDED]
-      - ultrathink: 120K budget, 9 agents, 300s timeout (~$4.32) [EXPERT MODE]
+      - standard: 32K budget, 7 agents, 120s timeout (~$0.90)
+      - thorough: 64K budget, 9 agents, 180s timeout (~$2.30) [RECOMMENDED]
+      - deep: 96K budget, 9 agents, 240s timeout (~$3.46)
+      - expert: 144K budget, 9 agents, 300s timeout (~$5.18)
+      - ultrathink: 200K budget, 9 agents, 360s timeout (~$7.20) [MAXIMUM DEPTH]
   - name: --dry-run
     type: boolean
     default: false
@@ -81,33 +84,48 @@ plan_mode:
 claude_code:
   model: opus
   reasoning_mode: extended
-  # Rate limit tiers (default: max for Claude Code Max $20)
+  # Rate limit tiers (Category C - Strategic: 6 tiers, skip minimal)
   rate_limits:
-    default_tier: max  # Phase 5 v0.9.8: Changed from ultrathink to standard 32K budget (ultrathink now opt-in via --depth flag)
+    default_tier: thorough  # Phase 5.1: Category C strategic commands default to thorough (64K)
     tiers:
-      free:
-        thinking_budget: 8000
-        max_parallel: 2
-        batch_delay: 8000
-        wave_overlap_threshold: 0.90
-      pro:
+      quick:
         thinking_budget: 16000
+        max_parallel: 3
+        batch_delay: 6000
+        wave_overlap_threshold: 0.85
+        cost_multiplier: 1.0
+      standard:
+        thinking_budget: 32000
         max_parallel: 4
         batch_delay: 4000
         wave_overlap_threshold: 0.80
-      max:
-        thinking_budget: 32000
-        max_parallel: 8
-        batch_delay: 1500
+        cost_multiplier: 1.2
+      thorough:
+        thinking_budget: 64000
+        max_parallel: 6
+        batch_delay: 2000
+        wave_overlap_threshold: 0.70
+        cost_multiplier: 1.5
+      deep:
+        thinking_budget: 96000
+        max_parallel: 5
+        batch_delay: 2500
         wave_overlap_threshold: 0.65
-      ultrathink:  # NEW TIER for world-class strategic concepts
-        thinking_budget: 120000  # 4× deeper reasoning for strategic analysis
-        max_parallel: 4          # Lower parallelism for deeper serial reasoning
+        cost_multiplier: 2.0
+      expert:
+        thinking_budget: 144000
+        max_parallel: 4
         batch_delay: 3000
         wave_overlap_threshold: 0.60
-        cost_multiplier: 3.5
+        cost_multiplier: 2.5
+      ultrathink:
+        thinking_budget: 200000
+        max_parallel: 4
+        batch_delay: 3500
+        wave_overlap_threshold: 0.55
+        cost_multiplier: 3.0
 
-  # Phase 5 v0.9.8: Depth tier configuration for --depth flag
+  # Phase 5.1: 6-tier depth configuration (Category C - Strategic)
   depth_defaults:
     quick:
       thinking_budget: 16000
@@ -127,7 +145,27 @@ claude_code:
 
     standard:
       thinking_budget: 32000
-      agents: 9  # All except optional research
+      agents: 7  # Core + value/metrics
+      timeout: 120
+      agent_selection:
+        - market-researcher
+        - competitive-analyst
+        - persona-designer
+        - jtbd-analyst
+        - value-prop-designer
+        - strategic-synthesis-ai
+        - concept-quality-scorer
+      skip_agents:
+        - metrics-designer
+        - risk-assessor
+        - standards-researcher
+        - academic-researcher
+        - constraints-analyzer
+        - community-intelligence
+
+    thorough:
+      thinking_budget: 64000
+      agents: 9  # All core strategic agents
       timeout: 180
       agent_selection:
         - market-researcher
@@ -140,48 +178,108 @@ claude_code:
         - strategic-synthesis-ai
         - concept-quality-scorer
       skip_agents:
-        - standards-researcher  # Downgraded to Sonnet 32K
-        - academic-researcher   # Downgraded to Sonnet 32K
+        - standards-researcher  # Optional compliance research
+        - academic-researcher   # Optional academic validation
         - constraints-analyzer  # Optional for deep compliance
         - community-intelligence
 
-    ultrathink:
-      thinking_budget: 120000
-      agents: 9  # All strategic agents with deep reasoning
-      timeout: 300
-      agent_selection: all  # No agents skipped
+    deep:
+      thinking_budget: 96000
+      agents: 9  # All strategic agents + compliance starter
+      timeout: 240
+      agent_selection: all
+      skip_agents:
+        - academic-researcher  # Still optional at deep tier
 
-  # User tier fallback for graceful degradation
+    expert:
+      thinking_budget: 144000
+      agents: 9  # Full strategic suite
+      timeout: 300
+      agent_selection: all
+      skip_agents: []  # All agents included
+
+    ultrathink:
+      thinking_budget: 200000
+      agents: 9  # Maximum depth reasoning
+      timeout: 360
+      agent_selection: all  # No agents skipped
+      extended_reasoning: true
+
+  # User tier fallback for graceful degradation (6-tier system)
   user_tier_fallback:
     enabled: true
-    description: "Graceful degradation for lower tiers"
+    description: "Graceful degradation for lower tiers (Category C - Strategic)"
     rules:
-      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
-        fallback_depth: "standard"
-        fallback_thinking: 32000
+      # Free tier: can use quick-thorough at reduced capacity
+      - condition: "user_tier == 'free' AND requested_depth == 'thorough'"
+        fallback_depth: "thorough"
+        fallback_thinking: 16000  # 25% of 64K
         warning_message: |
-          ⚠️  **Ultrathink mode requires Claude Code Max tier** (120K thinking budget).
-          Auto-downgrading to **Standard** mode (32K budget).
-
-          **Ultrathink features you'll miss**:
-          - Extended strategic reasoning (4× deeper)
-          - Standards research (GDPR, HIPAA, SOC 2)
-          - Academic research validation
-
-          **Recommendation**: Standard mode is excellent for 90% of concepts.
-          💡 Upgrade to Max tier only if you need regulatory compliance research.
+          ℹ️  **Free tier running Thorough mode at 25% capacity** (16K of 64K budget).
+          For full thorough analysis, upgrade to Pro tier.
 
       - condition: "user_tier == 'free' AND requested_depth == 'standard'"
-        fallback_depth: "quick"
-        fallback_thinking: 16000
+        fallback_depth: "standard"
+        fallback_thinking: 8000  # 25% of 32K
         warning_message: |
-          ⚠️  **Standard mode requires Pro tier** (32K thinking budget).
-          Auto-downgrading to **Quick** mode (16K budget).
+          ℹ️  **Free tier running Standard mode at 25% capacity** (8K of 32K budget).
 
-          **Recommendation**: Quick mode provides solid baseline concepts.
-          Upgrade to Pro for production-ready strategic analysis.
+      - condition: "user_tier == 'free' AND requested_depth == 'quick'"
+        fallback_depth: "quick"
+        fallback_thinking: 4000  # 25% of 16K
+        warning_message: |
+          ℹ️  **Free tier running Quick mode at 25% capacity** (4K of 16K budget).
 
-  # Cost breakdown and transparency
+      # Free tier: deep-ultrathink blocked (33% too low for quality)
+      - condition: "user_tier == 'free' AND requested_depth IN ['deep', 'expert', 'ultrathink']"
+        fallback_depth: "thorough"
+        fallback_thinking: 16000  # 25% of 64K
+        warning_message: |
+          ⚠️  **Deep/Expert/Ultrathink modes require Pro tier minimum**.
+          Auto-downgrading to **Thorough** mode at 25% capacity (16K budget).
+
+          **Upgrade to Pro** for deep strategic analysis (67-75% capacity).
+
+      # Pro tier: quick-thorough at 50-67%
+      - condition: "user_tier == 'pro' AND requested_depth == 'quick'"
+        fallback_depth: "quick"
+        fallback_thinking: 8000  # 50% of 16K
+        warning_message: |
+          ℹ️  **Pro tier running Quick mode at 50% capacity** (8K of 16K budget).
+
+      - condition: "user_tier == 'pro' AND requested_depth == 'standard'"
+        fallback_depth: "standard"
+        fallback_thinking: 21000  # 67% of 32K
+        warning_message: |
+          ℹ️  **Pro tier running Standard mode at 67% capacity** (21K of 32K budget).
+
+      - condition: "user_tier == 'pro' AND requested_depth == 'thorough'"
+        fallback_depth: "thorough"
+        fallback_thinking: 43000  # 67% of 64K
+        warning_message: |
+          ℹ️  **Pro tier running Thorough mode at 67% capacity** (43K of 64K budget).
+
+      # Pro tier: deep-ultrathink at 67-83%
+      - condition: "user_tier == 'pro' AND requested_depth == 'deep'"
+        fallback_depth: "deep"
+        fallback_thinking: 72000  # 75% of 96K
+        warning_message: |
+          ℹ️  **Pro tier running Deep mode at 75% capacity** (72K of 96K budget).
+
+      - condition: "user_tier == 'pro' AND requested_depth == 'expert'"
+        fallback_depth: "expert"
+        fallback_thinking: 120000  # 83% of 144K
+        warning_message: |
+          ℹ️  **Pro tier running Expert mode at 83% capacity** (120K of 144K budget).
+
+      - condition: "user_tier == 'pro' AND requested_depth == 'ultrathink'"
+        fallback_depth: "ultrathink"
+        fallback_thinking: 160000  # 80% of 200K
+        warning_message: |
+          ℹ️  **Pro tier running Ultrathink mode at 80% capacity** (160K of 200K budget).
+          For full 200K capacity, upgrade to Max tier.
+
+  # Cost breakdown and transparency (6-tier system)
   cost_breakdown:
     enabled: true
     show_before_execution: true
@@ -194,25 +292,46 @@ claude_code:
         execution_time: "90-120s"
 
       standard:
-        agents: 9
+        agents: 7
         thinking_per_agent: 32000
-        total_thinking: 288000  # 9 × 32K
-        estimated_cost_usd: 1.15
+        total_thinking: 224000  # 7 × 32K
+        estimated_cost_usd: 0.90
+        execution_time: "120-180s"
+
+      thorough:
+        agents: 9
+        thinking_per_agent: 64000
+        total_thinking: 576000  # 9 × 64K
+        estimated_cost_usd: 2.30
         execution_time: "180-240s"
+
+      deep:
+        agents: 9
+        thinking_per_agent: 96000
+        total_thinking: 864000  # 9 × 96K
+        estimated_cost_usd: 3.46
+        execution_time: "240-300s"
+
+      expert:
+        agents: 9
+        thinking_per_agent: 144000
+        total_thinking: 1296000  # 9 × 144K
+        estimated_cost_usd: 5.18
+        execution_time: "300-360s"
 
       ultrathink:
         agents: 9
-        thinking_per_agent: 120000
-        total_thinking: 1080000  # 9 × 120K
-        estimated_cost_usd: 4.32  # 3.5× cost multiplier
-        execution_time: "300-420s"
+        thinking_per_agent: 200000
+        total_thinking: 1800000  # 9 × 200K
+        estimated_cost_usd: 7.20
+        execution_time: "360-480s"
 
-    warning_threshold_usd: 2.00  # Warn if cost > $2
+    warning_threshold_usd: 3.00  # Warn if cost > $3 (thorough+)
 
-  # Cost warning configuration
+  # Cost warning configuration (6-tier system)
   cost_warning:
     enabled: true
-    threshold_usd: 2.00
+    threshold_usd: 3.00  # Updated for 6-tier system (thorough+ triggers warning)
     warning_message_template: |
       ⚠️  **HIGH COST OPERATION DETECTED**
 
@@ -230,7 +349,9 @@ claude_code:
       - Output: {OUTPUT_COST} USD
 
       💡 **To reduce cost**:
-      - Use --depth=standard instead of ultrathink (-73% cost)
+      - Use --thinking-depth=thorough instead of deep (-33% cost)
+      - Use --thinking-depth=standard instead of thorough (-61% cost)
+      - Use --thinking-depth=quick for baseline concept (-86% cost vs thorough)
 
       ❓ **Continue anyway?** [Y/n]
 

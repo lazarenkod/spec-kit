@@ -160,12 +160,16 @@ handoffs:
 flags:
   - name: --thinking-depth
     type: choice
-    choices: [standard, ultrathink]
-    default: standard
+    choices: [quick, standard, thorough, deep, expert, ultrathink]
+    default: thorough
     description: |
-      Thinking budget control:
-      - standard: 24K budget, standard analysis (~$0.72) [RECOMMENDED]
-      - ultrathink: 96K budget, deep analysis (~$2.88)
+      Research depth and thinking budget per agent (Category C - Strategic, 6 tiers):
+      - quick: 16K budget, 5 core agents, 90s timeout (~$0.32)
+      - standard: 32K budget, 7 agents, 120s timeout (~$0.90)
+      - thorough: 64K budget, 9 agents, 180s timeout (~$2.30) [RECOMMENDED]
+      - deep: 96K budget, 9 agents, 240s timeout (~$3.46)
+      - expert: 144K budget, 9 agents, 300s timeout (~$5.18)
+      - ultrathink: 200K budget, 9 agents, 360s timeout (~$7.20) [MAXIMUM DEPTH]
   - name: --max-model
     type: choice
     choices: [opus, sonnet, haiku]
@@ -173,51 +177,133 @@ flags:
 claude_code:
   model: opus
   reasoning_mode: extended
-  # Rate limit tiers (default: max for Claude Code Max $20)
   rate_limits:
-    default_tier: max
+    default_tier: thorough
     tiers:
-      free:
-        thinking_budget: 8000
-        max_parallel: 2
-        batch_delay: 8000
-        wave_overlap_threshold: 0.90
-      pro:
+      quick:
         thinking_budget: 16000
+        max_parallel: 3
+        batch_delay: 6000
+        wave_overlap_threshold: 0.85
+        cost_multiplier: 1.0
+      standard:
+        thinking_budget: 32000
         max_parallel: 4
         batch_delay: 4000
         wave_overlap_threshold: 0.80
-      max:
-        thinking_budget: 24000
-        max_parallel: 8
-        batch_delay: 1500
-        wave_overlap_threshold: 0.65
-      ultrathink:
+        cost_multiplier: 1.2
+      thorough:
+        thinking_budget: 64000
+        max_parallel: 6
+        batch_delay: 2000
+        wave_overlap_threshold: 0.70
+        cost_multiplier: 1.5
+      deep:
         thinking_budget: 96000
+        max_parallel: 5
+        batch_delay: 2500
+        wave_overlap_threshold: 0.65
+        cost_multiplier: 2.0
+      expert:
+        thinking_budget: 144000
         max_parallel: 4
         batch_delay: 3000
         wave_overlap_threshold: 0.60
-        cost_multiplier: 4.0
+        cost_multiplier: 2.5
+      ultrathink:
+        thinking_budget: 200000
+        max_parallel: 4
+        batch_delay: 3500
+        wave_overlap_threshold: 0.55
+        cost_multiplier: 3.0
+
   depth_defaults:
+    quick:
+      thinking_budget: 16000
+      agents: 5
+      timeout: 90
     standard:
-      thinking_budget: 24000
+      thinking_budget: 32000
+      agents: 7
       timeout: 120
-    ultrathink:
+    thorough:
+      thinking_budget: 64000
+      agents: 9
+      timeout: 180
+    deep:
       thinking_budget: 96000
-      additional_agents: [deep-analyzers, security-auditor]
+      agents: 9
       timeout: 240
+    expert:
+      thinking_budget: 144000
+      agents: 9
+      timeout: 300
+    ultrathink:
+      thinking_budget: 200000
+      agents: 9
+      timeout: 360
+
   user_tier_fallback:
     enabled: true
     rules:
-      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
-        fallback_depth: "standard"
-        fallback_thinking: 24000
+      - condition: "user_tier == 'free' AND requested_depth == 'thorough'"
+        fallback_depth: "thorough"
+        fallback_thinking: 16000
         warning_message: |
-          ⚠️ **Ultrathink mode requires Claude Code Max tier** (96K thinking budget).
-          Auto-downgrading to **Standard** mode (24K budget).
+          ℹ️  **Free tier running Thorough mode at 25% capacity** (16K of 64K budget).
+          For full thorough analysis, upgrade to Pro tier.
+
+      - condition: "user_tier == 'free' AND requested_depth == 'standard'"
+        fallback_depth: "standard"
+        fallback_thinking: 8000
+        warning_message: |
+          ℹ️  **Free tier running Standard mode at 25% capacity** (8K of 32K budget).
+
+      - condition: "user_tier == 'free' AND requested_depth == 'quick'"
+        fallback_depth: "quick"
+        fallback_thinking: 4000
+        warning_message: |
+          ℹ️  **Free tier running Quick mode at 25% capacity** (4K of 16K budget).
+
+      - condition: "user_tier == 'free' AND requested_depth IN ['deep', 'expert', 'ultrathink']"
+        fallback_depth: "thorough"
+        fallback_thinking: 16000
+        warning_message: |
+          ⚠️  **Deep/Expert/Ultrathink modes require Pro tier minimum**.
+          Auto-downgrading to **Thorough** mode at 25% capacity (16K budget).
+
+      - condition: "user_tier == 'pro' AND requested_depth == 'thorough'"
+        fallback_depth: "thorough"
+        fallback_thinking: 43000
+        warning_message: |
+          ℹ️  **Pro tier running Thorough mode at 67% capacity** (43K of 64K budget).
+
+      - condition: "user_tier == 'pro' AND requested_depth == 'deep'"
+        fallback_depth: "deep"
+        fallback_thinking: 72000
+        warning_message: |
+          ℹ️  **Pro tier running Deep mode at 75% capacity** (72K of 96K budget).
+
+      - condition: "user_tier == 'pro' AND requested_depth == 'expert'"
+        fallback_depth: "expert"
+        fallback_thinking: 120000
+        warning_message: |
+          ℹ️  **Pro tier running Expert mode at 83% capacity** (120K of 144K budget).
+
+      - condition: "user_tier == 'pro' AND requested_depth == 'ultrathink'"
+        fallback_depth: "ultrathink"
+        fallback_thinking: 160000
+        warning_message: |
+          ℹ️  **Pro tier running Ultrathink mode at 80% capacity** (160K of 200K budget).
+          For full 200K capacity, upgrade to Max tier.
+
   cost_breakdown:
-    standard: {cost: $0.72, time: "120-180s"}
-    ultrathink: {cost: $2.88, time: "240-360s"}
+    quick: {cost: $0.32, time: "90-120s"}
+    standard: {cost: $0.90, time: "120-180s"}
+    thorough: {cost: $2.30, time: "180-240s"}
+    deep: {cost: $3.46, time: "240-300s"}
+    expert: {cost: $5.18, time: "300-360s"}
+    ultrathink: {cost: $7.20, time: "360-480s"}
   cache_control:
     system_prompt: ephemeral
     constitution: ephemeral

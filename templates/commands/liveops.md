@@ -22,13 +22,16 @@ skills:
 flags:
   - name: --thinking-depth
     type: choice
-    choices: [quick, standard, ultrathink]
+    choices: [quick, standard, thorough, deep, expert, ultrathink]
     default: standard
     description: |
-      Thinking budget per agent:
-      - quick: 16K budget, core agents, 90s (~$0.12)
-      - standard: 32K budget, full workflow, 180s (~$0.24) [RECOMMENDED]
-      - ultrathink: 96K budget, validation agents, 300s (~$0.72)
+      Research depth and thinking budget per agent:
+      - quick: 16K budget, 5 core agents, 90s timeout (~$0.32)
+      - standard: 32K budget, 9 agents, 180s timeout (~$1.15) [RECOMMENDED]
+      - thorough: 64K budget, 12 agents, 240s timeout (~$2.30)
+      - deep: 96K budget, 15 agents, 300s timeout (~$3.46)
+      - expert: 120K budget, 18 agents, 360s timeout (~$4.32)
+      - ultrathink: 192K budget, 18 agents, 480s timeout (~$6.91) [EXPERT MODE]
   - name: --max-model
     type: string
     default: null
@@ -126,36 +129,51 @@ claude_code:
   reasoning_mode: extended
   # Rate limit tiers (default: max for Claude Code Max $20)
   rate_limits:
-    default_tier: max
+    default_tier: standard
     tiers:
-      free:
-        thinking_budget: 4000
-        max_parallel: 2
-        batch_delay: 8000
-        wave_overlap_threshold: 0.90
-        timeout_per_agent: 180000
-        retry_on_failure: 1
-      pro:
-        thinking_budget: 8000
+      quick:
+        thinking_budget: 16000
         max_parallel: 4
         batch_delay: 4000
         wave_overlap_threshold: 0.80
-        timeout_per_agent: 300000
-        retry_on_failure: 2
-      max:
+        timeout_per_agent: 180000
+        retry_on_failure: 1
+      standard:
         thinking_budget: 32000
         max_parallel: 8
         batch_delay: 1500
         wave_overlap_threshold: 0.65
+        timeout_per_agent: 300000
+        retry_on_failure: 2
+      thorough:
+        thinking_budget: 64000
+        max_parallel: 8
+        batch_delay: 1500
+        wave_overlap_threshold: 0.65
+        timeout_per_agent: 600000
+        retry_on_failure: 3
+      deep:
+        thinking_budget: 96000
+        max_parallel: 6
+        batch_delay: 2000
+        wave_overlap_threshold: 0.60
         timeout_per_agent: 900000
         retry_on_failure: 3
+      expert:
+        thinking_budget: 120000
+        max_parallel: 4
+        batch_delay: 2500
+        wave_overlap_threshold: 0.60
+        timeout_per_agent: 1200000
+        retry_on_failure: 3
       ultrathink:
-        thinking_budget: 96000
+        thinking_budget: 192000
         max_parallel: 4
         batch_delay: 3000
         wave_overlap_threshold: 0.60
-        cost_multiplier: 6.0
-  depth_defaults:
+        timeout_per_agent: 1500000
+        retry_on_failure: 3
+        cost_multiplier: 6.0  depth_defaults:
     quick:
       thinking_budget: 16000
       skip_agents: [optional-pattern-researchers]
@@ -164,23 +182,44 @@ claude_code:
       thinking_budget: 32000
       skip_agents: []
       timeout: 180
-    ultrathink:
+    thorough:
+      thinking_budget: 64000
+      skip_agents: []
+      timeout: 240
+    deep:
       thinking_budget: 96000
-      additional_agents: [liveops-deepdive, monetization-auditor]
+      additional_agents: [liveops-deepdive]
       timeout: 300
+    expert:
+      thinking_budget: 120000
+      additional_agents: [liveops-deepdive, monetization-auditor]
+      timeout: 360
+    ultrathink:
+      thinking_budget: 192000
+      additional_agents: [liveops-deepdive, monetization-auditor, retention-optimizer]
+      timeout: 480
   user_tier_fallback:
     enabled: true
     rules:
       - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
-        fallback_depth: "standard"
-        fallback_thinking: 32000
+        fallback_depth: "expert"
+        fallback_thinking: 120000
         warning_message: |
-          ⚠️ **Ultrathink mode requires Claude Code Max tier** (96K thinking budget).
-          Auto-downgrading to **Standard** mode (32K budget).
+          ⚠️ **Ultrathink mode requires Claude Code Max tier** (192K thinking budget).
+          Auto-downgrading to **Expert** mode (120K budget).
+      - condition: "user_tier != 'max' AND requested_depth in ['expert', 'deep']"
+        fallback_depth: "thorough"
+        fallback_thinking: 64000
+        warning_message: |
+          ⚠️ **Expert/Deep mode requires Claude Code Max tier**.
+          Auto-downgrading to **Thorough** mode (64K budget).
   cost_breakdown:
-    quick: {cost: $0.12, time: "90-120s"}
-    standard: {cost: $0.24, time: "180-240s"}
-    ultrathink: {cost: $0.72, time: "300-360s"}
+    quick: {cost: $0.32, time: "90-120s"}
+    standard: {cost: $1.15, time: "180-240s"}
+    thorough: {cost: $2.30, time: "240-300s"}
+    deep: {cost: $3.46, time: "300-360s"}
+    expert: {cost: $4.32, time: "360-420s"}
+    ultrathink: {cost: $6.91, time: "480-540s"}
   cache_control:
     system_prompt: ephemeral
     constitution: ephemeral

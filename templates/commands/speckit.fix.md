@@ -47,17 +47,9 @@ claude_code:
   model: sonnet
   reasoning_mode: extended
   rate_limits:
-    default_tier: max
+    default_tier: standard
     tiers:
-      free:
-        thinking_budget: 12000
-        max_parallel: 2
-        batch_delay: 8000
-      pro:
-        thinking_budget: 18000
-        max_parallel: 4
-        batch_delay: 4000
-      max:
+      standard:
         thinking_budget: 24000
         max_parallel: 6
         batch_delay: 2000
@@ -101,7 +93,7 @@ flags:
   thinking_depth: |
     --thinking-depth <standard|ultrathink>
     Thinking budget control:
-    - standard: Max tier (24K budget) (~$0.72) [RECOMMENDED]
+    - standard: 24K budget (~$0.72) [RECOMMENDED]
     - ultrathink: 72K budget, deep analysis (~$2.16) [REQUIRES Max tier]
 ---
 

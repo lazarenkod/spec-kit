@@ -72,39 +72,59 @@ plan_mode:
 
   # Default depth levels by complexity tier
   depth_defaults:
-    TRIVIAL: 0   # Standard
-    SIMPLE: 0    # Standard
-    MODERATE: 1  # Lite
-    COMPLEX: 2   # Moderate
+    TRIVIAL: 0   # Minimal
+    SIMPLE: 2    # Standard
+    MODERATE: 3  # Thorough
+    COMPLEX: 4   # Deep
 
   # Depth level definitions (same as plan.md)
   depth_levels:
-    0:  # Standard
-      name: "Standard"
+    0:  # Minimal
+      name: "Minimal"
       exploration: false
       review_passes: []
-    1:  # Lite
-      name: "Lite"
+    1:  # Quick
+      name: "Quick"
+      exploration:
+        agents: [pattern-researcher]
+        budget_s: 45
+      review_passes: []
+    2:  # Standard
+      name: "Standard"
       exploration:
         agents: [pattern-researcher, constraint-mapper]
         budget_s: 90
       review_passes: []
-    2:  # Moderate
-      name: "Moderate"
+    3:  # Thorough
+      name: "Thorough"
       exploration:
         agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer]
         budget_s: 180
       review_passes: [constitution_alignment]
       budget_s: 210  # 180 + 30
-    3:  # Full
-      name: "Full"
+    4:  # Deep
+      name: "Deep"
       exploration:
-        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer]
-        budget_s: 180
+        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer, edge-case-analyzer]
+        budget_s: 240
+      review_passes: [constitution_alignment, completeness_check]
+      budget_s: 300  # 240 + 60
+    5:  # Expert
+      name: "Expert"
+      exploration:
+        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer, edge-case-analyzer, security-reviewer]
+        budget_s: 300
       review_passes: [constitution_alignment, completeness_check, edge_case_detection, testability_audit]
-      budget_s: 300  # 180 + 120
+      budget_s: 420  # 300 + 120
+    6:  # Ultrathink
+      name: "Ultrathink"
+      exploration:
+        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer, edge-case-analyzer, security-reviewer, performance-auditor]
+        budget_s: 480
+      review_passes: [constitution_alignment, completeness_check, edge_case_detection, testability_audit, security_audit, performance_analysis]
+      budget_s: 660  # 480 + 180
 
-  # Keyword triggers upgrade depth level by +1 (max 3)
+  # Keyword triggers upgrade depth level by +1 (max 6)
   keyword_triggers:
     - distributed
     - multi-service
@@ -119,22 +139,26 @@ plan_mode:
   flags:
     - name: --thinking-depth
       type: choice
-      choices: [quick, standard, ultrathink]
+      choices: [minimal, quick, standard, thorough, deep, expert, ultrathink]
       default: standard
       description: |
-        Thinking budget per agent:
-        - quick: 8K budget, core agents, 60s (~$0.12)
-        - standard: 16K budget, full workflow, 120s (~$0.24) [RECOMMENDED]
-        - ultrathink: 48K budget, validation agents, 240s (~$0.72)
+        Thinking budget per agent (Category B - Core Workflow):
+        - minimal: 8K budget, core agents, 45s (~$0.12)
+        - quick: 16K budget, core agents, 60s (~$0.24)
+        - standard: 32K budget, full workflow, 120s (~$0.48) [RECOMMENDED]
+        - thorough: 48K budget, extended validation, 180s (~$0.72)
+        - deep: 80K budget, deep analysis, 300s (~$1.20)
+        - expert: 120K budget, expert review, 480s (~$1.80)
+        - ultrathink: 200K budget, comprehensive validation, 720s (~$3.00)
     - name: --depth-level
       type: choice
-      choices: [0, 1, 2, 3]
+      choices: [0, 1, 2, 3, 4, 5, 6]
       default: null
-      description: "--depth-level <0-3> - Plan mode exploration depth (independent from --thinking-depth)"
+      description: "--depth-level <0-6> - Plan mode exploration depth (independent from --thinking-depth)"
     - name: --plan-mode
       type: boolean
       default: false
-      description: "Enable plan mode (equivalent to --depth-level 3)"
+      description: "Enable plan mode (equivalent to --depth-level 6)"
     - name: --no-plan-mode
       type: boolean
       default: false
@@ -161,58 +185,106 @@ claude_code:
     default_tier: max
     tiers:
       free:
-        thinking_budget: 4000
+        minimal: 2000      # 25% of 8K
+        quick: 4000        # 25% of 16K
+        standard: 8000     # 25% of 32K
+        thorough: 12000    # 25% of 48K
+        deep: 26400        # 33% of 80K
+        expert: 39600      # 33% of 120K
+        ultrathink: 66000  # 33% of 200K
         max_parallel: 2
         batch_delay: 8000
         wave_overlap_threshold: 0.90
         timeout_per_agent: 180000
         retry_on_failure: 1
       pro:
-        thinking_budget: 8000
+        minimal: 4000      # 50% of 8K
+        quick: 8000        # 50% of 16K
+        standard: 21440    # 67% of 32K
+        thorough: 32160    # 67% of 48K
+        deep: 60000        # 75% of 80K
+        expert: 99600      # 83% of 120K
+        ultrathink: 160000 # 80% of 200K
         max_parallel: 4
         batch_delay: 4000
         wave_overlap_threshold: 0.80
         timeout_per_agent: 300000
         retry_on_failure: 2
       max:
-        thinking_budget: 16000
+        minimal: 8000      # 100%
+        quick: 16000       # 100%
+        standard: 32000    # 100%
+        thorough: 48000    # 100%
+        deep: 80000        # 100%
+        expert: 120000     # 100%
+        ultrathink: 200000 # 100%
         max_parallel: 8
         batch_delay: 1500
         wave_overlap_threshold: 0.65
         timeout_per_agent: 900000
         retry_on_failure: 3
-      ultrathink:
-        thinking_budget: 48000
-        max_parallel: 4
-        batch_delay: 3000
-        wave_overlap_threshold: 0.60
-        cost_multiplier: 3.0
   depth_defaults:
-    quick:
+    minimal:
       thinking_budget: 8000
+      skip_agents: [optional-validators, alternative-analyzer]
+      timeout: 45
+    quick:
+      thinking_budget: 16000
       skip_agents: [optional-validators]
       timeout: 60
     standard:
-      thinking_budget: 16000
+      thinking_budget: 32000
       skip_agents: []
       timeout: 120
-    ultrathink:
+    thorough:
       thinking_budget: 48000
+      additional_agents: [spec-deepdive]
+      timeout: 180
+    deep:
+      thinking_budget: 80000
       additional_agents: [spec-deepdive, edge-case-analyzer]
-      timeout: 240
+      timeout: 300
+    expert:
+      thinking_budget: 120000
+      additional_agents: [spec-deepdive, edge-case-analyzer, security-reviewer]
+      timeout: 480
+    ultrathink:
+      thinking_budget: 200000
+      additional_agents: [spec-deepdive, edge-case-analyzer, security-reviewer, performance-auditor]
+      timeout: 720
   user_tier_fallback:
     enabled: true
     rules:
-      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
-        fallback_depth: "standard"
-        fallback_thinking: 16000
+      - condition: "user_tier == 'free' AND requested_depth IN ['deep', 'expert', 'ultrathink']"
+        fallback_depth: "thorough"
+        fallback_thinking: 12000
         warning_message: |
-          ⚠️ **Ultrathink mode requires Claude Code Max tier** (48K thinking budget).
-          Auto-downgrading to **Standard** mode (16K budget).
+          ⚠️ **Deep/Expert/Ultrathink modes require Pro or Max tier**.
+          Auto-downgrading to **Thorough** mode (12K budget on Free tier).
+      - condition: "user_tier == 'pro' AND requested_depth == 'ultrathink'"
+        fallback_depth: "expert"
+        fallback_thinking: 99600
+        warning_message: |
+          ⚠️ **Ultrathink mode requires Claude Code Max tier** (200K thinking budget).
+          Auto-downgrading to **Expert** mode (99.6K budget on Pro tier).
+      - condition: "user_tier == 'pro' AND requested_depth == 'expert'"
+        fallback_depth: "expert"
+        fallback_thinking: 99600
+        warning_message: |
+          ℹ️ **Expert mode on Pro tier** (99.6K budget, 83% of full 120K).
+      - condition: "user_tier == 'free' AND requested_depth == 'thorough'"
+        fallback_depth: "thorough"
+        fallback_thinking: 12000
+        warning_message: |
+          ℹ️ **Thorough mode on Free tier** (12K budget, 25% of full 48K).
   cost_breakdown:
-    quick: {cost: $0.12, time: "60-90s"}
-    standard: {cost: $0.24, time: "120-180s"}
-    ultrathink: {cost: $0.72, time: "240-300s"}
+    minimal: {cost: $0.12, time: "45-60s"}
+    quick: {cost: $0.24, time: "60-90s"}
+    standard: {cost: $0.48, time: "120-180s"}
+    thorough: {cost: $0.72, time: "180-240s"}
+    deep: {cost: $1.20, time: "300-360s"}
+    expert: {cost: $1.80, time: "480-540s"}
+    ultrathink: {cost: $3.00, time: "720-900s"}
   adaptive_model:
     enabled: true
     complexity_framework: templates/shared/specify/complexity-detection.md
@@ -2018,21 +2090,21 @@ ELSE:
 FUNCTION determine_depth_level():
     # Priority 1: Explicit --depth-level flag
     IF "--depth-level" IN flags:
-        RETURN parse_int(flags["--depth-level"], min=0, max=3)
+        RETURN parse_int(flags["--depth-level"], min=0, max=6)
 
     # Priority 2: Backward compat flags
     IF "--plan-mode" IN flags:
-        RETURN 3  # Full depth
+        RETURN 6  # Ultrathink depth
     IF "--no-plan-mode" IN flags:
-        RETURN 0  # Standard mode
+        RETURN 0  # Minimal mode
 
     # Priority 3: Complexity-based default for specify command
     complexity_tier = calculate_complexity_tier(spec_path)
     defaults = {
-        "TRIVIAL": 0,   # Standard
-        "SIMPLE": 0,    # Standard
-        "MODERATE": 1,  # Lite
-        "COMPLEX": 2    # Moderate
+        "TRIVIAL": 0,   # Minimal
+        "SIMPLE": 2,    # Standard
+        "MODERATE": 3,  # Thorough
+        "COMPLEX": 4    # Deep
     }
     default_level = defaults[complexity_tier]
 
@@ -2041,7 +2113,7 @@ FUNCTION determine_depth_level():
                 "security-critical", "real-time", "high-availability"]
     FOR keyword IN keywords:
         IF keyword IN user_input.lower():
-            RETURN min(default_level + 1, 3)
+            RETURN min(default_level + 1, 6)
 
     RETURN default_level
 ```
@@ -2050,7 +2122,17 @@ FUNCTION determine_depth_level():
 
 ### Exploration Agents
 
-**Depth Level 1 (Lite) - 90s:**
+**Depth Level 0 (Minimal):**
+- No exploration phase
+
+**Depth Level 1 (Quick) - 45s:**
+
+```text
+EMIT SINGLE MESSAGE with 1 Task call:
+  Task(role="pattern-researcher", subagent_type="Explore", model="haiku", timeout=45s)
+```
+
+**Depth Level 2 (Standard) - 90s:**
 
 ```text
 EMIT SINGLE MESSAGE with 2 parallel Task calls:
@@ -2058,17 +2140,54 @@ EMIT SINGLE MESSAGE with 2 parallel Task calls:
   Task(role="constraint-mapper", subagent_type="Explore", model="haiku", timeout=45s)
 ```
 
-**Depth Level 2-3 (Moderate/Full) - 180s:**
+**Depth Level 3 (Thorough) - 210s:**
 
 ```text
-# Parallel phase (3 agents, 45s wall time)
-EMIT SINGLE MESSAGE with 3 parallel Task calls:
+# Parallel phase (4 agents, 45s wall time)
+EMIT SINGLE MESSAGE with 4 parallel Task calls:
   Task(role="pattern-researcher", subagent_type="Explore", model="haiku", timeout=45s)
   Task(role="alternative-analyzer", subagent_type="general-purpose", model="haiku", timeout=45s)
   Task(role="constraint-mapper", subagent_type="Explore", model="haiku", timeout=45s)
+  Task(role="best-practice-synthesizer", subagent_type="general-purpose", model="sonnet", timeout=45s)
+```
 
-# Sequential phase (1 agent synthesizes findings, 60s wall time)
-EMIT Task(role="best-practice-synthesizer", subagent_type="general-purpose", model="sonnet", timeout=60s)
+**Depth Level 4 (Deep) - 300s:**
+
+```text
+# Parallel phase (5 agents, 60s wall time)
+EMIT SINGLE MESSAGE with 5 parallel Task calls:
+  Task(role="pattern-researcher", subagent_type="Explore", model="sonnet", timeout=60s)
+  Task(role="alternative-analyzer", subagent_type="general-purpose", model="sonnet", timeout=60s)
+  Task(role="constraint-mapper", subagent_type="Explore", model="sonnet", timeout=60s)
+  Task(role="best-practice-synthesizer", subagent_type="general-purpose", model="sonnet", timeout=60s)
+  Task(role="edge-case-analyzer", subagent_type="general-purpose", model="sonnet", timeout=60s)
+```
+
+**Depth Level 5 (Expert) - 420s:**
+
+```text
+# Parallel phase (6 agents, 60s wall time)
+EMIT SINGLE MESSAGE with 6 parallel Task calls:
+  Task(role="pattern-researcher", subagent_type="Explore", model="sonnet", timeout=60s)
+  Task(role="alternative-analyzer", subagent_type="general-purpose", model="sonnet", timeout=60s)
+  Task(role="constraint-mapper", subagent_type="Explore", model="sonnet", timeout=60s)
+  Task(role="best-practice-synthesizer", subagent_type="general-purpose", model="sonnet", timeout=60s)
+  Task(role="edge-case-analyzer", subagent_type="general-purpose", model="sonnet", timeout=60s)
+  Task(role="security-reviewer", subagent_type="general-purpose", model="sonnet", timeout=60s)
+```
+
+**Depth Level 6 (Ultrathink) - 660s:**
+
+```text
+# Parallel phase (7 agents, 80s wall time)
+EMIT SINGLE MESSAGE with 7 parallel Task calls:
+  Task(role="pattern-researcher", subagent_type="Explore", model="opus", timeout=80s)
+  Task(role="alternative-analyzer", subagent_type="general-purpose", model="opus", timeout=80s)
+  Task(role="constraint-mapper", subagent_type="Explore", model="opus", timeout=80s)
+  Task(role="best-practice-synthesizer", subagent_type="general-purpose", model="opus", timeout=80s)
+  Task(role="edge-case-analyzer", subagent_type="general-purpose", model="opus", timeout=80s)
+  Task(role="security-reviewer", subagent_type="general-purpose", model="opus", timeout=80s)
+  Task(role="performance-auditor", subagent_type="general-purpose", model="opus", timeout=80s)
 ```
 
 **Agent Roles:**
@@ -2077,6 +2196,9 @@ EMIT Task(role="best-practice-synthesizer", subagent_type="general-purpose", mod
 2. **alternative-analyzer**: Generate 3-5 alternatives → score (complexity, testability, maintainability, performance, alignment)
 3. **constraint-mapper**: Extract NFRs from user input/concept → map constraints → detect conflicts
 4. **best-practice-synthesizer**: Synthesize findings → recommend approach → identify edge cases
+5. **edge-case-analyzer**: Deep dive into edge cases, failure modes, boundary conditions
+6. **security-reviewer**: Security audit of approach, identify vulnerabilities, threat modeling
+7. **performance-auditor**: Performance analysis, scalability assessment, bottleneck identification
 
 **Output:** `research.md` in feature directory
 

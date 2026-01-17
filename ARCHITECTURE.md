@@ -3239,258 +3239,27 @@ Batching:
   Batch 2: [TASK-003] (depends on TASK-001)
 ```
 
-### 8.2. Wave Scheduler (DAG Execution)
+### 8.2 Thinking Budget Allocation
 
-**Source**: `src/specify_cli/wave_scheduler.py:1-1500`
+Commands dynamically adjust thinking budgets based on `--thinking-depth` flag:
 
-**Purpose**: Execute agent tasks in waves with dependency awareness.
+| Tier | Typical Budget | Agent Count | Review Passes | Use Case |
+|------|----------------|-------------|---------------|----------|
+| minimal | 4K-8K | 1-2 | None | Quick lookups |
+| quick | 12K-16K | 3-5 | None | Fast exploration |
+| standard | 24K-32K | 5-7 | Basic | Daily workflow (RECOMMENDED) |
+| thorough | 48K-64K | 7-9 | Constitution alignment | Complex features |
+| deep | 80K-96K | 9-11 | + Completeness check | Strategic analysis |
+| expert | 120K-160K | 11-13 | + Edge cases + Testability | Critical decisions |
+| ultrathink | 200K+ | 13-15 | Full review suite | Research-grade |
 
-**Architecture**:
-```
-Input: tasks.md with dependencies
-    ↓
-1. Build DAG (Directed Acyclic Graph)
-    ↓
-2. Detect cycles (error if found)
-    ↓
-3. Compute topological levels
-    ↓
-4. Group into waves
-    ↓
-5. Execute waves with overlap
-    ↓
-Output: Results for all tasks
-```
+Agent orchestration adapts agent selection and review depth based on chosen tier.
 
-#### 8.2.1. Wave Overlap Strategy
-
-**Config**:
-```python
-@dataclass
-class WaveConfig:
-    max_parallel: int = 6                # Tasks per wave
-    overlap_enabled: bool = True         # Enable wave overlap
-    overlap_threshold: float = 0.60      # Start next wave at 60%
-    strategy: ExecutionStrategy = OVERLAPPED
-    fail_fast: bool = True               # Stop on first failure
-```
-
-**Execution Timeline** (overlap_threshold = 0.60):
-```
-───[Wave 1: A, B, C]────────────┐
-              60%────────────────[Wave 2: D, E]──────┐
-                                         60%──────────[Wave 3: F]───
-```
-
-**ПОЧЕМУ overlap?**
-- ✅ Better utilization (wave 2 starts before wave 1 finishes)
-- ✅ Faster total time (~20% improvement)
-- ✅ Still respects dependencies (wave 2 only starts after deps satisfied)
-
-#### 8.2.2. QG-TEST-003 Enforcement (TDD Red Phase)
-
-**Special Case**: Wave Scheduler validates TDD.
-
-**Quality Gate**: QG-TEST-003 — Tests MUST fail before implementation.
-
-**Implementation**:
-```python
-class QgTest003ViolationError(Exception):
-    """
-    Raised when test passes when it should fail (TDD Red phase).
-
-    Test MUST fail before implementation. If test passes immediately:
-    - Missing/weak assertions
-    - Implementation already exists
-    - Test not testing the right thing
-    """
-    pass
-
-# In wave_scheduler.py:450-520
-async def execute_test_task(task: AgentTask) -> AgentResult:
-    """Execute test task and validate TDD Red phase."""
-
-    result = await agent_pool.execute_task(task)
-
-    # If this is Wave 2 (Test Scaffolding), tests MUST fail
-    if task.metadata.get('wave') == 2:
-        exit_code = result.metadata.get('test_exit_code', 0)
-
-        if exit_code == 0:  # Test passed (BAD for TDD Red)
-            raise QgTest003ViolationError(
-                test_file=task.metadata['test_file'],
-                test_task=task.name,
-                exit_code=exit_code
-            )
-
-    return result
-```
-
-**Workflow**:
-```
-Wave 2 (Test Scaffolding):
-  1. Generate test: tests/auth.test.ts
-  2. Run test: npm test tests/auth.test.ts
-  3. Exit code = 1 (test failed) ✅ QG-TEST-003 PASS
-     OR
-     Exit code = 0 (test passed) ❌ QG-TEST-003 VIOLATION → Block
-```
-
-#### 8.2.3. Wave Scheduler Visualization
-
-**Example DAG**:
-```
-     TASK-001          TASK-002
-     (no deps)         (no deps)
-        ↓                  ↓
-     TASK-003          TASK-004
-     (after 001)       (after 001, 002)
-        ↓                  ↓
-           TASK-005
-           (after 003, 004)
-```
-
-**Wave Computation**:
-```
-Wave 1: [TASK-001, TASK-002]      # Level 0 (no deps)
-Wave 2: [TASK-003, TASK-004]      # Level 1 (depends on level 0)
-Wave 3: [TASK-005]                 # Level 2 (depends on level 1)
-```
-
-**Execution Log**:
-```
-[14:00:00] Wave 1 started (2 tasks)
-[14:00:00]   ├─ TASK-001: Create auth.ts
-[14:00:00]   └─ TASK-002: Create users.ts
-[14:00:45]   ✅ TASK-001 completed (45s)
-[14:01:02]   ✅ TASK-002 completed (62s)
-[14:01:02] Wave 1 completed (1m 2s)
-
-[14:01:02] Wave 2 started (2 tasks)
-[14:01:02]   ├─ TASK-003: Add OAuth to auth.ts
-[14:01:02]   └─ TASK-004: Link users to auth
-[14:01:38]   ✅ TASK-004 completed (36s)
-[14:01:50]   ✅ TASK-003 completed (48s)
-[14:01:50] Wave 2 completed (48s)
-
-[14:01:50] Wave 3 started (1 task)
-[14:01:50]   └─ TASK-005: Integration test
-[14:02:15]   ✅ TASK-005 completed (25s)
-[14:02:15] Wave 3 completed (25s)
-
-Total time: 2m 15s (vs 3m 30s sequential, 37% faster)
-```
-
-#### 8.2.4. Concept Command Wave Orchestration (v0.7.0)
-
-**Command**: `/speckit.concept`
-
-**Purpose**: Generate CEO-focused strategic blueprints with 7-wave research agent orchestration.
-
-**Wave Structure** (v0.7.0 — increased from 5 to 7 waves):
-
-```
-┌────────────────────────────────────────────────────────────────────┐
-│ Wave 1: RESEARCH (Parallel — Market Intelligence)                  │
-│  ├─ market-researcher (opus/120K)                                  │
-│  ├─ competitive-analyst (opus/120K)                                │
-│  └─ problem-analyst (opus/120K)                                    │
-│  Duration: ~3-5 min (parallel execution)                           │
-└────────────────────────────────────────────────────────────────────┘
-                              ↓
-┌────────────────────────────────────────────────────────────────────┐
-│ Wave 2: PERSONAS (Parallel — User Research)                        │
-│  ├─ persona-designer (opus/120K)                                   │
-│  └─ jtbd-analyst (opus/120K)                                       │
-│  Duration: ~2-4 min (parallel execution)                           │
-└────────────────────────────────────────────────────────────────────┘
-                              ↓
-┌────────────────────────────────────────────────────────────────────┐
-│ Wave 3: VALUE PROPOSITION (Sequential — Synthesis)                 │
-│  └─ value-prop-designer (opus/120K)                                │
-│     Depends on: Wave 2 (persona-designer, jtbd-analyst)            │
-│  Duration: ~2-3 min                                                │
-└────────────────────────────────────────────────────────────────────┘
-                              ↓
-┌────────────────────────────────────────────────────────────────────┐
-│ Wave 4: METRICS & RISKS (Parallel — Assessment)                    │
-│  ├─ metrics-designer (sonnet) — Strategic metrics, North Star      │
-│  ├─ risk-assessor (sonnet) — Risk matrix, pivot criteria           │
-│  └─ technical-hint-generator (sonnet) — Architecture principles    │
-│  Duration: ~1-2 min (parallel execution)                           │
-└────────────────────────────────────────────────────────────────────┘
-                              ↓
-┌────────────────────────────────────────────────────────────────────┐
-│ Wave 5: STRATEGIC SYNTHESIS (Sequential — NEW v0.7.0)              │
-│  └─ strategic-synthesis-ai (opus/120K)                             │
-│     Generates: Three Foundational Pillars                          │
-│     Depends on: Waves 1-4 (all research findings)                  │
-│     - Links pillars to pain points (PP-XXX IDs)                    │
-│     - Provides proof points (STRONG+ evidence)                     │
-│     - Defines differentiation & time to imitation                  │
-│  Duration: ~3-4 min                                                │
-└────────────────────────────────────────────────────────────────────┘
-                              ↓
-┌────────────────────────────────────────────────────────────────────┐
-│ Wave 6: STRATEGIC RECOMMENDATIONS (Sequential — NEW v0.7.0)        │
-│  └─ strategic-recommendations-ai (opus/120K)                       │
-│     Generates: Phase-Based Roadmap                                 │
-│     Depends on: Wave 5 (strategic-synthesis-ai), Wave 4 (risks)    │
-│     - Foundation Phase (0-6mo): MVP, pillar validation             │
-│     - Scale Phase (7-18mo): Growth, market expansion               │
-│     - Dominate Phase (19-36mo): Market leadership                  │
-│     - Critical Success Factors (5-7)                               │
-│     - Risk/Mitigation Matrix                                       │
-│  Duration: ~3-4 min                                                │
-└────────────────────────────────────────────────────────────────────┘
-                              ↓
-┌────────────────────────────────────────────────────────────────────┐
-│ Wave 7: REVIEW (Sequential — Quality Scoring)                      │
-│  └─ concept-quality-scorer (opus/120K)                             │
-│     Calculates: CQS v0.7.0 (0-120 scale)                           │
-│     Depends on: All previous waves                                 │
-│     - Validates Strategic Depth component (10% weight)             │
-│     - Checks evidence tiers (STRONG+ for pillars/differentiators)  │
-│     - Selects best alternative (highest CQS score)                 │
-│  Duration: ~2-3 min                                                │
-└────────────────────────────────────────────────────────────────────┘
-```
-
-**Total Execution Time**: ~15-25 minutes (7 waves, depends on complexity)
-
-**Parallelism**: 3 waves run fully parallel (1, 2, 4), 4 waves sequential due to dependencies
-
-**Model Selection**:
-- **Opus/120K**: Research-heavy agents requiring deep thinking (Waves 1-3, 5-7)
-- **Sonnet**: Faster agents for structured outputs (Wave 4)
-
-**Key Improvements v0.7.0**:
-1. **Wave 5 (Strategic Synthesis)**: Generates Three Foundational Pillars from all research
-2. **Wave 6 (Strategic Recommendations)**: Creates phase-based execution roadmap
-3. **Wave 7 (Enhanced Scorer)**: CQS v0.7.0 with Strategic Depth component (10%)
-4. **Alternative Scoring**: Enhanced from 40→50 points (added Strategic Depth 0-10)
-
-**Dependency Graph**:
-```
-Wave 1 (market-researcher, competitive-analyst, problem-analyst)
-  ↓
-Wave 2 (persona-designer, jtbd-analyst)
-  ↓
-Wave 3 (value-prop-designer) ← depends on Wave 2
-  ↓
-Wave 4 (metrics-designer, risk-assessor, technical-hint-generator) ← parallel
-  ↓
-Wave 5 (strategic-synthesis-ai) ← depends on Waves 1-4
-  ↓
-Wave 6 (strategic-recommendations-ai) ← depends on Wave 5, Wave 4 (risks)
-  ↓
-Wave 7 (concept-quality-scorer) ← depends on all previous waves
-```
-
-**Performance Optimization**:
-- Waves 1, 2, 4 execute in parallel (max parallelism: 3 agents simultaneously)
-- Waves 3, 5, 6, 7 sequential (dependency-driven)
-- Overlap strategy: Wave N+1 starts when Wave N reaches 60% completion (if deps satisfied)
+**Tier availability by command category**:
+- Lightweight (4 tiers): minimal → thorough
+- Core workflow (7 tiers): All tiers available
+- Strategic (6 tiers): Skip minimal
+- Orchestration (5 tiers): Start at standard
 
 ### 8.3. Agent Pool (Concurrent Claude API Calls)
 

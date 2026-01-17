@@ -85,32 +85,52 @@ plan_mode:
     MODERATE: 0  # Standard (tasks is fast, minimize overhead)
     COMPLEX: 1   # Lite only
 
-  # Depth level definitions (same as other commands)
+  # Depth level definitions (expanded to 7 tiers)
   depth_levels:
     0:
-      name: "Standard"
+      name: "Mini"
       exploration: false
       review_passes: []
     1:
       name: "Lite"
       exploration:
+        agents: [pattern-researcher]
+        budget_s: 60
+      review_passes: []
+    2:
+      name: "Standard"
+      exploration:
         agents: [pattern-researcher, constraint-mapper]
         budget_s: 90
       review_passes: []
-    2:
+    3:
       name: "Moderate"
       exploration:
-        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer]
-        budget_s: 180
+        agents: [pattern-researcher, alternative-analyzer, constraint-mapper]
+        budget_s: 150
       review_passes: [constitution_alignment]
-      budget_s: 210
-    3:
-      name: "Full"
+      budget_s: 180
+    4:
+      name: "Extended"
       exploration:
         agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer]
-        budget_s: 180
+        budget_s: 210
+      review_passes: [constitution_alignment, completeness_check]
+      budget_s: 270
+    5:
+      name: "Full"
+      exploration:
+        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer, edge-case-detector]
+        budget_s: 270
       review_passes: [constitution_alignment, completeness_check, edge_case_detection, testability_audit]
-      budget_s: 300
+      budget_s: 390
+    6:
+      name: "Ultrathink"
+      exploration:
+        agents: [pattern-researcher, alternative-analyzer, constraint-mapper, best-practice-synthesizer, edge-case-detector, traceability-auditor]
+        budget_s: 360
+      review_passes: [constitution_alignment, completeness_check, edge_case_detection, testability_audit, security_audit, performance_audit]
+      budget_s: 540
 
   keyword_triggers:
     - distributed
@@ -126,26 +146,30 @@ plan_mode:
   flags:
     - name: --thinking-depth
       type: choice
-      choices: [quick, standard, ultrathink]
+      choices: [mini, lite, standard, moderate, extended, full, ultrathink]
       default: standard
       description: |
         Thinking budget per agent:
-        - quick: 8K budget, core agents, 60s (~$0.12)
-        - standard: 16K budget, full workflow, 120s (~$0.24) [RECOMMENDED]
-        - ultrathink: 48K budget, validation agents, 240s (~$0.72)
+        - mini: 8K budget, minimal validation (~$0.12, 60s)
+        - lite: 16K budget, basic workflow (~$0.24, 90s)
+        - standard: 32K budget, full workflow (~$0.48, 120s) [RECOMMENDED]
+        - moderate: 48K budget, enhanced validation (~$0.72, 180s)
+        - extended: 80K budget, deep analysis (~$1.20, 240s)
+        - full: 120K budget, comprehensive review (~$1.80, 300s)
+        - ultrathink: 200K budget, maximum depth (~$3.00, 420s)
     - name: --depth-level
       type: choice
-      choices: [0, 1, 2, 3]
+      choices: [0, 1, 2, 3, 4, 5, 6]
       default: null
-      description: "--depth-level <0-3> - Plan mode exploration depth (independent from --thinking-depth)"
+      description: "--depth-level <0-6> - Plan mode exploration depth (independent from --thinking-depth)"
     - name: --plan-mode
       type: boolean
       default: false
-      description: "Enable plan mode (equivalent to --depth-level 3)"
+      description: "Enable plan mode (equivalent to --depth-level 6)"
     - name: --no-plan-mode
       type: boolean
       default: false
-      description: "Disable plan mode (equivalent to --depth-level 0)"
+      description: "Disable plan mode (equivalent to --depth-level 0 - Mini)"
     - name: --max-model
       type: string
       default: null
@@ -158,61 +182,116 @@ claude_code:
   reasoning_mode: extended
   # Rate limit tiers (default: max for Claude Code Max $20)
   rate_limits:
-    default_tier: max
+    default_tier: standard
     tiers:
-      free:
-        thinking_budget: 3000
+      mini:
+        thinking_budget: 8000
         max_parallel: 2
-        batch_delay: 8000
+        batch_delay: 6000
         wave_overlap_threshold: 0.90
         timeout_per_agent: 180000
         retry_on_failure: 1
-      pro:
-        thinking_budget: 6000
-        max_parallel: 4
+      lite:
+        thinking_budget: 16000
+        max_parallel: 3
         batch_delay: 4000
-        wave_overlap_threshold: 0.80
-        timeout_per_agent: 300000
+        wave_overlap_threshold: 0.85
+        timeout_per_agent: 240000
+        retry_on_failure: 1
+      standard:
+        thinking_budget: 32000
+        max_parallel: 4
+        batch_delay: 2000
+        wave_overlap_threshold: 0.75
+        timeout_per_agent: 360000
         retry_on_failure: 2
-      max:
-        thinking_budget: 12000
-        max_parallel: 8
+      moderate:
+        thinking_budget: 48000
+        max_parallel: 5
         batch_delay: 1500
+        wave_overlap_threshold: 0.70
+        timeout_per_agent: 540000
+        retry_on_failure: 2
+      extended:
+        thinking_budget: 80000
+        max_parallel: 6
+        batch_delay: 1200
         wave_overlap_threshold: 0.65
+        timeout_per_agent: 720000
+        retry_on_failure: 3
+      full:
+        thinking_budget: 120000
+        max_parallel: 8
+        batch_delay: 1000
+        wave_overlap_threshold: 0.60
         timeout_per_agent: 900000
         retry_on_failure: 3
       ultrathink:
-        thinking_budget: 48000
-        max_parallel: 4
-        batch_delay: 3000
-        wave_overlap_threshold: 0.60
-        cost_multiplier: 3.0
+        thinking_budget: 200000
+        max_parallel: 8
+        batch_delay: 1000
+        wave_overlap_threshold: 0.55
+        timeout_per_agent: 1260000
+        retry_on_failure: 4
+        cost_multiplier: 6.25
   depth_defaults:
-    quick:
+    mini:
       thinking_budget: 8000
-      skip_agents: [optional-task-validators]
+      skip_agents: [optional-task-validators, edge-case-analyzer]
       timeout: 60
-    standard:
+    lite:
       thinking_budget: 16000
+      skip_agents: [optional-task-validators]
+      timeout: 90
+    standard:
+      thinking_budget: 32000
       skip_agents: []
       timeout: 120
-    ultrathink:
+    moderate:
       thinking_budget: 48000
-      additional_agents: [task-deepdive, dependency-auditor]
+      additional_agents: [dependency-validator]
+      timeout: 180
+    extended:
+      thinking_budget: 80000
+      additional_agents: [dependency-validator, edge-case-analyzer]
       timeout: 240
+    full:
+      thinking_budget: 120000
+      additional_agents: [dependency-validator, edge-case-analyzer, traceability-auditor]
+      timeout: 300
+    ultrathink:
+      thinking_budget: 200000
+      additional_agents: [task-deepdive, dependency-auditor, edge-case-analyzer, traceability-auditor]
+      timeout: 420
   user_tier_fallback:
     enabled: true
     rules:
-      - condition: "user_tier != 'max' AND requested_depth == 'ultrathink'"
-        fallback_depth: "standard"
+      - condition: "user_tier == 'free' AND requested_depth IN ['extended', 'full', 'ultrathink']"
+        fallback_depth: "lite"
         fallback_thinking: 16000
         warning_message: |
-          ⚠️ **Ultrathink mode requires Claude Code Max tier** (48K thinking budget).
-          Auto-downgrading to **Standard** mode (16K budget).
+          ⚠️ **Extended/Full/Ultrathink modes require Claude Code Pro or Max tier**.
+          Auto-downgrading to **Lite** mode (16K budget).
+      - condition: "user_tier == 'pro' AND requested_depth IN ['full', 'ultrathink']"
+        fallback_depth: "extended"
+        fallback_thinking: 80000
+        warning_message: |
+          ⚠️ **Full/Ultrathink modes require Claude Code Max tier** (120K+ thinking budget).
+          Auto-downgrading to **Extended** mode (80K budget).
+      - condition: "user_tier == 'max' AND requested_depth == 'ultrathink'"
+        fallback_depth: null
+        fallback_thinking: 200000
+        warning_message: |
+          ✓ **Ultrathink mode enabled** (200K thinking budget).
+          This is the maximum depth tier.
   cost_breakdown:
-    quick: {cost: $0.12, time: "60-90s"}
-    standard: {cost: $0.24, time: "120-180s"}
-    ultrathink: {cost: $0.72, time: "240-300s"}
+    mini: {cost: $0.12, time: "60-90s"}
+    lite: {cost: $0.24, time: "90-120s"}
+    standard: {cost: $0.48, time: "120-180s"}
+    moderate: {cost: $0.72, time: "180-240s"}
+    extended: {cost: $1.20, time: "240-300s"}
+    full: {cost: $1.80, time: "300-360s"}
+    ultrathink: {cost: $3.00, time: "420-480s"}
   cache_control:
     system_prompt: ephemeral
     constitution: ephemeral
