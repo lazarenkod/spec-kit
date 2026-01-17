@@ -368,6 +368,30 @@ Recommendation: Upgrade to Claude Code Max for world-class game concepts.
 
 ## Agent Architecture
 
+### Prefetch Batch: Parallel Template Loading [OPTIMIZATION v0.10.1]
+
+**Goal**: Load all required templates in parallel for instant access during agent execution.
+
+**Execute in PARALLEL** (single message with multiple Read calls):
+```text
+Read IN PARALLEL:
+  - memory/constitution.md (if exists, for quality standards)
+  - templates/shared/concept-sections/game-economy-design.md
+  - templates/shared/concept-sections/retention-strategy.md
+  - templates/shared/concept-sections/monetization-strategy.md
+  - templates/shared/concept-sections/player-psychology.md
+  - templates/shared/concept-sections/cqs-game.md
+  - templates/shared/formulas/ltv-cac-calculation.md
+  - templates/shared/game-genres/*.md (5 genre templates)
+  - specs/game-concept.md (if exists, for validation mode)
+```
+
+**Impact**: Saves 4-6 seconds per execution (parallel vs sequential reads)
+
+CACHE results for instant access during Phase 1-4 agent execution.
+
+---
+
 ### Phase 0: Context Extraction (Priority 5)
 
 Single agent extracts game parameters from user input:
@@ -422,26 +446,14 @@ Single agent extracts game parameters from user input:
 
    **Step 3: LTV (Lifetime Value) Ranges by Player Segment**
 
-   **Player segmentation** (by spending behavior):
-   ```
-   | Segment | % of Players | LTV Range | Revenue Contribution |
-   |---------|--------------|-----------|----------------------|
-   | Minnows (non-payers) | 80-90% | $0.50-2.00 | 5-15% (ads only) |
-   | Dolphins (small spenders) | 8-15% | $5-20 | 20-35% |
-   | Whales (big spenders) | 1-3% | $50-500 | 50-75% |
-   ```
+   **OPTIMIZATION v0.10.1**: See consolidated formula in templates/shared/formulas/ltv-cac-calculation.md
 
-   **Blended LTV calculation**:
-   ```
-   Blended LTV = (85% × $1.00) + (12% × $10) + (3% × $150)
-              = $0.85 + $1.20 + $4.50
-              = $6.55 per user
-   ```
-
-   **LTV/CAC Target Ratios**:
-   - Minimum: 1.5x (break-even)
-   - Healthy: 3.0x (sustainable UA)
-   - Excellent: 5.0x+ (aggressive growth)
+   **Quick reference**:
+   - Minnows (80-90%): $0.50-$2.00 (ads only)
+   - Dolphins (8-15%): $5-$20 (small IAP)
+   - Whales (1-3%): $50-$500 (recurring IAP)
+   - Blended LTV: ~$6.55 per user (example)
+   - Target LTV/CAC ratios: 1.5x (break-even), 3.0x (healthy), 5.0x+ (excellent)
 
    **Step 4: ARPDAU (Average Revenue Per Daily Active User) by Genre**
 
@@ -563,31 +575,13 @@ Single agent extracts game parameters from user input:
 
    **Step 2: LTV/CAC Model with Payback Period**
 
-   **LTV Calculation** (Lifetime Value per user):
-   ```
-   LTV = ARPDAU × Average Lifetime Days
+   **OPTIMIZATION v0.10.1**: See consolidated formula in templates/shared/formulas/ltv-cac-calculation.md
 
-   Breakdown by cohort:
-   - Minnows (non-payers): LTV = $0.50-2.00 (ad revenue only)
-   - Dolphins (small spenders): LTV = $5-20 (1-3 IAP purchases)
-   - Whales (big spenders): LTV = $50-500 (recurring IAP, VIP)
-
-   Blended LTV = (% Minnows × LTV_M) + (% Dolphins × LTV_D) + (% Whales × LTV_W)
-   ```
-
-   **CAC Benchmarks** (Cost to Acquire Customer):
-   - US iOS: $1.50-4.00 (puzzle, casual)
-   - US iOS: $2.00-6.00 (mid-core)
-   - Android: 60-70% of iOS CAC
-
-   **Target LTV/CAC Ratios**:
-   - Minimum viable: 1.5x (break-even with margins)
-   - Healthy: 3.0x (sustainable UA scaling)
-   - Excellent: 5.0x+ (aggressive growth mode)
-
-   **Payback Period** (time to recover CAC):
-   - D7 LTV target: 50-100% of CAC (7-day payback)
-   - D30 LTV target: 150-300% of CAC (1-month ROI positive)
+   **Apply the formula**:
+   - Calculate blended LTV using player segment percentages
+   - Estimate CAC by region (US iOS baseline, adjust for Android/EU/APAC)
+   - Target LTV/CAC ratios: 1.5x (minimum), 3.0x (healthy), 5.0x+ (excellent)
+   - Payback targets: D7 = 50-100% of CAC, D30 = 150-300% of CAC
 
    **Step 3: Conversion Funnel Analysis**
 
@@ -1009,9 +1003,12 @@ For EACH of 5 genre variants:
 
 ### Phase 3.5: Comparative Validation (Priority 35) [NEW]
 
-**comparative-validator** (opus, 60K):
+**comparative-validator** (sonnet, 32K):
 
-Cross-validate all 5 genre variants for consistency and detect self-assessment bias:
+**OPTIMIZATION v0.10.1**: Downgraded opus → sonnet (saves 28K thinking) for arithmetic comparison.
+**Conditional loading**: Only runs when generating multiple variants (--genre=all).
+
+Cross-validate all genre variants for consistency and detect self-assessment bias:
 
 1. **CQS-Game Score Distribution Analysis**
    - Flag if all variants score 85-95 (too clustered, likely inflated)

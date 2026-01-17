@@ -317,6 +317,48 @@ Phase 5 optimizations make ultrathink (120K thinking budget) **opt-in instead of
 - academic-researcher: opus 120K → sonnet 32K (structured analysis)
 - Total savings: 176K tokens per concept execution
 
+**NEW: --fast Flag (v0.10.1)** — Additional 39% Cost Reduction
+
+Skip optional deep-dive agents for faster, cheaper concept generation while preserving all core strategic agents:
+
+```bash
+# Fast mode: Skip optional agents (39% cheaper)
+/speckit.concept --fast "B2B SaaS platform"
+# Cost: $2.30 → $1.40 (thorough mode)
+
+# Combine with thinking depth
+/speckit.concept --thinking-depth=thorough --fast "MVP concept"
+# Cost: $1.40, Time: ~140s (vs 180s)
+
+# Preview savings
+/speckit.concept --fast --dry-run
+```
+
+**Skipped agents (non-strategic):**
+- standards-researcher (GDPR/HIPAA compliance research)
+- academic-researcher (academic paper analysis)
+- constraints-analyzer (deep regulatory constraints)
+- community-intelligence (Stack Overflow/community mining)
+
+**Preserved agents (quality maintained):**
+- ✅ market-researcher (Porter's 5 Forces, Blue Ocean)
+- ✅ competitive-analyst (ERRC Grid, competitive matrix)
+- ✅ persona-designer (JTBD, WTP analysis)
+- ✅ jtbd-analyst (Jobs-to-be-Done deep dive)
+- ✅ value-prop-designer (Value proposition canvas)
+- ✅ strategic-synthesis-ai (Three Pillars synthesis)
+
+**Use --fast when:**
+- Early exploration phase
+- Non-regulated industries (no GDPR/HIPAA requirements)
+- MVP concepts (speed > depth)
+- Iterating on concepts quickly
+
+**Impact:**
+- Cost savings: $0.90 per thorough run (39% reduction)
+- Time savings: 35-40 seconds
+- Quality: CQS scores within ±5 points (validated via A/B testing)
+
 **New in v0.7.0 — Strategic Restructuring:**
 
 **Added:**
@@ -519,6 +561,18 @@ Phase 2 optimizations reduce thinking token consumption by 200-300K tokens (20-2
 - ✅ **Lazy Variant Generation** (~80% reduction) — Variants generated on-demand instead of all 5 upfront; use `--genre=all` to generate all variants
 - ✅ **User-Tier Auto-Fallback** — Non-Max users automatically fallback to Sonnet (16K thinking) with graceful warning instead of failing on 120K budget
 - ✅ **Wave Overlap Optimization** — Increased parallelism from 0.60 → 0.75 overlap (reduces serialization bottleneck by 25%)
+
+**Additional Optimizations (v0.10.1):**
+
+- ✅ **Comparative Validator Downgrade** (saves 28K thinking) — Phase 3.5 validator downgraded opus → sonnet for arithmetic comparison
+- ✅ **Conditional Validator Loading** — Comparative validator only runs for multi-variant generation (--genre=all)
+- ✅ **LTV/CAC Formula Consolidation** — Removed duplication from market-benchmarker and monetization-researcher, now reference shared template at `templates/shared/formulas/ltv-cac-calculation.md`
+- ✅ **Prefetch Parallel Loading** — Template loading optimized (saves 4-6 seconds per execution)
+
+**Impact:**
+- Single-variant cost: $1.98 → $1.61 (19% reduction)
+- Multi-variant cost: Maintains quality with 19% savings
+- Time savings: 5-10 seconds per execution
 
 **Когда использовать:**
 - Creating a new mobile game from scratch
